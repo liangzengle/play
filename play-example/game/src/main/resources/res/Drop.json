@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1001,
+    "groupId": 1,
+    "weights": 100,
+    "reward": {
+      "type": 1,
+      "id": 1,
+      "num": 1
+    }
+  },
+  {
+    "id": 1002,
+    "groupId": 1,
+    "weights": 200,
+    "reward": {
+      "type": 1,
+      "id": 2,
+      "num": 1
+    }
+  },
+  {
+    "id": 1003,
+    "groupId": 1,
+    "weights": 300,
+    "reward": {
+      "type": 1,
+      "id": 3,
+      "num": 1
+    }
+  },
+  {
+    "id": 2001,
+    "groupId": 2,
+    "weights": 100,
+    "reward": {
+      "type": 1,
+      "id": 1,
+      "num": 1
+    }
+  },
+  {
+    "id": 2002,
+    "groupId": 2,
+    "weights": 200,
+    "reward": {
+      "type": 1,
+      "id": 2,
+      "num": 1
+    }
+  },
+  {
+    "id": 2003,
+    "groupId": 2,
+    "weights": 300,
+    "reward": {
+      "type": 1,
+      "id": 3,
+      "num": 1
+    }
+  }
+]

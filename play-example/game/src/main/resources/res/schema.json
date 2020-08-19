@@ -1,0 +1,156 @@
+[
+  {
+    "name": "Drop",
+    "desc": "boss掉落",
+    "metadata": {
+      "multi": 1
+    },
+    "fields": {
+      "reward": {
+        "name": "reward",
+        "desc": "奖励",
+        "type": "object"
+      },
+      "groupId": {
+        "name": "groupId",
+        "desc": "掉落组",
+        "type": "int"
+      },
+      "id": {
+        "name": "id",
+        "desc": "掉落id",
+        "type": "int"
+      },
+      "weights": {
+        "name": "weights",
+        "desc": "权重",
+        "type": "int"
+      }
+    }
+  },
+  {
+    "name": "CommonSetting",
+    "desc": "全局配置",
+    "metadata": {
+      "rowAsColumn": 1
+    },
+    "fields": {
+      "id": {
+        "name": "id",
+        "desc": "int",
+        "type": "int"
+      },
+      "levelMax": {
+        "name": "levelMax",
+        "desc": "int",
+        "type": "int"
+      },
+      "teamSize": {
+        "name": "teamSize",
+        "desc": "int",
+        "type": "int"
+      },
+      "obj": {
+        "name": "obj",
+        "desc": "object",
+        "type": "object"
+      },
+      "array": {
+        "name": "array",
+        "desc": "int[]",
+        "type": "List",
+        "elemType": "int"
+      },
+      "array2": {
+        "name": "array2",
+        "desc": "int[]",
+        "type": "List",
+        "elemType": "int"
+      }
+    }
+  },
+  {
+    "name": "MainTask",
+    "desc": "主线任务",
+    "metadata": {},
+    "fields": {
+      "id": {
+        "name": "id",
+        "desc": "任务id",
+        "type": "int"
+      },
+      "name": {
+        "name": "name",
+        "desc": "名称",
+        "type": "string"
+      },
+      "desc": {
+        "name": "desc",
+        "desc": "描述",
+        "type": "string"
+      },
+      "targets": {
+        "name": "targets",
+        "desc": "目标",
+        "type": "List",
+        "elemType": "Target"
+      },
+      "rewards": {
+        "name": "rewards",
+        "desc": "奖励",
+        "type": "List",
+        "elemType": "Reward"
+      },
+      "arr": {
+        "name": "arr",
+        "desc": "",
+        "type": "any"
+      },
+      "obj": {
+        "name": "obj",
+        "desc": "",
+        "type": "any"
+      }
+    }
+  },
+  {
+    "name": "Item",
+    "desc": "物品",
+    "metadata": {
+      "clientClassName": "Goods"
+    },
+    "fields": {
+      "jsonValue": {
+        "name": "jsonValue",
+        "desc": "json值",
+        "type": "object"
+      },
+      "name": {
+        "name": "name",
+        "desc": "名称",
+        "type": "string"
+      },
+      "numberValue": {
+        "name": "numberValue",
+        "desc": "数字值",
+        "type": "number"
+      },
+      "id": {
+        "name": "id",
+        "desc": "id",
+        "type": "int"
+      },
+      "rewards": {
+        "name": "rewards",
+        "desc": "使用获得",
+        "type": "List",
+        "elemType": "Reward"
+      },
+      "attrs": {
+        "name": "attrs",
+        "desc": "属性",
+        "type": "object"
+      }
+    }
+  }
+]

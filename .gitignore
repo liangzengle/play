@@ -1,0 +1,13 @@
+.idea
+
+.gradle
+
+build
+
+out
+
+logs/*
+
+/play-example/robot/logs/
+
+entity_back_up

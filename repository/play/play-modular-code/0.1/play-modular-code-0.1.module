@@ -1,0 +1,118 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "play",
+    "module": "play-modular-code",
+    "version": "0.1",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "6.1.1",
+      "buildId": "jmmtg6s6uvg2jjiz2o3ce5dbzu"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 11,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.localToProject": "public",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib-jdk8",
+          "version": {
+            "requires": "1.4.10"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-reflect",
+          "version": {
+            "requires": "1.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "play-modular-code-0.1.jar",
+          "url": "play-modular-code-0.1.jar",
+          "size": 20810,
+          "sha512": "45d4a5d536807a2520c80c66d4a44901ac6597dfb5a95a2dc6b6ec0a413d54030676ce82b0bb1c3620cd8364fbb30bda778b84381fd08c17b20e80e41eb74971",
+          "sha256": "196538017742f8151aa32c791bcb6855b6bf48210cb58b3d7892ba6e6cb191b7",
+          "sha1": "a6e60c389e7394c773a64d9b7e22450e0c0f8058",
+          "md5": "058265e3556cb85ea8f0e447754c0287"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 11,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.localToProject": "public",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-gradle-plugin-api",
+          "version": {
+            "requires": "1.4.10"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-compiler-embeddable",
+          "version": {
+            "requires": "1.4.10"
+          }
+        },
+        {
+          "group": "com.google.auto.service",
+          "module": "auto-service",
+          "version": {
+            "requires": "1.0-rc7"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib-jdk8",
+          "version": {
+            "requires": "1.4.10"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-reflect",
+          "version": {
+            "requires": "1.4.10"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "play-modular-code-0.1.jar",
+          "url": "play-modular-code-0.1.jar",
+          "size": 20810,
+          "sha512": "45d4a5d536807a2520c80c66d4a44901ac6597dfb5a95a2dc6b6ec0a413d54030676ce82b0bb1c3620cd8364fbb30bda778b84381fd08c17b20e80e41eb74971",
+          "sha256": "196538017742f8151aa32c791bcb6855b6bf48210cb58b3d7892ba6e6cb191b7",
+          "sha1": "a6e60c389e7394c773a64d9b7e22450e0c0f8058",
+          "md5": "058265e3556cb85ea8f0e447754c0287"
+        }
+      ]
+    }
+  ]
+}

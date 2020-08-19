@@ -1,0 +1,29 @@
+apply plugin: 'idea'
+
+sourceSets {
+    codegen {
+        kotlin.srcDir 'src/codegen/kotlin'
+    }
+    main.kotlin.srcDirs += "build/generated-sources"
+}
+
+idea.module {
+    scopes.PROVIDED.plus += [configurations.codegenCompileClasspath]
+}
+
+dependencies {
+    api project(":play-core")
+    codegenImplementation  Deps.KotlinPoetDeprecated
+}
+
+task generateCaches(type: JavaExec) {
+    main = 'play.entity.cache.codegen.EntityCacheGenerator'
+    classpath = sourceSets.codegen.runtimeClasspath
+    args "${buildDir}/generated-sources/"
+
+    outputs.upToDateWhen { !tasks.compileCodegenJava.didWork }
+    outputs.dir "${buildDir}/generated-sources/"
+    outputs.cacheIf { true }
+}
+compileJava.dependsOn(generateCaches)
+compileKotlin.dependsOn(generateCaches)
