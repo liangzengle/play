@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package play.example.module.player.message;
+
+message PlayerProto {
+    required int64 id = 1;
+    required string name = 2;
+}

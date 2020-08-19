@@ -1,0 +1,6 @@
+dependencies {
+    implementation project(':play-core')
+    api hibernate_validator
+    implementation javax_el
+    kapt auto_service
+}

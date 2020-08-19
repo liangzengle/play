@@ -1,0 +1,16 @@
+dependencies {
+    api log4j
+    api jackson
+    api("com.fasterxml.jackson.module:jackson-module-kotlin:$jackson_version") {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-reflect'
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+    }
+    api vavr
+    api config
+    api guava
+    api auto_service
+    kapt auto_service
+    api guice
+    api reflections
+    api eclipse_collection
+}

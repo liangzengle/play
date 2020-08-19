@@ -1,0 +1,9 @@
+dependencies {
+    implementation auto_service
+    kapt auto_service
+    implementation "org.jetbrains.kotlin:kotlin-reflect"
+    implementation kotlin_poet
+    implementation project(':play-mvc')
+    implementation project(':play-db')
+    implementation project(':play-config')
+}

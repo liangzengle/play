@@ -1,0 +1,15 @@
+syntax = "proto2";
+
+package play.example.module.account.message;
+
+message LoginProto {
+    required string platform = 1;
+    required int32 serverId = 2;
+    required string channel = 3;
+    required string account = 4;
+    // ...
+}
+
+message PongProto {
+    required string msg = 1;
+}

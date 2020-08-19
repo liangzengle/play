@@ -1,0 +1,36 @@
+pluginManagement {
+    repositories {
+        mavenLocal()
+        maven {
+            url 'https://maven.aliyun.com/repository/public/'
+        }
+        maven {
+            url 'https://maven.aliyun.com/repository/jcenter'
+        }
+        maven {
+            url 'https://maven.aliyun.com/repository/gradle-plugin'
+        }
+        mavenCentral()
+        jcenter()
+
+        maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
+
+        maven { url 'https://plugins.gradle.org/m2/' }
+    }
+}
+
+rootProject.name = 'play'
+
+include 'play-core'
+include 'play-net'
+include 'play-db'
+include 'play-mvc'
+include 'play-codegen'
+include 'play-akka'
+include 'play-example'
+include 'play-config'
+include 'play-db-mongo'
+include 'play-db-mysql'
+
+include 'play-modular-code'
+project(':play-modular-code').projectDir = file('./play-plugins/play-modular-code')

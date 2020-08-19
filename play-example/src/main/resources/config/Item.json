@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "名称1",
+    "desc": "描述1",
+    "jsonValue": {
+      "a": 1
+    },
+    "numberValue": 100,
+    "attrs": {
+      "atk": 100,
+      "def": 200,
+      "hp": 300
+    },
+    "rewards": [
+      {
+        "cfgId": 1,
+        "type": 1,
+        "num": 1
+      },
+      {
+        "type": 2,
+        "num": 2
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "物品2",
+    "numberValue": 100
+  }
+]

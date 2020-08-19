@@ -1,0 +1,33 @@
+plugins {
+    id "maven-publish"
+}
+
+apply plugin: "java-gradle-plugin"
+
+group 'play'
+version '0.1'
+
+gradlePlugin {
+    plugins {
+        simplePlugin {
+            id = "play.modular-code"
+            implementationClass = "play.plugin.modularcode.PlayModularCodeGradlePlugin"
+        }
+    }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api:${kotlin_version}"
+    implementation "org.jetbrains.kotlin:kotlin-compiler-embeddable:${kotlin_version}"
+    implementation auto_service
+    kapt auto_service
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'modular-code'
+            from components.java
+        }
+    }
+}

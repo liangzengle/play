@@ -1,0 +1,4 @@
+dependencies {
+    kapt auto_service
+    api project(":play-core")
+}

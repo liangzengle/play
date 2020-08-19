@@ -1,0 +1,25 @@
+syntax = "proto2";
+
+package play.example.request;
+
+message RequestProto {
+    optional bool b1 = 1;
+    optional bool b2 = 2;
+    optional bool b3 = 3;
+
+    optional int32 i1 = 11;
+    optional int32 i2 = 12;
+    optional int32 i3 = 13;
+
+    optional int64 l1 = 21;
+    optional int64 l2 = 22;
+    optional int64 l3 = 23;
+
+    optional string s1 = 31;
+    optional string s2 = 32;
+    optional string s3 = 33;
+
+    repeated int32 intList = 41;
+    repeated int64 longList = 42;
+    optional bytes byteList = 43;
+}

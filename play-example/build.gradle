@@ -1,0 +1,98 @@
+buildscript {
+    ext.wire_version = "3.2.2"
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "com.squareup.wire:wire-gradle-plugin:$wire_version"
+    }
+}
+
+plugins {
+    id 'application'
+    id 'play.modular-code' version '0.1'
+//    id 'com.google.protobuf' version '0.8.13'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url "https://jitpack.io"
+    }
+}
+
+apply plugin: 'com.squareup.wire'
+
+modularCode {
+    annotation = ['play.example.module.ModularCode']
+}
+
+ext {
+    protobuf_version = "3.13.0"
+//    pbandk_version = "0.8.1"
+}
+
+dependencies {
+    testCompile kotlin_poet
+    implementation project(':play-mvc')
+    implementation project(':play-akka')
+    implementation project(':play-net')
+    implementation project(':play-config')
+    implementation project(':play-db-mongo')
+    compileOnly project(path: ':play-codegen', configuration: 'default')
+    kapt project(path: ':play-codegen', configuration: 'default')
+    implementation "org.jctools:jctools-core:3.0.0"
+    implementation "mysql:mysql-connector-java:8.0.20"
+    implementation "com.google.protobuf:protobuf-java:$protobuf_version"
+    implementation "com.squareup.wire:wire-runtime:$wire_version"
+//    implementation "com.github.streem.pbandk:pbandk-runtime-jvm:$pbandk_version"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-core:1.0.0-RC"
+}
+
+kapt {
+    arguments {
+        arg("controller.user-class", "play.example.module.player.Self")
+    }
+}
+
+sourceSets {
+    main.java.srcDirs += "src/main/kotlin"
+    main.java.srcDirs += "build/generated/source/wire"
+    main.java.srcDirs += "build/generated/source/proto"
+
+    test.java.srcDirs += "src/test/kotlin"
+}
+
+wire {
+    kotlin {
+    }
+}
+
+application {
+    mainClassName("play.example.App")
+}
+
+//protobuf {
+//    protoc {
+//        artifact = "com.google.protobuf:protoc:$protobuf_version"
+//    }
+//    plugins {
+//        kotlin {
+//            artifact = "com.github.streem.pbandk:protoc-gen-kotlin-jvm:$pbandk_version:jvm8@jar"
+//        }
+//    }
+//    generateProtoTasks {
+//        ofSourceSet("main").forEach { task ->
+//            task.builtins {
+//                remove java
+//            }
+//            task.plugins {
+//                kotlin {
+//                    option("json_support=false")
+//                }
+//            }
+//        }
+//    }
+//}

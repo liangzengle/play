@@ -1,0 +1,6 @@
+dependencies {
+    api project(':play-db')
+//    implementation "org.mongodb:mongodb-driver-sync:4.0.5"
+    implementation "org.mongodb:mongodb-driver-reactivestreams:4.0.5"
+    implementation 'de.undercouch:bson4jackson:2.11.0'
+}
