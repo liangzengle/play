@@ -47,3 +47,41 @@ fun Int.toByteArray(): ByteArray = Ints.toByteArray(this)
 fun Int.high16(): Short = (this shr 16).toShort()
 
 fun Int.low16(): Short = this.toShort()
+
+fun Int.toByteChecked(): Byte {
+  if (this < Byte.MIN_VALUE || this > Byte.MAX_VALUE) {
+    throw ArithmeticException("overflow: $this")
+  }
+  return this.toByte()
+}
+
+fun Int.toByteSaturated(): Byte {
+  return when {
+      this < Byte.MIN_VALUE -> {
+        Byte.MIN_VALUE
+      }
+      this > Byte.MAX_VALUE -> {
+        Byte.MAX_VALUE
+      }
+      else -> this.toByte()
+  }
+}
+
+fun Int.toShortChecked(): Short {
+  if (this < Short.MIN_VALUE || this > Short.MAX_VALUE) {
+    throw ArithmeticException("overflow: $this")
+  }
+  return this.toShort()
+}
+
+fun Int.toShortSaturated(): Short {
+  return when {
+      this < Short.MIN_VALUE -> {
+        Short.MIN_VALUE
+      }
+      this > Short.MAX_VALUE -> {
+        Short.MAX_VALUE
+      }
+      else -> this.toShort()
+  }
+}

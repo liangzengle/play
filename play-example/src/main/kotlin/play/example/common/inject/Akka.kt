@@ -11,7 +11,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
 
-abstract class AkkGuiceModule : GuiceModule() {
+abstract class AkkaGuiceModule : GuiceModule() {
   fun <T> spawn(systemProvider: ActorSystemProvider, behavior: Behavior<T>, name: String): ActorRef<T> {
     return Adapter.spawn(
       Adapter.toClassic(systemProvider.get()),

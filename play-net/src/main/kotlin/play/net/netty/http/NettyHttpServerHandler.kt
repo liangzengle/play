@@ -17,7 +17,7 @@ import play.util.exception.isFatal
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 
-abstract class NettyHttpServerHandler(private val routeManager: RouteManager) : ChannelInboundHandlerAdapter() {
+abstract class NettyHttpServerHandler(private val actionManager: HttpActionManager) : ChannelInboundHandlerAdapter() {
 
   protected abstract val filters: List<HttpRequestFilter>
 
@@ -42,7 +42,7 @@ abstract class NettyHttpServerHandler(private val routeManager: RouteManager) : 
         return
       }
 
-      val routeOption = routeManager.findAction(request.uri())
+      val routeOption = actionManager.findAction(request.uri())
       if (routeOption.isEmpty) {
         writeResponse(ctx, request, HttpResult.notFount(), "Action Not Found")
         return
@@ -152,9 +152,9 @@ abstract class NettyHttpServerHandler(private val routeManager: RouteManager) : 
     logResponse(request, result, errorHints)
   }
 
-  private fun handleAsync(request: NettyHttpRequest, route: Route): Future<HttpResult.Strict> {
+  private fun handleAsync(request: NettyHttpRequest, action: Action): Future<HttpResult.Strict> {
     val p = Promise.make<HttpResult.Strict>()
-    Future.of { route(request) }.onComplete {
+    Future.of { action(request) }.onComplete {
       if (it.isSuccess) {
         when (val result = it.get()) {
           is HttpResult.Strict -> p.success(result)

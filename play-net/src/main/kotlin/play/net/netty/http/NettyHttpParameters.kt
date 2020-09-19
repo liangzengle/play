@@ -1,7 +1,7 @@
 package play.net.netty.http
 
-import io.vavr.control.Option
 import play.net.http.HttpParameters
+import java.util.*
 
 class NettyHttpParameters internal constructor(private val parameters: Map<String, List<String>>) :
   HttpParameters() {
@@ -11,8 +11,8 @@ class NettyHttpParameters internal constructor(private val parameters: Map<Strin
     return parameters[name] ?: emptyList()
   }
 
-  override fun getStringOptional(name: String): Option<String> {
-    return Option.of(parameters[name]?.getOrNull(0))
+  override fun getStringOptional(name: String): Optional<String> {
+    return Optional.ofNullable(parameters[name]?.getOrNull(0))
   }
 
   override fun toString(): String {

@@ -3,8 +3,13 @@ package play.net.http
 import io.vavr.concurrent.Future
 import io.vavr.control.Option
 import play.util.collection.EmptyByteArray
+import play.util.json.Json
 
-abstract class AbstractHttpController {
+abstract class AbstractHttpController(actionManager: HttpActionManager) {
+  init {
+    @Suppress("LeakingThis")
+    actionManager.register(this)
+  }
 
   protected fun ok(result: String): HttpResult = HttpResult.Strict(HttpStatusCode.OK, HttpEntity.Strict(result))
 
@@ -16,4 +21,6 @@ abstract class AbstractHttpController {
   protected fun error(statusCode: Int) = HttpResult.Strict(statusCode, HttpEntity.Strict(EmptyByteArray, Option.none()))
 
   protected fun Future<HttpResult.Strict>.toHttpResult() = HttpResult.Lazy(this)
+
+  protected fun toJson(obj: Any) = Json.stringify(obj)
 }

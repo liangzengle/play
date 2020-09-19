@@ -4,6 +4,7 @@ import akka.actor.typed.ActorRef
 import com.google.inject.Provides
 import play.akka.resumeSupervisor
 import play.db.QueryService
+import play.example.common.admin.AdminGuiceModule
 import play.example.common.net.NetGuiceModule
 import play.example.common.net.SessionManager
 import play.example.module.account.AccountManager
@@ -21,11 +22,12 @@ import play.example.module.server.config.ServerConfigProvider
 import play.util.scheduling.Scheduler
 import javax.inject.Singleton
 
-class LocalGuiceModule : AkkGuiceModule() {
+class LocalGuiceModule : AkkaGuiceModule() {
   override fun configure() {
-    val netModule = NetGuiceModule()
-    netModule.initContext(ctx)
-    install(netModule)
+    install(NetGuiceModule())
+    if (ctx.conf.getBoolean("admin.enabled")) {
+      install(AdminGuiceModule())
+    }
 
     bind<ServerConfig>().toProvider(ServerConfigProvider::class.java)
     bind<PlayerEventDispatcher>().toProvider(PlayerEventDispatcherProvider::class.java)

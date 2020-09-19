@@ -18,8 +18,16 @@ interface Injector {
   fun <T> instancesOf(type: Class<T>): List<T>
 
   fun <T : Any> instancesOf(type: KClass<T>): List<T> = instancesOf(type.java)
+
+  fun <T> getInstanceOrNull(type: Class<T>): T?
+
+  fun <T> getInstanceOrNull(type: Class<T>, name: String): T?
 }
 
 inline fun <reified T> Injector.instanceOf(): T = instanceOf(T::class.java)
 
 inline fun <reified T> Injector.instanceOf(name: String): T = instanceOf(T::class.java, name)
+
+inline fun <reified T> Injector.getInstanceOrNull(name: String): T? = getInstanceOrNull(T::class.java, name)
+
+inline fun <reified T> Injector.getInstanceOrNull(): T? = getInstanceOrNull(T::class.java)

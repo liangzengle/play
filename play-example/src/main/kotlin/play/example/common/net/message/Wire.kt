@@ -96,7 +96,7 @@ class WireRequestBody(private val proto: RequestProto) : RequestBody {
   }
 
   override fun readByteArray(): ByteArray {
-    return proto.byteList?.toByteArray() ?: EmptyByteArray
+    return proto.byteList.toByteArray() ?: EmptyByteArray
   }
 
   override fun toByteArray(): ByteArray {

@@ -27,6 +27,11 @@ abstract class GuiceModule : AbstractModule() {
     this.ctx = ctx
   }
 
+  protected fun install(module: GuiceModule){
+    module.initContext(ctx)
+    super.install(module)
+  }
+
   protected inline fun <reified T> bind(): AnnotatedBindingBuilder<T> = bind(T::class.java)
 
   protected inline fun <reified T> typeLiteral(): TypeLiteral<T> = object : TypeLiteral<T>() {}

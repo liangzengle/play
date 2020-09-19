@@ -36,6 +36,14 @@ class GuiceInjector(private val guice: Injector, private val classScanner: Class
       .map { guice.getInstance(it) }
       .toList()
   }
+
+  override fun <T> getInstanceOrNull(type: Class<T>): T? {
+    return guice.getExistingBinding(Key.get(type))?.provider?.get()
+  }
+
+  override fun <T> getInstanceOrNull(type: Class<T>, name: String): T? {
+    return guice.getExistingBinding(Key.get(type, Names.named(name)))?.provider?.get()
+  }
 }
 
 @Singleton

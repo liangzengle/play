@@ -3,6 +3,7 @@ package play.example
 import com.typesafe.config.ConfigFactory
 import play.*
 import play.example.common.ServerMode
+import play.inject.getInstanceOrNull
 import play.inject.instanceOf
 import play.net.netty.TcpServer
 import kotlin.system.exitProcess
@@ -24,6 +25,8 @@ object App {
       Log.info { "serverMode: $serverMode" }
       val gameServer = application.injector.instanceOf<TcpServer>("game")
       gameServer.start()
+      val adminServer = application.injector.getInstanceOrNull<TcpServer>("admin-http")
+      adminServer?.start()
     } catch (e: Throwable) {
       e.printStackTrace()
       exitProcess(-1)

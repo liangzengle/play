@@ -13,7 +13,6 @@ import play.net.netty.TcpServer
 import play.net.netty.channelInitializer
 import play.net.netty.createEventLoopGroup
 import play.net.netty.createServerChannelFactory
-import play.net.netty.http.NettyHttpServerHandler
 import javax.inject.Named
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -46,23 +45,6 @@ class NetGuiceModule : GuiceModule() {
     }
     return TcpServer("game", host, port, serverBootstrap)
   }
-
-  @Singleton
-//  @Provides
-  @Named("admin-http")
-  private fun adminHttp(
-    @Named("net") conf: Configuration,
-    serverBootstrap: ServerBootstrap,
-    handler: NettyHttpServerHandler
-  ): TcpServer {
-    val host = conf.getString("admin.host")
-    val port = conf.getInt("admin.port")
-    serverBootstrap.channelInitializer {
-      it.pipeline().addLast("handler", handler)
-    }
-    return TcpServer("admin-http", host, port, serverBootstrap)
-  }
-
 
   @Provides
   private fun serverBootstrap(
