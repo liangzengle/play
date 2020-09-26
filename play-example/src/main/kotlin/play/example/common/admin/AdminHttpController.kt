@@ -5,15 +5,22 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AdminHttpController @Inject constructor(actionManager: AdminHttpActionManager) : AbstractHttpController(actionManager) {
+class AdminHttpController @Inject constructor(actionManager: AdminHttpActionManager) :
+  AbstractHttpController(actionManager) {
 
   @Get("/get")
-  fun httpGet(httpRequest: AbstractHttpRequest, v1: Int, v2: String): HttpResult {
-    return ok("")
+  fun httpGet(v1: Int, v2: String): HttpResult {
+    return ok("v1=$v1 v2=$v2")
   }
 
   @Post("/post")
-  fun httpPost(): HttpResult {
-    return ok("")
+  fun httpPost(httpRequest: AbstractHttpRequest): HttpResult {
+    return ok("body=${httpRequest.getBodyAsString()}")
   }
+
+  @Get("/get/{itemId}/name")
+  fun httpGetVariable(httpRequest: AbstractHttpRequest, itemId: Int): HttpResult {
+    return ok("name=$itemId")
+  }
+
 }

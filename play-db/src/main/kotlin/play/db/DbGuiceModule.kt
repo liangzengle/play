@@ -3,6 +3,7 @@ package play.db
 import com.google.auto.service.AutoService
 import com.google.inject.Module
 import play.Configuration
+import play.db.cache.EntityCacheGuiceModule
 import play.db.memory.MemoryRepository
 import play.inject.guice.GuiceModule
 import play.util.reflect.Reflect
@@ -28,12 +29,13 @@ class DbGuiceModule : GuiceModule() {
 
     // repository
     val repository = ctx.conf.getString("db.repository")
-    bind<Repository>().qualifiedWith("memory").to<MemoryRepository>()
     val dbProductModuleName = "product-modules.$repository"
     if (dbConf.hasPath(dbProductModuleName)) {
       val module = Reflect.createInstance<Module>(dbConf.getString(dbProductModuleName))
       if (module is GuiceModule) module.initContext(ctx)
       binder().install(module)
+    } else {
+      bind<Repository>().qualifiedWith("memory").to<MemoryRepository>()
     }
     bind<Repository>().toBinding(binding(repository))
 
@@ -41,6 +43,8 @@ class DbGuiceModule : GuiceModule() {
 
     bind<PersistService>().to<Repository>()
     bind<QueryService>().to<Repository>()
+
+    install(EntityCacheGuiceModule())
   }
 
 

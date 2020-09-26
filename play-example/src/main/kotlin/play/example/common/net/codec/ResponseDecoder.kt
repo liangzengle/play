@@ -10,7 +10,7 @@ import play.mvc.MsgId
 import play.mvc.Response
 
 /**
- * ByteBuf -> Request
+ * ByteBuf -> Response
  * @author LiangZengle
  */
 @ChannelHandler.Sharable

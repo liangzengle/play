@@ -3,14 +3,14 @@ package play.net.netty
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
 import play.getLogger
-import play.net.Server
+import play.net.NetServer
 
 class TcpServer(
   val name: String,
   val host: String,
   val port: Int,
   bootstrap: ServerBootstrap
-) : Server {
+) : NetServer {
   companion object {
     @JvmStatic
     private val logger = getLogger()
@@ -19,7 +19,7 @@ class TcpServer(
   private val b = bootstrap.clone()
 
   private var ch: Channel? = null
-  
+
   override fun start() {
     ch = b.bind(host, port).sync().channel()
     logger.info { "$name server started, listening on $host:$port" }

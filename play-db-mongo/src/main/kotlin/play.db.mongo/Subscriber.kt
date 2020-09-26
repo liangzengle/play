@@ -34,11 +34,15 @@ internal class FoldSubscriber<T, R1 : R2, R2>(
   }
 
   override fun onNext(item: T) {
-    result = folder(result, item)
+    try {
+      result = folder(result, item)
+    } catch (e: Exception) {
+      promise.tryFailure(e)
+    }
   }
 
   override fun onError(throwable: Throwable) {
-    promise.failure(throwable)
+    promise.tryFailure(throwable)
   }
 
   override fun onComplete() {

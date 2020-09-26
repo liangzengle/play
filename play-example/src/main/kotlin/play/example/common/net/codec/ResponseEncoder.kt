@@ -7,7 +7,7 @@ import io.netty.channel.ChannelPromise
 import play.mvc.Response
 
 /**
- * WireMessage -> ByteBuf
+ * Response -> ByteBuf
  * @author LiangZengle
  */
 @ChannelHandler.Sharable
@@ -21,7 +21,7 @@ object ResponseEncoder : ChannelOutboundHandlerAdapter() {
     val msgId = msg.header.msgId.value
     val sequenceNo = msg.header.sequenceNo
     val statusCode = msg.statusCode
-    val body = msg.body.toByteArray()
+    val body = msg.body.encodeToByteArray()
     val len = 12 + body.size
     val buffer = ctx.channel().alloc().ioBuffer(len)
     buffer

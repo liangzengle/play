@@ -47,4 +47,4 @@ fun Config.toConfiguration() = Configuration(this)
 
 operator fun Config.plus(other: Config): Config = withFallback(other)
 
-fun Config.toJson() = root().render(ConfigRenderOptions.concise())
+fun Config.toJson(): String = root().render(ConfigRenderOptions.concise())

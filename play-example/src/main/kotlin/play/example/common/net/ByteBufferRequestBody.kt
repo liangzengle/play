@@ -54,7 +54,7 @@ class ByteBufferRequestBody(array: ByteArray) : RequestBody {
     return Longs.asList(*result)
   }
 
-  override fun toByteArray(): ByteArray {
+  override fun encodeToByteArray(): ByteArray {
     return buffer.array()
   }
 }

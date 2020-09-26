@@ -8,7 +8,7 @@ import play.util.collection.EmptyByteArray
  * @author LiangZengle
  */
 class FriendInfo : Message {
-  override fun toByteArray(): ByteArray {
+  override fun encodeToByteArray(): ByteArray {
     return EmptyByteArray
   }
 }

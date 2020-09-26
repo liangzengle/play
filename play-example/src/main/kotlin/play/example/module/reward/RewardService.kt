@@ -4,8 +4,10 @@ import com.google.common.collect.Collections2
 import play.example.module.StatusCode
 import play.example.module.mail.MailService
 import play.example.module.player.Self
+import play.example.module.reward.exception.RewardProcessorNotFoundException
 import play.example.module.reward.model.*
 import play.example.module.reward.processor.RewardProcessor
+import play.getLogger
 import play.util.collection.asList
 import play.util.control.Result2
 import play.util.control.err
@@ -15,6 +17,7 @@ import javax.inject.Singleton
 
 @Singleton
 class RewardService @Inject constructor(private val mailService: MailService) {
+  private val logger = getLogger()
 
   private val processors = mapOf<RewardType, RewardProcessor<Reward>>()
 
@@ -70,7 +73,8 @@ class RewardService @Inject constructor(private val mailService: MailService) {
       val processor = processors[reward.type]
       if (processor == null) {
         errorCode = StatusCode.Failure
-        break
+        logger.error(RewardProcessorNotFoundException(reward.type)) { "奖励预判异常: $reward" }
+        continue
       }
       val tryResult = processor.tryReward(self, reward, source, usedBagSize, bagFullStrategy, checkFcm)
       if (tryResult.hasValue()) {
@@ -119,8 +123,9 @@ class RewardService @Inject constructor(private val mailService: MailService) {
       }
       val processor = processors[cost.type]
       if (processor == null) {
-        errorCode = 1 // TODO
-        continue
+        errorCode = StatusCode.Failure
+        logger.error(RewardProcessorNotFoundException(cost.type)) { "消耗预判失败: $cost" }
+        break
       }
       val tryResult = processor.tryCost(self, cost, source)
       if (tryResult.hasValue()) {
@@ -135,7 +140,10 @@ class RewardService @Inject constructor(private val mailService: MailService) {
 
   fun execCost(self: Self, tryResultSet: TryCostResultSet): List<CostResult> {
     val source = tryResultSet.source
-    val results = tryResultSet.results.map { processors[it.cost.type]!!.execCost(self, it, source) }
+    val results = tryResultSet.results.map {
+      val processor = processors[it.cost.type] ?: error("should not happen.")
+      processor.execCost(self, it, source)
+    }
     log(self, results, source)
     return results
   }

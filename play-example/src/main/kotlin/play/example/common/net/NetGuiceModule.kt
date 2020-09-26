@@ -60,9 +60,9 @@ class NetGuiceModule : GuiceModule() {
 }
 
 private class EventLoopProvider(val threadNamePrefix: String, val nThread: Int) : Provider<EventLoopGroup> {
-  private val eventLoopGroup: Lazy<EventLoopGroup> = lazy {
+  private val eventLoopGroup by lazy {
     createEventLoopGroup(threadNamePrefix, nThread)
   }
 
-  override fun get(): EventLoopGroup = eventLoopGroup.value
+  override fun get(): EventLoopGroup = eventLoopGroup
 }

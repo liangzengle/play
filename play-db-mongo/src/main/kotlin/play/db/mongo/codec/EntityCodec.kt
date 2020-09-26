@@ -26,11 +26,8 @@ class EntityCodec<T : Entity<*>>(
     val buffer = currentBuffer.get()
     try {
       objectMapper.writeValue(buffer, value)
-      rawBsonDocumentCodec.encode(
-        writer,
-        RawBsonDocument(buffer.array(), 0, buffer.position),
-        encoderContext
-      )
+      val doc = RawBsonDocument(buffer.array(), 0, buffer.position)
+      rawBsonDocumentCodec.encode(writer, doc, encoderContext)
     } finally {
       buffer.release()
     }

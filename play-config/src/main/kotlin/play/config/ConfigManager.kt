@@ -12,10 +12,10 @@ import play.util.collection.filterDuplicatedBy
 import play.util.collection.toImmutableMap
 import play.util.collection.toImmutableSet
 import play.util.reflect.isAbstract
+import play.util.scheduling.Scheduler
 import java.io.File
 import java.nio.file.Paths
 import java.util.*
-import java.util.concurrent.ScheduledExecutorService
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -34,17 +34,17 @@ class ConfigManager @Inject constructor(
   private val configReader: ConfigReader,
   private val resourceReader: ResourceReader,
   private val classScanner: ClassScanner,
-  private val injector: Injector,
-  private val executor: ScheduledExecutorService
+  injector: Injector,
+  private val scheduler: Scheduler
 ) : PostConstruct {
 
   private val validateOnReload = conf.getBoolean("validate-on-reload")
   private val versionFile = conf.getString("version-file")
   private val modificationDetectInterval = conf.getDuration("modification-detect-interval")
 
-  private val listeners = injector.instancesOf(ConfigEventListener::class.java)
+  private val listeners = injector.getInstancesOfType(ConfigEventListener::class.java)
 
-  private val validators = injector.instancesOf(ConfigValidator::class.java)
+  private val validators = injector.getInstancesOfType(ConfigValidator::class.java)
 
   private var configSets = emptyMap<Class<AbstractConfig>, AnyConfigSet>()
 
@@ -159,7 +159,7 @@ class ConfigManager @Inject constructor(
       }
       .distinct()
       .forEach { dir ->
-        ConfigDirectoryMonitor(dir, action).start(modificationDetectInterval, executor)
+        ConfigDirectoryMonitor(dir, action).start(modificationDetectInterval, scheduler)
       }
 
     // 监听策划配置文件
@@ -169,7 +169,7 @@ class ConfigManager @Inject constructor(
       Log.info { "启用配置自动重加载失败, 配置文件的路径不是文件路径: ${resolver.rootPath}" }
       return
     }
-    ConfigDirectoryMonitor(dir, action).start(modificationDetectInterval, executor)
+    ConfigDirectoryMonitor(dir, action).start(modificationDetectInterval, scheduler)
   }
 
   private fun isResource(clazz: Class<*>): Boolean {

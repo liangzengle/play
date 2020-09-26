@@ -9,7 +9,7 @@ import kotlin.reflect.KClass
 annotation class CacheSpec(
   val initialSize: String = SIZE_DEFAULT,
   val loadAllOnInit: Boolean = false,
-  val persistType: PersistType = PersistType.Scheduled,
+  val persistStrategy: PersistStrategy = PersistStrategy.Scheduled,
   val expireEvaluator: KClass<out ExpireEvaluator> = DefaultExpireEvaluator::class
 ) {
   companion object {
@@ -29,7 +29,7 @@ annotation class CacheSpec(
     const val SIZE_DEFAULT = "x1"
   }
 
-  enum class PersistType {
+  enum class PersistStrategy {
     Scheduled,
     Manually,
   }

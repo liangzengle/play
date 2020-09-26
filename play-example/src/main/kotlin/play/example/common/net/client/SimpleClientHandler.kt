@@ -28,7 +28,7 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       PlayerControllerInvoker.ping -> pingPingResult(msg)
       AccountControllerInvoker.ping
       -> {
-        val pong = PongProto.ADAPTER.decode(msg.body.toByteArray())
+        val pong = PongProto.ADAPTER.decode(msg.body.encodeToByteArray())
         println("pong: ${pong.msg}")
       }
       else -> println("receive: $msg")
@@ -44,7 +44,7 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
     if (msg !is ByteArrayMessage) {
       return
     }
-    val pong = StringValue.ADAPTER.decode(msg.toByteArray()).value
+    val pong = StringValue.ADAPTER.decode(msg.encodeToByteArray()).value
     println("pong: $pong")
   }
 
@@ -53,7 +53,7 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       println("玩家登录失败：${msg.statusCode}")
       return
     }
-    println("玩家登录成功：${PlayerProto.ADAPTER.decode(msg.body.toByteArray())}")
+    println("玩家登录成功：${PlayerProto.ADAPTER.decode(msg.body.encodeToByteArray())}")
     ctx.executor().scheduleWithFixedDelay({
       val pingMsg = "hello"
       ctx.writeAndFlush(
@@ -89,7 +89,7 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
     if (msg !is ByteArrayMessage) {
       return
     }
-    val hasPlayer = BoolValue.ADAPTER.decode(msg.toByteArray()).value
+    val hasPlayer = BoolValue.ADAPTER.decode(msg.encodeToByteArray()).value
     if (hasPlayer) {
       println("账号登录成功, 角色已存在, 请求角色登录")
       ctx.writeAndFlush(

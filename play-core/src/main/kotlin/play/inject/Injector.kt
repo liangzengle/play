@@ -9,24 +9,24 @@ typealias PlayInjector = Injector
 
 interface Injector {
 
-  fun <T> instanceOf(type: Class<T>): T
+  fun <T> getInstance(type: Class<T>): T
 
-  fun <T> instanceOf(type: Class<T>, name: String): T
+  fun <T> getInstance(type: Class<T>, name: String): T
 
-  fun <T : Any> instanceOf(type: KClass<T>): T = instanceOf(type.java)
+  fun <T : Any> getInstance(type: KClass<T>): T = getInstance(type.java)
 
-  fun <T> instancesOf(type: Class<T>): List<T>
+  fun <T> getInstancesOfType(type: Class<T>): List<T>
 
-  fun <T : Any> instancesOf(type: KClass<T>): List<T> = instancesOf(type.java)
+  fun <T : Any> getInstancesOfType(type: KClass<T>): List<T> = getInstancesOfType(type.java)
 
   fun <T> getInstanceOrNull(type: Class<T>): T?
 
   fun <T> getInstanceOrNull(type: Class<T>, name: String): T?
 }
 
-inline fun <reified T> Injector.instanceOf(): T = instanceOf(T::class.java)
+inline fun <reified T> Injector.getInstance(): T = getInstance(T::class.java)
 
-inline fun <reified T> Injector.instanceOf(name: String): T = instanceOf(T::class.java, name)
+inline fun <reified T> Injector.getInstance(name: String): T = getInstance(T::class.java, name)
 
 inline fun <reified T> Injector.getInstanceOrNull(name: String): T? = getInstanceOrNull(T::class.java, name)
 

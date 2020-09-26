@@ -26,15 +26,16 @@ import java.net.SocketAddress
 /**
  * Created by LiangZengle on 2020/2/20.
  */
-fun SocketAddress.host(): String {
+fun SocketAddress.getHost(): String {
   return if (this is InetSocketAddress) this.hostString else "127.0.0.1"
 }
 
-fun SocketAddress.port(): Int {
+fun SocketAddress.getPort(): Int {
   return if (this is InetSocketAddress) this.port else -1
 }
 
-fun SocketAddress.toHostAndPort(): HostAndPort {
+@Suppress("UnstableApiUsage")
+fun SocketAddress.getHostAndPort(): HostAndPort {
   return if (this is InetSocketAddress) HostAndPort.fromParts(hostString, port)
   else HostAndPort.fromParts("127.0.0.1", -1)
 }

@@ -13,4 +13,5 @@ dependencies {
     api guice
     api reflections
     api eclipse_collection
+    api caffeine
 }

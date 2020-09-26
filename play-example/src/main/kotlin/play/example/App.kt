@@ -4,8 +4,8 @@ import com.typesafe.config.ConfigFactory
 import play.*
 import play.example.common.ServerMode
 import play.inject.getInstanceOrNull
-import play.inject.instanceOf
 import play.net.netty.TcpServer
+import play.util.collection.UnsafeAccessor
 import kotlin.system.exitProcess
 
 object App {
@@ -14,23 +14,25 @@ object App {
 
   @JvmStatic
   fun main(args: Array<String>) {
+    UnsafeAccessor.disableWarning()
     if (sys.isWindows()) {
       setWindowsProperties()
     }
 
-    val application: Application
     try {
-      application = Application.start(ConfigFactory.load("$serverMode.conf"))
-      Log.info { "mode: ${application.mode}" }
-      Log.info { "serverMode: $serverMode" }
-      val gameServer = application.injector.instanceOf<TcpServer>("game")
-      gameServer.start()
-      val adminServer = application.injector.getInstanceOrNull<TcpServer>("admin-http")
-      adminServer?.start()
+      val application = Application.start(ConfigFactory.load("$serverMode.conf"))
+      Log.info { "Mode: ${application.mode}" }
+      Log.info { "ServerMode: $serverMode" }
+      startTcpServer(application, "game")
+      startTcpServer(application, "admin-http")
     } catch (e: Throwable) {
       e.printStackTrace()
       exitProcess(-1)
     }
+  }
+
+  private fun startTcpServer(application: Application, name: String) {
+    application.injector.getInstanceOrNull<TcpServer>(name)?.start()
   }
 
   val mode: Mode get() = Application.current().mode
@@ -38,6 +40,7 @@ object App {
   private fun setWindowsProperties() {
     SystemProperties.setIfAbsent("MODE", Mode.Dev)
     SystemProperties.setIfAbsent("SERVER_MODE", ServerMode.Local)
+    SystemProperties.setIfAbsent("io.netty.availableProcessors", "4")
   }
 }
 

@@ -10,7 +10,7 @@ import java.util.*
 
 @CacheSpec(
   initialSize = CacheSpec.SIZE_ONE,
-  persistType = CacheSpec.PersistType.Manually,
+  persistStrategy = CacheSpec.PersistStrategy.Manually,
   expireEvaluator = NeverExpireEvaluator::class
 )
 class Server(id: Int) : EntityInt(id) {

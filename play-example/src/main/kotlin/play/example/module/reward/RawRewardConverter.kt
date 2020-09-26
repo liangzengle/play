@@ -16,7 +16,7 @@ class RawRewardConverter @Inject constructor(private val injector: Injector) : P
   private lateinit var playerArgProviders: Map<String, PlayerArgProvider>
 
   override fun postConstruct() {
-    playerArgProviders = injector.instancesOf(PlayerArgProvider::class.java).toImmutableMap { it.key }
+    playerArgProviders = injector.getInstancesOfType(PlayerArgProvider::class.java).toImmutableMap { it.key }
   }
 
   fun toReward(self: Self, rawReward: RawReward): Reward {

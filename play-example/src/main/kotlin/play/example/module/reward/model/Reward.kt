@@ -38,7 +38,6 @@ object NonReward : Reward(RewardType.None, 0) {
     get() = 0
 
   override fun copy(num: Int): Reward {
-    // TODO warning
     return this
   }
 
@@ -61,8 +60,7 @@ data class CurrencyReward(override val type: RewardType, @field:Min(0) override 
 data class ItemReward(
   @field:Min(1) @ReferTo(ItemConfig::class) override val cfgId: Int,
   @field:Min(0) override val num: Int
-) :
-  ItemLikeReward(RewardType.Item, num) {
+) : ItemLikeReward(RewardType.Item, num) {
   override val type: RewardType get() = RewardType.Item
   override fun copy(num: Int): ItemReward = ItemReward(cfgId, num)
 }

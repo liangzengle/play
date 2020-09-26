@@ -23,11 +23,11 @@ import javax.inject.Singleton
  */
 object ModuleCodegen {
 
-  val moduleName = "Friend"
-  val moduleDesc = "好友"
+  private val moduleName = "Friend"
+  private val moduleDesc = "好友"
 
-  val modulePackage = "play.example.module"
-  val moduleDir =
+  private val modulePackage = "play.example.module"
+  private val moduleDir =
     Paths.get(SystemProperties.userDir() + "/play-example/src/main/kotlin/play/example/module/${moduleName.toLowerCase()}")
 
   private val ModuleId = ModuleId::class.java.asTypeName()

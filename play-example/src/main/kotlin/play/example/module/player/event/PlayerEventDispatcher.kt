@@ -18,7 +18,7 @@ class PlayerEventDispatcher(injector: Injector) {
   init {
     val oneForOneBuilder = ImmutableListMultimap.builder<Class<PlayerEvent>, (Self, PlayerEvent) -> Unit>()
     val oneForManyBuilder = ImmutableListMultimap.builder<Class<PlayerEvent>, (Self, PlayerEvent) -> Unit>()
-    for (listener in injector.instancesOf(PlayerEventListener::class)) {
+    for (listener in injector.getInstancesOfType(PlayerEventListener::class)) {
       for ((eventType, receiver) in listener.playerEventReceive().receive) {
         if (eventType.isFinal()) {
           oneForOneBuilder.put(eventType, receiver)

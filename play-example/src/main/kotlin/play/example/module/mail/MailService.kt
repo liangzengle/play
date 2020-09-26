@@ -33,7 +33,7 @@ class MailService @Inject constructor(
 
   override fun postConstruct() {
     receiverQualifiers =
-      injector.instancesOf(PublicMailReceiverQualifier::class.java).toImmutableMap { it.qualificationType() }
+      injector.getInstancesOfType(PublicMailReceiverQualifier::class.java).toImmutableMap { it.qualificationType() }
         .unsafeCast()
 
     val expiredMails = publicMailCache.asSequence().filter(::isExpired).toList()
@@ -46,6 +46,7 @@ class MailService @Inject constructor(
   override fun playerEventReceive(): PlayerEventReceive {
     return PlayerEventReceiveBuilder()
       .match<PlayerLoginEvent>(::onLogin)
+      .match<PlayerMailEvent>(::sendMail)
       .build()
   }
 
@@ -79,6 +80,8 @@ class MailService @Inject constructor(
     }
     sendMail(self, mailBuilder)
   }
+
+  private fun sendMail(self: Self, event: PlayerMailEvent) = sendMail(self, event.mailBuilder)
 
   fun sendMail(self: Self, b: MailBuilder) {
     val entity = playerMailCache.getOrCreate(self.id)

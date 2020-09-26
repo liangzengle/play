@@ -12,7 +12,6 @@ buildscript {
 plugins {
     id 'application'
     id 'play.modular-code' version '0.1'
-//    id 'com.google.protobuf' version '0.8.13'
 }
 
 repositories {
@@ -29,11 +28,6 @@ modularCode {
     annotation = ['play.example.module.ModularCode']
 }
 
-ext {
-    protobuf_version = "3.13.0"
-//    pbandk_version = "0.8.1"
-}
-
 dependencies {
     testCompile kotlin_poet
     implementation project(':play-mvc')
@@ -45,10 +39,7 @@ dependencies {
     kapt project(path: ':play-codegen', configuration: 'default')
     implementation "org.jctools:jctools-core:3.0.0"
     implementation "mysql:mysql-connector-java:8.0.20"
-    implementation "com.google.protobuf:protobuf-java:$protobuf_version"
     implementation "com.squareup.wire:wire-runtime:$wire_version"
-//    implementation "com.github.streem.pbandk:pbandk-runtime-jvm:$pbandk_version"
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-core:1.0.0-RC"
 }
 
 kapt {

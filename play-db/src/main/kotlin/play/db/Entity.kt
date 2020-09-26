@@ -28,7 +28,7 @@ sealed class Entity<ID : Any> {
 
 abstract class EntityLong(val id: Long) : Entity<Long>() {
 
-  @Deprecated(message = "Use getId to avoid auto boxing/unboxing", replaceWith = ReplaceWith("id"))
+  @Deprecated(message = "Use getId to avoid auto boxing/unboxing", replaceWith = ReplaceWith("getId"))
   override fun id(): Long = id
 
   override fun equals(other: Any?): Boolean {
@@ -50,7 +50,7 @@ abstract class EntityLong(val id: Long) : Entity<Long>() {
 }
 
 abstract class EntityInt(val id: Int) : Entity<Int>() {
-  @Deprecated(message = "Use getId() to avoid auto boxing/unboxing", replaceWith = ReplaceWith("id"))
+  @Deprecated(message = "Use getId() to avoid auto boxing/unboxing", replaceWith = ReplaceWith("getId"))
   override fun id(): Int = id
 
   override fun equals(other: Any?): Boolean {

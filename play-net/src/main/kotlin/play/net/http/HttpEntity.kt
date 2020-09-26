@@ -1,38 +1,38 @@
 package play.net.http
 
-import io.vavr.control.Option
-import io.vavr.kotlin.some
 import play.util.collection.EmptyByteArray
+import play.util.collection.contains
+import java.util.*
 
 sealed class HttpEntity {
-  abstract fun contentType(): Option<String>
-  abstract fun contentLength(): Option<Int>
+  abstract fun contentType(): Optional<String>
+  abstract fun contentLength(): OptionalInt
 
   companion object {
     @JvmStatic
     val empty: Strict = Strict(EmptyByteArray)
   }
 
-  class Strict(val data: ByteArray, private val contentType: Option<String>) : HttpEntity() {
-    constructor(data: String) : this(data.toByteArray(), some("text/plain"))
-    constructor(data: ByteArray) : this(data, some("application/octed-stream"))
+  class Strict(val data: ByteArray, private val contentType: Optional<String>) : HttpEntity() {
+    constructor(data: String) : this(data.toByteArray(), Optional.of("text/plain"))
+    constructor(data: ByteArray) : this(data, Optional.of("application/octet-stream"))
 
-    override fun contentType(): Option<String> = contentType
-    override fun contentLength(): Option<Int> = some(data.size)
+    override fun contentType(): Optional<String> = contentType
+    override fun contentLength(): OptionalInt = OptionalInt.of(data.size)
 
     override fun toString(): String {
       return when {
         data.isEmpty() -> "<empty>"
-        contentType.contains("application/octed-stream") -> data.contentToString()
+        contentType.contains("application/octet-stream") -> data.contentToString()
         else -> data.toString(Charsets.UTF_8)
       }
     }
   }
 
   abstract class Stream : HttpEntity() {
-    override fun contentType(): Option<String> = some("application/octet-stream")
+    override fun contentType(): Optional<String> = Optional.of("application/octet-stream")
 
-    override fun contentLength(): Option<Int> = Option.none()
+    override fun contentLength(): OptionalInt = OptionalInt.empty()
 
     override fun toString(): String {
       return "<streamed>"

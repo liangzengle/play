@@ -2,7 +2,7 @@
 <Configuration name="app">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d %-5p %C{2} (%F:%L) %location - %m%n"/>
+            <PatternLayout pattern="%d %-5p %t %C{2} (%F:%L) %location - %m%n"/>
         </Console>
     </Appenders>
     <Loggers>

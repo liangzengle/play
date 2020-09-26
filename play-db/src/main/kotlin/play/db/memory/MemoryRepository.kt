@@ -2,17 +2,19 @@ package play.db.memory
 
 import io.vavr.concurrent.Future
 import io.vavr.control.Option
+import play.ApplicationLifecycle
 import play.db.Entity
 import play.db.Repository
 import play.db.ResultMap
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import javax.annotation.CheckReturnValue
+import javax.inject.Inject
 import javax.inject.Singleton
 
 @Suppress("UNCHECKED_CAST")
 @Singleton
-class MemoryRepository : Repository {
+class MemoryRepository @Inject constructor(lifecycle: ApplicationLifecycle) : Repository(lifecycle) {
   private val caches: ConcurrentMap<Class<*>, ConcurrentMap<Any, Entity<*>>> = ConcurrentHashMap()
 
   private fun getMap(entityClass: Class<*>): ConcurrentMap<Any, Entity<*>> {

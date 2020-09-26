@@ -2,6 +2,7 @@ package play.net.netty.http
 
 import io.netty.buffer.Unpooled
 import io.netty.channel.ChannelFutureListener
+import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.handler.codec.http.*
@@ -12,11 +13,14 @@ import io.vavr.concurrent.Future
 import io.vavr.concurrent.Promise
 import org.slf4j.Logger
 import play.net.http.*
-import play.net.netty.toHostAndPort
+import play.net.netty.getHostAndPort
+import play.util.collection.forEach
 import play.util.exception.isFatal
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.collections.LinkedHashMap
 
+@ChannelHandler.Sharable
 abstract class NettyHttpServerHandler(private val actionManager: HttpActionManager) : ChannelInboundHandlerAdapter() {
 
   protected abstract val filters: List<HttpRequestFilter>
@@ -34,7 +38,7 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
     }
     try {
       val requestId = nextId()
-      val hostAndPort = ctx.channel().remoteAddress().toHostAndPort()
+      val hostAndPort = ctx.channel().remoteAddress().getHostAndPort()
       val request = BasicNettyHttpRequest(requestId, msg, hostAndPort)
       logAccess(request)
       if (filters.isNotEmpty() && filters.any { !it.accept(request) }) {
@@ -42,18 +46,18 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
         return
       }
 
-      val routeOption = actionManager.findAction(request.uri())
-      if (routeOption.isEmpty) {
+      val maybeAction = actionManager.findAction(request.path())
+      if (maybeAction.isEmpty) {
         writeResponse(ctx, request, HttpResult.notFount(), "Action Not Found")
         return
       }
-      val route = routeOption.get()
-      if (!route.acceptMethod(request.method())) {
+      val action = maybeAction.get()
+      if (!action.acceptMethod(request.method())) {
         writeResponse(ctx, request, HttpResult.notFount(), "Method Not Supported")
         return
       }
       val parameters = parseParameters(msg)
-      val pathParameters = route.path.extractPathParameters(request.uri())
+      val pathParameters = action.path.extractPathParameters(request.uri())
       if (pathParameters.isNotEmpty()) {
         pathParameters.forEach {
           addParam(parameters, it.key, it.value)
@@ -63,7 +67,7 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
       msg.release()
       val req = NettyHttpRequest(request, jsonData, NettyHttpParameters(parameters))
       logRequest(req)
-      handleAsync(req, route).onComplete {
+      handleAsync(req, action).onComplete {
         if (it.isSuccess) {
           writeResponse(ctx, request, it.get())
         } else {
@@ -93,26 +97,27 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
     val qsDecoder = QueryStringDecoder(request.uri())
     val parameters = qsDecoder.parameters()
     // post form
+    val formParams = LinkedHashMap(parameters)
     if (hasFormData(request)) {
       val postDecoder = HttpPostRequestDecoder(request)
       val bodyHttpDatas = postDecoder.bodyHttpDatas
       for (i in bodyHttpDatas.indices) {
         val httpData = bodyHttpDatas[i]
         if (httpData.httpDataType == InterfaceHttpData.HttpDataType.Attribute) {
-          val attribute = httpData as Attribute;
-          addParam(parameters, attribute.name, attribute.value)
+          val attribute = httpData as Attribute
+          addParam(formParams, attribute.name, attribute.value)
         }
       }
       postDecoder.destroy()
     }
-    return parameters
+    return formParams
   }
 
   private fun addParam(parameters: MutableMap<String, MutableList<String>>, name: String, value: String) {
     var values = parameters[name]
     if (values == null) {
       values = ArrayList(1)
-      parameters[name] = values;
+      parameters[name] = values
     }
     values.add(value)
   }
@@ -125,7 +130,7 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
       is HttpRequestParameterException -> HttpResult.notFount()
       else -> HttpResult.internalServerError()
     }
-    writeResponse(ctx, request, result, "Exception Occurred")
+    writeResponse(ctx, request, result, exception.javaClass.name + ": " + exception.message)
   }
 
   private fun writeResponse(
@@ -137,10 +142,11 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
     val resp: Any = when (val entity = result.body) {
       is HttpEntity.Strict -> {
         val response = DefaultFullHttpResponse(
-          HttpVersion.HTTP_1_0,
+          request.toNetty.protocolVersion(),
           HttpResponseStatus.valueOf(result.status),
           Unpooled.wrappedBuffer(entity.data)
         )
+        response.headers().set(HttpHeaderNames.CONTENT_ENCODING, "UTF-8")
         entity.contentType().forEach { response.headers().set(HttpHeaderNames.CONTENT_TYPE, it) }
         entity.contentLength().forEach { response.headers().set(HttpHeaderNames.CONTENT_LENGTH, it) }
         response
@@ -148,7 +154,7 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
       is ChunkedHttpEntity -> entity.src // make sure ChunkedWriteHandler is in the pipeline
       else -> throw UnsupportedOperationException("Unsupported HttpEntity Type: ${entity.javaClass.simpleName}")
     }
-    ctx.writeAndFlush(resp).addListener(ChannelFutureListener.CLOSE)
+    ctx.writeAndFlush(resp).addListener(ChannelFutureListener.CLOSE) // we do not support keep alive
     logResponse(request, result, errorHints)
   }
 

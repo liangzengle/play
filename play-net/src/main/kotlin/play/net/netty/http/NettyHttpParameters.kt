@@ -3,8 +3,7 @@ package play.net.netty.http
 import play.net.http.HttpParameters
 import java.util.*
 
-class NettyHttpParameters internal constructor(private val parameters: Map<String, List<String>>) :
-  HttpParameters() {
+class NettyHttpParameters internal constructor(private val parameters: Map<String, List<String>>) : HttpParameters() {
 
   override
   fun getMulti(name: String): List<String> {

@@ -5,6 +5,7 @@ import io.vavr.concurrent.Promise
 import io.vavr.control.Option
 import io.vavr.kotlin.none
 import io.vavr.kotlin.option
+import play.ApplicationLifecycle
 import play.ClassScanner
 import play.db.*
 import play.db.jdbc.JdbcConfiguration
@@ -26,8 +27,9 @@ class MysqlRepository @Inject constructor(
   private val ds: DataSource,
   classScanner: ClassScanner,
   private val tableNameResolver: TableNameResolver,
-  private val conf: JdbcConfiguration
-) : Repository {
+  private val conf: JdbcConfiguration,
+  lifecycle: ApplicationLifecycle
+) : Repository(lifecycle) {
 
   private val logger = getLogger()
 

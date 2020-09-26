@@ -4,12 +4,22 @@ import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 
-final class UnsafeAccessor {
+public final class UnsafeAccessor {
     public static final UnsafeAccessor UNSAFE_ACCESSOR = new UnsafeAccessor();
 
-    private final Unsafe unsafe = getUnsafe();
+    private static final Unsafe unsafe = getUnsafe();
 
     private UnsafeAccessor() {
+    }
+
+    public static void disableWarning() {
+        try {
+            Class<?> cls = Class.forName("jdk.internal.module.IllegalAccessLogger");
+            Field logger = cls.getDeclaredField("logger");
+            unsafe.putObjectVolatile(cls, unsafe.staticFieldOffset(logger), null);
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
     private static Unsafe getUnsafe() {

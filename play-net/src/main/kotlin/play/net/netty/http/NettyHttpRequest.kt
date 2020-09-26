@@ -11,7 +11,7 @@ import play.net.http.HttpParameters
 
 class BasicNettyHttpRequest internal constructor(
   val id: Long,
-  private val toNetty: FullHttpRequest,
+  val toNetty: FullHttpRequest,
   private val remoteAddress: HostAndPort
 ) : BasicHttpRequest {
   override fun uri(): String = toNetty.uri()

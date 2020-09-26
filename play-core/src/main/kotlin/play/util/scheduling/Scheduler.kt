@@ -2,32 +2,28 @@ package play.util.scheduling
 
 import io.vavr.control.Option
 import play.getLogger
-import play.util.concurrent.threadFactory
+import play.util.concurrent.CommonPool
+import play.util.scheduling.executor.ScheduledExecutor
+import play.util.time.currentDateTime
+import play.util.time.currentMillis
 import java.time.Duration
 import java.time.LocalDateTime
-import java.util.concurrent.*
-import javax.inject.Inject
+import java.util.concurrent.Executor
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
  * Created by LiangZengle on 2020/2/20.
  */
 @Singleton
-class Scheduler @Inject constructor(val executor: ScheduledExecutorService) {
-  companion object {
-    @JvmStatic
-    private val logger = getLogger()
-  }
+class Scheduler {
+  private val logger = getLogger()
 
-  private val workerPool = ThreadPoolExecutor(
-    1,
-    Int.MAX_VALUE,
-    60L,
-    TimeUnit.SECONDS,
-    SynchronousQueue<Runnable>(),
-    threadFactory("schedule-worker", true),
-    ThreadPoolExecutor.CallerRunsPolicy()
-  )
+  private val executor = ScheduledExecutor.get()
+
+  private val workerPool = CommonPool
 
   private fun decorate(task: () -> Unit, ec: Executor = workerPool): Runnable = Runnable {
     ec.execute {
@@ -39,28 +35,44 @@ class Scheduler @Inject constructor(val executor: ScheduledExecutorService) {
     }
   }
 
-  fun scheduleOnce(delay: Duration, task: () -> Unit): ScheduledFuture<*> {
+  fun schedule(delay: Duration, task: () -> Unit): ScheduledFuture<*> {
     return executor.schedule(decorate(task), delay.toMillis(), TimeUnit.MILLISECONDS)
   }
 
-  fun scheduleRepeatedly(interval: Duration, task: () -> Unit): ScheduledFuture<*> {
-    return scheduleRepeatedly(interval, interval, task)
+  fun schedule(delay: Duration, ec: Executor, task: () -> Unit): ScheduledFuture<*> {
+    return executor.schedule(decorate(task, ec), delay.toMillis(), TimeUnit.MILLISECONDS)
   }
 
-  fun scheduleRepeatedly(initialDelay: Duration, interval: Duration, task: () -> Unit): ScheduledFuture<*> {
-    return executor.scheduleAtFixedRate(
+  fun scheduleAt(triggerTime: LocalDateTime, task: () -> Unit): ScheduledFuture<*> {
+    return schedule(Duration.between(currentDateTime(), triggerTime), task)
+  }
+
+  fun scheduleAt(triggerTime: LocalDateTime, ec: Executor, task: () -> Unit): ScheduledFuture<*> {
+    return schedule(Duration.between(currentDateTime(), triggerTime), ec, task)
+  }
+
+  fun scheduleAt(triggerTimeInMillis: Long, task: () -> Unit): ScheduledFuture<*> {
+    return schedule(Duration.ofMillis(currentMillis() - triggerTimeInMillis), task)
+  }
+
+  fun scheduleAt(triggerTimeInMillis: Long, ec: Executor, task: () -> Unit): ScheduledFuture<*> {
+    return schedule(Duration.ofMillis(currentMillis() - triggerTimeInMillis), ec, task)
+  }
+
+  fun scheduleWithFixedDelay(delay: Duration, task: () -> Unit): ScheduledFuture<*> {
+    return executor.scheduleWithFixedDelay(
       decorate(task),
-      initialDelay.toMillis(),
-      interval.toMillis(),
+      delay.toMillis(),
+      delay.toMillis(),
       TimeUnit.MILLISECONDS
     )
   }
 
-  fun scheduleAtFixedRate(initialDelay: Duration, interval: Duration, task: () -> Unit): ScheduledFuture<*> {
-    return executor.scheduleAtFixedRate(
-      decorate(task),
-      initialDelay.toMillis(),
-      interval.toMillis(),
+  fun scheduleWithFixedDelay(delay: Duration, ec: Executor, task: () -> Unit): ScheduledFuture<*> {
+    return executor.scheduleWithFixedDelay(
+      decorate(task, ec),
+      delay.toMillis(),
+      delay.toMillis(),
       TimeUnit.MILLISECONDS
     )
   }
@@ -74,40 +86,52 @@ class Scheduler @Inject constructor(val executor: ScheduledExecutorService) {
     )
   }
 
-  fun scheduleCron(cronExpr: String, task: () -> Unit): ScheduledFuture<*> {
-    val generator = CronSequenceGenerator(cronExpr)
-    val trigger = PeriodCronTrigger(generator, null, null)
-    return ReschedulingRunnable(decorate(task), trigger, executor, LoggingErrorHandler).schedule()!!
-  }
-
-  fun scheduleCron(
-    cronExpr: String,
-    task: () -> Unit,
-    startTime: Option<LocalDateTime> = Option.none(),
-    stopTime: Option<LocalDateTime> = Option.none()
-  ): ScheduledFuture<*>? {
-    val generator = CronSequenceGenerator(cronExpr)
-    val trigger = PeriodCronTrigger(generator, startTime.orNull, stopTime.orNull)
-    return ReschedulingRunnable(decorate(task), trigger, executor, LoggingErrorHandler).schedule()
-  }
-
-
-  fun scheduleOnce(delay: Duration, ec: Executor, task: () -> Unit): ScheduledFuture<*> {
-    return executor.schedule(decorate(task, ec), delay.toMillis(), TimeUnit.MILLISECONDS)
-  }
-
-  fun scheduleRepeatedly(interval: Duration, ec: Executor, task: () -> Unit): ScheduledFuture<*> {
-    return scheduleRepeatedly(interval, interval, ec, task)
-  }
-
-  fun scheduleRepeatedly(
+  fun scheduleWithFixedDelay(
     initialDelay: Duration,
+    delay: Duration,
+    ec: Executor,
+    task: () -> Unit
+  ): ScheduledFuture<*> {
+    return executor.scheduleWithFixedDelay(
+      decorate(task, ec),
+      initialDelay.toMillis(),
+      delay.toMillis(),
+      TimeUnit.MILLISECONDS
+    )
+  }
+
+  fun scheduleAtFixedRate(
+    interval: Duration,
+    task: () -> Unit
+  ): ScheduledFuture<*> {
+    return executor.scheduleAtFixedRate(
+      decorate(task),
+      interval.toMillis(),
+      interval.toMillis(),
+      TimeUnit.MILLISECONDS
+    )
+  }
+
+  fun scheduleAtFixedRate(
     interval: Duration,
     ec: Executor,
     task: () -> Unit
   ): ScheduledFuture<*> {
     return executor.scheduleAtFixedRate(
       decorate(task, ec),
+      interval.toMillis(),
+      interval.toMillis(),
+      TimeUnit.MILLISECONDS
+    )
+  }
+
+  fun scheduleAtFixedRate(
+    initialDelay: Duration,
+    interval: Duration,
+    task: () -> Unit
+  ): ScheduledFuture<*> {
+    return executor.scheduleAtFixedRate(
+      decorate(task),
       initialDelay.toMillis(),
       interval.toMillis(),
       TimeUnit.MILLISECONDS
@@ -128,21 +152,7 @@ class Scheduler @Inject constructor(val executor: ScheduledExecutorService) {
     )
   }
 
-  fun scheduleWithFixedDelay(
-    initialDelay: Duration,
-    delay: Duration,
-    ec: Executor,
-    task: () -> Unit
-  ): ScheduledFuture<*> {
-    return executor.scheduleWithFixedDelay(
-      decorate(task, ec),
-      initialDelay.toMillis(),
-      delay.toMillis(),
-      TimeUnit.MILLISECONDS
-    )
-  }
-
-  fun scheduleCron(cronExpr: String, ec: ExecutorService, task: () -> Unit): ScheduledFuture<*> {
+  fun scheduleCron(cronExpr: String, ec: Executor, task: () -> Unit): ScheduledFuture<*> {
     val generator = CronSequenceGenerator(cronExpr)
     val trigger = PeriodCronTrigger(generator, null, null)
     return ReschedulingRunnable(decorate(task, ec), trigger, executor, LoggingErrorHandler).schedule()!!
@@ -159,4 +169,28 @@ class Scheduler @Inject constructor(val executor: ScheduledExecutorService) {
     val trigger = PeriodCronTrigger(generator, startTime.orNull, stopTime.orNull)
     return ReschedulingRunnable(decorate(task, ec), trigger, executor, LoggingErrorHandler).schedule()
   }
+
+  fun scheduleCron(
+    cronExpr: String,
+    task: () -> Unit,
+    startTime: Option<LocalDateTime> = Option.none(),
+    stopTime: Option<LocalDateTime> = Option.none()
+  ): ScheduledFuture<*>? {
+    val generator = CronSequenceGenerator(cronExpr)
+    val trigger = PeriodCronTrigger(generator, startTime.orNull, stopTime.orNull)
+    return ReschedulingRunnable(decorate(task), trigger, executor, LoggingErrorHandler).schedule()
+  }
+
+  fun scheduleCron(cronExpr: String, task: () -> Unit): ScheduledFuture<*> {
+    val generator = CronSequenceGenerator(cronExpr)
+    val trigger = PeriodCronTrigger(generator, null, null)
+    return ReschedulingRunnable(decorate(task), trigger, executor, LoggingErrorHandler).schedule()!!
+  }
+
+}
+
+@Singleton
+class SchedulerProvider : Provider<Scheduler> {
+  private val scheduler by lazy { Scheduler() }
+  override fun get(): Scheduler = scheduler
 }

@@ -11,11 +11,12 @@ import javax.inject.Singleton
  * Created by liang on 2020/6/27.
  */
 @Singleton
-class PlatformServiceProvider @Inject constructor(val injector: Injector) : PostConstruct {
+class PlatformServiceProvider @Inject constructor(private val injector: Injector) : PostConstruct {
 
   private lateinit var services: Map<Platform, PlatformService>
+  
   override fun postConstruct() {
-    services = injector.instancesOf(PlatformService::class.java).toImmutableEnumMap { it.platform }
+    services = injector.getInstancesOfType(PlatformService::class.java).toImmutableEnumMap { it.platform }
     if (services.size != Platform.size()) {
       val platforms = Platform.elems.asSequence().filterNot(services::containsKey).toList()
       throw IllegalStateException("以下平台缺少PlatformService: $platforms")

@@ -3,23 +3,22 @@ package play.example.common.net
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.Terminated
-import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import com.google.common.collect.ImmutableList
 import io.netty.channel.Channel
 import play.akka.AbstractTypedActor
-import play.net.netty.toHostAndPort
+import play.net.netty.getHostAndPort
 
 class SessionManager(context: ActorContext<Command>) :
   AbstractTypedActor<SessionManager.Command>(context) {
 
   init {
-    context.system.eventStream()
-      .tell(EventStream.Subscribe(RegisterUnhandledRequestReceiver::class.java, self.unsafeUpcast()))
+    subscribe<RegisterUnhandledRequestReceiver>()
   }
 
-  private var unhandledRequestReceivers = ArrayList<ActorRef<UnhandledRequest>>(4)
+  private var unhandledRequestReceivers = emptyList<ActorRef<UnhandledRequest>>()
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
@@ -30,14 +29,17 @@ class SessionManager(context: ActorContext<Command>) :
   }
 
   private fun registerUnhandledRequestReceiver(cmd: RegisterUnhandledRequestReceiver) {
-    unhandledRequestReceivers.add(cmd.receiver)
+    unhandledRequestReceivers = ImmutableList
+      .builder<ActorRef<UnhandledRequest>>()
+      .addAll(unhandledRequestReceivers)
+      .add(cmd.receiver)
+      .build()
   }
 
   private fun createSession(cmd: CreateSession) {
-    val hostAndPort = cmd.ch.remoteAddress().toHostAndPort()
-    val receivers: List<ActorRef<UnhandledRequest>> = unhandledRequestReceivers // expose as immutable
+    val hostAndPort = cmd.ch.remoteAddress().getHostAndPort()
     val session =
-      context.spawn(SessionActor.create(cmd.ch, receivers), hostAndPort.toString())
+      context.spawn(SessionActor.create(cmd.ch, unhandledRequestReceivers), hostAndPort.toString())
     sessionCount += 1
     context.watch(session)
   }

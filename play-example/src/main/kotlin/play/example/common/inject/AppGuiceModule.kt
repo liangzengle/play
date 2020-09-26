@@ -8,12 +8,9 @@ import play.inject.guice.GuiceModule
 class AppGuiceModule : GuiceModule() {
 
   override fun configure() {
-    val module = when (ctx.conf.getString("server.mode")?.toLowerCase()) {
-      "local" -> LocalGuiceModule()
-      "remote" -> RemoteGuiceModule()
-      else -> return
+    when (ctx.conf.getString("server.mode")?.toLowerCase()) {
+      "local" -> install(LocalGuiceModule())
+      "remote" -> install(RemoteGuiceModule())
     }
-    module.initContext(ctx)
-    install(module)
   }
 }

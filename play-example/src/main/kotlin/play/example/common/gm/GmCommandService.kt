@@ -11,7 +11,7 @@ import javax.inject.Singleton
 @Singleton
 class GmCommandService @Inject constructor(private val injector: Injector) {
   private val invokers: Map<String, Map<String, GmCommandInvoker>> by lazy {
-    injector.instancesOf(GmCommandModule::class.java).map { module ->
+    injector.getInstancesOfType(GmCommandModule::class.java).map { module ->
       module.name to module.javaClass.declaredMethods.asSequence()
         .filter { it.isAnnotationPresent(GmCommand::class.java) }
         .map { method ->
@@ -21,7 +21,7 @@ class GmCommandService @Inject constructor(private val injector: Injector) {
   }
 
   private val descriptors: Map<String, List<GmCommandDescriptor>> by lazy {
-    injector.instancesOf(GmCommandModule::class.java).map { module ->
+    injector.getInstancesOfType(GmCommandModule::class.java).map { module ->
       module.name to module.javaClass.declaredMethods.asSequence()
         .filter { it.isAnnotationPresent(GmCommand::class.java) }
         .map(::toDescriptor)

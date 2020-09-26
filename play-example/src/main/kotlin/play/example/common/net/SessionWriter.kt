@@ -4,7 +4,7 @@ import io.netty.channel.Channel
 
 
 /**
- *
+ * 发送消息
  * @author LiangZengle
  */
 sealed class SessionWriter(protected val ch: Channel) {

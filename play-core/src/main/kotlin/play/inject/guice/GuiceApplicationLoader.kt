@@ -14,15 +14,13 @@ import java.util.*
 class GuiceApplicationLoader : ApplicationLoader {
 
   override fun load(ctx: ApplicationLoader.Context): Application {
-    val modules = ServiceLoader.load(Module::class.java)
+    var modules: Iterable<Module> = ServiceLoader.load(Module::class.java)
     val exclusiveModules = ctx.conf.getStringList("guice.modules.disabled").toSet()
     if (exclusiveModules.isNotEmpty()) {
+      modules = modules.filterNot { exclusiveModules.contains(it.javaClass.name) }
       Log.info { "Guice ruling out modules: $exclusiveModules" }
     }
     for (module in modules) {
-      if (exclusiveModules.contains(module.javaClass.name)) {
-        continue
-      }
       if (module is GuiceModule) {
         module.initContext(ctx)
       }

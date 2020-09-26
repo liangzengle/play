@@ -3,11 +3,11 @@ package play.mvc
 import play.util.collection.EmptyByteArray
 
 interface Message {
-  fun toByteArray(): ByteArray
+  fun encodeToByteArray(): ByteArray
 }
 
 class ByteArrayMessage(private val array: ByteArray) : Message {
-  override fun toByteArray(): ByteArray = array
+  override fun encodeToByteArray(): ByteArray = array
 
   companion object {
     val Empty = ByteArrayMessage(EmptyByteArray)
@@ -75,5 +75,5 @@ interface RequestBody {
 
   fun readByteArray(): ByteArray
 
-  fun toByteArray(): ByteArray
+  fun encodeToByteArray(): ByteArray
 }

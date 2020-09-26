@@ -5,6 +5,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import akka.actor.typed.javadsl.TimerScheduler
 import play.akka.AbstractTypedActor
 import play.akka.send
 import play.example.common.net.SessionActor
@@ -15,11 +16,17 @@ import play.example.module.player.event.PlayerEvent
 import play.example.module.player.event.PlayerEventDispatcher
 import play.example.module.player.event.PlayerPreLoginEvent
 import play.example.module.player.event.PlayerRequestEvent
+import play.example.module.player.scheduling.PlayerRepeatedSchedule
+import play.example.module.player.scheduling.PlayerSchedule
+import play.example.module.player.scheduling.PlayerScheduleCancellation
 import play.mvc.Request
 import play.mvc.Response
+import play.util.time.currentMillis
+import java.time.Duration
 
 class PlayerActor(
   context: ActorContext<Command>,
+  private val timer: TimerScheduler<Command>,
   playerId: Long,
   private val eventDispatcher: PlayerEventDispatcher,
   private val playerService: PlayerService,
@@ -32,12 +39,29 @@ class PlayerActor(
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
-      .accept(::onEvent)
+      .accept(::onSchedule)
+      .accept(::onRepeatedSchedule)
+      .accept(::onScheduleCancel)
       .accept(::onEvent)
       .accept(::onNewDayStart)
       .accept(::onRequest)
       .accept(::onLogin)
       .build()
+  }
+
+  private fun onScheduleCancel(cancellation: PlayerScheduleCancellation) {
+    timer.cancel(cancellation.triggerEvent)
+  }
+
+  private fun onRepeatedSchedule(schedule: PlayerRepeatedSchedule) {
+    if (schedule.triggerImmediately) {
+      onEvent(schedule.triggerEvent)
+    }
+    timer.startTimerWithFixedDelay(schedule.triggerEvent, schedule.interval)
+  }
+
+  private fun onSchedule(schedule: PlayerSchedule) {
+    timer.startSingleTimer(schedule.triggerEvent, Duration.ofMillis(schedule.triggerTimeMillis - currentMillis()))
   }
 
   private fun onLogin(cmd: Login) {
@@ -81,7 +105,9 @@ class PlayerActor(
       requestHandler: PlayerRequestHandler
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
-        PlayerActor(ctx, id, eventDispatcher, playerService, requestHandler)
+        Behaviors.withTimers { timer ->
+          PlayerActor(ctx, timer, id, eventDispatcher, playerService, requestHandler)
+        }
       }
     }
   }

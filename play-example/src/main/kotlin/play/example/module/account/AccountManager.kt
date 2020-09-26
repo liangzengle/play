@@ -17,6 +17,7 @@ import play.example.common.net.SessionActor
 import play.example.common.net.SessionManager
 import play.example.common.net.UnhandledRequest
 import play.example.common.net.message.WireMessage
+import play.example.common.net.message.WireRequestBody
 import play.example.common.net.write
 import play.example.module.account.controller.AccountControllerInvoker
 import play.example.module.account.domain.AccountErrorCode
@@ -113,7 +114,9 @@ class AccountManager(
   }
 
   private fun login(request: Request, session: ActorRef<SessionActor.Command>) {
-    val params = LoginProto.ADAPTER.decode(request.body.readByteArray())
+    val requestBody = request.body
+    requestBody as WireRequestBody
+    val params = LoginProto.ADAPTER.decode(requestBody.proto.byteList)
     val result = getOrCreateAccount(params)
     if (result.isErr()) {
       session write Response(request.header, result.getErrorCode())

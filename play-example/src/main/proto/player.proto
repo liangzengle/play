@@ -1,8 +1,8 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package play.example.module.player.message;
 
 message PlayerProto {
-    required int64 id = 1;
-    required string name = 2;
+    int64 id = 1;
+    string name = 2;
 }

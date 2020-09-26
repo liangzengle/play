@@ -47,9 +47,9 @@ internal class EntityCacheImpl<ID : Any, E : Entity<ID>>(
   private fun createExpireEvaluator(): ExpireEvaluator {
     val annotation = entityClass.getAnnotation(CacheSpec::class.java)
     return if (annotation != null && annotation.expireEvaluator != DefaultExpireEvaluator::class) {
-      injector.instanceOf(annotation.expireEvaluator.java)
+      injector.getInstance(annotation.expireEvaluator.java)
     } else {
-      injector.instanceOf(DefaultExpireEvaluator::class.java)
+      injector.getInstance(DefaultExpireEvaluator::class.java)
     }
   }
 
@@ -75,8 +75,8 @@ internal class EntityCacheImpl<ID : Any, E : Entity<ID>>(
       entities.forEach { entity -> cache[entity.id()] = CacheObj(entity, currentMillis()) }
       Log.info { "loaded ${entities.size} [${entityClass.simpleName}]" }
     }
-    val persistType = cacheSpec?.persistType ?: CacheSpec.PersistType.Scheduled
-    if (persistType == CacheSpec.PersistType.Scheduled) {
+    val persistStrategy = cacheSpec?.persistStrategy ?: CacheSpec.PersistStrategy.Scheduled
+    if (persistStrategy == CacheSpec.PersistStrategy.Scheduled) {
       scheduler.scheduleAtFixedRate(
         conf.persistInterval,
         conf.persistInterval.dividedBy(2),
@@ -84,7 +84,7 @@ internal class EntityCacheImpl<ID : Any, E : Entity<ID>>(
         createPersistTask()
       )
     } else {
-      Log.info { "[${entityClass.simpleName}] using [$persistType] persist type." }
+      Log.info { "[${entityClass.simpleName}] using [$persistStrategy] persist strategy." }
     }
 
     if (expireEvaluator !is NeverExpireEvaluator) {
@@ -180,7 +180,9 @@ internal class EntityCacheImpl<ID : Any, E : Entity<ID>>(
       if (entity == null) {
         entity = creation(it)
         entityProcessor.postLoad(entity)
-        persistService.insert(entity)
+        persistService.insert(entity).onFailure { e ->
+          logger.error(e) { "数据插入失败: ${entityClass.simpleName}${Json.stringify(entity)}" }
+        }
       }
       entity
     }!!

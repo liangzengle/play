@@ -14,8 +14,8 @@ import com.google.inject.name.Names
 import org.reflections.Reflections
 import play.*
 import play.inject.PlayInjector
-import play.util.scheduling.executor.ScheduledExecutor
-import java.util.concurrent.ScheduledExecutorService
+import play.util.scheduling.Scheduler
+import play.util.scheduling.SchedulerProvider
 
 /**
  * Created by LiangZengle on 2020/2/20.
@@ -27,7 +27,7 @@ abstract class GuiceModule : AbstractModule() {
     this.ctx = ctx
   }
 
-  protected fun install(module: GuiceModule){
+  protected fun install(module: GuiceModule) {
     module.initContext(ctx)
     super.install(module)
   }
@@ -78,6 +78,6 @@ internal class BootstrapGuiceModule : GuiceModule() {
     bind<ApplicationLifecycle>().toInstance(ctx.lifecycle)
     bind<GuiceInjector>().toProvider(GuiceInjectorProvider::class.java)
     bind<PlayInjector>().to<GuiceInjector>()
-    bind<ScheduledExecutorService>().toInstance(ScheduledExecutor.get())
+    bind<Scheduler>().toProvider(SchedulerProvider::class.java)
   }
 }
