@@ -2,6 +2,7 @@ package play.db.cache
 
 import play.ApplicationLifecycle
 import play.Configuration
+import play.Log
 import play.db.DefaultEntityProcessor
 import play.db.Entity
 import play.db.EntityProcessor
@@ -35,6 +36,7 @@ class EntityCacheManager @Inject constructor(
   private lateinit var entityProcessors: Map<Class<*>, EntityProcessor<*>>
 
   init {
+    Log.info { "Using ${factory.javaClass.simpleName}" }
     checkUnhandledCacheDump()
     lifecycle.addShutdownHook("缓存数据入库") {
       caches.values.forEach { cache ->

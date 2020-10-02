@@ -41,8 +41,8 @@ class MongoDBRespository @Inject constructor(
 
   private val unorderedBulkWrite = BulkWriteOptions().ordered(false)
   private val insertOneOptions = InsertOneOptions()
-  private val upsertUpdate = UpdateOptions().upsert(true)
-  private val upsertReplace = ReplaceOptions().upsert(true)
+  private val updateOptions = UpdateOptions().upsert(true)
+  private val replaceOptions = ReplaceOptions().upsert(true)
   private val deleteOptions = DeleteOptions()
 
   private fun <T : Entity<*>> getCollection(entity: T): MongoCollection<T> {
@@ -65,14 +65,14 @@ class MongoDBRespository @Inject constructor(
 
   override fun update(entity: Entity<*>): Future<UpdateResult> {
     val promise = Promise.make<UpdateResult>()
-    getCollection(entity).replaceOne(Filters.eq(entity.id()), entity)
+    getCollection(entity).replaceOne(Filters.eq(entity.id()), entity, replaceOptions)
       .subscribe(ForOneSubscriber(promise))
     return promise.future()
   }
 
   override fun insertOrUpdate(entity: Entity<*>): Future<UpdateResult> {
     val promise = Promise.make<UpdateResult>()
-    getCollection(entity).replaceOne(Filters.eq(entity.id()), entity, upsertReplace)
+    getCollection(entity).replaceOne(Filters.eq(entity.id()), entity, replaceOptions)
       .subscribe(ForOneSubscriber(promise))
     return promise.future()
   }
@@ -90,11 +90,12 @@ class MongoDBRespository @Inject constructor(
 
   override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<BulkWriteResult> {
     if (entities.isEmpty()) {
-      return Future.successful(BulkWriteResult.acknowledged(0, 0, 0, null, emptyList(), emptyList()))
+      return Future.successful(BulkWriteResult.acknowledged(0, 0, 0, 0, emptyList(), emptyList()))
     }
+    // mongo driver will divide into small groups when a group exceeds the limit, which is 100,000 in MongoDB 3.6
     val promise = Promise.make<BulkWriteResult>()
-    val writeModules = entities.map { ReplaceOneModel(Filters.eq(it.id()), it, upsertReplace) }
-    getCollection(entities.first().javaClass).bulkWrite(writeModules, unorderedBulkWrite)
+    val writeModels = entities.map { ReplaceOneModel(Filters.eq(it.id()), it, replaceOptions) }
+    getCollection(entities.first().javaClass).bulkWrite(writeModels, unorderedBulkWrite)
       .subscribe(ForOneSubscriber(promise))
     return promise.future()
   }

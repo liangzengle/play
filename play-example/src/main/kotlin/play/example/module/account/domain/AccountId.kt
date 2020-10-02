@@ -6,5 +6,8 @@ abstract class AccountId {
   abstract val name: String
 }
 
-data class DefaultAccountId(override val platformId: Byte, override val serverId: Short, override val name: String) :
-  AccountId()
+data class DefaultAccountId(
+  override val platformId: Byte,
+  override val serverId: Short,
+  override val name: String
+) : AccountId()

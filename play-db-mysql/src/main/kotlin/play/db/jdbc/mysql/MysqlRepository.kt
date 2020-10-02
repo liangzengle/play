@@ -5,33 +5,41 @@ import io.vavr.concurrent.Promise
 import io.vavr.control.Option
 import io.vavr.kotlin.none
 import io.vavr.kotlin.option
-import play.ApplicationLifecycle
-import play.ClassScanner
+import play.*
 import play.db.*
 import play.db.jdbc.JdbcConfiguration
-import play.getLogger
 import play.util.json.Json
 import play.util.json.Json.toJsonString
+import play.util.reflect.isAssignable
 import java.io.Closeable
+import java.sql.Connection
+import java.sql.DriverManager
 import java.sql.ResultSet
 import java.util.*
 import java.util.concurrent.Callable
 import javax.annotation.CheckReturnValue
 import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Provider
 import javax.inject.Singleton
 import javax.sql.DataSource
 
 @Singleton
 class MysqlRepository @Inject constructor(
   private val executor: DbExecutor,
-  private val ds: DataSource,
+  private val datasourceProvider: Provider<DataSource>,
   classScanner: ClassScanner,
   private val tableNameResolver: TableNameResolver,
   private val conf: JdbcConfiguration,
+  @Named("mysql") configuration: Configuration,
   lifecycle: ApplicationLifecycle
 ) : Repository(lifecycle) {
 
   private val logger = getLogger()
+
+  private val batchSize = configuration.getInt("batch-size")
+
+  private val ds: DataSource
 
   companion object {
     const val ID = "`id`"
@@ -39,15 +47,50 @@ class MysqlRepository @Inject constructor(
   }
 
   init {
-    val createDB = createDatabaseIfNotExists(dbName())
-    if (createDB) {
-      logger.info { "创建数据库: ${dbName()}" }
+    createConnectionNoDB().use { conn ->
+      checkRequirements(conn, configuration)
+      val createDB = createDatabaseIfNotExists(conn, dbName())
+      if (createDB) {
+        logger.info { "创建数据库: ${dbName()}" }
+      }
     }
+    ds = datasourceProvider.get()
     val nameToClass =
-      classScanner.getSubTypesSequence(Entity::class.java).map { tableNameOf(it) to it }.toMap()
+      classScanner.getSubTypesSequence(Entity::class.java).map { this.tableNameOf(it) to it }.toMap()
     val createdTables = createTablesIfNotExists(nameToClass)
     if (createdTables.isNotEmpty()) {
       logger.info { "创建表: $createdTables" }
+    }
+  }
+
+  private fun createConnectionNoDB(): Connection {
+    return DriverManager.getConnection(conf.getUrlNoDB(), conf.username, conf.password)
+  }
+
+  private fun checkRequirements(conn: Connection, conf: Configuration) {
+    val mysqlMajorVersion = conf.getInt("required-major-version")
+    val requiredPacketSize = conf.getMemorySize("required-packet-size").toBytes()
+    val panicOnSmallPacketSize = conf.getBoolean("panic-on-small-packet-size")
+    if (conn.metaData.driverMajorVersion < mysqlMajorVersion) {
+      throw IllegalStateException("Require mysql driver version $mysqlMajorVersion or higher")
+    }
+    if (conn.metaData.databaseMajorVersion < mysqlMajorVersion) {
+      throw IllegalStateException("Require mysql server version $mysqlMajorVersion or higher")
+    }
+    val stmt = conn.createStatement()
+    val rs = stmt.executeQuery("SHOW GLOBAL VARIABLES LIKE 'max_allowed_packet'")
+    if (rs.next()) {
+      val value = rs.getLong(2)
+      if (value < requiredPacketSize) {
+        if (panicOnSmallPacketSize) {
+          throw IllegalStateException("MySQL variable `max_allowed_packet` is too small: $value")
+        }
+        Log.warn { "MySQL variable `max_allowed_packet` is too small: $value" }
+        val success = stmt.execute("SET GLOBAL max_allowed_packet = $requiredPacketSize")
+        if (success) {
+          Log.warn { "Changing `max_allowed_packet` to $requiredPacketSize" }
+        }
+      }
     }
   }
 
@@ -71,7 +114,7 @@ class MysqlRepository @Inject constructor(
       tablesToCreate.forEach { tableName ->
         val clazz: Class<out Entity<*>> = tables[tableName] ?: error(tableName)
         val sql = """
-                CREATE TABLE IF NOT EXISTS ${qualifiedTableName(clazz)} (
+                CREATE TABLE IF NOT EXISTS ${this.tableNameOf(clazz)} (
                     $ID ${idJdbcType(clazz)} NOT NULL,
                     $Data json NOT NULL,
                     PRIMARY KEY ($ID)
@@ -85,34 +128,28 @@ class MysqlRepository @Inject constructor(
     }
   }
 
-  private fun createDatabaseIfNotExists(dbName: String): Boolean {
-    return ds.connection.use { conn ->
-      val dbExists = conn.createStatement().use { stmt ->
-        stmt.executeQuery("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$dbName'")
-          .use { rs ->
-            rs.next()
-          }
-      }
-      if (!dbExists) {
-        conn.createStatement().use { stmt ->
-          stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS $dbName DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+  private fun createDatabaseIfNotExists(conn: Connection, dbName: String): Boolean {
+    val dbExists = conn.createStatement().use { stmt ->
+      stmt.executeQuery("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$dbName'")
+        .use { rs ->
+          rs.next()
         }
-      }
-      !dbExists
     }
-  }
-
-  private fun qualifiedTableName(clazz: Class<*>): String {
-    return "`${dbName()}`.`${tableNameOf(clazz)}`"
+    if (!dbExists) {
+      conn.createStatement().use { stmt ->
+        stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS $dbName DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+      }
+    }
+    return !dbExists
   }
 
   private fun tableNameOf(clazz: Class<*>): String = tableNameResolver.resolve(clazz)
 
   private fun idJdbcType(clazz: Class<out Entity<*>>): String {
-    return when (clazz.superclass) {
-      EntityInt::class.java -> "int"
-      EntityLong::class.java -> "bigint"
-      EntityString::class.java -> "varchar(255)"
+    return when {
+      isAssignable<EntityInt>(clazz) -> "int"
+      isAssignable<EntityLong>(clazz) -> "bigint"
+      isAssignable<EntityString>(clazz) -> "varchar(255)"
       else -> throw UnsupportedOperationException("Unsupported id type: ${clazz.simpleName}")
     }
   }
@@ -128,7 +165,7 @@ class MysqlRepository @Inject constructor(
   override fun insert(entity: Entity<*>): Future<out Any> {
     return exec {
       ds.connection.use { conn ->
-        val sql = "INSERT INTO ${qualifiedTableName(entity.javaClass)}($ID, $Data) VALUES(?,?)"
+        val sql = "INSERT INTO ${this.tableNameOf(entity.javaClass)}($ID, $Data) VALUES(?,?)"
         conn.prepareStatement(sql).use { stmt ->
           stmt.setObject(1, entity.id())
           stmt.setObject(2, entity.toJsonString())
@@ -141,10 +178,11 @@ class MysqlRepository @Inject constructor(
   override fun update(entity: Entity<*>): Future<out Any> {
     return exec {
       ds.connection.use { conn ->
-        val sql = "UPDATE ${qualifiedTableName(entity.javaClass)} SET $Data=? WHERE $ID=?"
+        val sql =
+          "INSERT INTO ${this.tableNameOf(entity.javaClass)}($ID, $Data) VALUES(?,?) ON DUPLICATE KEY UPDATE $Data = VALUES($Data)"
         conn.prepareStatement(sql).use { stmt ->
-          stmt.setObject(1, entity.toJsonString())
-          stmt.setObject(2, entity.id())
+          stmt.setObject(1, entity.id())
+          stmt.setObject(2, entity.toJsonString())
           stmt.executeUpdate()
         }
       }
@@ -155,7 +193,7 @@ class MysqlRepository @Inject constructor(
     return exec {
       ds.connection.use { conn ->
         val sql =
-          "INSERT INTO ${qualifiedTableName(entity.javaClass)}($ID, $Data) VALUES(?,?) ON DUPLICATE KEY UPDATE $Data = VALUES($Data)"
+          "INSERT INTO ${this.tableNameOf(entity.javaClass)}($ID, $Data) VALUES(?,?) ON DUPLICATE KEY UPDATE $Data = VALUES($Data)"
         conn.prepareStatement(sql).use { stmt ->
           stmt.setObject(1, entity.id())
           stmt.setObject(2, entity.toJsonString())
@@ -172,15 +210,15 @@ class MysqlRepository @Inject constructor(
     deleteById0(id as Any, entityClass)
 
   private fun deleteById0(id: Any, entityClass: Class<*>): Future<out Any> {
-    return exec({
+    return exec {
       ds.connection.use { conn ->
-        val sql = "DELETE FROM ${qualifiedTableName(entityClass)} WHERE $ID = ?"
+        val sql = "DELETE FROM ${this.tableNameOf(entityClass)} WHERE $ID = ?"
         conn.prepareStatement(sql).use { stmt ->
           stmt.setObject(1, id)
           stmt.executeUpdate()
         }
       }
-    })
+    }
   }
 
   override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<Int> {
@@ -188,15 +226,30 @@ class MysqlRepository @Inject constructor(
     return exec {
       ds.connection.use { conn ->
         val sql =
-          "INSERT INTO ${qualifiedTableName(entities.first().javaClass)}($ID, $Data) VALUES(?,?) ON DUPLICATE KEY UPDATE $Data = VALUES($Data)"
-        conn.prepareStatement(sql).use { stmt ->
+          "INSERT INTO ${this.tableNameOf(entities.first().javaClass)}($ID, $Data) VALUES(?,?) ON DUPLICATE KEY UPDATE $Data = VALUES($Data)"
+        val statement = conn.prepareStatement(sql)
+        conn.autoCommit = false
+        val updatedCount = statement.use { stmt ->
+          var count = 0
+          var updated = 0
           entities.forEach {
             stmt.setObject(1, it.id())
             stmt.setObject(2, it.toJsonString())
             stmt.addBatch()
+            count += 1
+            if (count >= batchSize) {
+              updated += stmt.executeBatch().sum()
+              count -= batchSize
+            }
           }
-          stmt.executeUpdate()
+          if (count > 0) {
+            updated += stmt.executeBatch().sum()
+          }
+          updated
         }
+        conn.commit()
+        conn.autoCommit = true
+        updatedCount
       }
     }
   }
@@ -204,7 +257,7 @@ class MysqlRepository @Inject constructor(
   override fun <ID, E : Entity<ID>> findById(id: ID, entityClass: Class<E>): Future<Option<E>> {
     return exec {
       ds.connection.use { conn ->
-        val sql = "SELECT $Data FROM ${qualifiedTableName(entityClass)} WHERE $ID = ?"
+        val sql = "SELECT $Data FROM ${this.tableNameOf(entityClass)} WHERE $ID = ?"
         conn.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY).use { stmt ->
           stmt.setObject(1, id)
           val rs = stmt.executeQuery()
@@ -223,7 +276,7 @@ class MysqlRepository @Inject constructor(
   override fun <ID, E : Entity<ID>> listAll(entityClass: Class<E>): Future<List<E>> {
     return exec {
       ds.connection.use { conn ->
-        val sql = "SELECT $Data FROM ${qualifiedTableName(entityClass)}"
+        val sql = "SELECT $Data FROM ${this.tableNameOf(entityClass)}"
         conn.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY).use { stmt ->
           stmt.fetchSize = Int.MIN_VALUE
           val rs = stmt.executeQuery()
@@ -248,7 +301,7 @@ class MysqlRepository @Inject constructor(
     val promise = Promise.make<R>()
     ds.connection.use { conn ->
       var result = initial
-      val sql = "SELECT $Data FROM ${qualifiedTableName(entityClass)}"
+      val sql = "SELECT $Data FROM ${this.tableNameOf(entityClass)}"
       conn.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY).use { stmt ->
         stmt.fetchSize = Int.MIN_VALUE
         val rs = stmt.executeQuery()
@@ -266,7 +319,7 @@ class MysqlRepository @Inject constructor(
   override fun <ID, E : Entity<ID>> listIds(entityClass: Class<E>): Future<List<ID>> {
     return exec {
       ds.connection.use { conn ->
-        val sql = "SELECT $ID FROM ${qualifiedTableName(entityClass)}"
+        val sql = "SELECT $ID FROM ${this.tableNameOf(entityClass)}"
         conn.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY).use { stmt ->
           stmt.fetchSize = Int.MIN_VALUE
           val rs = stmt.executeQuery()
@@ -292,7 +345,7 @@ class MysqlRepository @Inject constructor(
       ds.connection.use { conn ->
         conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY).use { stmt ->
           val b = StringBuilder()
-          b.append("SELECT ").append(Data).append(" FROM ").append(qualifiedTableName(entityClass))
+          b.append("SELECT ").append(Data).append(" FROM ").append(this.tableNameOf(entityClass))
           where.forEach { b.append(" WHERE ").append(it) }
           order.forEach { b.append(" ORDER BY ").append(it) }
           limit.forEach { b.append(" LIMIT ").append(it) }
@@ -376,7 +429,7 @@ class MysqlRepository @Inject constructor(
       FROM
       (
       SELECT ${fields.asSequence().map { "$ID, ${dataProp(it)} as $it" }.joinToString()}
-      FROM ${qualifiedTableName(entityClass)}
+      FROM ${this.tableNameOf(entityClass)}
       ${where.fold({ "" }) { " WHERE $it" }}
       ${order.fold({ "" }) { " ORDER BY $it" }}
       ${limit.fold({ "" }) { " LIMIT $it" }}

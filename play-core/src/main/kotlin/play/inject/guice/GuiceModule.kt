@@ -61,6 +61,9 @@ abstract class GuiceModule : AbstractModule() {
   protected inline fun <reified T> OptionalBinder<in T>.defaultTo(): ScopedBindingBuilder =
     this.setDefault().to(typeLiteral<T>())
 
+  protected inline fun <reified T> OptionalBinder<in T>.to(): ScopedBindingBuilder =
+    this.setBinding().to(typeLiteral<T>())
+
   protected fun ScopedBindingBuilder.eagerly() = this.asEagerSingleton()
 }
 

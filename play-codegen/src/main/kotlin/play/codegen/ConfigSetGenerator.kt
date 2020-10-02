@@ -38,7 +38,7 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
   override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
     val configClassNames = TreeSet<ClassName>()
     roundEnv.subtypesOf(AbstractConfig::class).filterNot {
-      it.isAnnotationPresent(Ignore::class)
+      it.isAnnotationPresent(Ignore::class) || it.isAnnotationPresent(DisableCodegen::class)
     }.forEach { elem ->
       val interfaces = elem.interfaces.fold(normal) { flag, mirror ->
         when ((mirror as DeclaredType).asElement().toString()) {

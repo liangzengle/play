@@ -4,6 +4,8 @@ import akka.actor.typed.ActorRef
 import com.google.inject.Provides
 import play.akka.resumeSupervisor
 import play.db.QueryService
+import play.db.cache.CaffeineEntityCacheFactory
+import play.db.cache.EntityCacheFactory
 import play.example.common.admin.AdminGuiceModule
 import play.example.common.net.NetGuiceModule
 import play.example.common.net.SessionManager
@@ -31,6 +33,8 @@ class LocalGuiceModule : AkkaGuiceModule() {
 
     bind<ServerConfig>().toProvider(ServerConfigProvider::class.java)
     bind<PlayerEventDispatcher>().toProvider(PlayerEventDispatcherProvider::class.java)
+
+    optionalBind<EntityCacheFactory>().to<CaffeineEntityCacheFactory>()
   }
 
   @Singleton

@@ -26,9 +26,11 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
   }
 
   override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
-    roundEnv.subtypesOf(Entity::class).forEach { elem ->
-      generate(elem)
-    }
+    roundEnv.subtypesOf(Entity::class)
+      .filterNot { it.isAnnotationPresent(DisableCodegen::class) }
+      .forEach { elem ->
+        generate(elem)
+      }
     return true
   }
 

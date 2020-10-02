@@ -34,11 +34,14 @@ dependencies {
     implementation project(':play-akka')
     implementation project(':play-net')
     implementation project(':play-config')
-    implementation project(':play-db-mongo')
+//    implementation project(':play-db-mongo')
+
+    implementation project(':play-db-mysql')
+    implementation "mysql:mysql-connector-java:8.0.20"
+    
     compileOnly project(path: ':play-codegen', configuration: 'default')
     kapt project(path: ':play-codegen', configuration: 'default')
     implementation "org.jctools:jctools-core:3.0.0"
-    implementation "mysql:mysql-connector-java:8.0.20"
     implementation "com.squareup.wire:wire-runtime:$wire_version"
 }
 

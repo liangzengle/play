@@ -17,12 +17,11 @@ class HikariDataSourceProvider @Inject constructor(conf: JdbcConfiguration, @Nam
 
   init {
     val cfg = HikariConfig()
-    cfg.jdbcUrl = conf.url
+    cfg.jdbcUrl = conf.getUrl()
     cfg.username = conf.username
     cfg.password = conf.password
-    conf.driver.forEach { cfg.driverClassName = it }
+    cfg.driverClassName = conf.driver
     cfg.maximumPoolSize = dbConf.getThreadNum("thread-pool-size")
-
     cfg.addDataSourceProperty("cachePrepStmts", "true")
     cfg.addDataSourceProperty("prepStmtCacheSize", "64")
     cfg.addDataSourceProperty("prepStmtCacheSqlLimit", "2048")

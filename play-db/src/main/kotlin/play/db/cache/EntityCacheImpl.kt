@@ -6,8 +6,8 @@ import io.vavr.control.Option
 import io.vavr.kotlin.option
 import play.Log
 import play.db.*
-import play.getLogger
 import play.inject.Injector
+import play.util.concurrent.awaitSuccessOrThrow
 import play.util.json.Json
 import play.util.scheduling.Scheduler
 import play.util.time.currentMillis
@@ -16,64 +16,34 @@ import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import javax.annotation.Nullable
+import kotlin.time.minutes
 
 internal class EntityCacheImpl<ID : Any, E : Entity<ID>>(
-  private val entityClass: Class<E>,
+  entityClass: Class<E>,
   private val persistService: PersistService,
   private val queryService: QueryService,
-  private val injector: Injector,
+  injector: Injector,
   scheduler: Scheduler,
   executor: DbExecutor,
   private val conf: DefaultEntityCacheFactory.Config,
   private val entityProcessor: EntityProcessor<E>
-) : EntityCache<ID, E> {
+) : AbstractEntityCache<ID, E>(entityClass, injector) {
 
-  companion object {
-    @JvmStatic
-    private val logger = getLogger()
-
-    @JvmStatic
-    private val NOOP: (Any) -> Any? = { null }
-  }
-
-  private val cache: ConcurrentMap<ID, CacheObj<ID, E>> = ConcurrentHashMap(initialSize())
+  private val cache: ConcurrentMap<ID, CacheObj<ID, E>> = ConcurrentHashMap(getInitialSizeOrDefault(conf.initialSize))
   private val pendingPersistCache: ConcurrentMap<ID, E> = ConcurrentHashMap()
 
   @Volatile
   private var deleted: MutableSet<ID>? = null
 
-  private val expireEvaluator: ExpireEvaluator = createExpireEvaluator()
-
-  private fun createExpireEvaluator(): ExpireEvaluator {
-    val annotation = entityClass.getAnnotation(CacheSpec::class.java)
-    return if (annotation != null && annotation.expireEvaluator != DefaultExpireEvaluator::class) {
-      injector.getInstance(annotation.expireEvaluator.java)
-    } else {
-      injector.getInstance(DefaultExpireEvaluator::class.java)
-    }
-  }
-
-  private fun initialSize(): Int {
-    return entityClass.getAnnotation(CacheSpec::class.java)?.initialSize?.let {
-      when (it.first()) {
-        'x', 'X' -> it.substring(1).toInt() * conf.initialSize
-        else -> it.toInt()
-      }
-    } ?: conf.initialSize
-  }
-
-
   init {
     val cacheSpec = entityClass.getAnnotation(CacheSpec::class.java)
     if (cacheSpec?.loadAllOnInit == true) {
       Log.info { "loading all [${entityClass.simpleName}]" }
-      val f = queryService.listAll(entityClass).await(1, TimeUnit.MINUTES)
-      if (f.isFailure) {
-        throw EntityCacheInitializeException(entityClass, f.cause.get())
-      }
-      val entities = f.get()
-      entities.forEach { entity -> cache[entity.id()] = CacheObj(entity, currentMillis()) }
-      Log.info { "loaded ${entities.size} [${entityClass.simpleName}]" }
+      queryService.foreach(entityClass) {
+        entityProcessor.postLoad(it)
+        cache[it.id()] = CacheObj(it, currentMillis())
+      }.awaitSuccessOrThrow(1.minutes)
+      Log.info { "loaded ${cache.size} [${entityClass.simpleName}]" }
     }
     val persistStrategy = cacheSpec?.persistStrategy ?: CacheSpec.PersistStrategy.Scheduled
     if (persistStrategy == CacheSpec.PersistStrategy.Scheduled) {
@@ -145,12 +115,26 @@ internal class EntityCacheImpl<ID : Any, E : Entity<ID>>(
         pendingPersistCache.remove(id)
       } else {
         // restore into cache
-        cache.computeIfAbsent(id) {
-          val pending = pendingPersistCache.remove(id)
-          if (pending == null) null
-          else CacheObj(pending, currentMillis())
+        cache.compute(id) { k, v ->
+          val pending = pendingPersistCache.remove(k)
+          when {
+            pending == null -> v
+            v == null -> CacheObj(pending, currentMillis())
+            else -> { // v !=null && pending != null
+              val cacheEntity = v.getEntitySilently()
+              if (cacheEntity != null && cacheEntity !== pending) { // should be the same
+                logger.error {
+                  """
+                  缓存中对象与持久化队列中的对象不一致:
+                  cache: ${Json.stringify(cacheEntity)}
+                  queue: ${Json.stringify(pending)}
+                """.trimIndent()
+                }
+              }
+              v
+            }
+          }
         }
-        // TODO
         logger.error(result.cause) { "持久化失败: ${entityClass.simpleName}($id)" }
       }
     }
@@ -354,7 +338,7 @@ internal class EntityCacheImpl<ID : Any, E : Entity<ID>>(
     companion object {
       private val ExpiredUpdater = AtomicIntegerFieldUpdater.newUpdater(CacheObj::class.java, "expired")
 
-      private val EmptyCacheObj = CacheObj<Any, Entity<Any>>(null, 0)
+      private val EmptyCacheObj = CacheObj<Any, Entity<Any>>(null, 0) // fixme create new
 
       @Suppress("UNCHECKED_CAST")
       fun <ID : Any, E : Entity<ID>> empty(): CacheObj<ID, E> {

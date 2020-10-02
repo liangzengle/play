@@ -37,7 +37,9 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
   }
 
   override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
-    val controllers = roundEnv.subtypesOf(AbstractController::class).toList()
+    val controllers = roundEnv.subtypesOf(AbstractController::class)
+      .filterNot { it.isAnnotationPresent(DisableCodegen::class) }
+      .toList()
     if (controllers.isEmpty()) {
       return false
     }
