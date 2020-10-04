@@ -35,20 +35,24 @@ class BasicNettyHttpRequest internal constructor(
 
 class NettyHttpRequest internal constructor(
   private val basic: BasicNettyHttpRequest,
-  private val body: String,
+  private val body: String?,
   private val parameters: NettyHttpParameters
 ) : AbstractHttpRequest(), BasicHttpRequest by basic {
-  override fun getBodyAsString(): String = body
+
+  override fun hasBody(): Boolean = body != null
+
+  override fun getBodyAsString(): String {
+    return body ?: throw NoSuchElementException("No Request Body.")
+  }
+
   override fun parameters(): HttpParameters = parameters
   override fun toString(): String {
     val b = StringBuilder(256)
     b.append(basic).append('\n')
-    if (body.isNotEmpty()) {
+    if (body != null) {
       b.append("body=").append(body).append('\n')
     }
     b.append(parameters)
     return b.toString()
   }
-
-
 }

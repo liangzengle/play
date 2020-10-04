@@ -11,6 +11,5 @@ class ParameterMissionException(name: String) : HttpRequestParameterException(na
 
 class ParameterFormatException(name: String, cause: Throwable?) : HttpRequestParameterException(name, cause)
 
-class IllegalRoutePathException(msg: String, routePath: RoutePath) : RuntimeException("$msg: $routePath")
-
-class UnsupportedHttpParameterTypeException(method: Method, type: Type) : RuntimeException("$type in $method")
+class UnsupportedHttpParameterTypeException(method: Method, type: Type) :
+  HttpRequestParameterException("$type in $method")

@@ -16,6 +16,7 @@ import java.util.*
 
 abstract class AbstractHttpController(actionManager: HttpActionManager) {
   init {
+    val lookup = MethodHandles.lookup().`in`(javaClass)
     val baseRoute = javaClass.getAnnotation(Route::class.java)?.value ?: ""
     val actions: List<Action> = javaClass.declaredMethods
       .asSequence()
@@ -33,7 +34,7 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
         val subRoute = getSubRoute(method)
         val httpMethods = getHttpMethods(method)
         val routePath = RoutePath.parse(baseRoute + subRoute)
-        val methodHandle = MethodHandles.lookup().`in`(javaClass).unreflect(method).bindTo(this)
+        val methodHandle = lookup.unreflect(method).bindTo(this)
         ActionImpl(routePath, httpMethods, method, methodHandle)
       }.toList()
     actionManager.register(actions)
@@ -82,33 +83,32 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
     }
 
     private fun getParameter(name: String, type: Type, httpRequest: AbstractHttpRequest, isOptional: Boolean): Any {
-      return if (type is ParameterizedType) {
-        if (type.rawType != Optional::class.java) {
-          throw UnsupportedHttpParameterTypeException(method, type)
-        }
+      return if (type is ParameterizedType && type.rawType != Optional::class.java) {
         getParameter(name, type.actualTypeArguments[0], httpRequest, true)
       } else {
         val parameters = httpRequest.parameters()
         if (type == Int::class.java) {
           if (isOptional) parameters.getIntOptional(name).mapToObj { it } else parameters.getInt(name)
-        } else if (type == OptionalInt::class.java) {
-          parameters.getIntOptional(name)
         } else if (type == String::class.java) {
           if (isOptional) parameters.getStringOptional(name) else parameters.getString(name)
+        } else if (type == Long::class.java) {
+          if (isOptional) parameters.getLongOptional(name).mapToObj { it } else parameters.getLong(name)
+        } else if (type == Double::class.java) {
+          if (isOptional) parameters.getDoubleOptional(name).mapToObj { it } else parameters.getDouble(name)
         } else if (type == Boolean::class.java) {
           if (isOptional) parameters.getBooleanOptional(name) else parameters.getBoolean(name)
         } else if (type == Byte::class.java) {
           if (isOptional) parameters.getByteOptional(name) else parameters.getByte(name)
         } else if (type == Short::class.java) {
           if (isOptional) parameters.getShortOptional(name) else parameters.getShort(name)
-        } else if (type == Long::class.java) {
-          if (isOptional) parameters.getLongOptional(name).mapToObj { it } else parameters.getLong(name)
+        } else if (type == OptionalInt::class.java) {
+          parameters.getIntOptional(name)
         } else if (type == OptionalLong::class.java) {
           parameters.getLongOptional(name)
-        } else if (type == Double::class.java) {
-          if (isOptional) parameters.getDoubleOptional(name).mapToObj { it } else parameters.getDouble(name)
         } else if (type == OptionalDouble::class.java) {
           parameters.getDoubleOptional(name)
+        } else if (httpRequest.hasBody()) {
+          Json.toObject<Any>(httpRequest.getBodyAsString(), type)
         } else {
           throw throw UnsupportedHttpParameterTypeException(method, type)
         }
@@ -152,7 +152,7 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
       if (post != null) {
         return POST
       }
-      throw Error()
+      error("should not happen")
     }
 
     private fun getSubRoute(method: Method): String {
@@ -168,7 +168,7 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
       if (post != null) {
         return post.value
       }
-      throw Error()
+      error("should not happen")
     }
   }
 }

@@ -63,9 +63,9 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
           addParam(parameters, it.key, it.value)
         }
       }
-      val jsonData = if (hasJsonData(msg)) msg.content().toString(Charsets.UTF_8) else ""
+      val body = if (hasJsonData(msg)) msg.content().toString(Charsets.UTF_8) else null
       msg.release()
-      val req = NettyHttpRequest(request, jsonData, NettyHttpParameters(parameters))
+      val req = NettyHttpRequest(request, body, NettyHttpParameters(parameters))
       logRequest(req)
       handleAsync(req, action).onComplete {
         if (it.isSuccess) {
@@ -131,6 +131,9 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
       else -> HttpResult.internalServerError()
     }
     writeResponse(ctx, request, result, exception.javaClass.name + ": " + exception.message)
+    if (exception !is HttpRequestParameterException) {
+      logger.error(exception.message, exception)
+    }
   }
 
   private fun writeResponse(

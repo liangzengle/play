@@ -15,6 +15,9 @@ abstract class HttpActionManager {
     }
     for (i in variableActions.indices) {
       val action = variableActions[i]
+      if (action.path.root > path) {
+        break
+      }
       if (action.path.matches(path)) {
         return Optional.of(action)
       }
@@ -24,18 +27,28 @@ abstract class HttpActionManager {
 
   @Synchronized
   fun register(actions: Collection<Action>) {
-    val plainActions = this.plainActions.toMutableMap()
-    val variableActions = this.variableActions.toMutableList()
+    var plainActions: MutableMap<String, Action>? = null
+    var variableActions: MutableList<Action>? = null
     for (action in actions) {
       if (action.path.isPlain()) {
+        if (plainActions == null) {
+          plainActions = this.plainActions.toMutableMap()
+        }
         val prev = plainActions.putIfAbsent(action.path.root, action)
         require(prev == null) { "Duplicated Action: $action" }
       } else {
+        if (variableActions == null) {
+          variableActions = this.variableActions.toMutableList()
+        }
         variableActions.add(action)
       }
     }
-    variableActions.sortBy { it.path.root }
-    this.plainActions = plainActions
-    this.variableActions = variableActions
+    if (plainActions != null) {
+      this.plainActions = plainActions
+    }
+    if (variableActions != null) {
+      variableActions.sortBy { it.path.root }
+      this.variableActions = variableActions
+    }
   }
 }

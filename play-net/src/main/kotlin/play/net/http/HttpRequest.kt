@@ -18,5 +18,5 @@ abstract class AbstractHttpRequest : BasicHttpRequest {
   abstract fun getBodyAsString(): String
   inline fun <reified T> getBodyAs() = Json.to<T>(getBodyAsString())
   abstract fun parameters(): HttpParameters
-
+  abstract fun hasBody(): Boolean
 }
