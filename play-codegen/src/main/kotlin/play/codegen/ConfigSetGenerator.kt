@@ -1,24 +1,22 @@
 package play.codegen
 
 import com.google.auto.service.AutoService
-import com.google.inject.Module
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import io.vavr.kotlin.option
-import play.config.*
-import play.inject.guice.GuiceModule
+import com.squareup.kotlinpoet.metadata.ImmutableKmFunction
+import com.squareup.kotlinpoet.metadata.toImmutableKmClass
+import kotlinx.metadata.Flag
+import kotlinx.metadata.KmClassifier
 import java.io.File
 import java.util.*
 import javax.annotation.processing.Processor
 import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.DeclaredType
-import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.ElementFilter
-import kotlin.reflect.KClass
+import kotlin.collections.LinkedHashSet
 import kotlin.reflect.KFunction
-import kotlin.reflect.full.functions
-import kotlin.reflect.jvm.javaMethod
+
 
 @AutoService(Processor::class)
 class ConfigSetGenerator : PlayAnnotationProcessor() {
@@ -27,51 +25,50 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
   private val hasGrouped = 4
   private val hasExtension = 8
 
-  override fun getSupportedAnnotationTypes0(): Set<KClass<out Annotation>> {
-    return emptySet()
-  }
-
-  override fun getSupportedAnnotationTypes(): MutableSet<String> {
-    return mutableSetOf("javax.inject.Singleton", "com.google.inject.Singleton")
+  override fun getSupportedAnnotationTypes(): Set<String> {
+    return setOf("javax.inject.Singleton", "com.google.inject.Singleton")
   }
 
   override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
-    val configClassNames = TreeSet<ClassName>()
-    roundEnv.subtypesOf(AbstractConfig::class).filterNot {
-      it.isAnnotationPresent(Ignore::class) || it.isAnnotationPresent(DisableCodegen::class)
-    }.forEach { elem ->
-      val interfaces = elem.interfaces.fold(normal) { flag, mirror ->
-        when ((mirror as DeclaredType).asElement().toString()) {
-          UniqueKey::class.java.name, ComparableUniqueKey::class.java.name -> flag + hasUniqueKey
-          Grouped::class.java.name -> flag + hasGrouped
-          ExtensionKey::class.java.name -> flag + hasExtension
-          else -> flag
-        }
-      }
+    val elems = roundEnv
+      .subtypesOf(AbstractConfig)
+      .filterNot {
+        it.isAnnotationPresent(Ignore) || it.isAnnotationPresent(DisableCodegen)
+      }.toList()
+    if (elems.isEmpty()) {
+      return false
+    }
+    val groupedType = Grouped.asTypeElement().asType()
+    val extensionKeyType = ExtensionKey.asTypeElement().asType()
+    elems.forEach { elem ->
       val simpleName = elem.simpleName.toString()
       val objectBuilder = TypeSpec
         .objectBuilder(simpleName + "Set")
         .addAnnotation(AnnotationSpec.builder(Suppress::class).addMember("%S", "UNCHECKED_CAST").build())
+      val genericBasicConfigSet = BasicConfigSet.parameterizedBy(elem.asClassName())
       objectBuilder.addProperty(
         PropertySpec
-          .builder("delegatee", Any::class, KModifier.PRIVATE)
-          .initializer("%T.get(%T::class.java)", DelegatedConfigSet::class, elem.asType())
+          .builder("configSet", genericBasicConfigSet, KModifier.PRIVATE)
+          .initializer("%T.get(%T::class.java) as %T", DelegatedConfigSet, elem.asType(), genericBasicConfigSet)
           .build()
       )
       if (isSingleton(elem)) {
         implementSingleton(elem, objectBuilder)
       } else {
         implementBasics(elem, objectBuilder)
-        if (hasUniqueKey(interfaces)) {
-          implementUniqueKey(elem, objectBuilder)
+        val uniqueKeyType = findUniqueKeyType(elem)
+        val hasUniqueKey = uniqueKeyType != null
+        if (hasUniqueKey) {
+          implementUniqueKey(elem, uniqueKeyType, objectBuilder)
         }
-        if (hasGrouped(interfaces)) {
-          implementGrouped(elem, objectBuilder)
-          if (hasUniqueKey(interfaces)) {
-            implementGetByKeyFromGroup(elem, objectBuilder)
+        if (groupedType.isAssignableFrom(elem.asType())) {
+          val groupIdType = findGroupIdType(elem)
+          implementGrouped(elem, groupIdType, uniqueKeyType, objectBuilder)
+          if (groupIdType != null && uniqueKeyType != null) {
+            implementGetByKeyFromGroup(elem, groupIdType, uniqueKeyType, objectBuilder)
           }
         }
-        if (hasExtension(interfaces)) {
+        if (extensionKeyType.isAssignableFrom(elem.asType())) {
           implementExtension(elem, objectBuilder)
         }
       }
@@ -82,115 +79,65 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
       fileBuilder
         .addType(objectBuilder.build())
         .build().writeTo(file)
-      configClassNames.add(elem.asClassName())
-    }
-    if (configClassNames.isNotEmpty()) {
-//      val injectModule = buildInjectModule(configClassNames)
-//      val file = File(generatedSourcesRoot)
-//      FileSpec.builder("", injectModule.name!!).addType(injectModule).build().writeTo(file)
     }
     return false
   }
 
-  private fun buildInjectModule(configClasses: Set<ClassName>): TypeSpec {
-    val func = FunSpec.builder("configure").addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
-    configClasses.forEach { configClass ->
-      func.addStatement(
-        "bind<%T>().toProvider(%T(%T::class.java))",
-        ClassName(configClass.packageName, configClass.simpleName + "Set"),
-        AnnotationSpec::class,
-        configClass
-      )
-    }
-    return TypeSpec.classBuilder("ConfigSetGuiceModule")
-      .superclass(GuiceModule::class.asClassName())
-      .addAnnotation(
-        AnnotationSpec.builder(AutoService::class.asTypeName()).addMember(
-          "%T::class",
-          Module::class.asTypeName()
-        ).build()
-      )
-      .addFunction(func.build())
-      .build()
-  }
-
   private fun implementBasics(elem: TypeElement, classBuilder: TypeSpec.Builder) {
-    BasicConfigSet::class.functions.asSequence()
-      .filter {
-        it.javaMethod?.declaringClass == BasicConfigSet::class.java
+    val asBasicConfigSet = FunSpec.builder("unwrap")
+      .addStatement("return configSet")
+      .build()
+    classBuilder.addFunction(asBasicConfigSet)
+
+    val basicConfigSetKmClass = BasicConfigSet.asTypeElement().toImmutableKmClass()
+    basicConfigSetKmClass.functions.forEach { func ->
+      val funBuilder = FunSpec.builder(func.name)
+      func.valueParameters.forEach { p ->
+        funBuilder.addParameter(p.name, p.type.toTypeName())
       }
-      .forEach { func ->
-        val funBuilder = FunSpec.builder(func.name)
-        func.parameters.forEach { p ->
-          if (p.name != null) {
-            funBuilder.addParameter(p.name!!, p.type.asTypeName())
-          }
-        }
-        val params = func.parameters.asSequence().filter { it.name != null }.map { it.name }.joinToString(", ")
-        funBuilder.addModifiers(getModifiers(func))
-//          .returns(returnType)
-          .addStatement(
-            "return (delegatee as %T<%T>).%L(%L)",
-            BasicConfigSet::class,
-            elem,
-            func.name,
-            params
-          )
-        classBuilder.addFunction(funBuilder.build())
-      }
+      val params = func.valueParameters.asSequence().map { it.name }.joinToString(", ")
+      funBuilder.addModifiers(getModifiers(func))
+        .addStatement("return configSet.%L(%L)", func.name, params)
+      classBuilder.addFunction(funBuilder.build())
+    }
   }
 
-  private fun implementUniqueKey(elem: TypeElement, classBuilder: TypeSpec.Builder) {
-    val keyTypeOpt = elem.interfaces.asSequence()
+  private fun findUniqueKeyType(elem: TypeElement): DeclaredType? {
+    return elem.interfaces.asSequence()
       .map { it as DeclaredType }
       .find {
         val interfaceName = it.asElement().toString()
-        interfaceName == UniqueKey::class.qualifiedName || interfaceName == ComparableUniqueKey::class.qualifiedName
-      }
-      .option().map { it.typeArguments[0] }
-    if (keyTypeOpt.isEmpty) {
-      error("keyTypeOpt is empty")
+        interfaceName == UniqueKey.canonicalName || interfaceName == ComparableUniqueKey.canonicalName
+      }?.let { it.typeArguments[0] } as? DeclaredType
+  }
+
+  private fun implementUniqueKey(elem: TypeElement, keyType: DeclaredType?, classBuilder: TypeSpec.Builder) {
+    if (keyType == null) {
+      error("keyType is null")
       return
     }
-    val keyType = keyTypeOpt.get() as DeclaredType
-    UniqueKeyConfigSet::class.functions.asSequence()
-      .filter { func ->
-        func.javaMethod?.declaringClass == UniqueKeyConfigSet::class.java && !classBuilder.funSpecs.any { it.name == func.name }
-      }
+    val uniqueKeyConfigSetKmClass = UniqueKeyConfigSet.asTypeElement().toImmutableKmClass()
+    uniqueKeyConfigSetKmClass.functions
       .forEach { func ->
         val funBuilder = FunSpec.builder(func.name)
-        func.parameters.forEach { p ->
-          if (p.name != null) {
-            val parameterType = when (val typeName = p.type.asTypeName()) {
-              is ClassName -> typeName
-              is TypeVariableName -> keyType.javaToKotlinType()
-              is ParameterizedTypeName -> typeName.rawType.parameterizedBy(elem.asClassName())
-              else -> null
-            }
-            if (parameterType == null) {
-              error("unable to detect parameterType from ${p.type.asTypeName().javaClass}")
-              return
-            }
-            funBuilder.addParameter(p.name!!, parameterType)
+        func.valueParameters.forEach { p ->
+          val pType = p.type!!
+          val parameterType = when (pType.classifier) {
+            is KmClassifier.Class -> pType.toTypeName()
+            is KmClassifier.TypeParameter -> keyType.javaToKotlinType()
+            else -> null
           }
+          if (parameterType == null) {
+            error("unable to detect parameterType from ${p.type}")
+            return
+          }
+          funBuilder.addParameter(p.name, parameterType)
         }
-        val returnType = when (val typeName = func.returnType.asTypeName()) {
-          is ClassName -> typeName
-          is TypeVariableName -> elem.asClassName()
-          is ParameterizedTypeName -> typeName.rawType.parameterizedBy(elem.asClassName())
-          else -> null
-        }
-        if (returnType == null) {
-          error("unable to detect returnType from ${func.returnType.asTypeName().javaClass}(${func.returnType.asTypeName()})")
-          return
-        }
-        val params =
-          func.parameters.asSequence().filter { it.name != null }.map { it.name }.joinToString(", ")
+        val params = func.valueParameters.asSequence().map { it.name }.joinToString(", ")
         funBuilder.addModifiers(getModifiers(func))
-          .returns(returnType)
           .addStatement(
-            "return (delegatee as %T<%T, %T>).%L(%L)",
-            UniqueKeyConfigSet::class,
+            "return (configSet as %T<%T, %T>).%L(%L)",
+            UniqueKeyConfigSet,
             keyType.javaToKotlinType(),
             elem,
             func.name,
@@ -200,52 +147,47 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
       }
   }
 
-  private fun implementGrouped(elem: TypeElement, classBuilder: TypeSpec.Builder) {
-    val groupIdTypeOpt = elem.interfaces.asSequence()
-      .map { it as DeclaredType }
-      .find { it.asElement().toString() == Grouped::class.qualifiedName }
-      .option().map { it.typeArguments[0] }
-    if (groupIdTypeOpt.isEmpty) {
-      error("extensionTypeOpt is empty")
-      return
-    }
-    val keyTypeOpt = elem.interfaces.asSequence()
+  private fun findGroupIdType(elem: TypeElement): DeclaredType? {
+    return elem.interfaces.asSequence()
       .map { it as DeclaredType }
       .find {
-        val interfaceName = it.asElement().toString()
-        interfaceName == UniqueKey::class.qualifiedName || interfaceName == ComparableUniqueKey::class.qualifiedName
-      }
-      .option().map { it.typeArguments[0] }
-    val groupIdType = groupIdTypeOpt.get() as DeclaredType
-    GroupedConfigSet::class.functions.asSequence()
-      .filter { func ->
-        func.javaMethod?.declaringClass == GroupedConfigSet::class.java
-      }
+        it.asElement().toString() == Grouped.canonicalName
+      }?.let { it.typeArguments[0] } as? DeclaredType
+  }
+
+  private fun implementGrouped(
+    elem: TypeElement,
+    groupIdType: DeclaredType?,
+    uniqueKeyType: DeclaredType?,
+    classBuilder: TypeSpec.Builder
+  ) {
+    if (groupIdType == null) {
+      error("groupIdType is null.")
+      return
+    }
+    GroupedConfigSet.asTypeElement().toImmutableKmClass().functions.asSequence()
       .forEach { func ->
         val funBuilder = FunSpec.builder(func.name)
-        func.parameters.forEach { p ->
-          if (p.name != null) {
-            val parameterType = when (val typeName = p.type.asTypeName()) {
-              is ClassName -> typeName
-              is TypeVariableName -> groupIdType.javaToKotlinType()
-              is ParameterizedTypeName -> typeName.rawType.parameterizedBy(elem.asClassName())
-              else -> null
-            }
-            if (parameterType == null) {
-              error("unable to detect parameterType from ${p.type.asTypeName().javaClass}")
-              return
-            }
-            funBuilder.addParameter(p.name!!, parameterType)
+        func.valueParameters.forEach { p ->
+          val pType = p.type!!
+          val parameterType = when (val typeName = pType.classifier) {
+            is KmClassifier.Class -> pType.toTypeName()
+            is KmClassifier.TypeParameter -> groupIdType.javaToKotlinType()
+            else -> null
           }
+          if (parameterType == null) {
+            error("unable to detect parameterType from ${p.type}")
+            return
+          }
+          funBuilder.addParameter(p.name, parameterType)
         }
-        val params =
-          func.parameters.asSequence().filter { it.name != null }.map { it.name }.joinToString(", ")
+        val params = func.valueParameters.asSequence().map { it.name }.joinToString(", ")
         funBuilder.addModifiers(getModifiers(func))
           .addStatement(
-            "return (delegatee as %T<%T, %T, %T>).%L(%L)",
-            GroupedConfigSet::class,
+            "return (configSet as %T<%T, %T, %T>).%L(%L)",
+            GroupedConfigSet,
             groupIdType.javaToKotlinType(),
-            keyTypeOpt.map { it.javaToKotlinType() }.orNull ?: Int::class,
+            uniqueKeyType?.javaToKotlinType() ?: Int::class,
             elem,
             func.name,
             params
@@ -254,33 +196,22 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
       }
   }
 
-  private fun implementGetByKeyFromGroup(elem: TypeElement, classBuilder: TypeSpec.Builder) {
-    var groupType: TypeMirror? = null
-    var keyType: TypeMirror? = null
-    for (it in elem.interfaces) {
-      it as DeclaredType
-      val typeName = it.asElement().toString()
-      if (typeName == Grouped::class.qualifiedName) {
-        groupType = it.typeArguments[0]
-      } else if (typeName == UniqueKey::class.qualifiedName || typeName == ComparableUniqueKey::class.qualifiedName) {
-        keyType = it.typeArguments[0]
-      }
-      if (groupType != null && keyType != null) {
-        break;
-      }
-    }
-    if (groupType == null || keyType == null) {
-      error("groupType=$groupType keyType=$keyType")
-      return
-    }
+  private fun implementGetByKeyFromGroup(
+    elem: TypeElement,
+    groupIdType: DeclaredType,
+    uniqueKeyType: DeclaredType,
+    classBuilder: TypeSpec.Builder
+  ) {
+    val groupIdTypeName = groupIdType.asTypeName()
+    val uniqueKeyTypeName = uniqueKeyType.asTypeName()
     val getByKeyFromGroup = FunSpec.builder("getByKeyFromGroup")
-      .addParameter("groupId", groupType.asTypeName())
-      .addParameter("key", keyType.asTypeName())
+      .addParameter("groupId", groupIdTypeName)
+      .addParameter("key", uniqueKeyTypeName)
       .addStatement(
-        "return (delegatee as %T<%T, %T, %T>).getGroup(groupId).flatMap{ it.getByKey(key) }",
-        GroupedConfigSet::class,
-        groupType.asTypeName(),
-        keyType.asTypeName(),
+        "return (configSet as %T<%T, %T, %T>).getGroup(groupId).flatMap{ it.getByKey(key) }",
+        GroupedConfigSet,
+        groupIdTypeName,
+        uniqueKeyTypeName,
         elem
       )
     classBuilder.addFunction(getByKeyFromGroup.build())
@@ -289,8 +220,8 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
   private fun implementExtension(elem: TypeElement, classBuilder: TypeSpec.Builder) {
     val extensionTypeOpt = elem.interfaces.asSequence()
       .map { it as DeclaredType }
-      .find { it.asElement().toString() == ExtensionKey::class.qualifiedName }
-      .option().map { it.typeArguments[0] }
+      .find { it.asElement().toString() == ExtensionKey.canonicalName }
+      ?.let { Optional.of(it.typeArguments[0]) } ?: Optional.empty()
     if (extensionTypeOpt.isEmpty) {
       error("extensionTypeOpt is empty")
       return
@@ -301,8 +232,8 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
         .addModifiers(KModifier.PUBLIC)
         .returns(extensionType.asTypeName())
         .addStatement(
-          "return (delegatee as %T<%T, %T>).extension()",
-          ExtensionConfigSet::class,
+          "return (configSet as %T<%T, %T>).extension()",
+          ExtensionConfigSet,
           extensionType,
           elem
         )
@@ -317,7 +248,7 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
         FunSpec.builder("get")
           .addModifiers(KModifier.PUBLIC)
           .returns(type.asClassName())
-          .addStatement("return (delegatee as %T<%T>).get()", SingletonConfigSet::class, type)
+          .addStatement("return (configSet as %T<%T>).get()", SingletonConfigSet, type)
           .build()
       )
     val getters = ElementFilter.fieldsIn(type.enclosedElements).asSequence().map {
@@ -335,8 +266,8 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
           val p = getters[funName]!!
           val getter = FunSpec.builder("get()")
             .addStatement(
-              "return (delegatee as %T<%T>).get().%L",
-              SingletonConfigSet::class,
+              "return (configSet as %T<%T>).get().%L",
+              SingletonConfigSet,
               type,
               p.simpleName.toString()
             ).build()
@@ -356,7 +287,7 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
           }
           val params = elem.parameters.asSequence().map { p -> p.simpleName.toString() }.joinToString(", ")
           funcBuilder.addStatement(
-            "return (delegatee as %T<%T>).get().%L(%L)",
+            "return (configSet as %T<%T>).get().%L(%L)",
             SingletonConfigSet::class,
             type,
             funName,
@@ -375,7 +306,7 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
   private fun isSingleton(elem: TypeElement): Boolean {
     return elem.annotationMirrors.any {
       val typeName = it.annotationType.asTypeName()
-      typeName == SingletonConfig::class.asTypeName() || typeName == Resource::class.asTypeName()
+      typeName == SingletonConfig || typeName == Resource
     }
   }
 
@@ -403,6 +334,32 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
 //            mods.add(KModifier.OPEN)
 //        }
     if (func.isSuspend) {
+      mods.add(KModifier.SUSPEND)
+    }
+    return mods
+  }
+
+  private fun getModifiers(func: ImmutableKmFunction): Collection<KModifier> {
+    val mods = LinkedHashSet<KModifier>()
+    if (Flag.Function.IS_INFIX(func.flags)) {
+      mods.add(KModifier.INFIX)
+    }
+    if (Flag.Function.IS_INLINE(func.flags)) {
+      mods.add(KModifier.INLINE)
+    }
+    if (Flag.Function.IS_OPERATOR(func.flags)) {
+      mods.add(KModifier.OPERATOR)
+    }
+//        if (func.isAbstract) {
+//            mods.add(KModifier.ABSTRACT)
+//        }
+    if (Flag.IS_FINAL(func.flags)) {
+      mods.add(KModifier.FINAL)
+    }
+//        if (func.isOpen) {
+//            mods.add(KModifier.OPEN)
+//        }
+    if (Flag.Function.IS_SUSPEND(func.flags)) {
       mods.add(KModifier.SUSPEND)
     }
     return mods

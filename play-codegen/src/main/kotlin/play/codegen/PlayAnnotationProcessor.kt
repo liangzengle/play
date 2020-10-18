@@ -29,20 +29,15 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
     const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"
   }
 
-  override fun getSupportedOptions(): MutableSet<String> {
-    return mutableSetOf(KAPT_KOTLIN_GENERATED_OPTION_NAME)
+  override fun getSupportedOptions(): Set<String> {
+    return setOf(KAPT_KOTLIN_GENERATED_OPTION_NAME)
   }
 
   override fun getSupportedSourceVersion(): SourceVersion {
     return SourceVersion.latestSupported()
   }
 
-  override fun getSupportedAnnotationTypes(): MutableSet<String> {
-    return getSupportedAnnotationTypes0().asSequence().map { it.qualifiedName!! }.toMutableSet()
-  }
-
-  abstract fun getSupportedAnnotationTypes0(): Set<KClass<out Annotation>>
-
+  abstract override fun getSupportedAnnotationTypes(): Set<String>
 
   override fun init(processingEnv: ProcessingEnvironment) {
     super.init(processingEnv)
@@ -72,6 +67,11 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
 
   protected fun RoundEnvironment.subtypesOf(type: KClass<*>): Sequence<TypeElement> {
     val declaredType = type.asTypeMirror() as DeclaredType
+    return subtypesOf(declaredType)
+  }
+
+  protected fun RoundEnvironment.subtypesOf(typeMirror: TypeMirror): Sequence<TypeElement> {
+    val declaredType = typeMirror as DeclaredType
     val typeArgs: Array<TypeMirror> =
       declaredType.typeArguments.map { typeUtils.getWildcardType(null, null) }.toTypedArray()
     return rootElements.asSequence()
@@ -79,13 +79,31 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
       .map { it as TypeElement }
       .filterNot { it.modifiers.contains(Modifier.ABSTRACT) }
       .filter {
-        typeUtils.isSubtype(it.asType(), typeUtils.getDeclaredType(type.asTypeElement(), *typeArgs))
+        typeUtils.isSubtype(it.asType(), typeUtils.getDeclaredType(typeMirror.asElement() as TypeElement, *typeArgs))
       }
+  }
+
+  protected fun RoundEnvironment.subtypesOf(superClass: ClassName): Sequence<TypeElement> {
+    val superType = typeUtils.getDeclaredType(superClass.asTypeElement())
+    return rootElements.asSequence()
+      .filter { it.kind == ElementKind.CLASS }
+      .map { it as TypeElement }
+      .filter { !it.modifiers.contains(Modifier.ABSTRACT) && superType.isAssignableFrom(it.asType()) }
   }
 
   protected fun KClass<*>.asTypeMirror(): TypeMirror {
     return asTypeElement().asType()
   }
+
+  protected fun ClassName.asTypeElement(): TypeElement {
+    val fqcn = this.canonicalName
+    val typeElement = elementUtils.getTypeElement(fqcn)
+    if (typeElement == null) {
+      warn(fqcn)
+    }
+    return typeElement
+  }
+
 
   protected fun KClass<*>.asTypeElement(): TypeElement {
     val typeElement = elementUtils.getTypeElement(this.java.name)
@@ -111,6 +129,35 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
         typeMirror = null
         break
       } else if (superType.asElement().toString() == lookupType.qualifiedName) {
+        typeMirror = superType
+        break
+      } else {
+        val superClass = (superType.asElement() as TypeElement).superclass
+        if (superClass.kind == TypeKind.NONE) {
+          break
+        } else {
+          superType = superClass as DeclaredType
+        }
+      }
+    }
+    if (typeMirror == null) {
+      return null
+    }
+    return typeMirror.typeArguments
+  }
+
+  protected fun TypeElement.typeArgsOf(lookupType: ClassName, index: Int): TypeMirror? {
+    return typeArgsOf(lookupType)?.get(index)
+  }
+
+  protected fun TypeElement.typeArgsOf(lookupType: ClassName): MutableList<out TypeMirror>? {
+    var typeMirror: DeclaredType? = null
+    var superType = this.superclass as DeclaredType
+    while (true) {
+      if (superType.asTypeName() == Object::class.asTypeName()) {
+        typeMirror = null
+        break
+      } else if (superType.asElement().toString() == lookupType.canonicalName) {
         typeMirror = superType
         break
       } else {
@@ -211,6 +258,23 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
       }?.value?.value as? T ?: defaultValue
   }
 
+  @Suppress("UNCHECKED_CAST")
+  protected fun <T> getAnnotationValue(
+    element: Element,
+    annotationClass: ClassName,
+    propertyName: String,
+    defaultValue: T
+  ): T {
+    return element
+      .annotationMirrors
+      .first { it.annotationType.asTypeName() == annotationClass }
+      .elementValues
+      .entries
+      .firstOrNull {
+        it.key.simpleName.toString() == propertyName
+      }?.value?.value as? T ?: defaultValue
+  }
+
   protected fun TypeElement.listMethods(): MutableList<ExecutableElement> {
     return ElementFilter.methodsIn(enclosedElements)
   }
@@ -231,4 +295,24 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
     return annotationMirrors.any { it.annotationType.asTypeName() == type }
   }
 
+  internal fun AnnotatedConstruct.isAnnotationPresent(type: ClassName): Boolean {
+    return annotationMirrors.any { it.annotationType.asTypeName() == type }
+  }
+
+  @Suppress("UNCHECKED_CAST", "NOTHING_TO_INLINE")
+  inline fun <T> Any.unsafeCast(): T = this as T
+
+  protected fun TypeElement.isAssignableFrom(superType: ClassName): Boolean {
+    return this.asType().isAssignableFrom(superType.asTypeElement().asType())
+  }
+
+  protected fun TypeMirror.isAssignableFrom(subType: TypeMirror): Boolean {
+    return typeUtils.isAssignable(typeUtils.erasure(subType), typeUtils.erasure(this))
+  }
+
+  protected fun TypeElement.isAssignableFrom(subType: TypeElement): Boolean {
+    return typeUtils.isAssignable(typeUtils.erasure(subType.asType()), typeUtils.erasure(asType()))
+  }
+
+  protected fun DeclaredType.toClassName() = ClassName.bestGuess(typeUtils.erasure(this).toString())
 }

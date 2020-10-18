@@ -34,13 +34,13 @@ dependencies {
     implementation project(':play-akka')
     implementation project(':play-net')
     implementation project(':play-config')
-//    implementation project(':play-db-mongo')
-
     implementation project(':play-db-mysql')
+//    implementation project(':play-db-mongo')
+//    compileOnly project(path: ':play-codegen', configuration: 'default')
+    compileOnly project(':play-codegen')
+    kapt project(':play-codegen')
+
     implementation "mysql:mysql-connector-java:8.0.20"
-    
-    compileOnly project(path: ':play-codegen', configuration: 'default')
-    kapt project(path: ':play-codegen', configuration: 'default')
     implementation "org.jctools:jctools-core:3.0.0"
     implementation "com.squareup.wire:wire-runtime:$wire_version"
 }
@@ -51,14 +51,6 @@ kapt {
     }
 }
 
-sourceSets {
-    main.java.srcDirs += "src/main/kotlin"
-    main.java.srcDirs += "build/generated/source/wire"
-    main.java.srcDirs += "build/generated/source/proto"
-
-    test.java.srcDirs += "src/test/kotlin"
-}
-
 wire {
     kotlin {
     }
@@ -67,26 +59,3 @@ wire {
 application {
     mainClassName("play.example.App")
 }
-
-//protobuf {
-//    protoc {
-//        artifact = "com.google.protobuf:protoc:$protobuf_version"
-//    }
-//    plugins {
-//        kotlin {
-//            artifact = "com.github.streem.pbandk:protoc-gen-kotlin-jvm:$pbandk_version:jvm8@jar"
-//        }
-//    }
-//    generateProtoTasks {
-//        ofSourceSet("main").forEach { task ->
-//            task.builtins {
-//                remove java
-//            }
-//            task.plugins {
-//                kotlin {
-//                    option("json_support=false")
-//                }
-//            }
-//        }
-//    }
-//}

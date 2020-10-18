@@ -3,15 +3,9 @@ package play.codegen
 import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import play.db.Entity
-import play.db.cache.CacheSpec
-import play.db.cache.EntityCache
-import play.db.cache.EntityCacheManager
 import java.io.File
 import javax.annotation.processing.Processor
 import javax.annotation.processing.RoundEnvironment
-import javax.inject.Inject
-import javax.inject.Singleton
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
@@ -21,27 +15,21 @@ import kotlin.reflect.KClass
 @AutoService(Processor::class)
 class EntityCacheGenerator : PlayAnnotationProcessor() {
 
-  override fun getSupportedAnnotationTypes0(): Set<KClass<out Annotation>> {
-    return setOf(CacheSpec::class)
+  override fun getSupportedAnnotationTypes(): Set<String> {
+    return setOf(CacheSpec.canonicalName)
   }
 
   override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
-    roundEnv.subtypesOf(Entity::class)
-      .filterNot { it.isAnnotationPresent(DisableCodegen::class) }
-      .forEach { elem ->
+    return roundEnv.subtypesOf(Entity)
+      .filterNot { it.isAnnotationPresent(DisableCodegen) }
+      .onEach { elem ->
         generate(elem)
-      }
-    return true
+      }.count() != 0
   }
 
   private fun generate(elem: TypeElement) {
-    val pkg = elementUtils.getPackageOf(elem).qualifiedName.toString()
-    val className = elem.simpleName.toString() + "Cache"
-    val idType = elem.typeArgsOf(Entity::class, 0)
-    if (idType == null) {
-      error("Can't detect ID type of ${elem.simpleName}")
-      return
-    }
+    val elemClassName = elem.asClassName()
+    val idType = getIdType(elem)
     val ctor = findConstructor(elem)
     val func = ctor?.let {
       val parameters = it.parameters
@@ -53,41 +41,60 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
         b.addStatement(
           "return getOrCreate(%L) { %T(it) }",
           parameters.first().simpleName.toString(),
-          elem.asClassName()
+          elemClassName
         )
       } else {
         val paramList = parameters.asSequence().map { p -> p.simpleName }.joinToString(", ")
         b.addStatement(
-          "return getOrCreate(%L){ %T(%L) }",
+          "return getOrCreate(%L) { %T(%L) }",
           parameters.first().simpleName.toString(),
-          elem.asClassName(),
+          elemClassName,
           paramList
         )
       }
       b.build()
     }
+    val className = elem.simpleName.toString() + "Cache"
     val classBuilder = TypeSpec.classBuilder(className)
-      .addAnnotation(Singleton::class)
+      .addAnnotation(Singleton)
       .primaryConstructor(
         FunSpec.constructorBuilder()
-          .addAnnotation(Inject::class)
-          .addParameter("cacheManager", EntityCacheManager::class)
+          .addAnnotation(Inject)
+          .addParameter("cacheManager", EntityCacheManager)
           .build()
       )
       .addSuperinterface(
-        EntityCache::class.asClassName()
-          .parameterizedBy(idType.javaToKotlinType())
-          .plusParameter(elem.asClassName()),
+        EntityCache.parameterizedBy(idType.asTypeName()).plusParameter(elemClassName),
         CodeBlock.of("cacheManager.get(%L::class.java)", elem.simpleName.toString())
       )
     if (func != null) {
       classBuilder.addFunction(func)
     }
+    val pkg = elementUtils.getPackageOf(elem).qualifiedName.toString()
     val file = File(generatedSourcesRoot)
     FileSpec.builder(pkg, className)
       .addType(classBuilder.build())
       .build()
       .writeTo(file)
+  }
+
+  private val entityIntType: TypeElement by lazy(LazyThreadSafetyMode.NONE) {
+    elementUtils.getTypeElement(EntityInt.canonicalName)
+  }
+  private val entityLongType: TypeElement by lazy(LazyThreadSafetyMode.NONE) {
+    elementUtils.getTypeElement(EntityLong.canonicalName)
+  }
+  private val entityStringType: TypeElement by lazy(LazyThreadSafetyMode.NONE) {
+    elementUtils.getTypeElement(EntityString.canonicalName)
+  }
+
+  private fun getIdType(elem: TypeElement): KClass<*> {
+    return when {
+      entityIntType.isAssignableFrom(elem) -> Int::class
+      entityLongType.isAssignableFrom(elem) -> Long::class
+      entityStringType.isAssignableFrom(elem) -> String::class
+      else -> throw IllegalStateException("Can't detect ID type of ${elem.simpleName}")
+    }
   }
 
   private fun findConstructor(elem: TypeElement): ExecutableElement? {

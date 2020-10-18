@@ -3,7 +3,11 @@ dependencies {
     kapt auto_service
     implementation "org.jetbrains.kotlin:kotlin-reflect"
     implementation kotlin_poet
-    implementation project(':play-mvc')
-    implementation project(':play-db')
-    implementation project(':play-config')
+    implementation kotlin_poet_metadata
+}
+
+compileKotlin {
+    kotlinOptions {
+        freeCompilerArgs += "-Xopt-in=com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview"
+    }
 }

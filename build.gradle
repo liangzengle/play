@@ -39,7 +39,7 @@ ext {
     reflections_version = '0.9.12'
     hikariCP_version = '3.4.2'
     eclipse_collection_version = "10.2.0"
-    kotlin_poet_version = '1.6.0'
+    kotlin_poet_version = '1.7.1'
     akka_typed_version = "2.6.5"
     caffeine_version = "2.8.5"
 }
@@ -74,7 +74,13 @@ ext {
     eclipse_collection = [
             "org.eclipse.collections:eclipse-collections:$eclipse_collection_version"
     ]
-    kotlin_poet = "com.squareup:kotlinpoet:$kotlin_poet_version"
+    kotlin_poet = [
+            "com.squareup:kotlinpoet:$kotlin_poet_version"
+    ]
+    kotlin_poet_metadata = [
+            "com.squareup:kotlinpoet-metadata:$kotlin_poet_version",
+            "com.squareup:kotlinpoet-metadata-specs:$kotlin_poet_version"
+    ]
     akka_typed = [
             "com.typesafe.akka:akka-actor-typed_2.13:$akka_typed_version"
     ]
@@ -126,7 +132,7 @@ subprojects {
 
     compileKotlin {
         kotlinOptions {
-            jvmTarget = "1.8"
+            jvmTarget = "11"
             javaParameters = true
             freeCompilerArgs = [
                     "-XXLanguage:+InlineClasses",
@@ -141,7 +147,7 @@ subprojects {
     }
     compileTestKotlin {
         kotlinOptions {
-            jvmTarget = "1.8"
+            jvmTarget = "11"
             javaParameters = true
             freeCompilerArgs = [
                     "-XXLanguage:+InlineClasses",
@@ -167,7 +173,6 @@ subprojects {
 
     sourceSets {
         main.java.srcDirs += "src/main/kotlin"
-//        main.java.srcDirs += "build/generated/source/kaptKotlin/main"
         test.java.srcDirs += "src/test/kotlin"
     }
 }
