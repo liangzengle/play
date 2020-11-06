@@ -4,8 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigSyntax
-import io.vavr.control.Try
-import io.vavr.kotlin.`try`
 import play.Log
 import play.config.deser.ImmutableCollectionModule
 import play.toJson
@@ -19,7 +17,7 @@ import javax.inject.Singleton
 
 interface Reader {
 
-  fun getURL(clazz: Class<*>): Try<URL>
+  fun getURL(clazz: Class<*>): Result<URL>
 
   fun <T> read(clazz: Class<T>): List<T>
 }
@@ -27,8 +25,8 @@ interface Reader {
 @Singleton
 class ResourceReader : Reader {
 
-  override fun getURL(clazz: Class<*>): Try<URL> {
-    return `try` {
+  override fun getURL(clazz: Class<*>): Result<URL> {
+    return runCatching {
       val resource = clazz.getAnnotation(Resource::class.java)
         ?: throw IllegalArgumentException("[${clazz.name}]缺少@${Resource::class.java.simpleName}")
       javaClass.classLoader.getResource("/${resource.value}")
@@ -38,7 +36,7 @@ class ResourceReader : Reader {
 
   override fun <T> read(clazz: Class<T>): List<T> {
     return try {
-      val url = getURL(clazz).get()
+      val url = getURL(clazz).getOrThrow()
       val file = File(url.toURI())
       val fileExtension = file.extension
       val configSyntax = guessSyntax(fileExtension)
@@ -72,7 +70,7 @@ interface ConfigReader : Reader {
 
   val resolver: ConfigResolver
 
-  override fun getURL(clazz: Class<*>): Try<URL> {
+  override fun getURL(clazz: Class<*>): Result<URL> {
     val name = clazz.getAnnotation(ConfigPath::class.java)?.value ?: clazz.simpleName
     return resolver.resolve("$name.$format")
   }
@@ -87,7 +85,7 @@ class JsonConfigReader @Inject constructor(
 
   override fun <T> read(clazz: Class<T>): List<T> {
     return try {
-      val url = getURL(clazz).get()
+      val url = getURL(clazz).getOrThrow()
       jsonToList(url, clazz)
     } catch (e: JsonProcessingException) {
       throw e

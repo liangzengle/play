@@ -23,7 +23,7 @@ import play.example.module.account.controller.AccountControllerInvoker
 import play.example.module.account.domain.AccountErrorCode
 import play.example.module.account.domain.AccountId
 import play.example.module.account.entity.Account
-import play.example.module.account.entity.AccountCache
+import play.example.module.account.entity.AccountEntityCache
 import play.example.module.account.message.LoginProto
 import play.example.module.account.message.PongProto
 import play.example.module.platform.PlatformServiceProvider
@@ -32,7 +32,6 @@ import play.example.module.player.PlayerManager
 import play.example.module.server.ServerService
 import play.mvc.Request
 import play.mvc.Response
-import play.util.concurrent.awaitSuccessOrThrow
 import play.util.control.Result2
 import play.util.control.err
 import play.util.control.ok
@@ -44,6 +43,7 @@ import play.util.unsafeCast
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
+import kotlin.time.seconds
 
 class AccountManager(
   context: ActorContext<Command>,
@@ -51,7 +51,7 @@ class AccountManager(
   queryService: QueryService,
   sessionManager: ActorRef<SessionManager.Command>,
   private val serverService: ServerService,
-  private val accountCache: AccountCache,
+  private val accountCache: AccountEntityCache,
   private val playerManager: ActorRef<PlayerManager.Command>
 ) : AbstractTypedActor<AccountManager.Command>(context) {
 
@@ -63,7 +63,7 @@ class AccountManager(
       val accountId = platformService.toAccountId(account)
       map[accountId] = account.id
       map
-    }.awaitSuccessOrThrow(5000)
+    }.get(5.seconds)
 
     val maxIds = IntLongMaps.mutable.empty()
     for ((accountId, id) in accountIdToId) {
@@ -78,7 +78,7 @@ class AccountManager(
     )
 
     val subscriber =
-      context.messageAdapter(UnhandledRequest::class.java) { RequestBeforeLogin(it.request, it.session) }
+      context.messageAdapter(UnhandledRequest::class.java) { RequestCommand(it.request, it.session) }
     sessionManager.tell(SessionManager.RegisterUnhandledRequestReceiver(subscriber))
   }
 
@@ -100,7 +100,7 @@ class AccountManager(
       .build()
   }
 
-  private fun onRequest(cmd: RequestBeforeLogin) {
+  private fun onRequest(cmd: RequestCommand) {
     val request = cmd.request
     val session = cmd.session
     when (request.header.msgId.toInt()) {
@@ -145,13 +145,13 @@ class AccountManager(
     if (platform == null) {
       return err(AccountErrorCode.NoSuchPlatform)
     }
-    if (!serverService.isPlatformNameValid(platform)) {
+    if (!serverService.isPlatformValid(platform)) {
       return err(AccountErrorCode.InvalidPlatform)
     }
     if (!serverService.isServerIdValid(serverId.toInt())) {
       return err(AccountErrorCode.InvalidServerId)
     }
-    val platformService = platformServiceProvider.getServiceOrNull(platformName)
+    val platformService = platformServiceProvider.getServiceOrNull(platform)
     if (platformService == null) {
       return err(AccountErrorCode.Failure)
     }
@@ -164,8 +164,9 @@ class AccountManager(
     if (maybeId.isEmpty) {
       return err(AccountErrorCode.IdExhausted)
     }
-    val account = platformService.createAccount(maybeId.asLong, platform.getId(), serverId, params.account, params)
+    val account = platformService.newAccount(maybeId.asLong, platform.getId(), serverId, params.account, params)
     accountCache.create(account)
+    accountIdToId[accountId] = account.id
     // TODO log account create
     return ok(maybeId.asLong)
   }
@@ -173,14 +174,12 @@ class AccountManager(
   companion object {
     private lateinit var accountIdToId: ConcurrentMap<AccountId, Long>
 
-    private lateinit var idToAccountId: ConcurrentMap<Long, AccountId>
-
     fun create(
       platformServiceProvider: PlatformServiceProvider,
       queryService: QueryService,
       sessionManager: ActorRef<SessionManager.Command>,
       serverService: ServerService,
-      accountCache: AccountCache,
+      accountCache: AccountEntityCache,
       playerManager: ActorRef<PlayerManager.Command>
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
@@ -198,8 +197,5 @@ class AccountManager(
   }
 
   interface Command
-
-  private data class RequestBeforeLogin(val request: Request, val session: ActorRef<SessionActor.Command>) : Command
-
-  private data class AccountLogin(val platformName: String, val serverId: Int, val name: String) : Command
+  private data class RequestCommand(val request: Request, val session: ActorRef<SessionActor.Command>) : Command
 }

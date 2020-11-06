@@ -56,7 +56,7 @@ annotation class Incremental
 /**
  * 表示该配置有且只有1条数据
  */
-@Retention(AnnotationRetention.BINARY)
+@Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 annotation class SingletonConfig
 

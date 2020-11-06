@@ -15,13 +15,17 @@ import javax.lang.model.type.TypeKind
 @AutoService(Processor::class)
 class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
 
-  private lateinit var useClass: ClassName
+  private lateinit var userClass: ClassName
+
+  companion object {
+    private const val ControllerUserClass = "controller.user-class"
+  }
 
   override fun init(processingEnv: ProcessingEnvironment) {
     super.init(processingEnv)
-    processingEnv.options["controller.user-class"]?.also {
-      useClass = ClassName.bestGuess(it)
-    }
+    userClass = processingEnv.options[ControllerUserClass]?.let {
+      ClassName.bestGuess(it)
+    } ?: LONG
   }
 
   override fun getSupportedAnnotationTypes(): Set<String> {
@@ -66,59 +70,46 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
           .build()
       )
     }
-    val self = useClass
-    val invoke1 = FunSpec.builder("invoke")
+    val self = userClass
+    val selfInvoker = FunSpec.builder("invoke")
       .addParameter("self", self)
       .addParameter("request", Request)
-    val handlerBuilder = StringBuilder(2048)
-    handlerBuilder.append("return when(request.header.msgId.moduleId.toInt()) {\n")
+    selfInvoker.beginControlFlow("return when(request.header.msgId.moduleId.toInt()) {")
     controllers.forEach { c ->
-      handlerBuilder.append(c.moduleId).append('-').append('>').append(' ')
-        .append(c.simpleName.toString().decapitalize())
-        .append(".invoke(self, request)\n")
+      selfInvoker.addStatement("%L -> %L.invoke(self, request)", c.moduleId, c.simpleName.toString().decapitalize())
     }
-    handlerBuilder.append("else -> null\n")
-    handlerBuilder.append("}\n")
-    invoke1.addStatement(handlerBuilder.toString())
+    selfInvoker.addStatement("else -> null")
+    selfInvoker.endControlFlow()
+    classBuilder.addFunction(selfInvoker.build())
 
-    classBuilder.addFunction(invoke1.build())
-
-    if (useClass != Long::class.java.asTypeName()) {
-      val invoke2 = FunSpec.builder("invoke")
+    if (userClass != LONG) {
+      val playerIdInvoker = FunSpec.builder("invoke")
         .addParameter("playerId", Long::class)
         .addParameter("request", Request)
-        .returns(RequestResult.parameterizedBy(STAR).copy(true))
-      val handlerBuilder2 = StringBuilder(2048)
-      handlerBuilder2.append("return when(request.header.msgId.moduleId.toInt()) {\n")
-      controllers.asSequence()
-        .filter { c ->
-          c.typeElement.enclosedElements.any { member -> member.isAnnotationPresent(NotPlayerThread) }
-        }
-        .forEach { c ->
-          handlerBuilder2.append(c.moduleId).append('-').append('>').append(' ')
-            .append(c.simpleName.toString().decapitalize())
-            .append(".invoke(playerId, request)\n")
-        }
-      handlerBuilder2.append("else -> null\n")
-      handlerBuilder2.append("}\n")
-      invoke2.addStatement(handlerBuilder2.toString())
-
-      classBuilder.addFunction(invoke2.build())
+      playerIdInvoker.beginControlFlow("return when(request.header.msgId.moduleId.toInt()) {")
+      controllers.filter { c -> c.cmdMethods.any { !parameterHasUser(it) } }.forEach { c ->
+        playerIdInvoker.addStatement(
+          "%L -> %L.invoke(playerId, request)",
+          c.moduleId,
+          c.simpleName.toString().decapitalize()
+        )
+      }
+      playerIdInvoker.addStatement("else -> null")
+      playerIdInvoker.endControlFlow()
+      classBuilder.addFunction(playerIdInvoker.build())
     }
 
 
-    val format = FunSpec.builder("format")
+    val format = FunSpec.builder("formatToString")
       .addParameter("request", Request)
-    val formatBuilder = StringBuilder(2048)
-    formatBuilder.append("return when(request.header.msgId.moduleId.toInt()) {\n")
+    val formatCode = CodeBlock.builder()
+    formatCode.beginControlFlow("return when(request.header.msgId.moduleId.toInt()) {")
     controllers.forEach { c ->
-      formatBuilder.append(c.moduleId).append('-').append('>').append(' ')
-        .append(c.simpleName.toString().decapitalize())
-        .append(".format(request)\n")
+      formatCode.addStatement("%L -> %L.formatToString(request)", c.moduleId, c.simpleName.toString().decapitalize())
     }
-    formatBuilder.append("else -> request.toString()\n")
-    formatBuilder.append("}\n")
-    format.addStatement(formatBuilder.toString())
+    formatCode.addStatement("else -> request.toString()")
+    formatCode.endControlFlow()
+    format.addCode(formatCode.build())
 
     classBuilder.addFunction(format.build())
 
@@ -154,19 +145,16 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
       .build()
     val moduleId = PropertySpec.builder("moduleId", Short::class).getter(moduleIdGetter).build()
 
-    classBuilder.addInitializerBlock(
-      CodeBlock.of(
-        """
-        if (controller.moduleId != MODULE_ID) {
-          throw IllegalStateException("${typeElement.simpleName}的模块id不一致")
-        }
-        """.trimIndent()
-      )
-    )
+    val initCode = CodeBlock.builder()
+    initCode.beginControlFlow("if (controller.moduleId != MODULE_ID)")
+    initCode.addStatement("throw IllegalStateException(\"%L的模块id不一致\")", typeElement.simpleName)
+    initCode.endControlFlow()
+    classBuilder.addInitializerBlock(initCode.build())
+
     classBuilder.addProperty(moduleId)
-    classBuilder.addFunction(genInvoker(typeElement))
-    if (useClass != Long::class.java.asTypeName()) {
-      classBuilder.addFunction(genInvoke2(typeElement))
+    classBuilder.addFunction(genSelfInvoke(typeElement))
+    if (userClass != LONG) {
+      classBuilder.addFunction(genPlayerIdInvoke(typeElement))
     }
     classBuilder.addFunction(genFormat(typeElement))
     classBuilder.addType(genCompanionObject(typeElement))
@@ -208,130 +196,139 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
   }
 
   private fun genFormat(typeElement: ControllerTypeElement): FunSpec {
-    val format = FunSpec.builder("format")
+    val format = FunSpec.builder("formatToString")
       .addParameter("request", Request)
       .returns(String::class)
 
-    val self = useClass
-    val b = StringBuilder(512)
-    b.append("request.body.reset()\n")
-    b.append("return when(request.header.msgId.cmd.toInt()) {\n")
-    typeElement.cmdMethods.forEach { elem ->
-      val cmd = elem.cmd
-      b.append(cmd).append(" -> \n")
-      b.append('\"')
-        .append("\$moduleId, $cmd: ")
-        .append(typeElement.simpleName).append(".").append(elem.simpleName).append('(')
-      var first = true
-      elem.parameters.forEach { p ->
-        if (!first) {
-          b.append(", ")
-          first = false
+    val self = userClass
+    val code = CodeBlock.builder()
+    code.addStatement("request.body.reset()")
+    code.beginControlFlow("return when(request.header.msgId.cmd.toInt())")
+    for (method in typeElement.cmdMethods) {
+      val cmd = method.cmd
+      code.addStatement("%L -> ", cmd)
+      code.indent()
+      val tpl = StringBuilder()
+      tpl.append('$').append("moduleId").append(',').append(' ').append(cmd).append(':').append(' ')
+      tpl.append(typeElement.simpleName).append('.').append(method.simpleName).append('(')
+      for (i in method.parameters.indices) {
+        val p = method.parameters[i]
+        if (i != 0) {
+          tpl.append(',').append(' ')
         }
         val pTypeName = p.asType().asTypeName()
         if (pTypeName != self && pTypeName != Request) {
-          val reader = readStmt(p)
-          val toString = if (p.asType().kind == TypeKind.ARRAY) "$reader.contentToString()" else reader
-          b.append("\${").append(toString).append('}')
+
+          tpl.append('$').append('{')
+          tpl.append(readStmt(p))
+          if (p.asType().kind == TypeKind.ARRAY) {
+            tpl.append(".contentToString()")
+          }
+          tpl.append('}')
+        } else {
+          tpl.append(p.simpleName)
         }
       }
-      b.append('\"').append('\n')
+      tpl.append(')')
+      code.add("%P", tpl.toString())
+      code.unindent()
+      code.add("\n")
     }
-    b.append("\n else -> request.toString()\n")
-    b.append('}').append('\n')
-    format.addStatement(b.toString())
-    return format.build()
+    code.addStatement("else -> request.toString()")
+    code.endControlFlow()
+    return format.addCode(code.build()).build()
   }
 
-  private fun genInvoker(typeElement: ControllerTypeElement): FunSpec {
-    val self = useClass
-    val handle = FunSpec.builder("invoke")
+  private fun genSelfInvoke(typeElement: ControllerTypeElement): FunSpec {
+    val self = userClass
+    val func = FunSpec.builder("invoke")
       .addParameter("self", self)
       .addParameter("request", Request)
       .returns(RequestResult.parameterizedBy(STAR).copy(true))
 
-    val body = typeElement.cmdMethods
-      .asSequence()
-      .filterNot { it.isAnnotationPresent(NotPlayerThread) }
-      .map { elem ->
-        val cmd = elem.cmd
-        val dummy = elem.dummy
-        val b = StringBuilder()
-        if (dummy) {
-          b.append(cmd).append(" -> null")
-        } else {
-          val controllerFunc = elem as ExecutableElement
-          b.append(cmd).append(" -> ").append("{\n")
-          controllerFunc.parameters
-            .filterNot { p ->
-              (p.simpleName.contentEquals("playerId") && p.asType().asTypeName() == Long::class.asTypeName()) ||
-                p.asType().asTypeName() == self || p.asType().asTypeName() == Request
-            }
-            .forEach {
-              b.append("val ").append(it.simpleName).append(" = ").append(readStmt(it)).append("\n")
-            }
-          b.append("controller.").append(controllerFunc.simpleName).append('(')
-          b.append(controllerFunc.parameters.joinToString(", ") { it.simpleName })
-          b.append(')')
-          b.append("\n").append("    }")
-          b.toString()
-        }
-      }.joinToString("\n")
+    val code = CodeBlock.builder()
+    code.beginControlFlow("return when(request.header.msgId.cmd.toInt())")
 
-    handle.addStatement(
-      """
-           request.body.reset()
-           return when(request.header.msgId.cmd.toInt()) {
-              $body
-              else -> null
-            }
-          """.trimIndent()
-    )
-    return handle.build()
+    for (method in typeElement.cmdMethods) {
+      if (!parameterHasUser(method)) {
+        continue
+      }
+      val dummy = getAnnotationValue(method, Cmd, "dummy", false)
+      if (dummy) {
+        continue
+      }
+      val cmd = getAnnotationValue(method, Cmd, "value", 0.toByte())
+      code.beginControlFlow("%L -> ", cmd)
+      for (parameter in method.parameters) {
+        if (isUserClass(parameter) || isRequest(parameter)) {
+          continue
+        }
+        code.addStatement("val %L =  %L", parameter.simpleName, readStmt(parameter))
+      }
+      code.addStatement(
+        "controller.%L(%L)",
+        method.simpleName,
+        method.parameters.joinToString(", ") { it.simpleName }
+      )
+      code.endControlFlow()
+    }
+    code.addStatement("else -> null")
+    code.endControlFlow()
+    return func.addCode(code.build()).build()
   }
 
-  private fun genInvoke2(typeElement: ControllerTypeElement): FunSpec {
+  private fun genPlayerIdInvoke(typeElement: ControllerTypeElement): FunSpec {
     val func = FunSpec.builder("invoke")
       .addParameter("playerId", Long::class)
       .addParameter("request", Request)
       .returns(RequestResult.parameterizedBy(STAR).copy(true))
 
-    val body = typeElement.cmdMethods
-      .asSequence()
-      .filter { it.isAnnotationPresent(NotPlayerThread) }
-      .map { elem ->
-        val cmd = getAnnotationValue(elem, Cmd, "value", 0.toByte())
-        val dummy = getAnnotationValue(elem, Cmd, "dummy", false)
-        val b = StringBuilder()
-        if (dummy) {
-          b.append(cmd).append(" -> null")
-        } else {
-          val controllerFunc = elem as ExecutableElement
-          b.append(cmd).append(" -> ").append("{\n")
-          controllerFunc.parameters
-            .filterNot { p ->
-              (p.simpleName.contentEquals("playerId") &&
-                p.asType().asTypeName() == Long::class.asTypeName()) || p.asType().asTypeName() == Request
-            }
-            .forEach {
-              b.append("val ").append(it.simpleName).append(" = ").append(readStmt(it)).append("\n")
-            }
-          b.append("controller.").append(controllerFunc.simpleName).append('(')
-          b.append(controllerFunc.parameters.joinToString(", ") { it.simpleName })
-          b.append(')')
-          b.append("\n").append("    }")
-          b.toString()
+    val code = CodeBlock.builder()
+    code.beginControlFlow("return when(request.header.msgId.cmd.toInt())")
+
+    for (method in typeElement.cmdMethods) {
+      if (parameterHasUser(method)) {
+        continue
+      }
+      val dummy = getAnnotationValue(method, Cmd, "dummy", false)
+      if (dummy) {
+        continue
+      }
+      val cmd = getAnnotationValue(method, Cmd, "value", 0.toByte())
+      code.beginControlFlow("%L -> ", cmd)
+      for (parameter in method.parameters) {
+        if (isPlayerId(parameter) || isRequest(parameter)) {
+          continue
         }
-      }.joinToString("\n")
-    func.addCode(
-      """
-       return when(request.header.msgId.cmd.toInt()) {
-              $body
-              else -> null
-            } 
-      """.trimIndent()
-    )
-    return func.build()
+        code.addStatement("val %L =  %L", parameter.simpleName, readStmt(parameter))
+      }
+      code.addStatement(
+        "controller.%L(%L)",
+        method.simpleName,
+        method.parameters.joinToString(", ") { it.simpleName }
+      )
+      code.endControlFlow()
+    }
+    code.addStatement("else -> null")
+    code.endControlFlow()
+    return func.addCode(code.build()).build()
+  }
+
+  private fun isPlayerId(parameter: VariableElement): Boolean {
+    return parameter.simpleName.contentEquals("playerId")
+      && parameter.asType().asTypeName() == Long::class.asTypeName()
+  }
+
+  private fun isRequest(parameter: VariableElement): Boolean {
+    return parameter.asType().asTypeName() == Request
+  }
+
+  private fun isUserClass(parameter: VariableElement): Boolean {
+    return parameter.asType().asTypeName() == userClass
+  }
+
+  private fun parameterHasUser(elem: CmdExecutableElement): Boolean {
+    return elem.element.parameters.any { it.asType().toString() == userClass.canonicalName }
   }
 
   private fun readStmt(element: VariableElement): String {
@@ -364,7 +361,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
         val declaredType = element.asType() as DeclaredType
         if (typeUtils.isSameType(declaredType, elementUtils.getTypeElement(String::class.java.name).asType())) {
           "readString()"
-        } else {
+        } else if (isList(declaredType)) {
           val typeMirror = declaredType.typeArguments[0]
           when (typeMirror.kind) {
             TypeKind.BYTE -> "readByteList()"
@@ -373,6 +370,8 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
             TypeKind.DECLARED -> "readStringList()"
             else -> throw UnsupportedOperationException("Unsupported parameter type: ${element.asType()}")
           }
+        } else {
+          throw UnsupportedOperationException("Unsupported parameter type: ${element.asType()}")
         }
       }
       else -> throw UnsupportedOperationException("Unsupported parameter type: ${element.asType()}")

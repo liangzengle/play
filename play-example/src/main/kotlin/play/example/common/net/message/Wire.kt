@@ -2,6 +2,7 @@ package play.example.common.net.message
 
 import play.example.request.RequestProto
 import play.mvc.*
+import play.util.concurrent.PlayFuture
 import play.util.control.Result2
 import play.util.control.map
 
@@ -19,12 +20,12 @@ inline fun <T : com.squareup.wire.Message<*, *>> RequestResult.Companion.ok(f: (
 }
 
 @Suppress("UNCHECKED_CAST")
-inline fun <T> RequestResult.Companion.of(f: () -> Result2<com.squareup.wire.Message<*, *>>): RequestResult<T> {
+inline fun <T : com.squareup.wire.Message<*, *>> RequestResult.Companion.of(f: () -> Result2<T>): RequestResult<T> {
   return RequestResult(f().map { WireMessage(it) }) as RequestResult<T>
 }
 
 @JvmName("async")
-inline fun <T : com.squareup.wire.Message<*, *>> async(f: () -> io.vavr.concurrent.Future<RequestResult<T>>): RequestResult<T> {
+inline fun <T : com.squareup.wire.Message<*, *>> RequestResult.Companion.async(f: () -> PlayFuture<RequestResult<T>>): RequestResult<T> {
   return RequestResult.Future(f())
 }
 

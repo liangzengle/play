@@ -1,7 +1,8 @@
 package play.example.module.reward.model
 
 import play.example.common.IdEnum
-import play.example.common.IdEnumCompanion
+import play.example.common.IdEnumOps
+import play.example.common.idEnumOpsOf
 import play.example.module.reward.config.RawCurrencyReward
 import play.example.module.reward.config.RawItemReward
 import play.example.module.reward.config.RawReward
@@ -17,7 +18,5 @@ enum class RewardType(
   Gold(2),
   ;
 
-  companion object : IdEnumCompanion<RewardType> {
-    override val elems: Array<RewardType> = values()
-  }
+  companion object : IdEnumOps<RewardType> by idEnumOpsOf(values())
 }

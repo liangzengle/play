@@ -21,7 +21,7 @@ interface LongTuple {
     fun of(_1: Long, _2: Long, _3: Long, _4: Long, _5: Long): LongTuple5 = LongTuple5(_1, _2, _3, _4, _5)
   }
 
-  fun size(): Long
+  fun size(): Int
 
   fun toArray(): LongArray
 
@@ -33,11 +33,13 @@ data class LongTuple2(val _1: Long, val _2: Long) : LongTuple, Comparable<LongTu
     return ComparisonChain.start().compare(_1, other._1).compare(_2, other._2).result()
   }
 
-  override fun size(): Long = 2
+  override fun size(): Int = 2
 
   override fun toArray(): LongArray = longArrayOf(_1, _2)
 
   override fun toStream(): LongStream = LongStream.of(_1, _2)
+
+  fun swap() = LongTuple.of(_2, _1)
 }
 
 data class LongTuple3(val _1: Long, val _2: Long, val _3: Long) : LongTuple, Comparable<LongTuple3> {
@@ -49,7 +51,7 @@ data class LongTuple3(val _1: Long, val _2: Long, val _3: Long) : LongTuple, Com
       .result()
   }
 
-  override fun size(): Long = 3
+  override fun size(): Int = 3
 
   override fun toArray(): LongArray = longArrayOf(_1, _2, _3)
 
@@ -66,7 +68,7 @@ data class LongTuple4(val _1: Long, val _2: Long, val _3: Long, val _4: Long) : 
       .result()
   }
 
-  override fun size(): Long = 4
+  override fun size(): Int = 4
 
   override fun toArray(): LongArray = longArrayOf(_1, _2, _3, _4)
 
@@ -85,7 +87,7 @@ data class LongTuple5(val _1: Long, val _2: Long, val _3: Long, val _4: Long, va
       .result()
   }
 
-  override fun size(): Long = 5
+  override fun size(): Int = 5
 
   override fun toArray(): LongArray = longArrayOf(_1, _2, _3, _4, _5)
 

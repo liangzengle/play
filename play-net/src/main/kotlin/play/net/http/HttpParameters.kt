@@ -1,6 +1,6 @@
 package play.net.http
 
-import play.util.collection.mapToObj
+import play.util.mapToObj
 import play.util.primitive.toByteChecked
 import play.util.primitive.toShortChecked
 import java.util.*

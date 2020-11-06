@@ -2,7 +2,7 @@ package play.example.module.player
 
 import play.example.module.account.message.LoginProto
 import play.example.module.player.entity.Player
-import play.example.module.player.entity.PlayerCache
+import play.example.module.player.entity.PlayerEntityCache
 import play.example.module.player.event.*
 import play.example.module.player.message.PlayerProto
 import play.util.time.currentMillis
@@ -15,7 +15,7 @@ import javax.inject.Singleton
 @Singleton
 class PlayerService @Inject constructor(
   private val eventBus: PlayerEventBus,
-  private val playerCache: PlayerCache,
+  private val playerCache: PlayerEntityCache,
   private val onlinePlayerService: OnlinePlayerService
 ) : PlayerEventListener {
 

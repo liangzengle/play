@@ -5,36 +5,38 @@ import org.reflections.scanners.SubTypesScanner
 import play.util.reflect.isAbstract
 import java.util.stream.Stream
 import kotlin.streams.asSequence
+import kotlin.streams.toList
 
 /**
  * Created by LiangZengle on 2020/2/16.
  */
 class ClassScanner(packagesToScan: Collection<String>) {
+  constructor(vararg packagesToScan: String) : this(packagesToScan.asList())
 
   init {
     Log.info { "ClassScanner scanning packages: $packagesToScan" }
   }
 
-  val reflections = Reflections(packagesToScan.toTypedArray(), SubTypesScanner(false))
+  val reflections = Reflections(packagesToScan, SubTypesScanner(false))
 
   /**
    * 获取[superType]的子类（不包括：MemberClass\LocalClass\AnonymousClass）
    */
-  fun <T> getSubTypesSet(superType: Class<T>): Set<Class<out T>> {
-    return getSubTypesSequence(superType).toSet()
+  fun <T> getConcreteSubTypesSet(superType: Class<T>): Set<Class<out T>> {
+    return getConcreteSubTypesSequence(superType).toSet()
   }
 
   /**
    * 获取[superType]的子类（不包括：MemberClass\LocalClass\AnonymousClass）
    */
-  fun <T> getSubTypesList(superType: Class<T>): List<Class<out T>> {
-    return getSubTypesStream(superType).asSequence().toList()
+  fun <T> getConcreteSubTypesList(superType: Class<T>): List<Class<out T>> {
+    return getConcreteSubTypesStream(superType).toList()
   }
 
   /**
    * 获取[superType]的子类（不包括：MemberClass\LocalClass\AnonymousClass）
    */
-  fun <T> getSubTypesStream(superType: Class<T>): Stream<Class<out T>> {
+  fun <T> getConcreteSubTypesStream(superType: Class<T>): Stream<Class<out T>> {
     return reflections.getSubTypesOf(superType).stream()
       .filter { !it.isAbstract() && !it.isMemberClass && !it.isLocalClass && !it.isAnonymousClass }
   }
@@ -42,8 +44,8 @@ class ClassScanner(packagesToScan: Collection<String>) {
   /**
    * 获取[superType]的子类（不包括：MemberClass\LocalClass\AnonymousClass）
    */
-  fun <T> getSubTypesSequence(superType: Class<T>): Sequence<Class<out T>> {
-    return getSubTypesStream(superType).asSequence()
+  fun <T> getConcreteSubTypesSequence(superType: Class<T>): Sequence<Class<out T>> {
+    return getConcreteSubTypesStream(superType).asSequence()
   }
 
   /**

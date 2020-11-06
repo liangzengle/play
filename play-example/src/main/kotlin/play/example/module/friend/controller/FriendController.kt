@@ -1,9 +1,12 @@
 package play.example.module.friend.controller
 
-import io.vavr.concurrent.Future
 import play.example.module.ModuleId
 import play.example.module.friend.FriendService
-import play.mvc.*
+import play.mvc.AbstractController
+import play.mvc.Cmd
+import play.mvc.Controller
+import play.mvc.RequestResult
+import play.util.concurrent.PlayFuture
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,22 +18,19 @@ import javax.inject.Singleton
 class FriendController @Inject constructor(
   private val friendService: FriendService
 ) : AbstractController(ModuleId.Friend) {
-  
-  @NotPlayerThread
+
   @Cmd(1)
   fun getInfo(playerId: Long) = RequestResult {
     friendService.getInfo(playerId)
   }
 
-  @NotPlayerThread
   @Cmd(2)
   fun getInfo2(playerId: Long) = RequestResult {
     friendService.getInfo2(playerId)
   }
 
-  @NotPlayerThread
   @Cmd(3)
   fun getInfo3(playerId: Long) = RequestResult {
-    Future.successful(RequestResult.Ok(FriendInfo()))
+    PlayFuture.successful(RequestResult.Ok(FriendInfo()))
   }
 }

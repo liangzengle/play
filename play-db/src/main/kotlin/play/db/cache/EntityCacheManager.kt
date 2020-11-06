@@ -10,14 +10,15 @@ import play.getLogger
 import play.inject.Injector
 import play.inject.guice.PostConstruct
 import play.util.collection.toImmutableMap
+import play.util.control.getCause
 import play.util.reflect.Reflect
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
 import kotlin.reflect.KClass
+import kotlin.time.seconds
 
 @Singleton
 class EntityCacheManager @Inject constructor(
@@ -40,10 +41,9 @@ class EntityCacheManager @Inject constructor(
     checkUnhandledCacheDump()
     lifecycle.addShutdownHook("缓存数据入库") {
       caches.values.forEach { cache ->
-        val f = cache.flush()
-        f.await(60, TimeUnit.SECONDS)
-        if (f.isFailure) {
-          logger.error(f.cause.get()) { "[${cache.entityClass().simpleName}]缓存数据入库失败，尝试保存到文件" }
+        val result = cache.flush().getResult(60.seconds)
+        if (result.isFailure) {
+          logger.error(result.getCause()) { "[${cache.entityClass.simpleName}]缓存数据入库失败，尝试保存到文件" }
           cacheDump(cache, dumpDir)
         }
       }
@@ -67,16 +67,17 @@ class EntityCacheManager @Inject constructor(
   }
 
   private fun cacheDump(cache: EntityCache<*, *>, outputDir: File) {
+    val simpleName = cache.entityClass.simpleName
     try {
       if (!outputDir.exists()) {
         outputDir.mkdirs()
       }
       val content = cache.dump()
-      val file = outputDir.resolve("${cache.entityClass().simpleName}.json")
+      val file = outputDir.resolve("$simpleName.json")
       file.writeText(content)
-      logger.info { "[${cache.entityClass().simpleName}]缓存数据保存成功： $file" }
+      logger.info { "[$simpleName]缓存数据保存成功： $file" }
     } catch (e: Exception) {
-      logger.error(e) { "[${cache.entityClass().simpleName}]缓存数据保存失败" }
+      logger.error(e) { "[$simpleName]缓存数据保存失败" }
     }
   }
 

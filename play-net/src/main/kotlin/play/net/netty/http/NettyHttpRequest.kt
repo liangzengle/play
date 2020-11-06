@@ -3,11 +3,12 @@ package play.net.netty.http
 import com.google.common.net.HostAndPort
 import io.netty.handler.codec.http.FullHttpRequest
 import io.netty.handler.codec.http.QueryStringDecoder
-import io.vavr.control.Option
-import io.vavr.kotlin.option
 import play.net.http.AbstractHttpRequest
 import play.net.http.BasicHttpRequest
 import play.net.http.HttpParameters
+import play.util.toOptional
+import java.util.*
+import kotlin.NoSuchElementException
 
 class BasicNettyHttpRequest internal constructor(
   val id: Long,
@@ -26,7 +27,7 @@ class BasicNettyHttpRequest internal constructor(
 
   override fun remotePost(): Int = remoteAddress.port
 
-  override fun getHeader(name: String): Option<String> = toNetty.headers().get(name).option()
+  override fun getHeader(name: String): Optional<String> = toNetty.headers().get(name).toOptional()
 
   override fun toString(): String {
     return "$id ${method()} ${uri()} ${toNetty.protocolVersion()} ${remoteHost()}:${remotePost()}"

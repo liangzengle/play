@@ -14,11 +14,11 @@ import javax.inject.Singleton
 class PlatformServiceProvider @Inject constructor(private val injector: Injector) : PostConstruct {
 
   private lateinit var services: Map<Platform, PlatformService>
-  
+
   override fun postConstruct() {
     services = injector.getInstancesOfType(PlatformService::class.java).toImmutableEnumMap { it.platform }
-    if (services.size != Platform.size()) {
-      val platforms = Platform.elems.asSequence().filterNot(services::containsKey).toList()
+    if (services.size != Platform.size) {
+      val platforms = Platform.list().asSequence().filterNot(services::containsKey).toList()
       throw IllegalStateException("以下平台缺少PlatformService: $platforms")
     }
   }
@@ -32,4 +32,6 @@ class PlatformServiceProvider @Inject constructor(private val injector: Injector
   fun getServiceOrNull(platformName: String): PlatformService? {
     return Platform.getOrNull(platformName)?.let { getService(it) }
   }
+
+  fun getServiceOrNull(platform: Platform): PlatformService? = services[platform]
 }

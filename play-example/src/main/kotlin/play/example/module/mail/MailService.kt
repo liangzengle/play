@@ -1,7 +1,7 @@
 package play.example.module.mail
 
 import play.Log
-import play.example.module.common.config.CommonSettingSet
+import play.example.module.common.config.CommonSettingConf
 import play.example.module.mail.config.MailConfigSet
 import play.example.module.mail.domain.PublicMailReceiverQualifier
 import play.example.module.mail.domain.ReceiverQualification
@@ -21,8 +21,8 @@ import javax.inject.Singleton
 
 @Singleton
 class MailService @Inject constructor(
-  private val publicMailCache: PublicMailCache,
-  private val playerMailCache: PlayerMailCache,
+  private val publicMailCache: PublicMailEntityCache,
+  private val playerMailCache: PlayerMailEntityCache,
   private val eventBus: PlayerEventBus,
   private val injector: Injector,
   private val rawRewardConvert: RawRewardConverter
@@ -91,7 +91,7 @@ class MailService @Inject constructor(
   }
 
   fun sendMail(self: Self, mailId: Int, rewards: List<Reward>, source: Int) {
-    val mailCfgId = if (!MailConfigSet.contains(mailId)) CommonSettingSet.bagFullMailId else mailId
+    val mailCfgId = if (!MailConfigSet.contains(mailId)) CommonSettingConf.bagFullMailId else mailId
     if (mailCfgId != mailId) {
       Log.error { "找不到邮件模板: $mailId" }
     }

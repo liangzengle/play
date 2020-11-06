@@ -17,6 +17,6 @@ abstract class PlatformService {
   open fun getAccountId(params: LoginProto) =
     DefaultAccountId(Platform.getOrThrow(params.platform).id.toByte(), params.serverId.toShort(), params.account)
 
-  open fun createAccount(id: Long, platformId: Byte, serverId: Short, name: String, params: LoginProto): Account =
+  open fun newAccount(id: Long, platformId: Byte, serverId: Short, name: String, params: LoginProto): Account =
     Account(id, name, platformId, serverId, currentMillis())
 }

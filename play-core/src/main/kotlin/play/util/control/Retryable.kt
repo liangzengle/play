@@ -4,7 +4,7 @@ import play.getLogger
 import play.util.concurrent.CommonPool
 import play.util.scheduling.executor.ScheduledExecutor
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
+import java.util.concurrent.atomic.AtomicLongFieldUpdater
 import kotlin.time.Duration
 
 /**
@@ -18,14 +18,21 @@ import kotlin.time.Duration
 class Retryable(
   val name: String,
   private val attempts: Int,
-  private val intervalMillis: Long,
+  private val intervalMillis: Int,
   private val task: () -> Boolean
 ) : Runnable {
 
   constructor(name: String, attempts: Int, interval: Duration, task: () -> Boolean) : this(
     name,
     attempts,
-    interval.toLongMilliseconds(),
+    interval.toLongMilliseconds().toInt(),
+    task
+  )
+
+  constructor(name: String, attempts: Int, interval: java.time.Duration, task: () -> Boolean) : this(
+    name,
+    attempts,
+    interval.toMillis().toInt(),
     task
   )
 
@@ -36,22 +43,24 @@ class Retryable(
   }
 
   @Volatile
-  private var attempted = -1
+  private var attempted = -1L
 
   override fun run() {
     val attempted = this.attempted
-    if (attempted == -1) {
-      throw IllegalStateException("$this not started.")
+    if (attempted == -1L) {
+      throw IllegalStateException("$this not started, call `start` instead.")
     }
     var succeed = false
     try {
       succeed = task()
     } catch (e: Exception) {
-      logger.debug(e) { "[$this] attempt failed" }
+      logger.warn(e) { "[$this] attempt failed" }
     } finally {
       val nowAttempted = attempted + 1
       if (!AttemptedUpdater.compareAndSet(this, attempted, nowAttempted)) {
-        throw ConcurrentModificationException("should not happen")
+        val e = ConcurrentModificationException("should not happen")
+        logger.error(e) { "[$this] is running concurrently" }
+        throw e
       }
       if (succeed) {
         logger.info { "[$this] succeeded: attempted $nowAttempted" }
@@ -65,19 +74,23 @@ class Retryable(
     }
   }
 
-  fun start(immediately: Boolean) {
+  /**
+   * 启动任务
+   * @param runImmediately 是否立即执行一次
+   */
+  fun start(runImmediately: Boolean = false) {
     if (attempts == 0) {
       return
     }
     if (!AttemptedUpdater.compareAndSet(this, -1, 0)) {
       throw IllegalStateException("[$this] started.")
     }
-    val delay = if (immediately) 0 else intervalMillis
+    val delay = if (runImmediately) 0 else intervalMillis
     schedule(delay)
   }
 
-  private fun schedule(delayMillis: Long) {
-    ScheduledExecutor.get().schedule({ CommonPool.submit(this) }, delayMillis, TimeUnit.MILLISECONDS)
+  private fun schedule(delayMillis: Int) {
+    ScheduledExecutor.get().schedule({ CommonPool.submit(this) }, delayMillis.toLong(), TimeUnit.MILLISECONDS)
   }
 
   override fun toString(): String {
@@ -88,11 +101,11 @@ class Retryable(
     private val logger = getLogger()
 
     @JvmStatic
-    private val AttemptedUpdater = AtomicIntegerFieldUpdater.newUpdater(Retryable::class.java, "attempted")
+    private val AttemptedUpdater = AtomicLongFieldUpdater.newUpdater(Retryable::class.java, "attempted")
 
     fun forever(
       name: String,
-      intervalMillis: Long,
+      intervalMillis: Int,
       task: () -> Boolean
     ): Retryable = Retryable(name, -1, intervalMillis, task)
   }

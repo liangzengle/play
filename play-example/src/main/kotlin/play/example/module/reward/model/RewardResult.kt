@@ -33,3 +33,5 @@ abstract class CostResult(val tryResult: TryCostResult) : RewardOrCostResult() {
 class CurrencyCostResult(tryResult: TryCostResult, val currentValue: Long) : CostResult(tryResult)
 
 class ItemLikeCostResult(tryResult: TryCostResult) : CostResult(tryResult)
+
+class CostResultSet(val results: List<CostResult>)

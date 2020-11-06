@@ -8,10 +8,9 @@ import play.example.module.platform.domain.Platform
 import play.example.module.player.event.PlayerEventBus
 import play.example.module.server.config.ServerConfig
 import play.example.module.server.entity.Server
-import play.example.module.server.entity.ServerCache
+import play.example.module.server.entity.ServerEntityCache
 import play.example.module.server.event.ServerOpenEvent
 import play.example.module.server.event.ServerOpenPlayerEvent
-import play.util.concurrent.awaitSuccessOrThrow
 import play.util.max
 import play.util.primitive.toIntSaturated
 import play.util.reflect.classOf
@@ -21,11 +20,12 @@ import play.util.time.currentDateTime
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.seconds
 
 @Singleton
 class ServerService @Inject constructor(
   queryService: QueryService,
-  val serverCache: ServerCache,
+  val serverCache: ServerEntityCache,
   val conf: ServerConfig,
   val playerEventBus: PlayerEventBus,
   val applicationEventBus: ApplicationEventBus
@@ -34,7 +34,7 @@ class ServerService @Inject constructor(
   private val serverIds: ImmutableIntSet
 
   init {
-    val idList = queryService.listIds(classOf<Server>()).awaitSuccessOrThrow(5000)
+    val idList = queryService.listIds(classOf<Server>()).get(5.seconds)
     val serverIds = IntSets.mutable.ofAll(idList)
     if (serverIds.isEmpty) {
       serverCache.create(Server(conf.serverId.toInt()))
@@ -47,7 +47,7 @@ class ServerService @Inject constructor(
 
   fun isServerIdValid(serverId: Int) = serverIds.contains(serverId)
 
-  fun isPlatformNameValid(platform: Platform) = conf.platformIds.contains(platform.getId())
+  fun isPlatformValid(platform: Platform) = conf.platformIds.contains(platform.getId())
 
   fun getServerOpenDays(toDate: LocalDate = currentDate()): Int {
     val openDate = serverCache.getOrThrow(conf.serverId.toInt()).getOpenDate()

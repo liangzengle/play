@@ -7,4 +7,5 @@ object ModuleId {
   const val Equip: Short = 3
   const val Item: Short = 4
   const val Friend: Short = 5
+  const val Guild: Short = 6
 }

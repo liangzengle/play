@@ -1,10 +1,9 @@
 package play.net.http
 
-import io.vavr.concurrent.Future
-import io.vavr.control.Try
 import play.getLogger
 import play.util.collection.mkString
-import play.util.concurrent.toFuture
+import play.util.concurrent.Future
+import play.util.concurrent.Future.Companion.toFuture
 import play.util.exception.isFatal
 import java.net.URI
 import java.net.URLEncoder
@@ -36,12 +35,16 @@ class HttpClient @Inject constructor(private val client: HttpClient) {
     uri: String,
     params: Map<String, Any>,
     headers: Map<String, String> = mapOf()
-  ): Future<HttpResponse<String?>> {
+  ): Future<HttpResponse<String>> {
     val request = makeGetRequest(uri, params, headers)
     return sendAsync(request)
   }
 
-  fun post(uri: String, form: Map<String, Any>, headers: Map<String, String> = mapOf()): Future<HttpResponse<String?>> {
+  fun post(
+    uri: String,
+    form: Map<String, Any>,
+    headers: Map<String, String> = mapOf()
+  ): Future<HttpResponse<String>> {
     val b = HttpRequest.newBuilder()
     b.uri(URI.create(uri))
       .timeout(readTimeout)
@@ -51,7 +54,11 @@ class HttpClient @Inject constructor(private val client: HttpClient) {
     return sendAsync(b.build())
   }
 
-  fun post(uri: String, json: String, headers: Map<String, String> = mapOf()): Future<HttpResponse<String?>> {
+  fun post(
+    uri: String,
+    json: String,
+    headers: Map<String, String> = mapOf()
+  ): Future<HttpResponse<String>> {
     val b = HttpRequest.newBuilder()
     b.uri(URI.create(uri))
       .timeout(readTimeout)
@@ -86,13 +93,13 @@ class HttpClient @Inject constructor(private val client: HttpClient) {
       })
   }
 
-  fun sendAsync(request: HttpRequest): Future<HttpResponse<String?>> {
+  fun sendAsync(request: HttpRequest): Future<HttpResponse<String>> {
     val requestNo = counter.incrementAndGet()
     logRequest(requestNo, request)
     return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
       .toFuture()
-      .andThen { logResponse(requestNo, it) }
-      .filter { it.isSuccess() }
+      .andThen { v, e -> logResponse(requestNo, request, v, e) }
+      .mapToFailure({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.statusCode()) })
   }
 
   private fun logRequest(requestNo: Long, request: HttpRequest) {
@@ -126,26 +133,29 @@ class HttpClient @Inject constructor(private val client: HttpClient) {
     )
   }
 
-  private fun logResponse(requestNo: Long, maybeResponse: Try<HttpResponse<String>>) {
-    if (maybeResponse.isFailure) {
-      var cause = maybeResponse.cause
+  private fun logResponse(
+    requestNo: Long,
+    request: HttpRequest,
+    response: HttpResponse<String>?,
+    exception: Throwable?
+  ) {
+    if (response == null && exception == null) {
+      logger.error { "[$requestNo][$request] returns nothing." }
+    } else if (exception != null) {
+      var cause: Throwable = exception
       if (cause is CompletionException) {
-        cause = cause.cause
+        cause = cause.cause ?: cause
       }
       when (cause) {
         is HttpConnectTimeoutException -> logger.error { "[$requestNo] http request connect timeout" }
         is HttpTimeoutException -> logger.error { "[$requestNo] http request timeout" }
         else -> logger.error(cause) { "[$requestNo] http request failure: ${cause.javaClass.simpleName}" }
       }
-    } else {
-      val response = maybeResponse.get()
+    } else if (response != null) {
       logger.info { "[$requestNo] http response: ${response.statusCode()} ${response.body()}" }
     }
   }
 }
-
-fun <T> HttpResponse<T?>.isSuccess(): Boolean = HttpStatusCode.isSuccess(statusCode())
-
 
 @Singleton
 class DefaultHttpClientProvider : Provider<HttpClient> {

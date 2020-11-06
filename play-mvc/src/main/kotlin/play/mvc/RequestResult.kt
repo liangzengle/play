@@ -1,5 +1,6 @@
 package play.mvc
 
+import play.util.concurrent.PlayFuture
 import play.util.control.Result2
 
 /**
@@ -14,7 +15,7 @@ sealed class RequestResult<out T> {
 
   object Nothing : RequestResult<Unit>()
 
-  data class Future<T>(val future: io.vavr.concurrent.Future<RequestResult<T>>) : RequestResult<T>()
+  data class Future<T>(val future: PlayFuture<RequestResult<T>>) : RequestResult<T>()
 
   companion object {
     operator fun invoke(result: Result2<Message>): RequestResult<Message> =
@@ -48,7 +49,7 @@ sealed class RequestResult<out T> {
 
     @JvmName("async")
     @OverloadResolutionByLambdaReturnType
-    inline operator fun <T> invoke(f: () -> io.vavr.concurrent.Future<RequestResult<T>>): RequestResult<T> {
+    inline operator fun <T> invoke(f: () -> PlayFuture<RequestResult<T>>): RequestResult<T> {
       return Future(f())
     }
   }

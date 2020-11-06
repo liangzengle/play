@@ -1,11 +1,11 @@
 package play.db.memory
 
-import io.vavr.concurrent.Future
-import io.vavr.control.Option
 import play.ApplicationLifecycle
 import play.db.Entity
 import play.db.Repository
 import play.db.ResultMap
+import play.util.concurrent.Future
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import javax.annotation.CheckReturnValue
@@ -53,9 +53,9 @@ class MemoryRepository @Inject constructor(lifecycle: ApplicationLifecycle) : Re
     return Future.successful(Unit)
   }
 
-  override fun <ID, E : Entity<ID>> findById(id: ID, entityClass: Class<E>): Future<Option<E>> {
+  override fun <ID, E : Entity<ID>> findById(id: ID, entityClass: Class<E>): Future<Optional<E>> {
     val e = getMap(entityClass)[id]
-    return Future.successful(Option.of(e) as Option<E>)
+    return Future.successful(Optional.ofNullable(e) as Optional<E>)
   }
 
   override fun <ID, E : Entity<ID>> listAll(entityClass: Class<E>): Future<List<E>> {
@@ -68,9 +68,9 @@ class MemoryRepository @Inject constructor(lifecycle: ApplicationLifecycle) : Re
 
   override fun <ID, E : Entity<ID>> query(
     entityClass: Class<E>,
-    where: Option<String>,
-    order: Option<String>,
-    limit: Option<Int>
+    where: Optional<String>,
+    order: Optional<String>,
+    limit: Optional<Int>
   ): Future<List<E>> {
     return Future.successful(emptyList())
   }
@@ -78,9 +78,9 @@ class MemoryRepository @Inject constructor(lifecycle: ApplicationLifecycle) : Re
   override fun <ID, E : Entity<ID>> query(
     entityClass: Class<E>,
     fields: List<String>,
-    where: Option<String>,
-    order: Option<String>,
-    limit: Option<Int>
+    where: Optional<String>,
+    order: Optional<String>,
+    limit: Optional<Int>
   ): Future<List<ResultMap>> {
     return Future.successful(emptyList())
   }
@@ -95,9 +95,9 @@ class MemoryRepository @Inject constructor(lifecycle: ApplicationLifecycle) : Re
   override fun <ID, E : Entity<ID>, R> fold(
     entityClass: Class<E>,
     fields: List<String>,
-    where: Option<String>,
-    order: Option<String>,
-    limit: Option<Int>,
+    where: Optional<String>,
+    order: Optional<String>,
+    limit: Optional<Int>,
     initial: R,
     folder: (R, ResultMap) -> R
   ): Future<R> {

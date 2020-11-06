@@ -1,6 +1,7 @@
 package play.example.common.id
 
-import play.util.collection.forEach
+import play.example.module.server.config.ServerConfig
+import play.util.forEach
 import play.util.primitive.toInt
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
@@ -10,11 +11,11 @@ import java.util.concurrent.atomic.AtomicLong
  */
 @Suppress("ConvertTwoComparisonsToRangeCheck")
 class GameUIDGenerator(
-  val bitsMax: Int,
-  val platformBits: Int,
-  val serverBits: Int,
-  val platformValue: Int,
-  val serverValue: Int,
+  private val bitsMax: Int,
+  private val platformBits: Int,
+  private val serverBits: Int,
+  private val platformId: Int,
+  private val serverId: Int,
   currentId: OptionalLong
 ) : LongIdGenerator() {
   val min: Long
@@ -25,21 +26,21 @@ class GameUIDGenerator(
     require(bitsMax > 0 && bitsMax < 64) { "`bitsMax` illegal: $bitsMax" }
     require(platformBits > 0 && platformBits < 32) { "`platformBits` illegal: $platformBits" }
     require(serverBits > 0 && serverBits < 32) { "`serverBits` illegal: $serverBits" }
-    require(platformValue > 0 && platformValue < (1 shl platformBits)) { "`platformValue` overflow: $platformValue" }
-    require(serverValue > 0 && serverValue < (1 shl serverBits)) { "`serverValue` overflow: $serverValue" }
+    require(platformId > 0 && platformId < (1 shl platformBits)) { "`platformValue` overflow: $platformId" }
+    require(serverId > 0 && serverId < (1 shl serverBits)) { "`serverValue` overflow: $serverId" }
 
-    min = platformValue.toLong() shl (bitsMax - platformBits) or
-      (serverValue.toLong() shl (bitsMax - platformBits - serverBits))
+    min = platformId.toLong() shl (bitsMax - platformBits) or
+      (serverId.toLong() shl (bitsMax - platformBits - serverBits))
     max = min or (1L shl bitsMax - platformBits - serverBits) - 1
     currentId.forEach { current -> require(current >= min && current <= max) { "`currentId` overflow: $current" } }
     current = AtomicLong(currentId.orElse(min - 1))
   }
 
   constructor(
-    platformValue: Int,
-    serverValue: Int,
+    platformId: Int,
+    serverId: Int,
     currentId: OptionalLong
-  ) : this(BitsMax, PlatformIdBits, ServerIdBits, platformValue, serverValue, currentId)
+  ) : this(BitsMax, PlatformIdBits, ServerIdBits, platformId, serverId, currentId)
 
   override fun nextOrThrow(): Long {
     val nextId = next0()
@@ -82,6 +83,15 @@ class GameUIDGenerator(
     private const val ServerIdBits = 15
     private const val PlatformIdMask = (1.toLong() shl PlatformIdBits) - 1
     private const val ServerIdMask = (1.toLong() shl ServerIdBits) - 1
+
+    fun fromId(id: Long): GameUIDGenerator {
+      val platformId = getPlatformId(id)
+      val serverId = getServerId(id)
+      return GameUIDGenerator(platformId.toInt(), serverId.toInt(), OptionalLong.of(id))
+    }
+
+    fun createDefault(): GameUIDGenerator =
+      GameUIDGenerator(ServerConfig.platformId.toInt(), ServerConfig.serverId.toInt(), OptionalLong.empty())
 
     fun getPlatformId(id: Long): Byte = (id shr (BitsMax - PlatformIdBits) and PlatformIdMask).toByte()
     fun getServerId(id: Long): Short = (id shr (BitsMax - PlatformIdBits - ServerIdBits) and ServerIdMask).toShort()

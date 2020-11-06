@@ -1,6 +1,8 @@
 package play.util.concurrent
 
 import java.util.concurrent.*
+import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 
 /**
  *
@@ -8,27 +10,38 @@ import java.util.concurrent.*
  */
 class CallerRunExecutorService : ExecutorService {
 
+  @Volatile
+  private var shutdown = 0
+
+  companion object {
+    @JvmStatic
+    private val SHUTDOWN_UPDATER =
+      AtomicIntegerFieldUpdater.newUpdater(CallerRunExecutorService::class.java, "shutdown")
+  }
+
   override fun execute(command: Runnable) {
     command.run()
   }
 
   override fun shutdown() {
-
+    SHUTDOWN_UPDATER.compareAndSet(this, 0, 1)
   }
 
-  override fun shutdownNow(): MutableList<Runnable> {
-    return ArrayList(0)
+  override fun shutdownNow(): List<Runnable> {
+    shutdown()
+    return emptyList()
   }
 
   override fun isShutdown(): Boolean {
-    return false
+    return shutdown != 0
   }
 
   override fun isTerminated(): Boolean {
-    return false
+    return shutdown != 0
   }
 
   override fun awaitTermination(timeout: Long, unit: TimeUnit): Boolean {
+    require(isShutdown) { "should call `shutdown` first." }
     return true
   }
 

@@ -1,6 +1,9 @@
 package play.example.module.platform.domain
 
-import play.example.common.*
+import play.example.common.IdEnum
+import play.example.common.IdNamedEnumOps
+import play.example.common.NamedEnum
+import play.example.common.idNamedEnumOpsOf
 
 enum class Platform(override val id: Int, private val text: String) : IdEnum<Platform>, NamedEnum<Platform> {
   // 开发环境
@@ -19,13 +22,5 @@ enum class Platform(override val id: Int, private val text: String) : IdEnum<Pla
     return text
   }
 
-  companion object : IdEnumCompanion<Platform>, NamedEnumCompanion<Platform>, SizedEnumCompanion<Platform> {
-    override val elems = values()
-
-    // 需要先定义elems
-    init {
-      ensureUniqueId()
-      ensureUniqueName()
-    }
-  }
+  companion object : IdNamedEnumOps<Platform> by idNamedEnumOpsOf(values())
 }

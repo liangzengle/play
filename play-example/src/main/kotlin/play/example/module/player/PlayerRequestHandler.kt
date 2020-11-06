@@ -9,6 +9,7 @@ import play.getLogger
 import play.mvc.Request
 import play.mvc.RequestResult
 import play.mvc.Response
+import play.util.control.getCause
 import play.util.exception.isFatal
 import play.util.function.IntIntPredicate
 import javax.inject.Inject
@@ -71,8 +72,8 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
       is RequestResult.Ok<*> -> write(playerId, Response(request.header, 0, result.value))
       is RequestResult.Future -> {
         result.future.onComplete {
-          if (it.isSuccess) onResult(playerId, request, it.get())
-          else onFailure(playerId, request, it.cause)
+          if (it.isSuccess) onResult(playerId, request, it.getOrThrow())
+          else onFailure(playerId, request, it.getCause())
         }
       }
       RequestResult.Nothing -> {
@@ -81,7 +82,7 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
   }
 
   private fun onFailure(playerId: Long, request: Request, e: Throwable) {
-    logger.error(e) { "Player($playerId) ${controllerInvokerManager.format(request)}" }
+    logger.error(e) { "Player($playerId) ${controllerInvokerManager.formatToString(request)}" }
     write(playerId, Response(request.header, StatusCode.Failure))
     if (e.isFatal()) throw e
   }

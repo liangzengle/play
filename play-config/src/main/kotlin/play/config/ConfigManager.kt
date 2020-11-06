@@ -1,7 +1,6 @@
 package play.config
 
 import com.google.common.collect.ImmutableList
-import io.vavr.kotlin.`try`
 import play.ClassScanner
 import play.Configuration
 import play.Log
@@ -11,8 +10,12 @@ import play.util.collection.filterDuplicated
 import play.util.collection.filterDuplicatedBy
 import play.util.collection.toImmutableMap
 import play.util.collection.toImmutableSet
+import play.util.control.exists
+import play.util.reflect.Reflect
 import play.util.reflect.isAbstract
+import play.util.reflect.isAssignableFrom
 import play.util.scheduling.Scheduler
+import play.util.unsafeCast
 import java.io.File
 import java.nio.file.Paths
 import java.util.*
@@ -24,12 +27,10 @@ import kotlin.NoSuchElementException
 
 internal typealias AnyConfigSet = SuperConfigSet<Any, AbstractConfig, Any, ConfigExtension<AbstractConfig>>
 
-internal typealias AnyDelegatedConfigSet = DelegatedConfigSet<Any, AbstractConfig, Any, ConfigExtension<AbstractConfig>>
-
 @Suppress("UNCHECKED_CAST")
 @Singleton
 class ConfigManager @Inject constructor(
-  @Named("config") private val conf: Configuration,
+  @Named("config") conf: Configuration,
   private val resolver: ConfigResolver,
   private val configReader: ConfigReader,
   private val resourceReader: ResourceReader,
@@ -38,18 +39,38 @@ class ConfigManager @Inject constructor(
   private val scheduler: Scheduler
 ) : PostConstruct {
 
+  private val loadOnPostConstruct = conf.getBoolean("load-on-post-construct")
   private val validateOnReload = conf.getBoolean("validate-on-reload")
   private val versionFile = conf.getString("version-file")
   private val modificationDetectInterval = conf.getDuration("modification-detect-interval")
 
-  private val listeners = injector.getInstancesOfType(ConfigEventListener::class.java)
+  private val listeners = injector.getInstancesOfType(ConfigRefreshListener::class.java).asSequence().map { o ->
+    val eventType: Class<ConfigRefreshEvent> = if (isAssignableFrom<GenericConfigRefreshListener<*, *>>(o.javaClass)) {
+      Reflect.getRawClass(
+        Reflect.getTypeArg(
+          o.javaClass.asSubclass(GenericConfigRefreshListener::class.java),
+          GenericConfigRefreshListener::class.java,
+          1
+        )
+      )
+    } else {
+      Reflect.getRawClass(
+        Reflect.getTypeArg(
+          o.javaClass,
+          ConfigRefreshListener::class.java,
+          0
+        )
+      )
+    }
+    eventType to o.unsafeCast<ConfigRefreshListener<ConfigRefreshEvent>>()
+  }.toList()
 
   private val validators = injector.getInstancesOfType(ConfigValidator::class.java)
 
   private var configSets = emptyMap<Class<AbstractConfig>, AnyConfigSet>()
 
   private var configClasses: Set<Class<out AbstractConfig>> =
-    classScanner.getSubTypesSequence(AbstractConfig::class.java)
+    classScanner.getConcreteSubTypesSequence(AbstractConfig::class.java)
       .filterNot { it.isAnnotationPresent(Ignore::class.java) }.toSet()
 
   var version = "Unspecified"
@@ -70,25 +91,29 @@ class ConfigManager @Inject constructor(
   }
 
   override fun postConstruct() {
-    load()
+    if (loadOnPostConstruct) {
+      load()
+    }
   }
 
   @Synchronized
   fun load() {
     if (isInitialized()) throw IllegalStateException("Cannot load twice.")
-    val classes = classScanner.getSubTypesSequence(AbstractConfig::class.java)
+    val classes = classScanner.getConcreteSubTypesSequence(AbstractConfig::class.java)
       .filter { isLoadable(it) }.map { it as Class<AbstractConfig> }.toImmutableSet()
-    classes.filterDuplicatedBy { getReader(it).getURL(it) }
+    classes.filterDuplicatedBy { getReader(it).getURL(it).getOrThrow() }
       .also { if (it.isNotEmpty()) throw IllegalStateException("配置路径冲突: ${it.values}") }
     configSets = load(classes, true)
     updateDelegatedConfigSets(configSets)
     updateVersion()
-    listeners.map { `try` { it.afterLoaded() } }
-      .filter { it.isFailure }
-      .forEach { Log.error(it.cause) { "执行afterLoaded回调出现异常" } }
+    fireConfigEvent(ConfigLoadEvent(classes))
     if (isAutoReloadEnabled()) {
       setupAutoReload()
     }
+  }
+
+  fun reloadAll() {
+    reload(configSets.keys)
   }
 
   fun reload(clazz: Class<out AbstractConfig>) {
@@ -102,15 +127,37 @@ class ConfigManager @Inject constructor(
     }
     val reloaded = load(classesToReload, validateOnReload)
     updateDelegatedConfigSets(reloaded)
-    Log.info { "配置重加载完成: ${reloaded.keys.joinToString { it.simpleName }}" }
+
+    fun getFileName(cls: Class<*>): String {
+      return getReader(cls).getURL(cls).map { url ->
+        val idx = url.path.lastIndexOf('/')
+        if (idx != -1) url.path.substring(idx + 1)
+        else url.path
+      }.getOrDefault("")
+    }
+    for (cls in reloaded.keys) {
+      Log.info { "配置重加载完成: ${cls.simpleName}(${getFileName(cls)})" }
+    }
     updateVersion()
-    for (listener in listeners) {
-      try {
-        listener.afterReloaded(reloaded.keys)
-      } catch (e: Exception) {
-        Log.error(e) { "执行afterReloaded回调出现异常" }
+    fireConfigEvent(ConfigReloadEvent(classesToReload))
+  }
+
+  private fun fireConfigEvent(event: ConfigRefreshEvent): Boolean {
+    var success = true
+    val eventType = event.javaClass
+    for ((listenedEventType, listener) in listeners) {
+      if (listenedEventType.isAssignableFrom(eventType)
+        && (listener !is GenericConfigRefreshListener<*, *> || event.contains(listener.configClass))
+      ) {
+        try {
+          listener.onEvent(event)
+        } catch (e: Exception) {
+          success = false
+          Log.error(e) { e.message }
+        }
       }
     }
+    return success
   }
 
   private fun load(
@@ -118,21 +165,28 @@ class ConfigManager @Inject constructor(
     validate: Boolean
   ): Map<Class<AbstractConfig>, AnyConfigSet> {
     val configClassToConfigSet = read(classes)
-    val configSets = this.configSets + configClassToConfigSet
-    val configSetManager = ConfigSetManager(configSets)
     val errors = LinkedList<String>()
-    configSets.values.forEach {
+    configClassToConfigSet.values.forEach {
       it.list().forEach { e ->
-        e.postInitialize(configSetManager, errors)
+        e.postInitialize(errors)
       }
     }
     if (errors.isNotEmpty()) {
       throw InvalidConfigException(errors)
     }
     if (validate) {
-      ConstraintsValidator(configClassToConfigSet).validate(classes)
+      val validationErrors = ConstraintsValidator(configClassToConfigSet).validate(classes)
+      errors += validationErrors
     }
-    validators.forEach { it.validate(configSetManager, errors) }
+    val configSetManager = ConfigSetSupplier(this.configSets + configClassToConfigSet)
+    validators.forEach {
+      if (it !is GenericConfigValidator<*> || configClassToConfigSet.containsKey(it.configClass)) {
+        it.validate(configSetManager, errors)
+      }
+    }
+    if (errors.isNotEmpty()) {
+      throw InvalidConfigException(errors.joinToString("\n", "\n", ""))
+    }
     return configClassToConfigSet
   }
 
@@ -154,7 +208,7 @@ class ConfigManager @Inject constructor(
     configClasses.asSequence()
       .filter(::isResource)
       .map { clazz ->
-        val url = configReader.getURL(clazz).get()
+        val url = configReader.getURL(clazz).getOrThrow()
         Paths.get(url.toURI()).parent.toFile()
       }
       .distinct()
@@ -163,17 +217,16 @@ class ConfigManager @Inject constructor(
       }
 
     // 监听策划配置文件
-    val dir = try {
-      Paths.get(resolver.rootPath).toFile()
+    try {
+      val dir = Paths.get(resolver.rootPath).toFile()
+      ConfigDirectoryMonitor(dir, action).start(modificationDetectInterval, scheduler)
     } catch (e: UnsupportedOperationException) {
       Log.info { "启用配置自动重加载失败, 配置文件的路径不是文件路径: ${resolver.rootPath}" }
-      return
     }
-    ConfigDirectoryMonitor(dir, action).start(modificationDetectInterval, scheduler)
   }
 
   private fun isResource(clazz: Class<*>): Boolean {
-    return clazz.isAnnotationPresent(Resource::class.java);
+    return clazz.isAnnotationPresent(Resource::class.java)
   }
 
   private fun getReader(clazz: Class<*>): Reader {
@@ -202,12 +255,13 @@ class ConfigManager @Inject constructor(
       Log.debug { "无配置版本号" }
       return
     }
-    val maybeVersion = resolver.resolve(versionFile).map { it.readText() }.toOption()
-    if (maybeVersion.isDefined) {
-      version = maybeVersion.get()
+    val maybeVersion = resolver.resolve(versionFile).map { it.readText() }
+    maybeVersion.onSuccess {
+      version = it
       Log.info { "配置版本号: $version" }
-    } else {
-      Log.info { "配置版本号文件不存在: $versionFile" }
+    }
+    maybeVersion.onFailure { e ->
+      Log.warn { "读取配置版本号文件失败: ${e.javaClass.name}: ${e.message}" }
     }
   }
 
@@ -217,7 +271,7 @@ class ConfigManager @Inject constructor(
       val errors = LinkedList<String>()
 
       val isResource = configClass.isAnnotationPresent(Resource::class.java)
-      val isSingleton = configClass.isAnnotationPresent(SingletonConfig::class.java) || isResource
+      val isSingleton = isResource || configClass.isAnnotationPresent(SingletonConfig::class.java)
       val notEmpty = isSingleton || configClass.isAnnotationPresent(NoneEmpty::class.java)
       if (notEmpty && elems.isEmpty()) {
         errors.add("表不能为空: $simpleName")

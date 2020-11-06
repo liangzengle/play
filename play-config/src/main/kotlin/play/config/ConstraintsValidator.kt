@@ -22,13 +22,27 @@ internal class ConstraintsValidator(
     .constraintValidatorPayload(configSets)
     .validator
 
-  fun validateAll() = validate(configSets)
+  fun validateAll(): List<String> = validate(configSets)
 
-  fun validate(classes: Iterable<Class<*>>) {
-    validate(configSets.filterKeys { classes.contains(it) })
+  fun validateAllThrows() {
+    val errors = validate(configSets)
+    if (errors.isNotEmpty()) {
+      throw InvalidConfigException(errors.joinToString("\n", "\n", ""))
+    }
   }
 
-  private fun validate(configSets: Map<Class<AbstractConfig>, AnyConfigSet>) {
+  fun validateThrows(classes: Iterable<Class<*>>) {
+    val errors = validate(configSets.filterKeys { classes.contains(it) })
+    if (errors.isNotEmpty()) {
+      throw InvalidConfigException(errors.joinToString("\n", "\n", ""))
+    }
+  }
+
+  fun validate(classes: Iterable<Class<*>>): List<String> {
+    return validate(configSets.filterKeys { classes.contains(it) })
+  }
+
+  private fun validate(configSets: Map<Class<AbstractConfig>, AnyConfigSet>): List<String> {
     Log.info { "开始[验证配置]" }
     val errors = LinkedList<String>()
     configSets.asSequence().forEach { e ->
@@ -107,10 +121,7 @@ internal class ConstraintsValidator(
         }
       }
     }
-
-    if (errors.isNotEmpty()) {
-      throw InvalidConfigException(errors.joinToString("\n", "\n", ""))
-    }
     Log.info { "完成[验证配置]" }
+    return errors
   }
 }

@@ -1,13 +1,14 @@
 package play.util.scheduling
 
-import io.vavr.control.Option
 import play.getLogger
 import play.util.concurrent.CommonPool
+import play.util.getOrNull
 import play.util.scheduling.executor.ScheduledExecutor
 import play.util.time.currentDateTime
 import play.util.time.currentMillis
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.*
 import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -162,22 +163,22 @@ class Scheduler {
     cronExpr: String,
     ec: Executor,
     task: () -> Unit,
-    startTime: Option<LocalDateTime> = Option.none(),
-    stopTime: Option<LocalDateTime> = Option.none()
+    startTime: Optional<LocalDateTime> = Optional.empty(),
+    stopTime: Optional<LocalDateTime> = Optional.empty()
   ): ScheduledFuture<*>? {
     val generator = CronSequenceGenerator(cronExpr)
-    val trigger = PeriodCronTrigger(generator, startTime.orNull, stopTime.orNull)
+    val trigger = PeriodCronTrigger(generator, startTime.getOrNull(), stopTime.getOrNull())
     return ReschedulingRunnable(decorate(task, ec), trigger, executor, LoggingErrorHandler).schedule()
   }
 
   fun scheduleCron(
     cronExpr: String,
     task: () -> Unit,
-    startTime: Option<LocalDateTime> = Option.none(),
-    stopTime: Option<LocalDateTime> = Option.none()
+    startTime: Optional<LocalDateTime> = Optional.empty(),
+    stopTime: Optional<LocalDateTime> = Optional.empty()
   ): ScheduledFuture<*>? {
     val generator = CronSequenceGenerator(cronExpr)
-    val trigger = PeriodCronTrigger(generator, startTime.orNull, stopTime.orNull)
+    val trigger = PeriodCronTrigger(generator, startTime.getOrNull(), stopTime.getOrNull())
     return ReschedulingRunnable(decorate(task), trigger, executor, LoggingErrorHandler).schedule()
   }
 

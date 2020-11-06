@@ -24,7 +24,7 @@ class SessionManager(context: ActorContext<Command>) :
     return newReceiveBuilder()
       .accept(::createSession)
       .accept(::registerUnhandledRequestReceiver)
-      .onSignal<Terminated>(::onSessionClosed)
+      .acceptSignal<Terminated>(::onSessionClosed)
       .build()
   }
 

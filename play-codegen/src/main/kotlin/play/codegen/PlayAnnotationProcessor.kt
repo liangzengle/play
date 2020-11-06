@@ -315,4 +315,16 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
   }
 
   protected fun DeclaredType.toClassName() = ClassName.bestGuess(typeUtils.erasure(this).toString())
+
+  protected fun isLong(typeMirror: TypeMirror): Boolean {
+    return typeUtils.isSameType(typeMirror, Long::class.asTypeMirror())
+  }
+
+  protected fun isString(typeMirror: TypeMirror): Boolean {
+    return typeUtils.isSameType(typeMirror, String::class.asTypeMirror())
+  }
+
+  protected fun isList(typeMirror: TypeMirror): Boolean {
+    return List::class.asTypeMirror().isAssignableFrom(typeMirror)
+  }
 }

@@ -16,6 +16,10 @@ pluginManagement {
         maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
 
         maven { url 'https://plugins.gradle.org/m2/' }
+
+        maven {
+            url "file://$rootDir/repository"
+        }
     }
 }
 
@@ -27,6 +31,8 @@ include 'play-db'
 include 'play-mvc'
 include 'play-codegen'
 include 'play-akka'
+include 'play-scala'
+include 'play-scala-compact'
 include 'play-example'
 include 'play-config'
 include 'play-db-mongo'

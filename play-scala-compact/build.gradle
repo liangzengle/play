@@ -1,0 +1,6 @@
+dependencies {
+    compileOnly project(':play-core')
+    api project(':play-scala')
+    compileOnly "org.scala-lang:scala-library:2.13.3"
+    compileOnly "org.scala-lang.modules:scala-java8-compat_2.13:0.9.0"
+}

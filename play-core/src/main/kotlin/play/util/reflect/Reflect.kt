@@ -26,6 +26,7 @@ object Reflect {
     return getTypeArgs(type, superType)[index]
   }
 
+  @Suppress("UnstableApiUsage")
   fun <T> getTypeArgs(type: Class<out T>, superType: Class<T>): Array<Type> {
     if (type.superclass == superType) {
       return type.genericSuperclass.unsafeCast<ParameterizedType>().actualTypeArguments
@@ -39,7 +40,7 @@ object Reflect {
     return runtimeType.unsafeCast<ParameterizedType>().actualTypeArguments
   }
 
-  fun <T> getRawClass(type: Type): Class<T> {
+  tailrec fun <T> getRawClass(type: Type): Class<T> {
     return when (type) {
       is ParameterizedType -> getRawClass(type.rawType)
       is Class<*> -> type as Class<T>
@@ -84,7 +85,7 @@ fun Class<*>.isStrict() = Modifier.isStrict(modifiers)
 
 inline fun <reified T> classOf(): Class<T> = T::class.java
 
-inline fun <reified T> isAssignable(clazz: Class<*>): Boolean = T::class.java.isAssignableFrom(clazz)
+inline fun <reified T> isAssignableFrom(clazz: Class<*>): Boolean = T::class.java.isAssignableFrom(clazz)
 
 @Suppress("UNCHECKED_CAST")
 fun <T> Field.getUnchecked(target: Any?): T? {

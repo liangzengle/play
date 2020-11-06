@@ -1,10 +1,27 @@
 package play.db.mongo
 
-import io.vavr.concurrent.Promise
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
+import play.util.concurrent.Promise
 
 internal class ForOneSubscriber<T>(private val promise: Promise<T>) : Subscriber<T> {
+  override fun onSubscribe(subscription: Subscription) {
+    subscription.request(1)
+  }
+
+  override fun onNext(item: T) {
+    promise.success(item)
+  }
+
+  override fun onError(throwable: Throwable) {
+    promise.failure(throwable)
+  }
+
+  override fun onComplete() {
+  }
+}
+
+internal class NullableForOneSubscriber<T>(private val promise: Promise<T?>) : Subscriber<T> {
   override fun onSubscribe(subscription: Subscription) {
     subscription.request(1)
   }

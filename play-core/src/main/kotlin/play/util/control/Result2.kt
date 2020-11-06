@@ -1,8 +1,8 @@
 package play.util.control
 
-import io.vavr.control.Option
-import io.vavr.kotlin.none
+import play.util.unsafeCast
 import java.io.Serializable
+import java.util.*
 
 @Suppress("UNCHECKED_CAST")
 inline class Result2<out T>(private val value: Any?) {
@@ -21,7 +21,7 @@ inline class Result2<out T>(private val value: Any?) {
 
   fun getOrNull(): T? = if (hasValue()) value as T? else null
 
-  fun <T> toOption(): Option<T> = if (isErr()) none() else Option.of(value) as Option<T>
+  fun <T> toOption(): Optional<T> = if (isErr()) Optional.empty() else Optional.ofNullable(value).unsafeCast()
 
   fun getErrorCode(): Int = (value as? Err)?.code ?: 0
 

@@ -20,10 +20,6 @@ import kotlin.reflect.KFunction
 
 @AutoService(Processor::class)
 class ConfigSetGenerator : PlayAnnotationProcessor() {
-  private val normal = 1
-  private val hasUniqueKey = 2
-  private val hasGrouped = 4
-  private val hasExtension = 8
 
   override fun getSupportedAnnotationTypes(): Set<String> {
     return setOf("javax.inject.Singleton", "com.google.inject.Singleton")
@@ -42,17 +38,12 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
     val extensionKeyType = ExtensionKey.asTypeElement().asType()
     elems.forEach { elem ->
       val simpleName = elem.simpleName.toString()
+      val isSingleton = isSingleton(elem)
+      val objectName = simpleName + (if (isSingleton) "Conf" else "Set")
       val objectBuilder = TypeSpec
-        .objectBuilder(simpleName + "Set")
+        .objectBuilder(objectName)
         .addAnnotation(AnnotationSpec.builder(Suppress::class).addMember("%S", "UNCHECKED_CAST").build())
-      val genericBasicConfigSet = BasicConfigSet.parameterizedBy(elem.asClassName())
-      objectBuilder.addProperty(
-        PropertySpec
-          .builder("configSet", genericBasicConfigSet, KModifier.PRIVATE)
-          .initializer("%T.get(%T::class.java) as %T", DelegatedConfigSet, elem.asType(), genericBasicConfigSet)
-          .build()
-      )
-      if (isSingleton(elem)) {
+      if (isSingleton) {
         implementSingleton(elem, objectBuilder)
       } else {
         implementBasics(elem, objectBuilder)
@@ -84,6 +75,14 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
   }
 
   private fun implementBasics(elem: TypeElement, classBuilder: TypeSpec.Builder) {
+    val genericBasicConfigSet = BasicConfigSet.parameterizedBy(elem.asClassName())
+    classBuilder.addProperty(
+      PropertySpec
+        .builder("configSet", genericBasicConfigSet, KModifier.PRIVATE)
+        .initializer("%T.get(%T::class.java) as %T", DelegatedConfigSet, elem.asType(), genericBasicConfigSet)
+        .build()
+    )
+
     val asBasicConfigSet = FunSpec.builder("unwrap")
       .addStatement("return configSet")
       .build()
@@ -242,13 +241,20 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
   }
 
   private fun implementSingleton(type: TypeElement, classBuilder: TypeSpec.Builder) {
+    val genericSingletonConfigSet = SingletonConfigSet.parameterizedBy(type.asClassName())
+    classBuilder.addProperty(
+      PropertySpec
+        .builder("configSet", genericSingletonConfigSet, KModifier.PRIVATE)
+        .initializer("%T.get(%T::class.java) as %T", DelegatedConfigSet, type.asType(), genericSingletonConfigSet)
+        .build()
+    )
+
     classBuilder
-//            .addSuperinterface(SingletonResourceSet::class.asClassName().parameterizedBy(it.asClassName()))
       .addFunction(
         FunSpec.builder("get")
           .addModifiers(KModifier.PUBLIC)
           .returns(type.asClassName())
-          .addStatement("return (configSet as %T<%T>).get()", SingletonConfigSet, type)
+          .addStatement("return configSet.get()")
           .build()
       )
     val getters = ElementFilter.fieldsIn(type.enclosedElements).asSequence().map {
@@ -263,14 +269,10 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
       .forEach { elem ->
         val funName = elem.simpleName.toString()
         if (getters.contains(funName)) {
-          val p = getters[funName]!!
+          val p = getters[funName] ?: throw IllegalStateException("should not happen.")
           val getter = FunSpec.builder("get()")
-            .addStatement(
-              "return (configSet as %T<%T>).get().%L",
-              SingletonConfigSet,
-              type,
-              p.simpleName.toString()
-            ).build()
+            .addStatement("return configSet.get().%L", p.simpleName.toString())
+            .build()
           val property =
             PropertySpec.builder(p.simpleName.toString(), p.asType().javaToKotlinType()).getter(getter)
               .build()
@@ -286,22 +288,11 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
             )
           }
           val params = elem.parameters.asSequence().map { p -> p.simpleName.toString() }.joinToString(", ")
-          funcBuilder.addStatement(
-            "return (configSet as %T<%T>).get().%L(%L)",
-            SingletonConfigSet::class,
-            type,
-            funName,
-            params
-          )
+          funcBuilder.addStatement("return configSet.get().%L(%L)", funName, params)
           classBuilder.addFunction(funcBuilder.build())
         }
       }
   }
-
-  private fun hasUniqueKey(value: Int): Boolean = hasFlag(value, hasUniqueKey)
-  private fun hasGrouped(value: Int): Boolean = hasFlag(value, hasGrouped)
-  private fun hasExtension(value: Int): Boolean = hasFlag(value, hasExtension)
-  private fun hasFlag(value: Int, flag: Int) = value and flag != 0
 
   private fun isSingleton(elem: TypeElement): Boolean {
     return elem.annotationMirrors.any {
@@ -312,9 +303,6 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
 
   private fun getModifiers(func: KFunction<*>): LinkedList<KModifier> {
     val mods = LinkedList<KModifier>()
-/*        if (func.isExternal) {
-            mods.add(KModifier.EXTERNAL)
-        }*/
     if (func.isInfix) {
       mods.add(KModifier.INFIX)
     }

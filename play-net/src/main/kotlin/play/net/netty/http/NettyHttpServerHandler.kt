@@ -9,13 +9,14 @@ import io.netty.handler.codec.http.*
 import io.netty.handler.codec.http.multipart.Attribute
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder
 import io.netty.handler.codec.http.multipart.InterfaceHttpData
-import io.vavr.concurrent.Future
-import io.vavr.concurrent.Promise
 import org.slf4j.Logger
 import play.net.http.*
 import play.net.netty.getHostAndPort
-import play.util.collection.forEach
+import play.util.concurrent.Future
+import play.util.concurrent.Promise
+import play.util.control.getCause
 import play.util.exception.isFatal
+import play.util.forEach
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.collections.LinkedHashMap
@@ -67,13 +68,10 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
       msg.release()
       val req = NettyHttpRequest(request, body, NettyHttpParameters(parameters))
       logRequest(req)
-      handleAsync(req, action).onComplete {
-        if (it.isSuccess) {
-          writeResponse(ctx, request, it.get())
-        } else {
-          onException(ctx, request, it.cause!!)
-        }
-      }
+      handleAsync(req, action).onComplete(
+        { writeResponse(ctx, request, it) },
+        { onException(ctx, request, it) }
+      )
     } finally {
       if (msg.refCnt() > 0) {
         msg.release()
@@ -163,17 +161,17 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
 
   private fun handleAsync(request: NettyHttpRequest, action: Action): Future<HttpResult.Strict> {
     val p = Promise.make<HttpResult.Strict>()
-    Future.of { action(request) }.onComplete {
+    Future { action(request) }.onComplete {
       if (it.isSuccess) {
-        when (val result = it.get()) {
+        when (val result = it.getOrThrow()) {
           is HttpResult.Strict -> p.success(result)
           is HttpResult.Lazy -> p.completeWith(result.future)
         }
       } else {
-        p.failure(it.cause)
+        p.failure(it.getCause())
       }
     }
-    return p.future()
+    return p.future
   }
 
   protected open fun logAccess(request: BasicNettyHttpRequest) {

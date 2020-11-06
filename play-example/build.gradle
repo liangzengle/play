@@ -48,6 +48,7 @@ dependencies {
 kapt {
     arguments {
         arg("controller.user-class", "play.example.module.player.Self")
+        arg("entityCache.specialized", "true")
     }
 }
 
@@ -58,4 +59,9 @@ wire {
 
 application {
     mainClassName("play.example.App")
+}
+
+sourceSets {
+    main.kotlin.srcDirs += "build/generated/source/wire"
+    test.kotlin.srcDirs += "build/generated/source/wire"
 }

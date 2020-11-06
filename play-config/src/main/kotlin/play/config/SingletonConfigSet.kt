@@ -1,7 +1,5 @@
 package play.config
 
-import io.vavr.control.Option
-import io.vavr.kotlin.some
 import java.util.*
 import javax.annotation.Nonnull
 import javax.annotation.Nullable
@@ -18,7 +16,7 @@ internal class SingletonConfigSetImpl<K, T, G, E>(private val elem: T) : Singlet
 
   override fun contains(id: Int): Boolean = elem.id == id
 
-  override fun get(id: Int): Option<T> = if (id != elem.id) io.vavr.kotlin.none() else some(elem)
+  override fun get(id: Int): Optional<T> = if (id != elem.id) Optional.empty() else Optional.of(elem)
 
   override fun getOrThrow(id: Int): T {
     if (!contains(id)) throw NoSuchElementException("${elem.javaClass.simpleName}($id)")
@@ -34,7 +32,7 @@ internal class SingletonConfigSetImpl<K, T, G, E>(private val elem: T) : Singlet
 
   override fun containsKey(key: K): Boolean = false
 
-  override fun getByKey(key: K): Option<T> = io.vavr.kotlin.none()
+  override fun getByKey(key: K): Optional<T> = throw UnsupportedOperationException()
 
   override fun getByKeyOrNull(key: K): T? {
     throw UnsupportedOperationException()
@@ -48,7 +46,7 @@ internal class SingletonConfigSetImpl<K, T, G, E>(private val elem: T) : Singlet
     throw UnsupportedOperationException()
   }
 
-  override fun next(key: K): Option<T> {
+  override fun next(key: K): Optional<T> {
     throw UnsupportedOperationException()
   }
 
@@ -56,15 +54,15 @@ internal class SingletonConfigSetImpl<K, T, G, E>(private val elem: T) : Singlet
     throw UnsupportedOperationException()
   }
 
-  override fun prev(key: K): Option<T> {
+  override fun prev(key: K): Optional<T> {
     throw UnsupportedOperationException()
   }
 
-  override fun equalsOrPrevOption(key: K): Option<T> {
+  override fun equalsOrPrevOption(key: K): Optional<T> {
     throw UnsupportedOperationException()
   }
 
-  override fun equalsOrNextOption(key: K): Option<T> {
+  override fun equalsOrNextOption(key: K): Optional<T> {
     throw UnsupportedOperationException()
   }
 
@@ -76,7 +74,7 @@ internal class SingletonConfigSetImpl<K, T, G, E>(private val elem: T) : Singlet
     throw UnsupportedOperationException()
   }
 
-  override fun getGroup(groupId: G): Option<ConfigSet<K, T>> {
+  override fun getGroup(groupId: G): Optional<ConfigSet<K, T>> {
     throw UnsupportedOperationException()
   }
 

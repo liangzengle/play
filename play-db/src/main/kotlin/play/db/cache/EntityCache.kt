@@ -1,8 +1,9 @@
 package play.db.cache
 
-import io.vavr.concurrent.Future
-import io.vavr.control.Option
 import play.db.Entity
+import play.util.concurrent.Future
+import java.util.*
+import kotlin.NoSuchElementException
 
 interface EntityCache<ID : Any, E : Entity<ID>> {
 
@@ -11,12 +12,12 @@ interface EntityCache<ID : Any, E : Entity<ID>> {
   /**
    * 对应实体类
    */
-  fun entityClass(): Class<E>
+  val entityClass: Class<E>
 
   /**
    * 从缓存中获取实体对象，如果不存在则从数据库中加载
    */
-  fun get(id: ID): Option<E>
+  fun get(id: ID): Optional<E>
 
   /**
    * 从缓存中获取实体对象，如果不存在则从数据库中加载
@@ -37,7 +38,7 @@ interface EntityCache<ID : Any, E : Entity<ID>> {
   /**
    * 从缓存中获取实体对象，不从数据库中加载
    */
-  fun getCached(id: ID): Option<E>
+  fun getCached(id: ID): Optional<E>
 
   /**
    * 获取缓存中所有的实体

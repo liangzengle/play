@@ -8,6 +8,8 @@ import play.example.module.account.controller.AccountControllerInvoker
 import play.example.module.account.message.PongProto
 import play.example.module.common.message.BoolValue
 import play.example.module.common.message.StringValue
+import play.example.module.guild.controller.GuildControllerInvoker
+import play.example.module.guild.message.GuildProto
 import play.example.module.player.controller.PlayerControllerInvoker
 import play.example.module.player.message.PlayerProto
 import play.example.request.RequestProto
@@ -25,6 +27,7 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       AccountControllerInvoker.login -> onLogin(ctx, msg)
       PlayerControllerInvoker.create -> onPlayerCreate(ctx, msg)
       PlayerControllerInvoker.login -> onPlayerLogin(ctx, msg)
+      GuildControllerInvoker.create -> onGuildCreate(msg)
       PlayerControllerInvoker.ping -> pingPingResult(msg)
       AccountControllerInvoker.ping
       -> {
@@ -33,6 +36,15 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       }
       else -> println("receive: $msg")
     }
+  }
+
+  private fun onGuildCreate(response: Response) {
+    if (response.statusCode != 0) {
+      println("工会创建失败, 错误码：${response.statusCode}")
+      return
+    }
+    val guild = GuildProto.ADAPTER.decode(response.body.encodeToByteArray())
+    println("工会创建完成: $guild")
   }
 
   private fun pingPingResult(response: Response) {
@@ -64,6 +76,21 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       )
       println("ping: $pingMsg")
     }, 0, 2, TimeUnit.SECONDS)
+
+    ctx.writeAndFlush(
+      Request(
+        Header(MsgId(GuildControllerInvoker.create)),
+        WireRequestBody(RequestProto(s1 = "丐帮"))
+      )
+    )
+
+
+    ctx.writeAndFlush(
+      Request(
+        Header(MsgId(GuildControllerInvoker.create)),
+        WireRequestBody(RequestProto(s1 = "少林"))
+      )
+    )
   }
 
   private fun onPlayerCreate(ctx: ChannelHandlerContext, response: Response) {

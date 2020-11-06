@@ -28,7 +28,9 @@ class ItemConfig : AbstractConfig(), ItemLikeConfig, ExtensionKey<ItemConfigExte
 
   override fun groupId(): ItemType = type
 
-  override fun postInitialize(configSetManager: ConfigSetManager, errors: MutableList<String>) {
+  override fun postInitialize(errors: MutableList<String>) {
+    super.postInitialize(errors)
+    println("postInitialize: $this")
   }
 
   override fun toString(): String {

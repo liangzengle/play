@@ -1,6 +1,6 @@
 package play.config
 
-import io.vavr.control.Option
+import java.util.*
 import javax.annotation.Nullable
 
 interface BasicConfigSet<T> {
@@ -12,7 +12,7 @@ interface BasicConfigSet<T> {
 
   fun size(): Int = list().size
 
-  fun get(id: Int): Option<T>
+  fun get(id: Int): Optional<T>
 
   fun getOrThrow(id: Int): T
 
@@ -27,12 +27,12 @@ interface BasicConfigSet<T> {
 
   fun lastOrThrow(): T = list().last()
 
-  fun first(): Option<T> {
-    return if (isEmpty()) io.vavr.kotlin.none() else io.vavr.kotlin.some(firstOrThrow())
+  fun first(): Optional<T> {
+    return if (isEmpty()) Optional.empty() else Optional.of(firstOrThrow())
   }
 
-  fun last(): Option<T> {
-    return if (isEmpty()) io.vavr.kotlin.none() else io.vavr.kotlin.some(lastOrThrow())
+  fun last(): Optional<T> {
+    return if (isEmpty()) Optional.empty() else Optional.of(lastOrThrow())
   }
 
   fun sequence(): Sequence<T> = list().asSequence()
@@ -47,7 +47,7 @@ interface BasicConfigSet<T> {
 interface UniqueKeyConfigSet<K, T> {
   fun containsKey(key: K): Boolean
 
-  fun getByKey(key: K): Option<T>
+  fun getByKey(key: K): Optional<T>
 
   @Nullable
   fun getByKeyOrNull(key: K): T?
@@ -58,21 +58,21 @@ interface UniqueKeyConfigSet<K, T> {
 
   fun lastOrThrow(): T
 
-  fun first(): Option<T>
+  fun first(): Optional<T>
 
-  fun last(): Option<T>
+  fun last(): Optional<T>
 
   fun nextOrThrow(key: K): T
 
-  fun next(key: K): Option<T>
+  fun next(key: K): Optional<T>
 
   fun prevOrThrow(key: K): T
 
-  fun prev(key: K): Option<T>
+  fun prev(key: K): Optional<T>
 
-  fun equalsOrPrevOption(key: K): Option<T>
+  fun equalsOrPrevOption(key: K): Optional<T>
 
-  fun equalsOrNextOption(key: K): Option<T>
+  fun equalsOrNextOption(key: K): Optional<T>
 
   fun slice(fromInclusive: K, toInclusive: K): Iterable<T> {
     return slice(fromInclusive, true, toInclusive, true)
@@ -90,11 +90,11 @@ interface ConfigSet<K, T> : BasicConfigSet<T>, UniqueKeyConfigSet<K, T> {
     return super.lastOrThrow()
   }
 
-  override fun first(): Option<T> {
+  override fun first(): Optional<T> {
     return super.first()
   }
 
-  override fun last(): Option<T> {
+  override fun last(): Optional<T> {
     return super.last()
   }
 }
@@ -104,7 +104,7 @@ interface ExtensionConfigSet<E : ConfigExtension<T>, T : AbstractConfig> {
 }
 
 interface GroupedConfigSet<G, K, T> {
-  fun getGroup(groupId: G): Option<ConfigSet<K, T>>
+  fun getGroup(groupId: G): Optional<ConfigSet<K, T>>
 
   @Nullable
   fun getGroupOrNull(groupId: G): ConfigSet<K, T>?

@@ -1,6 +1,6 @@
 package play.db
 
-import io.vavr.concurrent.Future
+import play.util.concurrent.Future
 
 interface PersistService {
   fun insert(entity: Entity<*>): Future<out Any>

@@ -6,6 +6,7 @@ interface IntIterator {
   operator fun hasNext(): Boolean
   operator fun next(): Int
 
+  @JvmDefault
   fun toJava(): PrimitiveIterator.OfInt {
     return object : PrimitiveIterator.OfInt {
       override fun remove() {

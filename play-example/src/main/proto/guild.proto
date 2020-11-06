@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package play.example.module.guild.message;
+
+// 工会信息
+message GuildProto {
+    // 工会id
+    int64 id = 1;
+    // 工会名称
+    string name = 2;
+    // 会长id
+    int64 leaderId = 3;
+    // 会长名称
+    string leaderName = 4;
+    // 成员数量
+    int32 memberCount = 5;
+}

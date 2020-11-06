@@ -1,29 +1,24 @@
 package play.example.common.akka.scheduling
 
-import akka.actor.typed.ActorRef
+import akka.actor.typed.javadsl.ActorContext
 import play.util.scheduling.Scheduler
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ScheduledFuture
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
- * Actor的Cron定时计划
+ * 供Actor内部使用的Cron定时计划
  * @author LiangZengle
  */
-@Singleton
-class ActorCronScheduler @Inject constructor(private val scheduler: Scheduler) {
-  private val schedules = ConcurrentHashMap<Any, ScheduledFuture<*>>()
+class ActorCronScheduler<T> constructor(private val scheduler: Scheduler, private val context: ActorContext<T>) {
+  private val schedules = HashMap<String, ScheduledFuture<*>>(4)
 
-  fun <T> schedule(key: Any, cron: String, triggerEvent: T, receiver: ActorRef<T>) {
+  fun schedule(cron: String, triggerEvent: T) {
     val future = scheduler.scheduleCron(cron) {
-      receiver.tell(triggerEvent)
+      context.self.tell(triggerEvent)
     }
-    val prev = schedules.put(key, future)
-    prev?.cancel(false)
+    schedules.put(cron, future)?.cancel(false)
   }
 
-  fun cancel(key: Any) {
-    schedules[key]?.cancel(false)
+  fun cancel(cron: String) {
+    schedules.remove(cron)?.cancel(false)
   }
 }

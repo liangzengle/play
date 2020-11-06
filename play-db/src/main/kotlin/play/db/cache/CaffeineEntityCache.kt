@@ -5,27 +5,29 @@ import com.github.benmanes.caffeine.cache.CacheWriter
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalCause
 import com.google.common.collect.Sets
-import io.vavr.control.Option
-import io.vavr.kotlin.option
 import play.Configuration
-import play.db.Entity
-import play.db.EntityProcessor
-import play.db.PersistService
-import play.db.QueryService
+import play.Log
+import play.db.*
+import play.getLogger
 import play.inject.Injector
 import play.util.concurrent.CommonPool
-import play.util.concurrent.awaitSuccessOrThrow
+import play.util.control.getCause
+import play.util.getOrNull
 import play.util.json.Json
 import play.util.primitive.toIntSaturated
+import play.util.scheduling.Scheduler
+import play.util.time.currentMillis
+import play.util.toOptional
 import play.util.unsafeCast
-import java.time.Duration
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
+import kotlin.NoSuchElementException
 import kotlin.time.minutes
+import kotlin.time.seconds
 
 /**
  * Factory for creating CaffeineEntityCache
@@ -36,16 +38,10 @@ class CaffeineEntityCacheFactory @Inject constructor(
   private val persistService: PersistService,
   private val queryService: QueryService,
   private val injector: Injector,
+  private val scheduler: Scheduler,
+  private val executor: DbExecutor,
   @Named("cache") conf: Configuration
-) : EntityCacheFactory {
-
-  private val config: Config
-
-  init {
-    val initialCacheSize = conf.getInt("initial-size")
-    val expireAfterAccess = conf.getDuration("expire-after-access")
-    config = Config(initialCacheSize, expireAfterAccess)
-  }
+) : AbstractEntityCacheFactory(conf) {
 
   override fun <ID : Any, E : Entity<ID>> create(
     entityClass: Class<E>,
@@ -56,53 +52,97 @@ class CaffeineEntityCacheFactory @Inject constructor(
       persistService,
       queryService,
       injector,
+      scheduler,
+      executor,
       entityProcessor,
       config
     )
   }
-
-  internal class Config(@JvmField val initialSize: Int, @JvmField val expireAfterAccess: Duration)
 }
 
-internal open class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
-  entityClass: Class<E>,
+internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
+  override val entityClass: Class<E>,
   private val persistService: PersistService,
   private val queryService: QueryService,
   injector: Injector,
+  scheduler: Scheduler,
+  executor: DbExecutor,
   private val entityProcessor: EntityProcessor<E>,
-  conf: CaffeineEntityCacheFactory.Config
-) : AbstractEntityCache<ID, E>(entityClass, injector) {
+  private val conf: AbstractEntityCacheFactory.Config
+) : EntityCache<ID, E> {
 
   private val cache: Cache<ID, CacheObj<ID, E>>
-  private val pendingPersistCache: ConcurrentMap<ID, E> = ConcurrentHashMap()
+  private val persistingEntities: ConcurrentMap<ID, E> = ConcurrentHashMap()
+
+  private val expireEvaluator: ExpireEvaluator
 
   @Volatile
-  protected var deleted: MutableSet<ID>? = null
+  private var deleted: MutableSet<ID>? = null
 
-  private val evictShelter: ConcurrentMap<ID, E>? =
-    if (expireEvaluator !is NeverExpireEvaluator) ConcurrentHashMap() else null
+  private val evictShelter: ConcurrentMap<ID, E>?
+
+  companion object {
+    @JvmStatic
+    private val logger = getLogger()
+  }
 
   init {
+    val cacheSpec = entityClass.getAnnotation(CacheSpec::class.java)
+    expireEvaluator = if (cacheSpec != null && cacheSpec.expireEvaluator != DefaultExpireEvaluator::class) {
+      injector.getInstance(cacheSpec.expireEvaluator.java)
+    } else {
+      injector.getInstance(DefaultExpireEvaluator::class.java)
+    }
+    evictShelter = if (expireEvaluator !is NeverExpireEvaluator) ConcurrentHashMap() else null
+
     val builder: Caffeine<ID, CacheObj<ID, E>> = Caffeine.newBuilder().unsafeCast()
-    builder.initialCapacity(getInitialSizeOrDefault(conf.initialSize))
+    builder.initialCapacity(EntityCacheHelper.getInitialSizeOrDefault(entityClass, conf.initialSize))
     if (expireEvaluator !is NeverExpireEvaluator) {
       builder.expireAfterAccess(conf.expireAfterAccess)
     }
     builder.writer(Writer())
     val cache: Cache<ID, CacheObj<ID, E>> = builder.build()
 
-    if (isLoadAllOnInit()) {
+    val persistStrategy = cacheSpec?.persistStrategy ?: CacheSpec.PersistStrategy.Scheduled
+    if (persistStrategy == CacheSpec.PersistStrategy.Scheduled) {
+      scheduler.scheduleAtFixedRate(
+        conf.persistInterval, conf.persistInterval.dividedBy(2),
+        executor, createPersistTask()
+      )
+    } else {
+      Log.info { "[${entityClass.simpleName}] using [$persistStrategy] persist strategy." }
+    }
+
+    val isLoadAllOnInit = cacheSpec?.loadAllOnInit ?: false
+    cache.asMap().entries
+    if (isLoadAllOnInit) {
+      Log.info { "loading all [${entityClass.simpleName}]" }
       queryService.foreach(entityClass) {
         entityProcessor.postLoad(it)
         cache.put(it.id(), CacheObj(it))
-      }.awaitSuccessOrThrow(1.minutes)
+      }.get(1.minutes)
+      Log.info { "loaded ${cache.estimatedSize()} [${entityClass.simpleName}]" }
     }
     this.cache = cache
   }
 
+  private fun createPersistTask(): () -> Unit = {
+    val now = currentMillis()
+    val persistTimeThreshold = now - conf.persistInterval.toMillis()
+    val entities = cache.asMap().values.asSequence()
+      .filter { it.hasEntity() && it.lastPersistTime < persistTimeThreshold }
+      .map {
+        it.lastPersistTime = now
+        it.getEntitySilently()!!
+      }
+      .toList()
+    if (entities.isNotEmpty()) {
+      persistService.batchInsertOrUpdate(entities)
+    }
+  }
 
   private fun load(id: ID): E? {
-    val pendingPersist = pendingPersistCache.remove(id)
+    val pendingPersist = persistingEntities.remove(id)
     if (pendingPersist != null) {
       return pendingPersist
     }
@@ -111,24 +151,20 @@ internal open class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
       return entityInShelter
     }
     val f = queryService.findById(id, entityClass)
-    f.await(5, TimeUnit.SECONDS)
-    val queryResult = f.value.get()
-    if (queryResult.isFailure) {
-      logger.error(queryResult.cause) { "查询数据库失败: ${entityClass.simpleName}($id)" }
-      throw queryResult.cause
-    } else {
-      val entity: E? = queryResult.get().orNull
+    try {
+      val entity: E? = f.get(5.seconds).getOrNull()
       if (entity != null) {
         entityProcessor.postLoad(entity)
       }
       return entity
+    } catch (e: Exception) {
+      logger.error(e) { "查询数据库失败: ${entityClass.simpleName}($id)" }
+      throw e
     }
   }
 
-  override fun entityClass(): Class<E> = entityClass
-
-  override fun get(id: ID): Option<E> {
-    return getOrNull(id).option()
+  override fun get(id: ID): Optional<E> {
+    return getOrNull(id).toOptional()
   }
 
   override fun getOrNull(id: ID): E? {
@@ -140,6 +176,7 @@ internal open class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun getOrCreate(id: ID, creation: (ID) -> E): E {
+    requireNotDeleted(id)
     return computeIfAbsent(id, true) { k ->
       var entity = load(k)
       if (entity == null) {
@@ -152,8 +189,8 @@ internal open class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
 
-  override fun getCached(id: ID): Option<E> {
-    return computeIfAbsent(id, NOOP.unsafeCast()).option()
+  override fun getCached(id: ID): Optional<E> {
+    return computeIfAbsent(id, null).toOptional()
   }
 
   override fun asSequence(): Sequence<E> {
@@ -178,8 +215,8 @@ internal open class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
 
   override fun save(e: E) {
     val opt = getCached(e.id())
-    if (opt.isDefined && opt.get() !== e) {
-      throw IllegalStateException("${entityClass().simpleName}(${e.id()})保存失败，与缓存中的对象不一致")
+    if (opt.isPresent && opt.get() !== e) {
+      throw IllegalStateException("${entityClass.simpleName}(${e.id()})保存失败，与缓存中的对象不一致")
     } else {
       persistService.update(e)
     }
@@ -200,14 +237,14 @@ internal open class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   override fun dump(): String = Json.stringify(entitySequence().toList())
 
   private fun entitySequence(): Sequence<E> {
-    return asSequence() + pendingPersistCache.values.asSequence()
+    return asSequence() + persistingEntities.values.asSequence()
   }
 
-  private fun computeIfAbsent(id: ID, loader: (ID) -> E?): E? {
+  private fun computeIfAbsent(id: ID, loader: ((ID) -> E?)?): E? {
     return computeIfAbsent(id, false, loader)
   }
 
-  private fun computeIfAbsent(id: ID, createIfAbsent: Boolean, loader: (ID) -> E?): E? {
+  private fun computeIfAbsent(id: ID, createIfAbsent: Boolean, loader: ((ID) -> E?)?): E? {
     var cacheObj = cache.getIfPresent(id)
     if (cacheObj != null) {
       if (cacheObj.entity != null) {
@@ -216,7 +253,7 @@ internal open class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
         return null
       }
     }
-    if (loader === NOOP) return null
+    if (loader === null) return null
 
     cacheObj = cache.get(id) { k ->
       if (isDeleted(k)) {
@@ -230,13 +267,6 @@ internal open class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   private fun isDeleted(id: ID) = deleted?.contains(id) ?: false
-
-  private class CacheObj<ID : Any, E : Entity<ID>>(val entity: E?) {
-    companion object {
-      private val Empty = CacheObj<Any, Entity<Any>>(null)
-      fun <ID : Any, E : Entity<ID>> empty() = Empty.unsafeCast<CacheObj<ID, E>>()
-    }
-  }
 
   private inner class Writer : CacheWriter<ID, E> {
     override fun write(key: ID, value: E) {
@@ -279,21 +309,41 @@ internal open class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
 
   private fun writeToDB(e: E) {
     val id: ID = e.id()
-    pendingPersistCache[id] = e
-    persistService.update(e).onComplete { result ->
+    requireNotDeleted(id)
+    persistingEntities[id] = e
+    persistService.insertOrUpdate(e).onComplete { result ->
       if (result.isSuccess) {
-        pendingPersistCache.remove(id)
+        persistingEntities.remove(id)
       } else {
         cache.asMap().compute(id) { k, v ->
-          val pending = pendingPersistCache.remove(k)
+          val pending = persistingEntities.remove(k)
           when {
             pending == null -> v
             v == null -> CacheObj(pending)
             else -> error("should not happen")
           }
         }
-        logger.error(result.cause) { "持久化失败: ${entityClass.simpleName}($id)" }
+        logger.error(result.getCause()) { "持久化失败: ${entityClass.simpleName}($id)" }
       }
+    }
+  }
+
+  private fun requireNotDeleted(id: ID) {
+    if (isDeleted(id)) throw IllegalStateException("实体已被删除: ${entityClass.simpleName}($id)")
+  }
+
+  private class CacheObj<ID : Any, E : Entity<ID>>(
+    val entity: E?
+  ) {
+    var lastPersistTime: Long = 0L
+
+    fun getEntitySilently(): E? = entity
+
+    fun hasEntity() = entity != null
+
+    companion object {
+      private val Empty = CacheObj<Any, Entity<Any>>(null)
+      fun <ID : Any, E : Entity<ID>> empty() = Empty.unsafeCast<CacheObj<ID, E>>()
     }
   }
 }

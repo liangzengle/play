@@ -42,7 +42,7 @@ abstract class RawItemLikeReward(type: RewardType, num: String) : RawReward(type
   abstract val cfgId: Int
 }
 
-class RawItemReward(
+data class RawItemReward(
   @field:Min(1)
   @ReferTo(ItemConfig::class)
   override val cfgId: Int,

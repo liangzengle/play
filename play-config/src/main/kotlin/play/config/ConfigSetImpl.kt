@@ -3,9 +3,6 @@ package play.config
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.ImmutableSortedMap
-import io.vavr.control.Option
-import io.vavr.kotlin.option
-import io.vavr.kotlin.some
 import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 import play.util.reflect.getRawClass
@@ -28,14 +25,14 @@ internal class ConfigSetImpl<K, T, G, E>(
   private val isGrouped = Grouped::class.java.isAssignableFrom(configClass) && !isGroupSet
   private val hasExtension = ExtensionKey::class.java.isAssignableFrom(configClass) && !isGroupSet
 
-  private val extensionOpt = if (!hasExtension) io.vavr.kotlin.none() else {
+  private val extensionOpt = if (!hasExtension) Optional.empty() else {
     val extensionClass = configClass.asSubclass(ExtensionKey::class.java)
       .getTypeArg(ExtensionKey::class.java, 0)
       .getRawClass<E>()
     try {
       val extension = extensionClass.getDeclaredConstructor(List::class.java)
         .newInstance(list)
-      some(extension)
+      Optional.of(extension)
     } catch (e: NoSuchMethodException) {
       throw IllegalStateException("${extensionClass.simpleName}缺少构造器：${extensionClass.simpleName}(List<${configClass.simpleName}>)")
     } catch (e: Exception) {
@@ -76,8 +73,8 @@ internal class ConfigSetImpl<K, T, G, E>(
     return hashMap.containsKey(id)
   }
 
-  override fun get(id: Int): Option<T> {
-    return hashMap.get(id).option()
+  override fun get(id: Int): Optional<T> {
+    return Optional.ofNullable(hashMap.get(id))
   }
 
   override fun getOrThrow(id: Int): T {
@@ -96,8 +93,8 @@ internal class ConfigSetImpl<K, T, G, E>(
     return treeMap.containsKey(key)
   }
 
-  override fun getByKey(key: K): Option<T> {
-    return treeMap[key].option()
+  override fun getByKey(key: K): Optional<T> {
+    return Optional.ofNullable(treeMap[key])
   }
 
   override fun getByKeyOrNull(key: K): T? {
@@ -113,8 +110,8 @@ internal class ConfigSetImpl<K, T, G, E>(
       ?: throw NoSuchElementException("${configClass.simpleName} key($key).next")
   }
 
-  override fun next(key: K): Option<T> {
-    return treeMap.higherEntry(key)?.value.option()
+  override fun next(key: K): Optional<T> {
+    return Optional.ofNullable(treeMap.higherEntry(key)?.value)
   }
 
   override fun prevOrThrow(key: K): T {
@@ -122,16 +119,16 @@ internal class ConfigSetImpl<K, T, G, E>(
       ?: throw NoSuchElementException("${configClass.simpleName} key($key).prev")
   }
 
-  override fun prev(key: K): Option<T> {
-    return treeMap.lowerEntry(key)?.value.option()
+  override fun prev(key: K): Optional<T> {
+    return Optional.ofNullable(treeMap.lowerEntry(key)?.value)
   }
 
-  override fun equalsOrPrevOption(key: K): Option<T> {
-    return treeMap.floorEntry(key)?.value.option()
+  override fun equalsOrPrevOption(key: K): Optional<T> {
+    return Optional.ofNullable(treeMap.floorEntry(key)?.value)
   }
 
-  override fun equalsOrNextOption(key: K): Option<T> {
-    return treeMap.ceilingEntry(key)?.value.option()
+  override fun equalsOrNextOption(key: K): Optional<T> {
+    return Optional.ofNullable(treeMap.ceilingEntry(key)?.value)
   }
 
   override fun slice(from: K, fromIncluded: Boolean, to: K, toIncluded: Boolean): Iterable<T> {
@@ -139,12 +136,12 @@ internal class ConfigSetImpl<K, T, G, E>(
   }
 
   override fun extension(): E {
-    return extensionOpt.orNull ?: throw NoSuchElementException("${configClass.simpleName}.extension")
+    return extensionOpt.orElseThrow { throw NoSuchElementException("${configClass.simpleName}.extension") }
   }
 
-  override fun getGroup(groupId: G): Option<ConfigSet<K, T>> {
+  override fun getGroup(groupId: G): Optional<ConfigSet<K, T>> {
     if (!isGrouped) throw UnsupportedOperationException()
-    return groupMap[groupId].option()
+    return Optional.ofNullable(groupMap[groupId])
   }
 
   @Nullable

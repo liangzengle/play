@@ -6,10 +6,7 @@ import akka.actor.typed.Terminated
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
-import play.akka.AbstractTypedActor
-import play.akka.sameBehavior
-import play.akka.send
-import play.akka.stoppedBehavior
+import play.akka.*
 import play.example.common.net.SessionActor
 import play.example.common.net.message.WireMessage
 import play.example.common.net.write
@@ -33,22 +30,21 @@ class AccountActor(
   private lateinit var session: ActorRef<SessionActor.Command>
 
   private val requestAdapter = context.messageAdapter(Request::class.java) {
-    RequestAdapter(it)
+    RequestCommand(it)
   }
 
-  private val waitingPlayerCreate = Behaviors.receive(Command::class.java)
-    .onMessage(RequestAdapter::class.java, ::onRequest)
-    .onSignal(Terminated::class.java, ::onSessionClosed)
+  private val waitingPlayerCreate: Behavior<Command> = newBehaviorBuilder()
+    .accept(::onRequest)
+    .acceptSignal(::onSessionClosed)
     .build()
-
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
-      .apply(::onLogin)
+      .accept(::onLogin)
       .build()
   }
 
-  private fun onRequest(cmd: RequestAdapter): Behavior<Command> {
+  private fun onRequest(cmd: RequestCommand): Behavior<Command> {
     val request = cmd.request
     return when (request.header.msgId.toInt()) {
       PlayerControllerInvoker.create -> {
@@ -91,5 +87,5 @@ class AccountActor(
 
   class Login(val request: Request, val params: LoginProto, val session: ActorRef<SessionActor.Command>) : Command
 
-  private class RequestAdapter(val request: Request) : Command
+  private class RequestCommand(val request: Request) : Command
 }

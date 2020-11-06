@@ -11,6 +11,7 @@ import play.getLogger
 import play.util.collection.asList
 import play.util.control.Result2
 import play.util.control.err
+import play.util.control.map
 import play.util.control.ok
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -138,17 +139,22 @@ class RewardService @Inject constructor(private val mailService: MailService) {
     return if (errorCode == 0) ok(TryCostResultSet(resultList, source)) else err(errorCode)
   }
 
-  fun execCost(self: Self, tryResultSet: TryCostResultSet): List<CostResult> {
+  fun execCost(self: Self, tryResultSet: TryCostResultSet): CostResultSet {
     val source = tryResultSet.source
     val results = tryResultSet.results.map {
       val processor = processors[it.cost.type] ?: error("should not happen.")
       processor.execCost(self, it, source)
     }
     log(self, results, source)
-    return results
+    return CostResultSet(results)
   }
 
-  private fun log(self: Self, results: Collection<RewardOrCostResult>, source: Int) {
+  fun tryAndExecCost(self: Self, costs: Collection<Cost>, source: Int): Result2<CostResultSet> {
+    if (costs.isEmpty()) return ok(CostResultSet(emptyList()))
+    return tryCost(self, costs, source).map { execCost(self, it) }
+  }
+
+  private fun log(self: Self, results: List<RewardOrCostResult>, source: Int) {
     // TODO
   }
 }

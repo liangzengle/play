@@ -1,10 +1,8 @@
 package play.util.io
 
-import io.vavr.control.Option
-import io.vavr.kotlin.none
-import io.vavr.kotlin.some
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
 import play.getLogger
+import play.util.forEach
 import play.util.scheduling.Scheduler
 import java.io.File
 import java.io.IOException
@@ -23,11 +21,11 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
 
   protected var service: WatchService = path.fileSystem.newWatchService()
 
-  private var createCallback = Option.none<(File) -> Unit>()
-  private var modifyCallback = Option.none<(File) -> Unit>()
-  private var deleteCallback = Option.none<(File) -> Unit>()
+  private var createCallback = Optional.empty<(File) -> Unit>()
+  private var modifyCallback = Optional.empty<(File) -> Unit>()
+  private var deleteCallback = Optional.empty<(File) -> Unit>()
 
-  private var cancellable = none<ScheduledFuture<*>>()
+  private var cancellable = Optional.empty<ScheduledFuture<*>>()
 
   @Volatile
   private var closed = false
@@ -134,7 +132,7 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
         }
       }
     }
-    cancellable = some(f)
+    cancellable = Optional.of(f)
   }
 
   override fun close() {
@@ -152,17 +150,17 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
   }
 
   fun onCreate(op: (File) -> Unit): FileMonitor {
-    this.createCallback = some(Objects.requireNonNull(op))
+    this.createCallback = Optional.of(Objects.requireNonNull(op))
     return this
   }
 
   fun onModify(op: (File) -> Unit): FileMonitor {
-    this.modifyCallback = some(Objects.requireNonNull(op))
+    this.modifyCallback = Optional.of(Objects.requireNonNull(op))
     return this
   }
 
   fun onDelete(op: (File) -> Unit): FileMonitor {
-    this.deleteCallback = some(Objects.requireNonNull(op))
+    this.deleteCallback = Optional.of(Objects.requireNonNull(op))
     return this
   }
 

@@ -9,6 +9,7 @@ import play.akka.AbstractTypedActor
 import play.akka.resumeSupervisor
 import play.akka.send
 import play.db.QueryService
+import play.example.common.akka.scheduling.ActorCronScheduler
 import play.example.common.id.GameUIDGenerator
 import play.example.common.net.SessionActor
 import play.example.common.net.write
@@ -21,29 +22,28 @@ import play.example.module.player.event.PlayerEventDispatcher
 import play.example.module.player.exception.PlayerNotExistsException
 import play.mvc.Request
 import play.mvc.Response
-import play.util.concurrent.awaitSuccessOrThrow
 import play.util.scheduling.Scheduler
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
+import kotlin.time.seconds
 
 class PlayerManager(
   context: ActorContext<Command>,
   private val eventDispatcher: PlayerEventDispatcher,
-  private val queryService: QueryService,
+  queryService: QueryService,
   private val playerService: PlayerService,
   private val requestHandler: PlayerRequestHandler,
-  scheduler: Scheduler
-) :
-  AbstractTypedActor<PlayerManager.Command>(context) {
+  cronScheduler: ActorCronScheduler<Command>
+) : AbstractTypedActor<PlayerManager.Command>(context) {
 
   init {
     queryService.foreach(PlayerInfo::class.java, listOf("name")) { result ->
       val id = result.getLong("id")
       val name = result.getString("name")
       add(id, name)
-    }.awaitSuccessOrThrow(5000)
+    }.await(5.seconds)
 
-    scheduler.scheduleCron(Cron.EveryDay) { self send NewDayStart }
+    cronScheduler.schedule(Cron.EveryDay, NewDayStart)
   }
 
   override fun createReceive(): Receive<Command> {
@@ -136,7 +136,14 @@ class PlayerManager(
       scheduler: Scheduler
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
-        PlayerManager(ctx, eventDispatcher, queryService, playerService, requestHandler, scheduler)
+        PlayerManager(
+          ctx,
+          eventDispatcher,
+          queryService,
+          playerService,
+          requestHandler,
+          ActorCronScheduler(scheduler, ctx)
+        )
       }
     }
 

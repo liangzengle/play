@@ -1,559 +1,41 @@
-/*
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.  Oracle designates this
- * particular file as subject to the "Classpath" exception as provided
- * by Oracle in the LICENSE file that accompanied this code.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
- * or visit www.oracle.com if you need additional information or have any
- * questions.
- */
-
-/*
- * This file is available under and governed by the GNU General Public
- * License version 2 only, as published by the Free Software Foundation.
- * However, the following notice accompanied the original version of this
- * file:
- *
- * Written by Doug Lea with assistance from members of JCP JSR-166
- * Expert Group and released to the public domain, as explained at
- * http://creativecommons.org/publicdomain/zero/1.0/
- */
 package play.util.collection;
 
 import org.jetbrains.annotations.NotNull;
-import play.util.function.LongBiFunction;
-import play.util.function.LongToLongBiFunction;
-import play.util.function.LongToObjBiFunction;
+import play.util.function.*;
 
+import javax.annotation.Nonnull;
 import java.io.Serializable;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Consumer;
+import java.util.function.LongBinaryOperator;
 import java.util.function.LongConsumer;
-import java.util.function.LongFunction;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-/**
- * A hash table supporting full concurrency of retrievals and
- * high expected concurrency for updates. This class obeys the
- * same functional specification as {@link Hashtable}, and
- * includes versions of methods corresponding to each method of
- * {@code Hashtable}. However, even though all operations are
- * thread-safe, retrieval operations do <em>not</em> entail locking,
- * and there is <em>not</em> any support for locking the entire table
- * in a way that prevents all access.  This class is fully
- * interoperable with {@code Hashtable} in programs that rely on its
- * thread safety but not on its synchronization details.
- *
- * <p>Retrieval operations (including {@code get}) generally do not
- * block, so may overlap with update operations (including {@code put}
- * and {@code remove}). Retrievals reflect the results of the most
- * recently <em>completed</em> update operations holding upon their
- * onset. (More formally, an update operation for a given key bears a
- * <em>happens-before</em> relation with any (non-null) retrieval for
- * that key reporting the updated value.)  For aggregate operations
- * such as {@code putAll} and {@code clear}, concurrent retrievals may
- * reflect insertion or removal of only some entries.  Similarly,
- * Iterators, Spliterators and Enumerations return elements reflecting the
- * state of the hash table at some point at or since the creation of the
- * iterator/enumeration.  They do <em>not</em> throw {@link
- * ConcurrentModificationException ConcurrentModificationException}.
- * However, iterators are designed to be used by only one thread at a time.
- * Bear in mind that the results of aggregate status methods including
- * {@code size}, {@code isEmpty}, and {@code containsValue} are typically
- * useful only when a map is not undergoing concurrent updates in other threads.
- * Otherwise the results of these methods reflect transient states
- * that may be adequate for monitoring or estimation purposes, but not
- * for program control.
- *
- * <p>The table is dynamically expanded when there are too many
- * collisions (i.e., keys that have distinct hash codes but fall into
- * the same slot modulo the table size), with the expected average
- * effect of maintaining roughly two bins per mapping (corresponding
- * to a 0.75 load factor threshold for resizing). There may be much
- * variance around this average as mappings are added and removed, but
- * overall, this maintains a commonly accepted time/space tradeoff for
- * hash tables.  However, resizing this or any other kind of hash
- * table may be a relatively slow operation. When possible, it is a
- * good idea to provide a size estimate as an optional {@code
- * initialCapacity} constructor argument. An additional optional
- * {@code loadFactor} constructor argument provides a further means of
- * customizing initial table capacity by specifying the table density
- * to be used in calculating the amount of space to allocate for the
- * given number of elements.  Also, for compatibility with previous
- * versions of this class, constructors may optionally specify an
- * expected {@code concurrencyLevel} as an additional hint for
- * internal sizing.  Note that using many keys with exactly the same
- * {@code hashCode()} is a sure way to slow down performance of any
- * hash table. To ameliorate impact, when keys are {@link Comparable},
- * this class may use comparison order among keys to help break ties.
- *
- * <p>A {@link Set} projection of a ConcurrentHashMap may be created
- * mapped values are (perhaps transiently) not used or all take the
- * same mapping value.
- *
- * <p>A ConcurrentHashMap can be used as a scalable frequency map (a
- * form of histogram or multiset) by using {@link
- * java.util.concurrent.atomic.LongAdder} values and initializing via
- * {@link #computeIfAbsent computeIfAbsent}. For example, to add a count
- * to a {@code ConcurrentHashMap<String,LongAdder> freqs}, you can use
- * {@code freqs.computeIfAbsent(key, k -> new LongAdder()).increment();}
- *
- * <p>This class and its views and iterators implement all of the
- * <em>optional</em> methods of the {@link Map} and {@link Iterator}
- * interfaces.
- *
- * <p>Like {@link Hashtable} but unlike {@link HashMap}, this class
- * does <em>not</em> allow {@code null} to be used as a key or value.
- *
- * <p>ConcurrentHashMaps support a set of sequential and parallel bulk
- * operations that, unlike most {@link Stream} methods, are designed
- * to be safely, and often sensibly, applied even with maps that are
- * being concurrently updated by other threads; for example, when
- * computing a snapshot summary of the values in a shared registry.
- * There are three kinds of operation, each with four forms, accepting
- * functions with keys, values, entries, and (key, value) pairs as
- * arguments and/or return values. Because the elements of a
- * ConcurrentHashMap are not ordered in any particular way, and may be
- * processed in different orders in different parallel executions, the
- * correctness of supplied functions should not depend on any
- * ordering, or on any other objects or values that may transiently
- * change while computation is in progress; and except for forEach
- * actions, should ideally be side-effect-free. Bulk operations on
- * {@link Entry} objects do not support method {@code setValue}.
- *
- * <ul>
- * <li>forEach: Performs a given action on each element.
- * A variant form applies a given transformation on each element
- * before performing the action.
- *
- * <li>search: Returns the first available non-null result of
- * applying a given function on each element; skipping further
- * search when a result is found.
- *
- * <li>reduce: Accumulates each element.  The supplied reduction
- * function cannot rely on ordering (more formally, it should be
- * both associative and commutative).  There are five variants:
- *
- * <ul>
- *
- * <li>Plain reductions. (There is not a form of this method for
- * (key, value) function arguments since there is no corresponding
- * return type.)
- *
- * <li>Mapped reductions that accumulate the results of a given
- * function applied to each element.
- *
- * <li>Reductions to scalar doubles, longs, and ints, using a
- * given basis value.
- *
- * </ul>
- * </ul>
- *
- * <p>These bulk operations accept a {@code parallelismThreshold}
- * argument. Methods proceed sequentially if the current map size is
- * estimated to be less than the given threshold. Using a value of
- * {@code Long.MAX_VALUE} suppresses all parallelism.  Using a value
- * of {@code 1} results in maximal parallelism by partitioning into
- * enough subtasks to fully utilize the {@link
- * ForkJoinPool#commonPool()} that is used for all parallel
- * computations. Normally, you would initially choose one of these
- * extreme values, and then measure performance of using in-between
- * values that trade off overhead versus throughput.
- *
- * <p>The concurrency properties of bulk operations follow
- * from those of ConcurrentHashMap: Any non-null result returned
- * from {@code get(key)} and related access methods bears a
- * happens-before relation with the associated insertion or
- * update.  The result of any bulk operation reflects the
- * composition of these per-element relations (but is not
- * necessarily atomic with respect to the map as a whole unless it
- * is somehow known to be quiescent).  Conversely, because keys
- * and values in the map are never null, null serves as a reliable
- * atomic indicator of the current lack of any result.  To
- * maintain this property, null serves as an implicit basis for
- * all non-scalar reduction operations. For the double, long, and
- * int versions, the basis should be one that, when combined with
- * any other value, returns that other value (more formally, it
- * should be the identity element for the reduction). Most common
- * reductions have these properties; for example, computing a sum
- * with basis 0 or a minimum with basis MAX_VALUE.
- *
- * <p>Search and transformation functions provided as arguments
- * should similarly return null to indicate the lack of any result
- * (in which case it is not used). In the case of mapped
- * reductions, this also enables transformations to serve as
- * filters, returning null (or, in the case of primitive
- * specializations, the identity basis) if the element should not
- * be combined. You can create compound transformations and
- * filterings by composing them yourself under this "null means
- * there is nothing there now" rule before using them in search or
- * reduce operations.
- *
- * <p>Methods accepting and/or returning Entry arguments maintain
- * key-value associations. They may be useful for example when
- * finding the key for the greatest value. Note that "plain" Entry
- * arguments can be supplied using {@code new
- * AbstractMap.SimpleEntry(k,v)}.
- *
- * <p>Bulk operations may complete abruptly, throwing an
- * exception encountered in the application of a supplied
- * function. Bear in mind when handling such exceptions that other
- * concurrently executing functions could also have thrown
- * exceptions, or would have done so if the first exception had
- * not occurred.
- *
- * <p>Speedups for parallel compared to sequential forms are common
- * but not guaranteed.  Parallel operations involving brief functions
- * on small maps may execute more slowly than sequential forms if the
- * underlying work to parallelize the computation is more expensive
- * than the computation itself.  Similarly, parallelization may not
- * lead to much actual parallelism if all processors are busy
- * performing unrelated tasks.
- *
- * <p>All arguments to all task methods must be non-null.
- *
- * <p>This class is a member of the
- * <a href="{@docRoot}/java.base/java/util/package-summary.html#CollectionsFramework">
- * Java Collections Framework</a>.
- *
- * @author Doug Lea
- * @since 1.5
- */
-@SuppressWarnings("FinalStaticMethod")
-public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Serializable {
-    private static final long serialVersionUID = 7249069246763182397L;
+@SuppressWarnings("FinalPrivateMethod")
+public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
 
-    /*
-     * Overview:
-     *
-     * The primary design goal of this hash table is to maintain
-     * concurrent readability (typically method get(), but also
-     * iterators and related methods) while minimizing update
-     * contention. Secondary goals are to keep space consumption about
-     * the same or better than java.util.HashMap, and to support high
-     * initial insertion rates on an empty table by many threads.
-     *
-     * This map usually acts as a binned (bucketed) hash table.  Each
-     * key-value mapping is held in a Node.  Most nodes are instances
-     * of the basic Node class with hash, key, value, and next
-     * fields. However, various subclasses exist: TreeNodes are
-     * arranged in balanced trees, not lists.  TreeBins hold the roots
-     * of sets of TreeNodes. ForwardingNodes are placed at the heads
-     * of bins during resizing. ReservationNodes are used as
-     * placeholders while establishing values in computeIfAbsent and
-     * related methods.  The types TreeBin, ForwardingNode, and
-     * ReservationNode do not hold normal user keys, values, or
-     * hashes, and are readily distinguishable during search etc
-     * because they have negative hash fields and null key and value
-     * fields. (These special nodes are either uncommon or transient,
-     * so the impact of carrying around some unused fields is
-     * insignificant.)
-     *
-     * The table is lazily initialized to a power-of-two size upon the
-     * first insertion.  Each bin in the table normally contains a
-     * list of Nodes (most often, the list has only zero or one Node).
-     * Table accesses require volatile/atomic reads, writes, and
-     * CASes.  Because there is no other way to arrange this without
-     * adding further indirections, we use intrinsics
-     * (jdk.internal.misc.Unsafe) operations.
-     *
-     * We use the top (sign) bit of Node hash fields for control
-     * purposes -- it is available anyway because of addressing
-     * constraints.  Nodes with negative hash fields are specially
-     * handled or ignored in map methods.
-     *
-     * Insertion (via put or its variants) of the first node in an
-     * empty bin is performed by just CASing it to the bin.  This is
-     * by far the most common case for put operations under most
-     * key/hash distributions.  Other update operations (insert,
-     * delete, and replace) require locks.  We do not want to waste
-     * the space required to associate a distinct lock object with
-     * each bin, so instead use the first node of a bin list itself as
-     * a lock. Locking support for these locks relies on builtin
-     * "synchronized" monitors.
-     *
-     * Using the first node of a list as a lock does not by itself
-     * suffice though: When a node is locked, any update must first
-     * validate that it is still the first node after locking it, and
-     * retry if not. Because new nodes are always appended to lists,
-     * once a node is first in a bin, it remains first until deleted
-     * or the bin becomes invalidated (upon resizing).
-     *
-     * The main disadvantage of per-bin locks is that other update
-     * operations on other nodes in a bin list protected by the same
-     * lock can stall, for example when user equals() or mapping
-     * functions take a long time.  However, statistically, under
-     * random hash codes, this is not a common problem.  Ideally, the
-     * frequency of nodes in bins follows a Poisson distribution
-     * (http://en.wikipedia.org/wiki/Poisson_distribution) with a
-     * parameter of about 0.5 on average, given the resizing threshold
-     * of 0.75, although with a large variance because of resizing
-     * granularity. Ignoring variance, the expected occurrences of
-     * list size k are (exp(-0.5) * pow(0.5, k) / factorial(k)). The
-     * first values are:
-     *
-     * 0:    0.60653066
-     * 1:    0.30326533
-     * 2:    0.07581633
-     * 3:    0.01263606
-     * 4:    0.00157952
-     * 5:    0.00015795
-     * 6:    0.00001316
-     * 7:    0.00000094
-     * 8:    0.00000006
-     * more: less than 1 in ten million
-     *
-     * Lock contention probability for two threads accessing distinct
-     * elements is roughly 1 / (8 * #elements) under random hashes.
-     *
-     * Actual hash code distributions encountered in practice
-     * sometimes deviate significantly from uniform randomness.  This
-     * includes the case when N > (1<<30), so some keys MUST collide.
-     * Similarly for dumb or hostile usages in which multiple keys are
-     * designed to have identical hash codes or ones that differs only
-     * in masked-out high bits. So we use a secondary strategy that
-     * applies when the number of nodes in a bin exceeds a
-     * threshold. These TreeBins use a balanced tree to hold nodes (a
-     * specialized form of red-black trees), bounding search time to
-     * O(log N).  Each search step in a TreeBin is at least twice as
-     * slow as in a regular list, but given that N cannot exceed
-     * (1<<64) (before running out of addresses) this bounds search
-     * steps, lock hold times, etc, to reasonable constants (roughly
-     * 100 nodes inspected per operation worst case) so long as keys
-     * are Comparable (which is very common -- String, Long, etc).
-     * TreeBin nodes (TreeNodes) also maintain the same "next"
-     * traversal pointers as regular nodes, so can be traversed in
-     * iterators in the same way.
-     *
-     * The table is resized when occupancy exceeds a percentage
-     * threshold (nominally, 0.75, but see below).  Any thread
-     * noticing an overfull bin may assist in resizing after the
-     * initiating thread allocates and sets up the replacement array.
-     * However, rather than stalling, these other threads may proceed
-     * with insertions etc.  The use of TreeBins shields us from the
-     * worst case effects of overfilling while resizes are in
-     * progress.  Resizing proceeds by transferring bins, one by one,
-     * from the table to the next table. However, threads claim small
-     * blocks of indices to transfer (via field transferIndex) before
-     * doing so, reducing contention.  A generation stamp in field
-     * sizeCtl ensures that resizings do not overlap. Because we are
-     * using power-of-two expansion, the elements from each bin must
-     * either stay at same index, or move with a power of two
-     * offset. We eliminate unnecessary node creation by catching
-     * cases where old nodes can be reused because their next fields
-     * won't change.  On average, only about one-sixth of them need
-     * cloning when a table doubles. The nodes they replace will be
-     * garbage collectible as soon as they are no longer referenced by
-     * any reader thread that may be in the midst of concurrently
-     * traversing table.  Upon transfer, the old table bin contains
-     * only a special forwarding node (with hash field "MOVED") that
-     * contains the next table as its key. On encountering a
-     * forwarding node, access and update operations restart, using
-     * the new table.
-     *
-     * Each bin transfer requires its bin lock, which can stall
-     * waiting for locks while resizing. However, because other
-     * threads can join in and help resize rather than contend for
-     * locks, average aggregate waits become shorter as resizing
-     * progresses.  The transfer operation must also ensure that all
-     * accessible bins in both the old and new table are usable by any
-     * traversal.  This is arranged in part by proceeding from the
-     * last bin (table.length - 1) up towards the first.  Upon seeing
-     * a forwarding node, traversals (see class Traverser) arrange to
-     * move to the new table without revisiting nodes.  To ensure that
-     * no intervening nodes are skipped even when moved out of order,
-     * a stack (see class TableStack) is created on first encounter of
-     * a forwarding node during a traversal, to maintain its place if
-     * later processing the current table. The need for these
-     * save/restore mechanics is relatively rare, but when one
-     * forwarding node is encountered, typically many more will be.
-     * So Traversers use a simple caching scheme to avoid creating so
-     * many new TableStack nodes. (Thanks to Peter Levart for
-     * suggesting use of a stack here.)
-     *
-     * The traversal scheme also applies to partial traversals of
-     * ranges of bins (via an alternate Traverser constructor)
-     * to support partitioned aggregate operations.  Also, read-only
-     * operations give up if ever forwarded to a null table, which
-     * provides support for shutdown-style clearing, which is also not
-     * currently implemented.
-     *
-     * Lazy table initialization minimizes footprint until first use,
-     * and also avoids resizings when the first operation is from a
-     * putAll, constructor with map argument, or deserialization.
-     * These cases attempt to override the initial capacity settings,
-     * but harmlessly fail to take effect in cases of races.
-     *
-     * The element count is maintained using a specialization of
-     * LongAdder. We need to incorporate a specialization rather than
-     * just use a LongAdder in order to access implicit
-     * contention-sensing that leads to creation of multiple
-     * CounterCells.  The counter mechanics avoid contention on
-     * updates but can encounter cache thrashing if read too
-     * frequently during concurrent access. To avoid reading so often,
-     * resizing under contention is attempted only upon adding to a
-     * bin already holding two or more nodes. Under uniform hash
-     * distributions, the probability of this occurring at threshold
-     * is around 13%, meaning that only about 1 in 8 puts check
-     * threshold (and after resizing, many fewer do so).
-     *
-     * TreeBins use a special form of comparison for search and
-     * related operations (which is the main reason we cannot use
-     * existing collections such as TreeMaps). TreeBins contain
-     * Comparable elements, but may contain others, as well as
-     * elements that are Comparable but not necessarily Comparable for
-     * the same T, so we cannot invoke compareTo among them. To handle
-     * this, the tree is ordered primarily by hash value, then by
-     * Comparable.compareTo order if applicable.  On lookup at a node,
-     * if elements are not comparable or compare as 0 then both left
-     * and right children may need to be searched in the case of tied
-     * hash values. (This corresponds to the full list search that
-     * would be necessary if all elements were non-Comparable and had
-     * tied hashes.) On insertion, to keep a total ordering (or as
-     * close as is required here) across rebalancings, we compare
-     * classes and identityHashCodes as tie-breakers. The red-black
-     * balancing code is updated from pre-jdk-collections
-     * (http://gee.cs.oswego.edu/dl/classes/collections/RBCell.java)
-     * based in turn on Cormen, Leiserson, and Rivest "Introduction to
-     * Algorithms" (CLR).
-     *
-     * TreeBins also require an additional locking mechanism.  While
-     * list traversal is always possible by readers even during
-     * updates, tree traversal is not, mainly because of tree-rotations
-     * that may change the root node and/or its linkages.  TreeBins
-     * include a simple read-write lock mechanism parasitic on the
-     * main bin-synchronization strategy: Structural adjustments
-     * associated with an insertion or removal are already bin-locked
-     * (and so cannot conflict with other writers) but must wait for
-     * ongoing readers to finish. Since there can be only one such
-     * waiter, we use a simple scheme using a single "waiter" field to
-     * block writers.  However, readers need never block.  If the root
-     * lock is held, they proceed along the slow traversal path (via
-     * next-pointers) until the lock becomes available or the list is
-     * exhausted, whichever comes first. These cases are not fast, but
-     * maximize aggregate expected throughput.
-     *
-     * Maintaining API and serialization compatibility with previous
-     * versions of this class introduces several oddities. Mainly: We
-     * leave untouched but unused constructor arguments referring to
-     * concurrencyLevel. We accept a loadFactor constructor argument,
-     * but apply it only to initial table capacity (which is the only
-     * time that we can guarantee to honor it.) We also declare an
-     * unused "Segment" class that is instantiated in minimal form
-     * only when serializing.
-     *
-     * Also, solely for compatibility with previous versions of this
-     * class, it extends AbstractMap, even though all of its methods
-     * are overridden, so it is just useless baggage.
-     *
-     * This file is organized to make things a little easier to follow
-     * while reading than they might otherwise: First the main static
-     * declarations and utilities, then fields, then main public
-     * methods (with a few factorings of multiple public methods into
-     * internal ones), then sizing methods, trees, traversers, and
-     * bulk operations.
-     */
-
-    /* ---------------- Constants -------------- */
-
-    /**
-     * The largest possible table capacity.  This value must be
-     * exactly 1<<30 to stay within Java array allocation and indexing
-     * bounds for power of two table sizes, and is further required
-     * because the top two bits of 32bit hash fields are used for
-     * control purposes.
-     */
     private static final int MAXIMUM_CAPACITY = 1 << 30;
 
-    /**
-     * The default initial table capacity.  Must be a power of 2
-     * (i.e., at least 1) and at most MAXIMUM_CAPACITY.
-     */
     private static final int DEFAULT_CAPACITY = 16;
 
-    /**
-     * The largest possible (non-power of two) array size.
-     * Needed by toArray and related methods.
-     */
     static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
-    /**
-     * The load factor for this table. Overrides of this value in
-     * constructors affect only the initial table capacity.  The
-     * actual floating point value isn't normally used -- it is
-     * simpler to use expressions such as {@code n - (n >>> 2)} for
-     * the associated resizing threshold.
-     */
+    private static final int DEFAULT_CONCURRENCY_LEVEL = 16;
+
     private static final float LOAD_FACTOR = 0.75f;
 
-    /**
-     * The bin count threshold for using a tree rather than list for a
-     * bin.  Bins are converted to trees when adding an element to a
-     * bin with at least this many nodes. The value must be greater
-     * than 2, and should be at least 8 to mesh with assumptions in
-     * tree removal about conversion back to plain bins upon
-     * shrinkage.
-     */
     static final int TREEIFY_THRESHOLD = 8;
 
-    /**
-     * The bin count threshold for untreeifying a (split) bin during a
-     * resize operation. Should be less than TREEIFY_THRESHOLD, and at
-     * most 6 to mesh with shrinkage detection under removal.
-     */
     static final int UNTREEIFY_THRESHOLD = 6;
 
-    /**
-     * The smallest table capacity for which bins may be treeified.
-     * (Otherwise the table is resized if too many nodes in a bin.)
-     * The value should be at least 4 * TREEIFY_THRESHOLD to avoid
-     * conflicts between resizing and treeification thresholds.
-     */
     static final int MIN_TREEIFY_CAPACITY = 64;
 
-    /**
-     * Minimum number of rebinnings per transfer step. Ranges are
-     * subdivided to allow multiple resizer threads.  This value
-     * serves as a lower bound to avoid resizers encountering
-     * excessive memory contention.  The value should be at least
-     * DEFAULT_CAPACITY.
-     */
     private static final int MIN_TRANSFER_STRIDE = 16;
 
-    /**
-     * The number of bits used for generation stamp in sizeCtl.
-     * Must be at least 6 for 32bit arrays.
-     */
     private static final int RESIZE_STAMP_BITS = 16;
 
-    /**
-     * The maximum number of threads that can help resize.
-     * Must fit in 32 - RESIZE_STAMP_BITS bits.
-     */
     private static final int MAX_RESIZERS = (1 << (32 - RESIZE_STAMP_BITS)) - 1;
 
-    /**
-     * The bit shift for recording size stamp in sizeCtl.
-     */
     private static final int RESIZE_STAMP_SHIFT = 32 - RESIZE_STAMP_BITS;
 
     /*
@@ -570,16 +52,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
     static final int NCPU = Runtime.getRuntime().availableProcessors();
 
     /* ---------------- Nodes -------------- */
-
-    /**
-     * Key-value entry.  This class is never exported out as a
-     * user-mutable Map.Entry (i.e., one supporting setValue; see
-     * MapEntry below), but can be used for read-only traversals used
-     * in bulk tasks.  Subclasses of Node with a negative hash field
-     * are special, and contain null keys and values (but are never
-     * exported).  Otherwise, keys and vals are never null.
-     */
-    static class Node implements Entry {
+    static class Node implements ConcurrentLongLongMap.Entry {
         final int hash;
         final long key;
         volatile long val;
@@ -612,13 +85,12 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
             return key + "=" + val;
         }
 
-        @SuppressWarnings("unchecked")
         public final boolean equals(Object o) {
-            if (!(o instanceof Node)) {
+            if (!(o instanceof ConcurrentLongLongMap.Entry)) {
                 return false;
             }
-            Node that = (Node) o;
-            return this.key == that.key && this.val == that.val;
+            ConcurrentLongLongMap.Entry that = (ConcurrentLongLongMap.Entry) o;
+            return that.getKey() == key && that.getValue() == val;
         }
 
         /**
@@ -635,23 +107,6 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
     }
 
     /* ---------------- Static utilities -------------- */
-
-    /**
-     * Spreads (XORs) higher bits of hash to lower and also forces top
-     * bit to 0. Because the table uses power-of-two masking, sets of
-     * hashes that vary only in bits above the current mask will
-     * always collide. (Among known examples are sets of Float keys
-     * holding consecutive whole numbers in small tables.)  So we
-     * apply a transform that spreads the impact of higher bits
-     * downward. There is a tradeoff between speed, utility, and
-     * quality of bit-spreading. Because many common sets of hashes
-     * are already reasonably distributed (so don't benefit from
-     * spreading), and because we use trees to handle large sets of
-     * collisions in bins, we just XOR some shifted bits in the
-     * cheapest possible way to reduce systematic lossage, as well as
-     * to incorporate impact of the highest bits that would otherwise
-     * never be used in index calculations because of table bounds.
-     */
     static final int spread(int h) {
         return (h ^ (h >>> 16)) & HASH_BITS;
     }
@@ -660,74 +115,22 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
      * Returns a power of two table size for the given desired capacity.
      * See Hackers Delight, sec 3.2
      */
-    private static int tableSizeFor(int c) {
+    private static final int tableSizeFor(int c) {
         int n = -1 >>> Integer.numberOfLeadingZeros(c - 1);
         return (n < 0) ? 1 : (n >= MAXIMUM_CAPACITY) ? MAXIMUM_CAPACITY : n + 1;
     }
 
-    /**
-     * Returns x's Class if it is of the form "class C implements
-     * Comparable<C>", else null.
-     */
-    static Class<?> comparableClassFor(Object x) {
-        if (x instanceof Comparable) {
-            Class<?> c;
-            Type[] ts, as;
-            ParameterizedType p;
-            if ((c = x.getClass()) == String.class) // bypass checks
-                return c;
-            //noinspection ConstantConditions
-            if ((ts = c.getGenericInterfaces()) != null) {
-                for (Type t : ts) {
-                    if ((t instanceof ParameterizedType) &&
-                            ((p = (ParameterizedType) t).getRawType() ==
-                                    Comparable.class) &&
-                            (as = p.getActualTypeArguments()) != null &&
-                            as.length == 1 && as[0] == c) // type arg is c
-                        return c;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Returns k.compareTo(x) if x matches kc (k's screened comparable
-     * class), else 0.
-     */
-    @SuppressWarnings({"rawtypes", "unchecked"}) // for cast to Comparable
-    static int compareComparables(Class<?> kc, Object k, Object x) {
-        return (x == null || x.getClass() != kc ? 0 :
-                ((Comparable) k).compareTo(x));
-    }
-
     /* ---------------- Table element access -------------- */
-
-    /*
-     * Atomic access methods are used for table elements as well as
-     * elements of in-progress next table while resizing.  All uses of
-     * the tab arguments must be null checked by callers.  All callers
-     * also paranoically precheck that tab's length is not zero (or an
-     * equivalent check), thus ensuring that any index argument taking
-     * the form of a hash value anded with (length - 1) is a valid
-     * index.  Note that, to be correct wrt arbitrary concurrency
-     * errors by users, these checks must operate on local variables,
-     * which accounts for some odd-looking inline assignments below.
-     * Note that calls to setTabAt always occur within locked regions,
-     * and so require only release ordering.
-     */
-
-    @SuppressWarnings("unchecked")
-    static final <V> Node tabAt(Node[] tab, int i) {
+    static final Node tabAt(Node[] tab, int i) {
         return (Node) U.getReferenceAcquire(tab, ((long) i << ASHIFT) + ABASE);
     }
 
-    static final <V> boolean casTabAt(Node[] tab, int i,
-                                      Node c, Node v) {
+    static final boolean casTabAt(Node[] tab, int i,
+                                  Node c, Node v) {
         return U.compareAndSetReference(tab, ((long) i << ASHIFT) + ABASE, c, v);
     }
 
-    static final <V> void setTabAt(Node[] tab, int i, Node v) {
+    static final void setTabAt(Node[] tab, int i, Node v) {
         U.putReferenceRelease(tab, ((long) i << ASHIFT) + ABASE, v);
     }
 
@@ -776,10 +179,9 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
      */
     private transient volatile CounterCell[] counterCells;
 
-    // views
+    private transient EntrySetView entrySet;
     private transient KeySetView keySet;
     private transient ValuesView values;
-
 
     /* ---------------- Public operations -------------- */
 
@@ -801,16 +203,6 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
      */
     public ConcurrentLongLongHashMap(int initialCapacity) {
         this(initialCapacity, LOAD_FACTOR, 1);
-    }
-
-    /**
-     * Creates a new map with the same mappings as the given map.
-     *
-     * @param m the map
-     */
-    public ConcurrentLongLongHashMap(Map<? extends Long, ? extends Long> m) {
-        this.sizeCtl = DEFAULT_CAPACITY;
-        putAll(m);
     }
 
     /**
@@ -885,6 +277,17 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         return !isEmpty();
     }
 
+    @NotNull
+    @Override
+    public Iterator<ConcurrentLongLongMap.Entry> iterator() {
+        return entrySet().iterator();
+    }
+
+    @Nonnull
+    public LongIterable keys() {
+        return keySet();
+    }
+
     /**
      * Returns the value to which the specified key is mapped,
      * or {@code null} if this map contains no mapping for the key.
@@ -956,7 +359,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         for (Node[] tab = table; ; ) {
             Node f;
             int n, i, fh;
-            Long fv;
+            long fv;
             if (tab == null || (n = tab.length) == 0)
                 tab = initTable();
             else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
@@ -966,10 +369,10 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                 tab = helpTransfer(tab, f);
             else if (onlyIfAbsent // check first node without acquiring lock
                     && fh == hash
-                    && (f.key == key)
-                    && (fv = f.val) != null)
+                    && (f.key == key)) {
+                fv = f.val;
                 return fv;
-            else {
+            } else {
                 Long oldVal = null;
                 synchronized (f) {
                     if (tabAt(tab, i) == f) {
@@ -992,7 +395,8 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                         } else if (f instanceof TreeBin) {
                             Node p;
                             binCount = 2;
-                            if ((p = ((TreeBin) f).putTreeVal(hash, key, value)) != null) {
+                            if ((p = ((TreeBin) f).putTreeVal(hash, key,
+                                    value)) != null) {
                                 oldVal = p.val;
                                 if (!onlyIfAbsent)
                                     p.val = value;
@@ -1015,19 +419,6 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
     }
 
     /**
-     * Copies all of the mappings from the specified map to this one.
-     * These mappings replace any mappings that this map had for any of the
-     * keys currently in the specified map.
-     *
-     * @param m mappings to be stored in this map
-     */
-    public void putAll(Map<? extends Long, ? extends Long> m) {
-        tryPresize(m.size());
-        for (Map.Entry<? extends Long, ? extends Long> e : m.entrySet())
-            putVal(e.getKey(), e.getValue(), false);
-    }
-
-    /**
      * Removes the key (and its corresponding value) from this map.
      * This method does nothing if the key is not in the map.
      *
@@ -1045,8 +436,8 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
      * Replaces node value with v, conditional upon match of cv if
      * non-null.  If resulting value is null, delete.
      */
-    final Long replaceNode(long key, Long value, Long cv) {
-        int hash = spread(Long.hashCode(key));
+    final Long replaceNode(Long key, Long value, Long cv) {
+        int hash = spread(key.hashCode());
         for (Node[] tab = table; ; ) {
             Node f;
             int n, i, fh;
@@ -1086,7 +477,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                             TreeBin t = (TreeBin) f;
                             TreeNode r, p;
                             if ((r = t.root) != null &&
-                                    (p = r.findTreeNode(hash, key, null)) != null) {
+                                    (p = r.findTreeNode(hash, key)) != null) {
                                 long pv = p.val;
                                 if (cv == null || cv == pv) {
                                     oldVal = pv;
@@ -1148,14 +539,13 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
     }
 
     /**
-     * Returns a {@link Set} view of the keys contained in this map.
+     * Returns a {@link Set} view of the mappings contained in this map.
      * The set is backed by the map, so changes to the map are
-     * reflected in the set, and vice-versa. The set supports element
-     * removal, which removes the corresponding mapping from this map,
+     * reflected in the set, and vice-versa.  The set supports element
+     * removal, which removes the corresponding mapping from the map,
      * via the {@code Iterator.remove}, {@code Set.remove},
      * {@code removeAll}, {@code retainAll}, and {@code clear}
-     * operations.  It does not support the {@code add} or
-     * {@code addAll} operations.
+     * operations.
      *
      * <p>The view's iterators and spliterators are
      * <a href="package-summary.html#Weakly"><i>weakly consistent</i></a>.
@@ -1165,52 +555,24 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
      *
      * @return the set view
      */
+    public Iterable<ConcurrentLongLongMap.Entry> entrySet() {
+        EntrySetView es;
+        if ((es = entrySet) != null) return es;
+        return entrySet = new EntrySetView(this);
+    }
+
+    @Nonnull
     public KeySetView keySet() {
-        KeySetView ks;
-        if ((ks = keySet) != null) return ks;
+        KeySetView es;
+        if ((es = keySet) != null) return es;
         return keySet = new KeySetView(this);
     }
 
-    /**
-     * Returns a {@link Collection} view of the values contained in this map.
-     * The collection is backed by the map, so changes to the map are
-     * reflected in the collection, and vice-versa.  The collection
-     * supports element removal, which removes the corresponding
-     * mapping from this map, via the {@code Iterator.remove},
-     * {@code Collection.remove}, {@code removeAll},
-     * {@code retainAll}, and {@code clear} operations.  It does not
-     * support the {@code add} or {@code addAll} operations.
-     *
-     * <p>The view's iterators and spliterators are
-     * <a href="package-summary.html#Weakly"><i>weakly consistent</i></a>.
-     *
-     * <p>The view's {@code spliterator} reports {@link Spliterator#CONCURRENT}
-     * and {@link Spliterator#NONNULL}.
-     *
-     * @return the collection view
-     */
-    public LongIterable values() {
-        ValuesView vs;
-        if ((vs = values) != null) return vs;
+    @Nonnull
+    public ValuesView values() {
+        ValuesView es;
+        if ((es = values) != null) return es;
         return values = new ValuesView(this);
-    }
-
-    /**
-     * Returns the hash code value for this {@link Map}, i.e.,
-     * the sum of, for each key-value pair in the map,
-     * {@code key.hashCode() ^ value.hashCode()}.
-     *
-     * @return the hash code value for this map
-     */
-    public int hashCode() {
-        int h = 0;
-        Node[] t;
-        if ((t = table) != null) {
-            Traverser it = new Traverser(t, t.length, 0, t.length);
-            for (Node p; (p = it.advance()) != null; )
-                h += Long.hashCode(p.key) ^ Long.hashCode(p.val);
-        }
-        return h;
     }
 
     /**
@@ -1261,6 +623,8 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
 
     /**
      * {@inheritDoc}
+     *
+     * @throws NullPointerException if the specified key is null
      */
     public boolean remove(long key, long value) {
         return replaceNode(key, null, value) != null;
@@ -1304,6 +668,17 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         return (v = get(key)) == null ? defaultValue : v;
     }
 
+    public void forEach(LongBiConsumer action) {
+        if (action == null) throw new NullPointerException("action");
+        Node[] t;
+        if ((t = table) != null) {
+            Traverser it = new Traverser(t, t.length, 0, t.length);
+            for (Node p; (p = it.advance()) != null; ) {
+                action.accept(p.key, p.val);
+            }
+        }
+    }
+
     /**
      * If the specified key is not already associated with a value,
      * attempts to compute its value using the given mapping function
@@ -1329,14 +704,13 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
      * @throws RuntimeException      or Error if the mappingFunction does so,
      *                               in which case the mapping is left unestablished
      */
-    public Long computeIfAbsent(long key, LongFunction<Long> mappingFunction) {
+    public Long computeIfAbsent(long key, LongToObjFunction<Long> mappingFunction) {
         if (mappingFunction == null)
             throw new NullPointerException();
         int h = spread(Long.hashCode(key));
         Long val = null;
         int binCount = 0;
-        Node[] tab = table;
-        for (; ; ) {
+        for (Node[] tab = table; ; ) {
             Node f;
             int n, i, fh;
             long fv;
@@ -1349,7 +723,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                         binCount = 1;
                         Node node = null;
                         try {
-                            if ((val = mappingFunction.apply(key)) != null)
+                            if ((val = mappingFunction.invoke(key)) != null)
                                 node = new Node(h, key, val);
                         } finally {
                             setTabAt(tab, i, node);
@@ -1378,7 +752,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                                 }
                                 Node pred = e;
                                 if ((e = e.next) == null) {
-                                    if ((val = mappingFunction.apply(key)) != null) {
+                                    if ((val = mappingFunction.invoke(key)) != null) {
                                         if (pred.next != null)
                                             throw new IllegalStateException("Recursive update");
                                         added = true;
@@ -1392,9 +766,9 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                             TreeBin t = (TreeBin) f;
                             TreeNode r, p;
                             if ((r = t.root) != null &&
-                                    (p = r.findTreeNode(h, key, null)) != null)
+                                    (p = r.findTreeNode(h, key)) != null)
                                 val = p.val;
-                            else if ((val = mappingFunction.apply(key)) != null) {
+                            else if ((val = mappingFunction.invoke(key)) != null) {
                                 added = true;
                                 t.putTreeVal(h, key, val);
                             }
@@ -1414,6 +788,13 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         if (val != null)
             addCount(1L, binCount);
         return val;
+    }
+
+    @Override
+    public long computeIfAbsent(long key, LongToLongFunction remappingFunction) {
+        Long v = computeIfAbsent(key, (LongToObjFunction<Long>) remappingFunction::apply);
+        assert v != null;
+        return v;
     }
 
     /**
@@ -1439,7 +820,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
      * @throws RuntimeException      or Error if the remappingFunction does so,
      *                               in which case the mapping is unchanged
      */
-    public Long computeIfPresent(long key, LongBiFunction<Long> remappingFunction) {
+    public Long computeIfPresent(long key, LongToObjBiFunction<Long> remappingFunction) {
         if (remappingFunction == null)
             throw new NullPointerException();
         int h = spread(Long.hashCode(key));
@@ -1485,7 +866,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                             TreeBin t = (TreeBin) f;
                             TreeNode r, p;
                             if ((r = t.root) != null &&
-                                    (p = r.findTreeNode(h, key, null)) != null) {
+                                    (p = r.findTreeNode(h, key)) != null) {
                                 val = remappingFunction.apply(key, p.val);
                                 if (val != null)
                                     p.val = val;
@@ -1530,7 +911,8 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
      * @throws RuntimeException      or Error if the remappingFunction does so,
      *                               in which case the mapping is unchanged
      */
-    public Long compute(long key, LongToObjBiFunction<Long, Long> remappingFunction) {
+    public Long compute(long key,
+                        LongObjToObjFunction<Long, Long> remappingFunction) {
         if (remappingFunction == null)
             throw new NullPointerException();
         int h = spread(Long.hashCode(key));
@@ -1600,7 +982,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                             TreeBin t = (TreeBin) f;
                             TreeNode r, p;
                             if ((r = t.root) != null)
-                                p = r.findTreeNode(h, key, null);
+                                p = r.findTreeNode(h, key);
                             else
                                 p = null;
                             Long pv = (p == null) ? null : p.val;
@@ -1653,9 +1035,12 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
      * @throws RuntimeException     or Error if the remappingFunction does so,
      *                              in which case the mapping is unchanged
      */
-    public long merge(long key, long value, LongToLongBiFunction remappingFunction) {
+    public long merge(long key, long value, LongBinaryOperator remappingFunction) {
+        if (remappingFunction == null)
+            throw new NullPointerException();
         int h = spread(Long.hashCode(key));
-        Long val = null;
+        boolean valAssigned = false;
+        long val = 0;
         int delta = 0;
         int binCount = 0;
         for (Node[] tab = table; ; ) {
@@ -1667,6 +1052,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                 if (casTabAt(tab, i, null, new Node(h, key, value))) {
                     delta = 1;
                     val = value;
+                    valAssigned = true;
                     break;
                 }
             } else if ((fh = f.hash) == MOVED)
@@ -1679,23 +1065,16 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                             for (Node e = f, pred = null; ; ++binCount) {
                                 if (e.hash == h &&
                                         (e.key == key)) {
-                                    val = remappingFunction.apply(e.val, value);
-                                    if (val != null)
-                                        e.val = val;
-                                    else {
-                                        delta = -1;
-                                        Node en = e.next;
-                                        if (pred != null)
-                                            pred.next = en;
-                                        else
-                                            setTabAt(tab, i, en);
-                                    }
+                                    val = remappingFunction.applyAsLong(e.val, value);
+                                    e.val = val;
+                                    valAssigned = true;
                                     break;
                                 }
                                 pred = e;
                                 if ((e = e.next) == null) {
                                     delta = 1;
                                     val = value;
+                                    valAssigned = true;
                                     pred.next = new Node(h, key, val);
                                     break;
                                 }
@@ -1705,20 +1084,15 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                             TreeBin t = (TreeBin) f;
                             TreeNode r = t.root;
                             TreeNode p = (r == null) ? null :
-                                    r.findTreeNode(h, key, null);
+                                    r.findTreeNode(h, key);
                             val = (p == null) ? value :
-                                    remappingFunction.apply(p.val, value);
-                            if (val != null) {
-                                if (p != null)
-                                    p.val = val;
-                                else {
-                                    delta = 1;
-                                    t.putTreeVal(h, key, val);
-                                }
-                            } else if (p != null) {
-                                delta = -1;
-                                if (t.removeTreeNode(p))
-                                    setTabAt(tab, i, untreeify(t.first));
+                                    remappingFunction.applyAsLong(p.val, value);
+                            valAssigned = true;
+                            if (p != null)
+                                p.val = val;
+                            else {
+                                delta = 1;
+                                t.putTreeVal(h, key, val);
                             }
                         } else if (f instanceof ReservationNode)
                             throw new IllegalStateException("Recursive update");
@@ -1732,8 +1106,8 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
             }
         }
         if (delta != 0)
-            addCount((long) delta, binCount);
-        return val;
+            addCount(delta, binCount);
+        return valAssigned ? val : null;
     }
 
     // ConcurrentHashMap-only methods
@@ -1777,8 +1151,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                     return null;
                 for (; ; ) {
                     int eh;
-                    if ((eh = e.hash) == h &&
-                            (e.key == k))
+                    if ((eh = e.hash) == h && e.key == k)
                         return e;
                     if (eh < 0) {
                         if (e instanceof ForwardingNode) {
@@ -1818,7 +1191,6 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
     }
 
     /**
-     * cccccccc
      * Initializes table, using the size recorded in sizeCtl.
      */
     private final Node[] initTable() {
@@ -1831,7 +1203,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                 try {
                     if ((tab = table) == null || tab.length == 0) {
                         int n = (sc > 0) ? sc : DEFAULT_CAPACITY;
-                        Node[] nt = (Node[]) new Node[n];
+                        Node[] nt = new Node[n];
                         table = tab = nt;
                         sc = n - (n >>> 2);
                     }
@@ -1934,8 +1306,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                 if (U.compareAndSetInt(this, SIZECTL, sc, -1)) {
                     try {
                         if (table == tab) {
-                            @SuppressWarnings("unchecked")
-                            Node[] nt = (Node[]) new Node[n];
+                            Node[] nt = new Node[n];
                             table = nt;
                             sc = n - (n >>> 2);
                         }
@@ -1964,8 +1335,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
             stride = MIN_TRANSFER_STRIDE; // subdivide range
         if (nextTab == null) {            // initiating
             try {
-                @SuppressWarnings("unchecked")
-                Node[] nt = (Node[]) new Node[n << 1];
+                Node[] nt = new Node[n << 1];
                 nextTab = nt;
             } catch (Throwable ex) {      // try to cope with OOME
                 sizeCtl = Integer.MAX_VALUE;
@@ -2056,7 +1426,8 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                             int lc = 0, hc = 0;
                             for (Node e = t.first; e != null; e = e.next) {
                                 int h = e.hash;
-                                TreeNode p = new TreeNode(h, e.key, e.val, null, null);
+                                TreeNode p = new TreeNode
+                                        (h, e.key, e.val, null, null);
                                 if ((h & n) == 0) {
                                     if ((p.prev = loTail) == null)
                                         lo = p;
@@ -2229,7 +1600,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
     /**
      * Returns a list of non-TreeNodes replacing those in given list.
      */
-    static <V> Node untreeify(Node b) {
+    static <K> Node untreeify(Node b) {
         Node hd = null, tl = null;
         for (Node q = b; q != null; q = q.next) {
             Node p = new Node(q.hash, q.key, q.val);
@@ -2254,41 +1625,39 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         TreeNode prev;    // needed to unlink next upon deletion
         boolean red;
 
-        TreeNode(int hash, long key, long val, Node next, TreeNode parent) {
+        TreeNode(int hash, long key, long val, Node next,
+                 TreeNode parent) {
             super(hash, key, val, next);
             this.parent = parent;
         }
 
         Node find(int h, long k) {
-            return findTreeNode(h, k, null);
+            return findTreeNode(h, k);
         }
 
         /**
          * Returns the TreeNode (or null if not found) for the given key
          * starting at given root.
          */
-        final TreeNode findTreeNode(int h, long k, Class<?> kc) {
+        final TreeNode findTreeNode(int h, long k) {
             TreeNode p = this;
             do {
                 int ph, dir;
-                long pk;
                 TreeNode q;
                 TreeNode pl = p.left, pr = p.right;
                 if ((ph = p.hash) > h)
                     p = pl;
                 else if (ph < h)
                     p = pr;
-                else if ((pk = p.key) == k)
+                else if (p.key == k)
                     return p;
                 else if (pl == null)
                     p = pr;
                 else if (pr == null)
                     p = pl;
-                else if ((kc != null ||
-                        (kc = comparableClassFor(k)) != null) &&
-                        (dir = compareComparables(kc, k, pk)) != 0)
+                else if ((dir = Long.compare(k, p.key)) != 0)
                     p = (dir < 0) ? pl : pr;
-                else if ((q = pr.findTreeNode(h, k, kc)) != null)
+                else if ((q = pr.findTreeNode(h, k)) != null)
                     return q;
                 else
                     p = pl;
@@ -2350,7 +1719,6 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                 } else {
                     long k = x.key;
                     int h = x.hash;
-                    Class<?> kc = null;
                     for (TreeNode p = r; ; ) {
                         int dir, ph;
                         long pk = p.key;
@@ -2358,9 +1726,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                             dir = -1;
                         else if (ph < h)
                             dir = 1;
-                        else if ((kc == null &&
-                                (kc = comparableClassFor(k)) == null) ||
-                                (dir = compareComparables(kc, k, pk)) == 0)
+                        else if ((dir = Long.compare(k, pk)) == 0)
                             dir = tieBreakOrder(k, pk);
                         TreeNode xp = p;
                         if ((p = (dir <= 0) ? p.left : p.right) == null) {
@@ -2427,7 +1793,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                 long ek;
                 if (((s = lockState) & (WAITER | WRITER)) != 0) {
                     if (e.hash == h &&
-                            ((ek = e.key) == k))
+                            (e.key == k))
                         return e;
                     e = e.next;
                 } else if (U.compareAndSetInt(this, LOCKSTATE, s,
@@ -2435,7 +1801,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                     TreeNode r, p;
                     try {
                         p = ((r = root) == null ? null :
-                                r.findTreeNode(h, k, null));
+                                r.findTreeNode(h, k));
                     } finally {
                         Thread w;
                         if (U.getAndAddInt(this, LOCKSTATE, -READER) ==
@@ -2454,7 +1820,6 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
          * @return null if added
          */
         final TreeNode putTreeVal(int h, long k, long v) {
-            Class<?> kc = null;
             boolean searched = false;
             for (TreeNode p = root; ; ) {
                 int dir, ph;
@@ -2468,16 +1833,14 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
                     dir = 1;
                 else if ((pk = p.key) == k)
                     return p;
-                else if ((kc == null &&
-                        (kc = comparableClassFor(k)) == null) ||
-                        (dir = compareComparables(kc, k, pk)) == 0) {
+                else if ((dir = Long.compare(k, pk)) == 0) {
                     if (!searched) {
                         TreeNode q, ch;
                         searched = true;
                         if (((ch = p.left) != null &&
-                                (q = ch.findTreeNode(h, k, kc)) != null) ||
+                                (q = ch.findTreeNode(h, k)) != null) ||
                                 ((ch = p.right) != null &&
-                                        (q = ch.findTreeNode(h, k, kc)) != null))
+                                        (q = ch.findTreeNode(h, k)) != null))
                             return q;
                     }
                     dir = tieBreakOrder(k, pk);
@@ -2619,8 +1982,8 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         /* ------------------------------------------------------------ */
         // Red-black tree methods, all adapted from CLR
 
-        static <V> TreeNode rotateLeft(TreeNode root,
-                                       TreeNode p) {
+        static TreeNode rotateLeft(TreeNode root,
+                                   TreeNode p) {
             TreeNode r, pp, rl;
             if (p != null && (r = p.right) != null) {
                 if ((rl = p.right = r.left) != null)
@@ -2637,8 +2000,8 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
             return root;
         }
 
-        static <V> TreeNode rotateRight(TreeNode root,
-                                        TreeNode p) {
+        static TreeNode rotateRight(TreeNode root,
+                                    TreeNode p) {
             TreeNode l, pp, lr;
             if (p != null && (l = p.left) != null) {
                 if ((lr = p.left = l.right) != null)
@@ -2655,8 +2018,8 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
             return root;
         }
 
-        static <V> TreeNode balanceInsertion(TreeNode root,
-                                             TreeNode x) {
+        static TreeNode balanceInsertion(TreeNode root,
+                                         TreeNode x) {
             x.red = true;
             for (TreeNode xp, xpp, xppl, xppr; ; ) {
                 if ((xp = x.parent) == null) {
@@ -2706,7 +2069,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
             }
         }
 
-        static <V> TreeNode balanceDeletion(TreeNode root,
+        static <K> TreeNode balanceDeletion(TreeNode root,
                                             TreeNode x) {
             for (TreeNode xp, xpl, xpr; ; ) {
                 if (x == null || x == root)
@@ -2796,7 +2159,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         /**
          * Checks invariants recursively for the tree of Nodes rooted at t.
          */
-        static <V> boolean checkInvariants(TreeNode t) {
+        static boolean checkInvariants(TreeNode t) {
             TreeNode tp = t.parent, tl = t.left, tr = t.right,
                     tb = t.prev, tn = (TreeNode) t.next;
             if (tb != null && tb.next != t)
@@ -2986,10 +2349,6 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         }
 
         public final long next() {
-            return nextLong();
-        }
-
-        public final long nextLong() {
             Node p;
             if ((p = next) == null)
                 throw new NoSuchElementException();
@@ -3019,13 +2378,13 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
     }
 
     static final class EntryIterator extends BaseIterator
-            implements Iterator<Entry> {
+            implements Iterator<ConcurrentLongLongMap.Entry> {
         EntryIterator(Node[] tab, int size, int index, int limit,
                       ConcurrentLongLongHashMap map) {
             super(tab, size, index, limit, map);
         }
 
-        public final Entry next() {
+        public final ConcurrentLongLongMap.Entry next() {
             Node p;
             if ((p = next) == null)
                 throw new NoSuchElementException();
@@ -3040,7 +2399,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
     /**
      * Exported Entry for EntryIterator.
      */
-    static final class MapEntry implements Entry {
+    static final class MapEntry implements ConcurrentLongLongMap.Entry {
         final long key; // non-null
         long val;       // non-null
         final ConcurrentLongLongHashMap map;
@@ -3068,15 +2427,17 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         }
 
         public boolean equals(Object o) {
-            if (!(o instanceof Entry)) {
+            if (!(o instanceof ConcurrentLongLongMap.Entry)) {
                 return false;
             }
-            Entry that = (Entry) o;
-            return this.key == that.getKey() && this.val == that.getValue();
+            ConcurrentLongLongMap.Entry that = (ConcurrentLongLongMap.Entry) o;
+            long k = that.getKey();
+            long v = that.getValue();
+            return k == key && v == val;
         }
     }
 
-    static final class KeySpliterator<V> extends Traverser
+    static final class KeySpliterator extends Traverser
             implements Spliterator.OfLong {
         long est;               // size estimate
 
@@ -3118,7 +2479,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         }
     }
 
-    static final class ValueSpliterator<V> extends Traverser
+    static final class ValueSpliterator extends Traverser
             implements Spliterator.OfLong {
         long est;               // size estimate
 
@@ -3128,21 +2489,19 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
             this.est = est;
         }
 
-        public ValueSpliterator<V> trySplit() {
+        public ValueSpliterator trySplit() {
             int i, f, h;
             return (h = ((i = baseIndex) + (f = baseLimit)) >>> 1) <= i ? null :
-                    new ValueSpliterator<V>(tab, baseSize, baseLimit = h,
+                    new ValueSpliterator(tab, baseSize, baseLimit = h,
                             f, est >>>= 1);
         }
 
-        @Override
         public void forEachRemaining(LongConsumer action) {
             if (action == null) throw new NullPointerException();
             for (Node p; (p = advance()) != null; )
                 action.accept(p.val);
         }
 
-        @Override
         public boolean tryAdvance(LongConsumer action) {
             if (action == null) throw new NullPointerException();
             Node p;
@@ -3161,7 +2520,49 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
         }
     }
 
-    /* ----------------Views -------------- */
+    static final class EntrySpliterator extends Traverser
+            implements Spliterator<ConcurrentLongLongMap.Entry> {
+        final ConcurrentLongLongHashMap map; // To export MapEntry
+        long est;               // size estimate
+
+        EntrySpliterator(Node[] tab, int size, int index, int limit,
+                         long est, ConcurrentLongLongHashMap map) {
+            super(tab, size, index, limit);
+            this.map = map;
+            this.est = est;
+        }
+
+        public EntrySpliterator trySplit() {
+            int i, f, h;
+            return (h = ((i = baseIndex) + (f = baseLimit)) >>> 1) <= i ? null :
+                    new EntrySpliterator(tab, baseSize, baseLimit = h,
+                            f, est >>>= 1, map);
+        }
+
+        public void forEachRemaining(Consumer<? super ConcurrentLongLongMap.Entry> action) {
+            if (action == null) throw new NullPointerException();
+            for (Node p; (p = advance()) != null; )
+                action.accept(new MapEntry(p.key, p.val, map));
+        }
+
+        public boolean tryAdvance(Consumer<? super ConcurrentLongLongMap.Entry> action) {
+            if (action == null) throw new NullPointerException();
+            Node p;
+            if ((p = advance()) == null)
+                return false;
+            action.accept(new MapEntry(p.key, p.val, map));
+            return true;
+        }
+
+        public long estimateSize() {
+            return est;
+        }
+
+        public int characteristics() {
+            return Spliterator.DISTINCT | Spliterator.CONCURRENT |
+                    Spliterator.NONNULL;
+        }
+    }
 
     /**
      * A view of a ConcurrentHashMap as a {@link Set} of keys, in
@@ -3170,7 +2571,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
      *
      * @since 1.8
      */
-    public static class KeySetView implements Serializable {
+    public static class KeySetView implements LongIterable, Serializable {
         private static final long serialVersionUID = 7249069246763182397L;
         private final ConcurrentLongLongHashMap map;
 
@@ -3182,8 +2583,6 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
 
         /**
          * {@inheritDoc}
-         *
-         * @throws NullPointerException if the specified key is null
          */
         public boolean contains(long o) {
             return map.containsKey(o);
@@ -3212,10 +2611,6 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
             while (iterator.hasNext()) {
                 consumer.accept(iterator.next());
             }
-        }
-
-        public LongStream stream() {
-            return StreamSupport.longStream(spliterator(), false);
         }
     }
 
@@ -3246,20 +2641,58 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap, Seriali
             int f = (t = m.table) == null ? 0 : t.length;
             return new ValueSpliterator(t, f, 0, f, n < 0L ? 0L : n);
         }
+    }
 
-        public LongStream stream() {
-            return StreamSupport.longStream(spliterator(), false);
+    @SuppressWarnings("ManualMinMaxCalculation")
+    static final class EntrySetView implements Iterable<ConcurrentLongLongMap.Entry>, Serializable {
+        private static final long serialVersionUID = 2249069246763182397L;
+        private ConcurrentLongLongHashMap map;
+
+        EntrySetView(ConcurrentLongLongHashMap map) {
+            this.map = map;
         }
-    }
 
-    @NotNull
-    public Iterator<Entry> iterator() {
-        Node[] t;
-        int f = (t = table) == null ? 0 : t.length;
-        return new EntryIterator(t, f, 0, f, this);
-    }
+        /**
+         * @return an iterator over the entries of the backing map
+         */
+        public Iterator<ConcurrentLongLongMap.Entry> iterator() {
+            ConcurrentLongLongHashMap m = map;
+            Node[] t;
+            int f = (t = m.table) == null ? 0 : t.length;
+            return new EntryIterator(t, f, 0, f, m);
+        }
 
-    // -------------------------------------------------------
+        public final int hashCode() {
+            int h = 0;
+            Node[] t;
+            if ((t = map.table) != null) {
+                Traverser it = new Traverser(t, t.length, 0, t.length);
+                for (Node p; (p = it.advance()) != null; ) {
+                    h += p.hashCode();
+                }
+            }
+            return h;
+        }
+
+        public Spliterator<ConcurrentLongLongMap.Entry> spliterator() {
+            Node[] t;
+            ConcurrentLongLongHashMap m = map;
+            long n = m.sumCount();
+            int f = (t = m.table) == null ? 0 : t.length;
+            return new EntrySpliterator(t, f, 0, f, n < 0L ? 0L : n, m);
+        }
+
+        public void forEach(Consumer<? super ConcurrentLongLongMap.Entry> action) {
+            if (action == null) throw new NullPointerException();
+            Node[] t;
+            if ((t = map.table) != null) {
+                Traverser it = new Traverser(t, t.length, 0, t.length);
+                for (Node p; (p = it.advance()) != null; )
+                    action.accept(new MapEntry(p.key, p.val, map));
+            }
+        }
+
+    }
 
     // Unsafe mechanics
     private static final UnsafeAccessor U = UnsafeAccessor.UNSAFE_ACCESSOR;

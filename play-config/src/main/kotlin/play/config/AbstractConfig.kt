@@ -6,7 +6,7 @@ package play.config
 abstract class AbstractConfig {
   open val id = 0
 
-  open fun postInitialize(configSetManager: ConfigSetManager, errors: MutableList<String>) {}
+  open fun postInitialize(errors: MutableList<String>) {}
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
@@ -21,6 +21,10 @@ abstract class AbstractConfig {
 
   override fun hashCode(): Int {
     return id.hashCode()
+  }
+
+  override fun toString(): String {
+    return "${javaClass.simpleName}($id)"
   }
 }
 

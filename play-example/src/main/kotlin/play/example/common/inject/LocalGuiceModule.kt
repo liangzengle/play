@@ -4,14 +4,14 @@ import akka.actor.typed.ActorRef
 import com.google.inject.Provides
 import play.akka.resumeSupervisor
 import play.db.QueryService
-import play.db.cache.CaffeineEntityCacheFactory
-import play.db.cache.EntityCacheFactory
 import play.example.common.admin.AdminGuiceModule
 import play.example.common.net.NetGuiceModule
 import play.example.common.net.SessionManager
 import play.example.module.account.AccountManager
-import play.example.module.account.entity.AccountCache
+import play.example.module.account.entity.AccountEntityCache
 import play.example.module.friend.FriendManager
+import play.example.module.guild.GuildManager
+import play.example.module.guild.entity.GuildEntityCache
 import play.example.module.platform.PlatformServiceProvider
 import play.example.module.player.PlayerManager
 import play.example.module.player.PlayerRequestHandler
@@ -31,10 +31,10 @@ class LocalGuiceModule : AkkaGuiceModule() {
       install(AdminGuiceModule())
     }
 
-    bind<ServerConfig>().toProvider(ServerConfigProvider::class.java)
+    bind<ServerConfig>().toProvider(ServerConfigProvider::class.java).asEagerSingleton()
     bind<PlayerEventDispatcher>().toProvider(PlayerEventDispatcherProvider::class.java)
 
-    optionalBind<EntityCacheFactory>().to<CaffeineEntityCacheFactory>()
+//    optionalBind<EntityCacheFactory>().to<CaffeineEntityCacheFactory>()
   }
 
   @Singleton
@@ -51,7 +51,7 @@ class LocalGuiceModule : AkkaGuiceModule() {
     queryService: QueryService,
     sessionManager: ActorRef<SessionManager.Command>,
     serverService: ServerService,
-    accountCache: AccountCache,
+    accountCache: AccountEntityCache,
     playerManager: ActorRef<PlayerManager.Command>
   ): ActorRef<AccountManager.Command> {
     return spawn(
@@ -100,5 +100,16 @@ class LocalGuiceModule : AkkaGuiceModule() {
     requestHandler: PlayerRequestHandler
   ): ActorRef<FriendManager.Command> {
     return spawn(systemProvider, FriendManager.create(requestHandler), "FriendManager")
+  }
+
+  @Singleton
+  @Provides
+  private fun guildManager(
+    systemProvider: ActorSystemProvider,
+    guildEntityCache: GuildEntityCache,
+    requestHandler: PlayerRequestHandler,
+    playerService: PlayerService
+  ): ActorRef<GuildManager.Command> {
+    return spawn(systemProvider, GuildManager.create(requestHandler, guildEntityCache, playerService), "GuildManager")
   }
 }

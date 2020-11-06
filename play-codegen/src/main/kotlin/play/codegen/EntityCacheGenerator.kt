@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
+import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.Processor
 import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.element.ElementKind
@@ -15,16 +16,30 @@ import kotlin.reflect.KClass
 @AutoService(Processor::class)
 class EntityCacheGenerator : PlayAnnotationProcessor() {
 
+  private var enableSpecializedEntityCache = false
+
+  companion object {
+    private const val ENTITY_CACHE_SPECIALIZED_OPTION_NAME = "entityCache.specialized"
+  }
+
+  override fun init(processingEnv: ProcessingEnvironment) {
+    super.init(processingEnv)
+    enableSpecializedEntityCache = processingEnv.options[ENTITY_CACHE_SPECIALIZED_OPTION_NAME] == "true"
+  }
+
   override fun getSupportedAnnotationTypes(): Set<String> {
     return setOf(CacheSpec.canonicalName)
   }
 
   override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
-    return roundEnv.subtypesOf(Entity)
-      .filterNot { it.isAnnotationPresent(DisableCodegen) }
-      .onEach { elem ->
+    var found = false
+    for (elem in roundEnv.subtypesOf(Entity)) {
+      if (!elem.isAnnotationPresent(DisableCodegen)) {
         generate(elem)
-      }.count() != 0
+        found = true
+      }
+    }
+    return found
   }
 
   private fun generate(elem: TypeElement) {
@@ -54,7 +69,7 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
       }
       b.build()
     }
-    val className = elem.simpleName.toString() + "Cache"
+    val className = getCacheClassName(elem)
     val classBuilder = TypeSpec.classBuilder(className)
       .addAnnotation(Singleton)
       .primaryConstructor(
@@ -63,10 +78,30 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
           .addParameter("cacheManager", EntityCacheManager)
           .build()
       )
-      .addSuperinterface(
+
+    val primitiveIdCacheType: TypeName? = if (enableSpecializedEntityCache) {
+      when (idType) {
+        Int::class -> EntityCacheInt.parameterizedBy(elemClassName)
+        Long::class -> EntityCacheLong.parameterizedBy(elemClassName)
+        else -> null
+      }
+    } else null
+    if (primitiveIdCacheType == null) {
+      classBuilder.addSuperinterface(
         EntityCache.parameterizedBy(idType.asTypeName()).plusParameter(elemClassName),
         CodeBlock.of("cacheManager.get(%L::class.java)", elem.simpleName.toString())
       )
+    } else {
+      classBuilder.addSuperinterface(
+        primitiveIdCacheType,
+        CodeBlock.of("cacheManager.get(%L::class.java) as %T", elem.simpleName.toString(), primitiveIdCacheType)
+      )
+        .addAnnotation(
+          AnnotationSpec.builder(Suppress::class)
+            .addMember("%S", "UNCHECKED_CAST")
+            .build()
+        )
+    }
     if (func != null) {
       classBuilder.addFunction(func)
     }
@@ -76,6 +111,17 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
       .addType(classBuilder.build())
       .build()
       .writeTo(file)
+  }
+
+  private fun getCacheClassName(entityTypeElem: TypeElement): String {
+    val entityClassName = entityTypeElem.simpleName.toString()
+    return if (entityClassName.endsWith("Entity")) {
+      entityClassName + "Cache"
+    } else if (entityClassName.endsWith("Data")) {
+      entityClassName.substring(0, entityClassName.length - 4) + "EntityCache"
+    } else {
+      entityClassName + "EntityCache"
+    }
   }
 
   private val entityIntType: TypeElement by lazy(LazyThreadSafetyMode.NONE) {

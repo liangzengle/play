@@ -28,7 +28,7 @@ ext {
     netty_version = '4.1.45.Final'
     hibernat_validator_version = '6.1.2.Final'
     javax_el_version = '3.0.0'
-    jackson_version = '2.11.2'
+    jackson_version = '2.12.0-rc1'
     log4j_version = '2.13.0'
     kotlin_logging_version = '1.8.3'
     config_version = '1.4.0'
@@ -40,8 +40,9 @@ ext {
     hikariCP_version = '3.4.2'
     eclipse_collection_version = "10.2.0"
     kotlin_poet_version = '1.7.1'
-    akka_typed_version = "2.6.5"
+    akka_typed_version = "2.6.10"
     caffeine_version = "2.8.5"
+    jctools_version = "3.0.0"
 }
 
 ext {
@@ -89,6 +90,7 @@ ext {
             "org.glassfish:javax.el:$javax_el_version"
     ]
     caffeine = "com.github.ben-manes.caffeine:caffeine:$caffeine_version"
+    jctools = "org.jctools:jctools-core:$jctools_version"
 }
 
 
@@ -109,6 +111,9 @@ subprojects {
         maven {
             url 'https://dl.bintray.com/kotlin/kotlin-eap'
         }
+        maven {
+            url "file://$rootDir/repository"
+        }
     }
 
     apply plugin: 'java'
@@ -123,18 +128,21 @@ subprojects {
     group 'play'
     version '1.0-SNAPSHOT'
 
-
     dependencies {
         api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
         api "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
         testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
     }
 
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+
     compileKotlin {
         kotlinOptions {
             jvmTarget = "11"
             javaParameters = true
             freeCompilerArgs = [
+                    "-Xallow-result-return-type",
                     "-XXLanguage:+InlineClasses",
                     "-Xopt-in=kotlin.RequiresOptIn",
                     "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
@@ -150,6 +158,7 @@ subprojects {
             jvmTarget = "11"
             javaParameters = true
             freeCompilerArgs = [
+                    "-Xallow-result-return-type",
                     "-XXLanguage:+InlineClasses",
                     "-Xopt-in=kotlin.RequiresOptIn",
                     "-Xopt-in=kotlin.ExperimentalUnsignedTypes",

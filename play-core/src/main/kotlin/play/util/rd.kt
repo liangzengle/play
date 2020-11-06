@@ -40,7 +40,7 @@ object rd {
   fun testWith10000(prob: Int): Boolean = test(prob, 10000)
 
   fun test(prob: Float): Boolean {
-    if (prob == 0f) return false
+    if (prob <= 0f) return false
     if (prob >= 1f) return true
     var f = prob
     var probInt = f.toInt()
@@ -54,7 +54,7 @@ object rd {
   }
 
   fun test(prob: Double): Boolean {
-    if (prob == 0.0) return false
+    if (prob <= 0.0) return false
     if (prob >= 1.0) return true
     var d = prob
     var probLong = d.toLong()
@@ -111,7 +111,7 @@ object rd {
 
   fun <T> randomOne(elems: Iterable<T>, weigher: (T) -> Int): T {
     val totalProb = elems.sumBy(weigher)
-    if (totalProb == 0) throw IllegalStateException("total prob is 0")
+    if (totalProb < 1) throw IllegalStateException("total prob is $totalProb")
     var r = nextInt(totalProb)
     for (elem in elems) {
       val weights = weigher(elem)
@@ -121,9 +121,11 @@ object rd {
     throw IllegalStateException("should not happen.")
   }
 
-  fun <T> random(elems: Iterable<T>, count: Int, weigher: (T) -> Int): MutableList<T> {
+  fun <T> random(elems: Iterable<T>, count: Int, weigher: (T) -> Int): List<T> {
     val totalProb = elems.sumBy(weigher)
-    if (totalProb == 0) throw IllegalStateException("total prob is 0")
+    if (totalProb < 1) {
+      return emptyList()
+    }
     var n = 0
     val result = ArrayList<T>(count)
     while (n < count) {
@@ -146,7 +148,7 @@ object rd {
     val result = ArrayList<T>(expectedCount)
     while (result.size < expectedCount) {
       val totalProb = elems.sumBy(weigher)
-      if (totalProb == 0) {
+      if (totalProb < 1) {
         break
       }
       var r = nextInt(totalProb)

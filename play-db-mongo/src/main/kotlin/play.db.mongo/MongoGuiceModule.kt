@@ -10,7 +10,7 @@ class MongoGuiceModule : GuiceModule() {
   override fun configure() {
     val conf = ctx.conf.getConfiguration("db.mongodb")
     bind<Configuration>().qualifiedWith("mongodb").toInstance(conf)
-    bind<Repository>().qualifiedWith("mongodb").to<MongoDBRespository>()
+    bind<Repository>().qualifiedWith("mongodb").to<MongoDBRepository>()
     optionalBind<MongoClientSettings.Builder>().setDefault().toProvider(classOf<MongoClientSettingBuilderProvider>())
     bind<MongoClientSettings>().toProvider(classOf<MongoClientSettingProvider>())
   }

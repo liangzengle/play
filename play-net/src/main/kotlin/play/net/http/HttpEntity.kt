@@ -1,7 +1,7 @@
 package play.net.http
 
 import play.util.collection.EmptyByteArray
-import play.util.collection.contains
+import play.util.contains
 import java.util.*
 
 sealed class HttpEntity {

@@ -54,7 +54,7 @@ class SessionActor(
       .accept(::identify)
       .accept(::subscribe)
       .accept(::write)
-      .onSignal<PostStop>(::postStop)
+      .acceptSignal<PostStop>(::postStop)
       .build()
   }
 
