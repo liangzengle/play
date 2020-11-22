@@ -36,7 +36,8 @@ class PlayModularCodeGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
     val annotationOption = extension.annotation
       .map { SubpluginOption(key = "annotation", value = it) }
     val enabledOption = SubpluginOption(
-      key = "enabled", value = extension.enabled.toString()
+      key = "enabled",
+      value = extension.enabled.toString()
     )
     return annotationOption + enabledOption
   }
@@ -52,7 +53,4 @@ class PlayModularCodeGradleSubplugin : KotlinGradleSubplugin<AbstractCompile> {
   override fun isApplicable(project: Project, task: AbstractCompile): Boolean {
     return project.plugins.hasPlugin(PlayModularCodeGradlePlugin::class.java)
   }
-
 }
-
-

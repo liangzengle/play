@@ -45,8 +45,6 @@ abstract class EntityLong(val id: Long) : Entity<Long>() {
   override fun hashCode(): Int {
     return id.hashCode()
   }
-
-
 }
 
 abstract class EntityInt(val id: Int) : Entity<Int>() {

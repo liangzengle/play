@@ -2,6 +2,8 @@ package play.util.collection
 
 import play.util.function.LongObjToObjFunction
 import play.util.function.LongToObjFunction
+import java.util.stream.LongStream
+import java.util.stream.Stream
 
 interface ConcurrentLongObjectMap<V> : Iterable<ConcurrentLongObjectMap.Entry<V>> {
   operator fun get(key: Long): V?
@@ -14,14 +16,16 @@ interface ConcurrentLongObjectMap<V> : Iterable<ConcurrentLongObjectMap.Entry<V>
   fun remove(key: Long): V?
   fun remove(key: Long, value: V): Boolean
   fun computeIfPresent(key: Long, remappingFunction: LongObjToObjFunction<in V, out V?>): V?
-  fun computeIfAbsent(key: Long, function: LongToObjFunction<out V?>): V?
+  fun computeIfAbsent(key: Long, function: LongToObjFunction<out V>): V
   fun compute(key: Long, remappingFunction: LongObjToObjFunction<in V?, out V?>): V?
   fun containsKey(key: Long): Boolean
   fun isEmpty(): Boolean
   fun isNotEmpty(): Boolean
   val size: Int
   val keys: LongIterable
+  fun keysStream(): LongStream
   val values: Iterable<V>
+  fun valuesStream(): Stream<V>
   fun clear()
   interface Entry<V> {
     val key: Long

@@ -2,7 +2,6 @@
 
 package play.util.control
 
-
 inline fun <T> Result<T>.exists(f: (T) -> Boolean): Boolean = if (isSuccess) f(getOrThrow()) else false
 
 inline fun <T> Result<T>.getCause(): Throwable = checkNotNull(exceptionOrNull())

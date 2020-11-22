@@ -1,9 +1,9 @@
 package play.example.module.platform.domain
 
-import play.example.common.IdEnum
-import play.example.common.IdNamedEnumOps
-import play.example.common.NamedEnum
-import play.example.common.idNamedEnumOpsOf
+import play.util.enumration.IdEnum
+import play.util.enumration.IdNamedEnumOps
+import play.util.enumration.NamedEnum
+import play.util.enumration.idNamedEnumOpsOf
 
 enum class Platform(override val id: Int, private val text: String) : IdEnum<Platform>, NamedEnum<Platform> {
   // 开发环境

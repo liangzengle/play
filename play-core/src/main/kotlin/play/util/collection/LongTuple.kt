@@ -75,8 +75,8 @@ data class LongTuple4(val _1: Long, val _2: Long, val _3: Long, val _4: Long) : 
   override fun toStream(): LongStream = LongStream.of(_1, _2, _3, _4)
 }
 
-data class LongTuple5(val _1: Long, val _2: Long, val _3: Long, val _4: Long, val _5: Long) : LongTuple,
-  Comparable<LongTuple5> {
+data class LongTuple5(val _1: Long, val _2: Long, val _3: Long, val _4: Long, val _5: Long) :
+  LongTuple, Comparable<LongTuple5> {
   override fun compareTo(other: LongTuple5): Int {
     return ComparisonChain.start()
       .compare(_1, other._1)

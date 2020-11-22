@@ -7,7 +7,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
-
 @CacheSpec(
   initialSize = CacheSpec.SIZE_ONE,
   persistStrategy = CacheSpec.PersistStrategy.Manually,

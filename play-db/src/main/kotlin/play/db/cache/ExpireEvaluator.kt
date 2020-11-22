@@ -4,7 +4,6 @@ import play.db.Entity
 import javax.inject.Singleton
 
 interface ExpireEvaluator {
-  
 
   /**
    * 是否允许过期（从缓存中移除）

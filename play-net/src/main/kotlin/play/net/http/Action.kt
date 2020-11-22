@@ -106,13 +106,12 @@ data class RoutePath(val root: String, val children: List<ParPath>) {
   }
 }
 
-
 abstract class Action(val path: RoutePath, val methods: List<String>) {
-  
+
   abstract operator fun invoke(request: AbstractHttpRequest): HttpResult
 
   override fun toString(): String {
-    return "Route(path=$path, methods=${methods})"
+    return "Route(path=$path, methods=$methods)"
   }
 
   fun acceptMethod(method: String): Boolean {
@@ -127,8 +126,6 @@ abstract class Action(val path: RoutePath, val methods: List<String>) {
     }
     return false
   }
-
 }
-
 
 data class ParPath(val name: String, val isVariable: Boolean)

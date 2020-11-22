@@ -15,13 +15,22 @@ class PlayerEventBus @Inject constructor(
   private val onlinePlayerService: OnlinePlayerService,
   private val dispatcher: PlayerEventDispatcherProvider
 ) {
+  // is it necessary to avoid volatile read?
+  private var _playerManager: ActorRef<PlayerManager.Command>? = null
+  private var _dispatcher: PlayerEventDispatcher? = null
 
   fun post(event: PlayerEvent) {
-    playerManager.get().tell(event)
+    if (_playerManager == null) {
+      _playerManager = playerManager.get()
+    }
+    _playerManager!!.tell(event)
   }
 
   fun postBlocking(self: Self, event: PlayerEvent) {
-    dispatcher.get().dispatch(self, event)
+    if (_dispatcher == null) {
+      _dispatcher = dispatcher.get()
+    }
+    _dispatcher!!.dispatch(self, event)
   }
 
   fun postToOnlinePlayers(eventFactory: LongFunction<out PlayerEvent>) {

@@ -22,5 +22,4 @@ class AdminHttpController @Inject constructor(actionManager: AdminHttpActionMana
   fun httpGetVariable(httpRequest: AbstractHttpRequest, itemId: Int): HttpResult {
     return ok("name=$itemId")
   }
-
 }

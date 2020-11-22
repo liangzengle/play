@@ -21,9 +21,6 @@ class PlayerRewardService @Inject constructor(private val rewardService: RewardS
   }
 
   private fun execCost(self: Self, event: PlayerExecCost) {
-    val costs = event.costs
-    val logSource = event.logSource
-    val promise = event.promise
-    promise.complete { rewardService.tryAndExecCost(self, costs, logSource) }
+    event.promise.complete(runCatching { rewardService.tryAndExecCost(self, event.costs, event.logSource) })
   }
 }

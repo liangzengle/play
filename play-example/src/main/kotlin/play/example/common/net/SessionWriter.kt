@@ -1,7 +1,9 @@
 package play.example.common.net
 
 import io.netty.channel.Channel
-
+import play.util.collection.LongIterable
+import java.util.*
+import java.util.stream.LongStream
 
 /**
  * 发送消息
@@ -23,8 +25,8 @@ sealed class SessionWriter(protected val ch: Channel) {
 
     override fun flush() {
       if (!empty) {
-        ch.flush()
         empty = true
+        ch.flush()
       }
     }
   }
@@ -37,5 +39,22 @@ sealed class SessionWriter(protected val ch: Channel) {
     override fun flush() {
       ch.flush()
     }
+  }
+
+  companion object {
+    @JvmStatic
+    fun write(id: Long, msg: Any) = SessionActor.write(id, msg)
+
+    @JvmStatic
+    fun writeAll(ids: Iterable<Long>, msg: Any) = SessionActor.writeAll(ids, msg)
+
+    @JvmStatic
+    fun writeAll(ids: LongIterable, msg: Any) = SessionActor.writeAll(ids, msg)
+
+    @JvmStatic
+    fun writeAll(ids: PrimitiveIterator.OfLong, msg: Any) = SessionActor.writeAll(ids, msg)
+
+    @JvmStatic
+    fun writeAll(ids: LongStream, msg: Any) = SessionActor.writeAll(ids, msg)
   }
 }

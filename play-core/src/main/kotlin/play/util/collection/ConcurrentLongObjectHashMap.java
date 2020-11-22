@@ -47,7 +47,9 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * A hash table supporting full concurrency of retrievals and
@@ -677,6 +679,12 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
         return keys();
     }
 
+    @NotNull
+    @Override
+    public LongStream keysStream() {
+        return keySet().stream();
+    }
+
     /**
      * Returns the value to which the specified key is mapped,
      * or {@code null} if this map contains no mapping for the key.
@@ -1015,7 +1023,7 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
      * @return the collection view
      */
     @Nonnull
-    public Iterable<V> values() {
+    private ValuesView<V> values() {
         ValuesView<V> vs;
         if ((vs = values) != null) return vs;
         return values = new ValuesView<V>(this);
@@ -1025,6 +1033,12 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
     @Override
     public Iterable<V> getValues() {
         return values();
+    }
+
+    @NotNull
+    @Override
+    public Stream<V> valuesStream() {
+        return values().stream();
     }
 
     /**
@@ -3058,6 +3072,10 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
                 consumer.accept(iterator.next());
             }
         }
+
+        public LongStream stream() {
+            return StreamSupport.longStream(this::spliterator, Spliterator.DISTINCT, false);
+        }
     }
 
     /**
@@ -3090,6 +3108,10 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
             long n = m.sumCount();
             int f = (t = m.table) == null ? 0 : t.length;
             return new ValueSpliterator<V>(t, f, 0, f, n < 0L ? 0L : n);
+        }
+
+        public Stream<V> stream() {
+            return StreamSupport.stream(spliterator(), false);
         }
     }
 

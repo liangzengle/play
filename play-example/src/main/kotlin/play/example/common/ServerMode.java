@@ -1,7 +1,9 @@
 package play.example.common;
 
 public enum ServerMode {
+    // 游戏服
     Local,
+    // 比如场景服
     Remote,
     ;
 

@@ -69,7 +69,6 @@ val EntityLong_CacheObj = ClassName.bestGuess("CacheObj").plusParameter(TypeVar(
 val ConcurrentLongObjectMap_CacheObj_ID_E =
   ClassName.bestGuess("play.util.collection.ConcurrentLongObjectMap").plusParameter(EntityLong_CacheObj)
 
-
 val NonBlockingHashSetInt = ClassName.bestGuess("play.util.collection.NonBlockingHashSetInt")
 val NonBlockingHashSetLong = ClassName.bestGuess("play.util.collection.NonBlockingHashSetLong")
 val MutableSet_ID = ClassName.bestGuess("kotlin.collections.MutableSet").parameterizedBy(ID)
@@ -129,3 +128,4 @@ val getLogger = MemberName("play", "getLogger")
 
 val getCause = MemberName("play.util.control", "getCause")
 
+val filterNotNull = MemberName("play.util.collection", "filterNotNull")

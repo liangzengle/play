@@ -13,6 +13,9 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @SuppressWarnings("FinalStaticMethod")
 public class ConcurrentIntObjectHashMap<V> implements ConcurrentIntObjectMap<V>, Serializable {
@@ -377,6 +380,12 @@ public class ConcurrentIntObjectHashMap<V> implements ConcurrentIntObjectMap<V>,
         return keys();
     }
 
+    @NotNull
+    @Override
+    public IntStream keysStream() {
+        return keySet().stream();
+    }
+
     /**
      * Returns the value to which the specified key is mapped,
      * or {@code null} if this map contains no mapping for the key.
@@ -687,7 +696,7 @@ public class ConcurrentIntObjectHashMap<V> implements ConcurrentIntObjectMap<V>,
      * @return the collection view
      */
     @Nonnull
-    public Iterable<V> values() {
+    private ValuesView<V> values() {
         ValuesView<V> vs;
         if ((vs = values) != null) return vs;
         return values = new ValuesView<V>(this);
@@ -697,6 +706,12 @@ public class ConcurrentIntObjectHashMap<V> implements ConcurrentIntObjectMap<V>,
     @Override
     public Iterable<V> getValues() {
         return values();
+    }
+
+    @NotNull
+    @Override
+    public Stream<V> valuesStream() {
+        return values().stream();
     }
 
     /**
@@ -2723,6 +2738,10 @@ public class ConcurrentIntObjectHashMap<V> implements ConcurrentIntObjectMap<V>,
                 consumer.accept(iterator.next());
             }
         }
+
+        public IntStream stream() {
+            return StreamSupport.intStream(this::spliterator, Spliterator.DISTINCT, false);
+        }
     }
 
     /**
@@ -2751,6 +2770,10 @@ public class ConcurrentIntObjectHashMap<V> implements ConcurrentIntObjectMap<V>,
             long n = m.sumCount();
             int f = (t = m.table) == null ? 0 : t.length;
             return new ValueSpliterator<V>(t, f, 0, f, n < 0L ? 0L : n);
+        }
+
+        public Stream<V> stream() {
+            return StreamSupport.stream(spliterator(), false);
         }
     }
 

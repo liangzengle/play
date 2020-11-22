@@ -7,9 +7,12 @@ import play.example.module.StatusCode
 /**
  * 好友错误码
  */
+@Suppress("MayBeConstant")
 @ModularCode
 object FriendErrorCode : StatusCode(ModuleId.Friend) {
 
-  // 好友人数已达上限
+  /**
+   * 好友人数已达上限
+   */
   val FriendCountLimit = 1
 }

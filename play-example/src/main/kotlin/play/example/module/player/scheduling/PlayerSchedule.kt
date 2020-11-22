@@ -19,7 +19,6 @@ data class PlayerSchedule(
   }
 }
 
-
 data class PlayerRepeatedSchedule(
   override val playerId: Long,
   val triggerEvent: PlayerEvent,

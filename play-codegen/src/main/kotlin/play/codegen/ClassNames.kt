@@ -12,7 +12,7 @@ internal val AbstractController = ClassName.bestGuess("play.mvc.AbstractControll
 internal val Request = ClassName.bestGuess("play.mvc.Request")
 internal val RequestResult = ClassName.bestGuess("play.mvc.RequestResult")
 
-//internal val NotPlayerThread = ClassName.bestGuess("play.mvc.NotPlayerThread")
+// internal val NotPlayerThread = ClassName.bestGuess("play.mvc.NotPlayerThread")
 internal val Cmd = ClassName.bestGuess("play.mvc.Cmd")
 
 internal val DisableCodegen = ClassName.bestGuess("play.codegen.DisableCodegen")
@@ -26,7 +26,6 @@ internal val EntityCacheManager = ClassName.bestGuess("play.db.cache.EntityCache
 internal val EntityCache = ClassName.bestGuess("play.db.cache.EntityCache")
 internal val EntityCacheInt = ClassName.bestGuess("play.db.cache.EntityCacheInt")
 internal val EntityCacheLong = ClassName.bestGuess("play.db.cache.EntityCacheLong")
-
 
 internal val AbstractConfig = ClassName.bestGuess("play.config.AbstractConfig")
 internal val Ignore = ClassName.bestGuess("play.config.Ignore")

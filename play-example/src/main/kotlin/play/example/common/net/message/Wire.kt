@@ -1,5 +1,9 @@
+@file:Suppress("NOTHING_TO_INLINE", "UNCHECKED_CAST")
+
 package play.example.common.net.message
 
+import com.squareup.wire.ProtoAdapter
+import io.netty.buffer.ByteBufInputStream
 import play.example.request.RequestProto
 import play.mvc.*
 import play.util.concurrent.PlayFuture
@@ -10,16 +14,26 @@ class WireMessage(val msg: com.squareup.wire.Message<*, *>) : Message {
   override fun encodeToByteArray(): ByteArray = msg.encode()
 }
 
+class ByteBufInputStreamMessage(val inputStream: ByteBufInputStream) : Message, AutoCloseable {
+  override fun encodeToByteArray(): ByteArray {
+    return inputStream.use { inputStream.readAllBytes() }
+  }
+
+  override fun close() {
+    inputStream.close()
+  }
+}
+
+inline fun com.squareup.wire.Message<*, *>.toMessage() = WireMessage(this)
+
 inline fun RequestResult.Companion.code(f: () -> Int): RequestResult.Code {
   return RequestResult.Code(f())
 }
 
-@Suppress("UNCHECKED_CAST")
 inline fun <T : com.squareup.wire.Message<*, *>> RequestResult.Companion.ok(f: () -> T): RequestResult<T> {
   return RequestResult.Ok(WireMessage(f())) as RequestResult<T>
 }
 
-@Suppress("UNCHECKED_CAST")
 inline fun <T : com.squareup.wire.Message<*, *>> RequestResult.Companion.of(f: () -> Result2<T>): RequestResult<T> {
   return RequestResult(f().map { WireMessage(it) }) as RequestResult<T>
 }
@@ -29,11 +43,17 @@ inline fun <T : com.squareup.wire.Message<*, *>> RequestResult.Companion.async(f
   return RequestResult.Future(f())
 }
 
-operator fun Push<*>.invoke() = Response(Header(msgId, 0), 0)
+fun Push<*>.of() = Response(Header(msgId, 0), 0)
 
-operator fun <T : com.squareup.wire.Message<*, *>> Push<T>.invoke(value: T) =
-  Response(Header(msgId, 0), 0, WireMessage(value))
+fun <T : com.squareup.wire.Message<*, *>> Push<T>.of(msg: T) =
+  Response(Header(msgId), 0, WireMessage(msg))
 
+fun <T> ProtoAdapter<T>.decode(message: Message): T {
+  return when (message) {
+    is ByteBufInputStreamMessage -> message.use { decode(message.inputStream) }
+    else -> decode(message.encodeToByteArray())
+  }
+}
 
 class WireRequestBody(val proto: RequestProto) : RequestBody {
   private var booleanIndex = 0
@@ -106,5 +126,9 @@ class WireRequestBody(val proto: RequestProto) : RequestBody {
 
   override fun encodeToByteArray(): ByteArray {
     return proto.encode()
+  }
+
+  override fun toString(): String {
+    return proto.toString()
   }
 }

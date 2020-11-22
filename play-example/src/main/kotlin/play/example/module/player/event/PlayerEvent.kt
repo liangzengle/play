@@ -4,9 +4,13 @@ import play.example.module.player.PlayerActor
 import play.example.module.player.PlayerManager
 import play.example.module.reward.model.Cost
 import play.example.module.reward.model.CostResultSet
-import play.util.concurrent.Promise
+import play.util.concurrent.PlayPromise
 import play.util.control.Result2
 
+/**
+ * 玩家事件接口
+ * @property playerId 玩家id
+ */
 interface PlayerEvent : PlayerManager.Command, PlayerActor.Command {
   val playerId: Long
 }
@@ -15,7 +19,7 @@ data class PlayerExecCost(
   override val playerId: Long,
   val costs: List<Cost>,
   val logSource: Int,
-  val promise: Promise<Result2<CostResultSet>>
+  val promise: PlayPromise<Result2<CostResultSet>>
 ) : PlayerEvent
 
 data class PlayerRequestEvent(override val playerId: Long, val message: PlayerActor.RequestCommand) : PlayerEvent

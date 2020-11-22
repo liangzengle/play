@@ -1,4 +1,6 @@
 dependencies {
     api akka_typed
     api guice
+    api project(':play-scala-compact')
+    api project(':play-core')
 }

@@ -16,7 +16,7 @@ abstract class RawReward(type: RewardType, num: String) {
   }
 
   init {
-    require(type.rawRewardClass == javaClass) { "奖励类型不匹配${javaClass.simpleName}${type}" }
+    require(type.rawRewardClass == javaClass) { "奖励类型不匹配${javaClass.simpleName}$type" }
   }
 
   abstract val type: RewardType

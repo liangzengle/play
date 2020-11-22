@@ -5,7 +5,7 @@ import java.util.*
 import java.util.stream.LongStream
 import java.util.stream.StreamSupport
 
-class NonBlockingHashSetLong : MutableSet<Long> {
+class NonBlockingHashSetLong : MutableSetLong {
   @Transient
   private val map = NonBlockingHashMapLong<Boolean>()
 
@@ -25,23 +25,33 @@ class NonBlockingHashSetLong : MutableSet<Long> {
     return modified
   }
 
+  override fun addAll(elements: MutableSetLong): Boolean {
+    var modified = false
+    for (e in elements) {
+      if (add(e)) {
+        modified = true
+      }
+    }
+    return modified
+  }
+
   override fun clear() {
     map.clear()
   }
 
-  @Deprecated("use `iter` instead.")
-  override fun iterator(): MutableIterator<Long> {
-    return map.keys.iterator()
+  override fun iterator(): LongIterator {
+    return object : LongIterator {
+      @Suppress("UNCHECKED_CAST")
+      private val it = map.keys() as NonBlockingHashMapLong<Boolean>.IteratorLong
+      override fun hasNext(): Boolean = it.hasNext()
+
+      override fun next(): Long = it.nextLong()
+    }
   }
 
-  @Suppress("UNCHECKED_CAST")
-  fun iter(): NonBlockingHashMapLong<Boolean>.IteratorLong {
-    return map.keys() as NonBlockingHashMapLong<Boolean>.IteratorLong
-  }
-
-  fun stream(): LongStream {
+  override fun stream(): LongStream {
     return StreamSupport.longStream(
-      Spliterators.spliterator(iter().toJava(), size.toLong(), Spliterator.DISTINCT),
+      Spliterators.spliterator(iterator().toJava(), size.toLong(), Spliterator.DISTINCT),
       false
     )
   }
@@ -60,8 +70,22 @@ class NonBlockingHashSetLong : MutableSet<Long> {
     return modified
   }
 
+  override fun removeAll(elements: MutableSetLong): Boolean {
+    var modified = false
+    for (e in elements) {
+      if (remove(e)) {
+        modified = true
+      }
+    }
+    return modified
+  }
+
   override fun retainAll(elements: Collection<Long>): Boolean {
     return map.keys.retainAll(elements)
+  }
+
+  override fun retainAll(elements: MutableSetLong): Boolean {
+    return map.keys.retainAll(elements.toJava())
   }
 
   override fun contains(element: Long): Boolean {
@@ -77,22 +101,60 @@ class NonBlockingHashSetLong : MutableSet<Long> {
     return true
   }
 
+  override fun containsAll(elements: MutableSetLong): Boolean {
+    for (e in elements) {
+      if (!contains(e)) {
+        return false
+      }
+    }
+    return true
+  }
+
   override fun isEmpty(): Boolean = map.isEmpty()
 
-}
+  override fun toJava(): MutableSet<Long> {
+    return object : MutableSet<Long> {
+      override fun add(element: Long): Boolean {
+        return this@NonBlockingHashSetLong.add(element)
+      }
 
-fun <T> NonBlockingHashMapLong<T>.IteratorLong.toJava(): PrimitiveIterator.OfLong {
-  return object : PrimitiveIterator.OfLong {
-    override fun remove() {
-      return this@toJava.remove()
-    }
+      override fun addAll(elements: Collection<Long>): Boolean {
+        return this@NonBlockingHashSetLong.addAll(elements)
+      }
 
-    override fun hasNext(): Boolean {
-      return this@toJava.hasNext()
-    }
+      override fun clear() {
+        return this@NonBlockingHashSetLong.clear()
+      }
 
-    override fun nextLong(): Long {
-      return this@toJava.nextLong()
+      override fun iterator(): MutableIterator<Long> {
+        return this@NonBlockingHashSetLong.iterator().toJava()
+      }
+
+      override fun remove(element: Long): Boolean {
+        return this@NonBlockingHashSetLong.remove(element)
+      }
+
+      override fun removeAll(elements: Collection<Long>): Boolean {
+        return this@NonBlockingHashSetLong.removeAll(elements)
+      }
+
+      override fun retainAll(elements: Collection<Long>): Boolean {
+        return this@NonBlockingHashSetLong.retainAll(elements)
+      }
+
+      override val size: Int = this@NonBlockingHashSetLong.size
+
+      override fun contains(element: Long): Boolean {
+        return this@NonBlockingHashSetLong.contains(element)
+      }
+
+      override fun containsAll(elements: Collection<Long>): Boolean {
+        return this@NonBlockingHashSetLong.retainAll(elements)
+      }
+
+      override fun isEmpty(): Boolean {
+        return this@NonBlockingHashSetLong.isEmpty()
+      }
     }
   }
 }

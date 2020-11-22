@@ -3,9 +3,7 @@ package play.db.cache
 import play.ApplicationLifecycle
 import play.Configuration
 import play.Log
-import play.db.DefaultEntityProcessor
-import play.db.Entity
-import play.db.EntityProcessor
+import play.db.*
 import play.getLogger
 import play.inject.Injector
 import play.inject.guice.PostConstruct
@@ -110,5 +108,15 @@ class EntityCacheManager @Inject constructor(
       val entityProcessor = (entityProcessors[entityClass] ?: DefaultEntityProcessor) as EntityProcessor<E>
       factory.create(entityClass, entityProcessor)
     } as EntityCache<ID, E>
+  }
+
+  @Suppress("UNCHECKED_CAST")
+  fun <E : EntityLong> getEntityCacheLong(clazz: Class<E>): EntityCacheLong<E> {
+    return get(clazz) as EntityCacheLong<E>
+  }
+
+  @Suppress("UNCHECKED_CAST")
+  fun <E : EntityInt> getEntityCacheInt(clazz: Class<E>): EntityCacheInt<E> {
+    return get(clazz) as EntityCacheInt<E>
   }
 }

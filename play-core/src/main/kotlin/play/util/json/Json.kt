@@ -49,7 +49,6 @@ object Json {
     return mapper.readValue(content, mapper.typeFactory.constructType(type))
   }
 
-
   @JvmStatic
   fun <E> toList(content: String, elemType: Class<E>): List<E> {
     val type = mapper.typeFactory.constructCollectionLikeType(List::class.java, elemType)

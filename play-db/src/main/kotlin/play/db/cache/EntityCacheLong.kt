@@ -4,6 +4,7 @@ import play.db.EntityLong
 import play.util.concurrent.Future
 import play.util.function.LongToObjFunction
 import java.util.*
+import java.util.stream.Stream
 import kotlin.NoSuchElementException
 
 /**
@@ -11,7 +12,6 @@ import kotlin.NoSuchElementException
  * @author LiangZengle
  */
 interface EntityCacheLong<E : EntityLong> {
-
 
   operator fun invoke(id: Long): E = getOrThrow(id)
 
@@ -50,6 +50,11 @@ interface EntityCacheLong<E : EntityLong> {
    * 获取缓存中所有的实体
    */
   fun asSequence(): Sequence<E>
+
+  /**
+   * 获取缓存中所有的实体
+   */
+  fun asStream(): Stream<E>
 
   /**
    * 创建实体，如果实体已经存在则抛异常: [EntityExistsException]
@@ -102,4 +107,3 @@ interface EntityCacheLong<E : EntityLong> {
    */
   fun flush(): Future<Unit>
 }
-

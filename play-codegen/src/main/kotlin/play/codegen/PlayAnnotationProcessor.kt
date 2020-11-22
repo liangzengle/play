@@ -104,7 +104,6 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
     return typeElement
   }
 
-
   protected fun KClass<*>.asTypeElement(): TypeElement {
     val typeElement = elementUtils.getTypeElement(this.java.name)
     if (typeElement == null) {
@@ -218,7 +217,6 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
         ?.asString()
     return className?.let { ClassName.bestGuess(className) } ?: this
   }
-
 
 //    protected fun TypeMirror.javaToKotlinType(): TypeName {
 //        val className =

@@ -7,7 +7,6 @@ interface ConfigValidator {
   fun validate(configSetSupplier: ConfigSetSupplier, errors: MutableList<String>)
 }
 
-
 abstract class GenericConfigValidator<T : AbstractConfig> : ConfigValidator {
 
   internal val configClass: Class<T> = Reflect.getRawClass(

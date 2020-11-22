@@ -19,7 +19,6 @@ abstract class PlayerEntity(id: Long) : EntityLong(id) {
   val playerId get() = id
 }
 
-
 /**
  * 玩家数据缓存过期策略：在线玩家的数据永不过期
  */

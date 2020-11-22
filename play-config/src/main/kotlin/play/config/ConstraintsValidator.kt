@@ -65,7 +65,6 @@ internal class ConstraintsValidator(
             .map { "${clazz.simpleName}.${f.name}的值不能重复: $it" }
         }.forEach { errors.add(it) }
 
-
       fields.asSequence()
         .filter { it.isAnnotationPresent(Incremental::class.java) }
         .flatMap { f ->

@@ -308,6 +308,11 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
                         (int) n);
     }
 
+    @Override
+    public int getSize() {
+        return size();
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -327,9 +332,14 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
     }
 
     @Nonnull
-    @Override
     public Iterable<K> keys() {
         return keySet();
+    }
+
+    @NotNull
+    @Override
+    public Iterable<K> getKeys() {
+        return keys();
     }
 
     /**
@@ -636,6 +646,12 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
         ValuesView vs;
         if ((vs = values) != null) return vs;
         return values = new ValuesView(this);
+    }
+
+    @NotNull
+    @Override
+    public LongIterable getValues() {
+        return values();
     }
 
     /**

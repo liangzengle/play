@@ -61,6 +61,16 @@ object ImplementFunctions : EntityCacheComponent() {
           .build()
       )
       .addFunction(
+        FunSpec.builder("asStream")
+          .addModifiers(KModifier.OVERRIDE)
+          .addStatement(
+            "return cache.%L.map { it.getEntitySilently() }.%M()",
+            if (isPrimitiveId()) "valuesStream()" else "values.stream()",
+            filterNotNull
+          )
+          .build()
+      )
+      .addFunction(
         FunSpec.builder("create")
           .addModifiers(KModifier.OVERRIDE)
           .addParameter("e", E_Entity_ID)
@@ -89,7 +99,9 @@ object ImplementFunctions : EntityCacheComponent() {
               .addStatement("cache.compute(id) { k, _ ->")
               .indent()
               .beginControlFlow("if (delete(k))")
-              .addStatement("persistService.deleteById(k, entityClass)")
+              .beginControlFlow("persistService.deleteById(k, entityClass).onFailure")
+              .addStatement("""logger.error(it) { "${'$'}{entityClass.simpleName}(${'$'}id)删除失败" }""")
+              .endControlFlow()
               .endControlFlow()
               .addStatement("null")
               .unindent()
@@ -161,8 +173,8 @@ object ImplementFunctions : EntityCacheComponent() {
           .beginControlFlow("if (entity == null)")
           .addStatement("entity = creation(it)")
           .addStatement("entityProcessor.postLoad(entity)")
-          .indent()
           .addStatement("persistService.insert(entity).onFailure { e ->")
+          .indent()
           .addStatement(
             """logger.error(e) { "数据插入失败: ${'$'}{entityClass.simpleName}${'$'}{%T.stringify(entity)}" }""",
             Json
@@ -206,5 +218,4 @@ object ImplementFunctions : EntityCacheComponent() {
   override fun accept(): Boolean {
     return true
   }
-
 }

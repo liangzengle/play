@@ -15,5 +15,4 @@ abstract class GenericConfigRefreshListener<T : AbstractConfig, E : ConfigRefres
 
   internal val configClass: Class<T> =
     Reflect.getRawClass(Reflect.getTypeArg(javaClass, GenericConfigRefreshListener::class.java, 0))
-
 }

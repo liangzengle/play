@@ -19,7 +19,6 @@ class ItemController @Inject constructor(
   private val itemService: ItemService
 ) : AbstractController(ModuleId.Item) {
 
-
   @Cmd(1)
   fun useItem1(self: Self, itemUid: Int, num: Int) = RequestResult {}
 

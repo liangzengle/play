@@ -46,10 +46,10 @@ object ModuleCodegen {
     Files.createDirectories(controllerDir)
     Files.createDirectories(domainDir)
 
-    write("${modulePackage}.${moduleName.toLowerCase()}", moduleDir, createService())
-    write("${modulePackage}.${moduleName.toLowerCase()}.domain", domainDir, createErrorCode())
-    write("${modulePackage}.${moduleName.toLowerCase()}.domain", domainDir, createLogSource())
-    write("${modulePackage}.${moduleName.toLowerCase()}.controller", controllerDir, createController())
+    write("$modulePackage.${moduleName.toLowerCase()}", moduleDir, createService())
+    write("$modulePackage.${moduleName.toLowerCase()}.domain", domainDir, createErrorCode())
+    write("$modulePackage.${moduleName.toLowerCase()}.domain", domainDir, createLogSource())
+    write("$modulePackage.${moduleName.toLowerCase()}.controller", controllerDir, createController())
 
     createProtoFile()
   }
@@ -59,10 +59,10 @@ object ModuleCodegen {
     return TypeSpec.objectBuilder(className)
       .addKdoc("${moduleDesc}错误码")
       .superclass(StatusCode::class)
-      .addSuperclassConstructorParameter("%T.${moduleName}", ModuleId)
+      .addSuperclassConstructorParameter("%T.$moduleName", ModuleId)
       .addAnnotation(ModularCode::class)
       .addAnnotation(
-        AnnotationSpec.builder(SuppressWarnings::class).addMember("MayBeConstant").build()
+        AnnotationSpec.builder(SuppressWarnings::class).addMember("%S", "MayBeConstant").build()
       )
       .build()
   }
@@ -72,10 +72,10 @@ object ModuleCodegen {
     return TypeSpec.objectBuilder(className)
       .addKdoc("${moduleDesc}日志源")
       .superclass(LogSource::class)
-      .addSuperclassConstructorParameter("%T.${moduleName}", ModuleId)
+      .addSuperclassConstructorParameter("%T.$moduleName", ModuleId)
       .addAnnotation(ModularCode::class)
       .addAnnotation(
-        AnnotationSpec.builder(SuppressWarnings::class).addMember("MayBeConstant").build()
+        AnnotationSpec.builder(SuppressWarnings::class).addMember("%S", "MayBeConstant").build()
       )
       .build()
   }
@@ -87,7 +87,7 @@ object ModuleCodegen {
 
     val className = "${moduleName}Service"
     val classBuilder = TypeSpec.classBuilder(className)
-    val entityCacheClass = toClassName("${modulePackage}.${moduleName.toLowerCase()}.entity.${entityCacheClassName}")
+    val entityCacheClass = toClassName("$modulePackage.${moduleName.toLowerCase()}.entity.$entityCacheClassName")
     val cachePropertyName = "${moduleName.toLowerCase()}EntityCache"
     classBuilder
       .addKdoc("${moduleDesc}模块逻辑处理")
@@ -110,13 +110,13 @@ object ModuleCodegen {
   private fun createController(): TypeSpec {
     val className = "${moduleName}Controller"
     val classBuilder = TypeSpec.classBuilder(className)
-    val serviceClass = toClassName("${modulePackage}.${moduleName.toLowerCase()}.${moduleName}Service")
+    val serviceClass = toClassName("$modulePackage.${moduleName.toLowerCase()}.${moduleName}Service")
     val serviceName = "${moduleName.toLowerCase()}Service"
     classBuilder
       .addKdoc("${moduleDesc}模块请求处理")
       .addAnnotation(Singleton::class)
       .addAnnotation(
-        AnnotationSpec.builder(Controller::class).addMember("%T.${moduleName}", ModuleId).build()
+        AnnotationSpec.builder(Controller::class).addMember("%T.$moduleName", ModuleId).build()
       )
       .primaryConstructor(
         FunSpec.constructorBuilder()
@@ -129,7 +129,7 @@ object ModuleCodegen {
           .initializer(serviceName)
           .build()
       ).superclass(AbstractController::class)
-      .addSuperclassConstructorParameter("%T.${moduleName}", ModuleId)
+      .addSuperclassConstructorParameter("%T.$moduleName", ModuleId)
 
     return classBuilder.build()
   }
@@ -138,11 +138,12 @@ object ModuleCodegen {
 
   private fun createProtoFile() {
     val pkg = "play.example.module.${moduleName.toLowerCase()}.message"
-    val content = """
+    val content =
+      """
       syntax = "proto3";
 
       package $pkg;
-    """.trimIndent()
+      """.trimIndent()
     val path = protoDir.resolve(toSnakeLike(moduleName) + ".proto")
     Files.write(path, content.toByteArray(), StandardOpenOption.CREATE)
   }

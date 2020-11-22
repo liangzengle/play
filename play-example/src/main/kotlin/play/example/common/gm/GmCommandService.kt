@@ -2,6 +2,7 @@ package play.example.common.gm
 
 import play.example.module.player.Self
 import play.inject.Injector
+import play.util.collection.toImmutableMap
 import play.util.control.Result2
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
@@ -11,13 +12,13 @@ import javax.inject.Singleton
 @Singleton
 class GmCommandService @Inject constructor(private val injector: Injector) {
   private val invokers: Map<String, Map<String, GmCommandInvoker>> by lazy {
-    injector.getInstancesOfType(GmCommandModule::class.java).map { module ->
+    injector.getInstancesOfType(GmCommandModule::class.java).asSequence().map { module ->
       module.name to module.javaClass.declaredMethods.asSequence()
         .filter { it.isAnnotationPresent(GmCommand::class.java) }
         .map { method ->
           getCommandName(method) to GmCommandInvoker(method, module)
-        }.toMap()
-    }.toMap()
+        }.toImmutableMap()
+    }.toImmutableMap()
   }
 
   private val descriptors: Map<String, List<GmCommandDescriptor>> by lazy {

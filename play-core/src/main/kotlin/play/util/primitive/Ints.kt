@@ -57,13 +57,13 @@ fun Int.toByteChecked(): Byte {
 
 fun Int.toByteSaturated(): Byte {
   return when {
-      this < Byte.MIN_VALUE -> {
-        Byte.MIN_VALUE
-      }
-      this > Byte.MAX_VALUE -> {
-        Byte.MAX_VALUE
-      }
-      else -> this.toByte()
+    this < Byte.MIN_VALUE -> {
+      Byte.MIN_VALUE
+    }
+    this > Byte.MAX_VALUE -> {
+      Byte.MAX_VALUE
+    }
+    else -> this.toByte()
   }
 }
 
@@ -76,12 +76,8 @@ fun Int.toShortChecked(): Short {
 
 fun Int.toShortSaturated(): Short {
   return when {
-      this < Short.MIN_VALUE -> {
-        Short.MIN_VALUE
-      }
-      this > Short.MAX_VALUE -> {
-        Short.MAX_VALUE
-      }
-      else -> this.toShort()
+    this < Short.MIN_VALUE -> Short.MIN_VALUE
+    this > Short.MAX_VALUE -> Short.MAX_VALUE
+    else -> this.toShort()
   }
 }

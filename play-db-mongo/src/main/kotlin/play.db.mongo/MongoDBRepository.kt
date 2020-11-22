@@ -146,11 +146,17 @@ class MongoDBRepository @Inject constructor(
     getRawCollection(entityClass)
       .find()
       .projection(Projections.include("_id"))
-      .subscribe(FoldSubscriber(promise, LinkedList(), { list, doc ->
-        val id: ID = doc["_id"]?.unsafeCast()!!
-        list.add(id)
-        list
-      }))
+      .subscribe(
+        FoldSubscriber(
+          promise,
+          LinkedList(),
+          { list, doc ->
+            val id: ID = doc["_id"]?.unsafeCast()!!
+            list.add(id)
+            list
+          }
+        )
+      )
     return promise.future
   }
 

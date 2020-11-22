@@ -62,10 +62,8 @@ sealed class ParameterConverter<out T : Any> {
     override fun convert(parameter: Parameter, arg: String): Optional<*> {
       if (arg.isNotEmpty()) return empty<Any>()
       val pType =
-        parameter.parameterizedType.unsafeCast<ParameterizedType>().actualTypeArguments[0].unsafeCast<Class<*>>();
+        parameter.parameterizedType.unsafeCast<ParameterizedType>().actualTypeArguments[0].unsafeCast<Class<*>>()
       return ParameterConverter(pType).convert(parameter, arg).toOptional()
     }
   }
-
-
 }

@@ -6,5 +6,5 @@ charset = utf-8
 indent_size = 2
 indent_style = space
 insert_final_newline = true
-disabled_rules = no-wildcard-imports
+disabled_rules = no-wildcard-imports, import-ordering
 kotlin_imports_layout = idea

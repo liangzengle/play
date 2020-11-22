@@ -3,12 +3,16 @@ package play.example
 import com.typesafe.config.ConfigFactory
 import play.*
 import play.example.common.ServerMode
+import play.example.module.server.event.ApplicationStartedEvent
 import play.inject.getInstanceOrNull
 import play.net.netty.TcpServer
 import play.util.collection.UnsafeAccessor
 import kotlin.system.exitProcess
 
 object App {
+  init {
+    SystemProperties.set("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager")
+  }
 
   val serverMode: ServerMode = ServerMode.forName(SystemProperties.getOrDefault("SERVER_MODE", "local"))
 
@@ -23,6 +27,7 @@ object App {
       val application = Application.start(ConfigFactory.load("$serverMode.conf"))
       Log.info { "Mode: ${application.mode}" }
       Log.info { "ServerMode: $serverMode" }
+      application.eventBus.postBlocking(ApplicationStartedEvent)
       startTcpServer(application, "game")
       startTcpServer(application, "admin-http")
     } catch (e: Throwable) {

@@ -63,12 +63,12 @@ object HttpStatusCode {
   const val NETWORK_AUTHENTICATION_REQUIRED = 511
 
   fun isSuccess(code: Int): Boolean {
-    return is2x(code);
+    return is2x(code)
   }
 
-  fun is1x(code: Int) = code in 100..199;
-  fun is2x(code: Int) = code in 200..299;
-  fun is3x(code: Int) = code in 300..399;
-  fun is4x(code: Int) = code in 400..499;
-  fun is5x(code: Int) = code in 500..599;
+  fun is1x(code: Int) = code in 100..199
+  fun is2x(code: Int) = code in 200..299
+  fun is3x(code: Int) = code in 300..399
+  fun is4x(code: Int) = code in 400..499
+  fun is5x(code: Int) = code in 500..599
 }

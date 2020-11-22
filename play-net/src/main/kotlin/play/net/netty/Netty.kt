@@ -67,20 +67,24 @@ fun ServerBootstrap.childOptions(options: Iterable<Pair<ChannelOption<Any>, Any>
 }
 
 fun ServerBootstrap.channelInitializer(f: (SocketChannel) -> Unit): ServerBootstrap {
-  this.childHandler(object : ChannelInitializer<SocketChannel>() {
-    override fun initChannel(ch: SocketChannel) {
-      f(ch)
+  this.childHandler(
+    object : ChannelInitializer<SocketChannel>() {
+      override fun initChannel(ch: SocketChannel) {
+        f(ch)
+      }
     }
-  })
+  )
   return this
 }
 
 fun Bootstrap.channelInitializer(f: (SocketChannel) -> Unit): Bootstrap {
-  this.handler(object : ChannelInitializer<SocketChannel>() {
-    override fun initChannel(ch: SocketChannel) {
-      f(ch)
+  this.handler(
+    object : ChannelInitializer<SocketChannel>() {
+      override fun initChannel(ch: SocketChannel) {
+        f(ch)
+      }
     }
-  })
+  )
   return this
 }
 

@@ -30,6 +30,14 @@ abstract class EntityCacheComponent {
     }
   }
 
+  protected fun isPrimitiveId(): Boolean {
+    return when (ctx.idType) {
+      INT -> true
+      LONG -> true
+      else -> false
+    }
+  }
+
   protected fun getCreationType(): TypeName {
     return when (ctx.idType) {
       INT -> IntToObjFunction_E
@@ -72,14 +80,15 @@ abstract class EntityCacheComponent {
 
   protected fun getExpiredUpdaterType(): TypeName {
     return when (ctx.idType) {
-      INT -> AtomicIntegerFieldUpdater::class.asClassName()
-        .parameterizedBy(ClassName.bestGuess("CacheObj").parameterizedBy(STAR))
-      LONG -> AtomicIntegerFieldUpdater::class.asClassName()
-        .parameterizedBy(ClassName.bestGuess("CacheObj").parameterizedBy(STAR))
-      else -> AtomicIntegerFieldUpdater::class.asClassName()
-        .parameterizedBy(ClassName.bestGuess("CacheObj").parameterizedBy(STAR, STAR))
+      INT ->
+        AtomicIntegerFieldUpdater::class.asClassName()
+          .parameterizedBy(ClassName.bestGuess("CacheObj").parameterizedBy(STAR))
+      LONG ->
+        AtomicIntegerFieldUpdater::class.asClassName()
+          .parameterizedBy(ClassName.bestGuess("CacheObj").parameterizedBy(STAR))
+      else ->
+        AtomicIntegerFieldUpdater::class.asClassName()
+          .parameterizedBy(ClassName.bestGuess("CacheObj").parameterizedBy(STAR, STAR))
     }
   }
-
-
 }

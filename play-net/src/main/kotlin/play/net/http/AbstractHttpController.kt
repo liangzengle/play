@@ -1,7 +1,6 @@
 package play.net.http
 
 import play.util.collection.EmptyByteArray
-import play.util.collection.asList
 import play.util.concurrent.Future
 import play.util.json.Json
 import play.util.mapToObj
@@ -21,9 +20,9 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
     val actions: List<Action> = javaClass.declaredMethods
       .asSequence()
       .filter {
-        it.isAnnotationPresent(Route::class.java)
-          || it.isAnnotationPresent(Get::class.java)
-          || it.isAnnotationPresent(Post::class.java)
+        it.isAnnotationPresent(Route::class.java) ||
+          it.isAnnotationPresent(Get::class.java) ||
+          it.isAnnotationPresent(Post::class.java)
       }.map { method ->
         if (!Modifier.isPublic(method.modifiers)) {
           throw IllegalStateException("$method should be public")
@@ -135,8 +134,8 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
   }
 
   companion object {
-    private val GET = HttpMethod.GET.name.asList()
-    private val POST = HttpMethod.POST.name.asList()
+    private val GET = listOf(HttpMethod.GET.name)
+    private val POST = listOf(HttpMethod.POST.name)
     private val GET_POST = listOf(HttpMethod.GET.name, HttpMethod.POST.name)
 
     private fun getHttpMethods(method: Method): List<String> {

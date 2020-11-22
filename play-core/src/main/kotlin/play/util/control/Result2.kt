@@ -52,6 +52,8 @@ fun <T> ok(): Result2<T> = Result2<Nothing>(null)
 
 fun <T> ok(value: T): Result2<T> = Result2(value)
 
+inline fun <T> ok(supplier: () -> T): Result2<T> = Result2(supplier())
+
 fun err(code: Int): Result2<Nothing> = Result2(Result2.Err(code))
 
 inline fun <R, T : R> Result2<T>.recover(f: () -> R): Result2<R> {

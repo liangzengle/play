@@ -1,6 +1,7 @@
 package play.util.collection
 
 import com.google.common.collect.ImmutableMap
+import play.util.unsafeCast
 import java.util.stream.Collector
 import java.util.stream.Collectors
 import java.util.stream.IntStream
@@ -61,4 +62,9 @@ fun <K, T> Stream<T>.toImmutableMap(keyMapper: (T) -> K): Map<K, T> {
 
 fun IntStream.toImmutableList(): IntArrayList {
   return ImmutableIntArrayList.wrapOf(toArray())
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T> Stream<T?>.filterNotNull(): Stream<T> {
+  return filter { it != null }.unsafeCast()
 }

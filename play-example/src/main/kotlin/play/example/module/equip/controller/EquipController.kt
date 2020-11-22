@@ -19,7 +19,6 @@ class EquipController @Inject constructor(private val service: EquipService) : A
     service.putOn(self, equipUid, pos)
   }
 
-
 //  @Cmd(101)
 //  lateinit var info: Push<Int32Value>
 }

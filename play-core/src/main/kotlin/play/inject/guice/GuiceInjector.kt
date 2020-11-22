@@ -10,8 +10,8 @@ import javax.inject.Provider
 import javax.inject.Singleton
 import kotlin.streams.toList
 
-class GuiceInjector(private val guice: Injector, private val classScanner: ClassScanner) : PlayInjector,
-  Injector by guice {
+class GuiceInjector(private val guice: Injector, private val classScanner: ClassScanner) :
+  PlayInjector, Injector by guice {
 
   override fun <T> getInstance(type: Class<T>): T {
     return guice.getInstance(type)

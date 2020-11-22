@@ -187,7 +187,6 @@ class Scheduler {
     val trigger = PeriodCronTrigger(generator, null, null)
     return ReschedulingRunnable(decorate(task), trigger, executor, LoggingErrorHandler).schedule()!!
   }
-
 }
 
 @Singleton

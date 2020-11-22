@@ -8,12 +8,17 @@ import play.example.module.StatusCode
  * 玩家模块错误码
  * @author LiangZengle
  */
+@Suppress("MayBeConstant")
 @ModularCode
 object PlayerErrorCode : StatusCode(ModuleId.Player) {
 
-  // 角色不存在
+  /**
+   * 角色不存在
+   */
   val PlayerNotExists = 1
 
-  // 名字不可用
+  /**
+   * 名字不可用
+   */
   val PlayerNameNotAvailable = 2
 }

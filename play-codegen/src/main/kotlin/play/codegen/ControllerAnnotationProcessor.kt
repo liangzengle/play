@@ -99,7 +99,6 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
       classBuilder.addFunction(playerIdInvoker.build())
     }
 
-
     val format = FunSpec.builder("formatToString")
       .addParameter("request", Request)
     val formatCode = CodeBlock.builder()
@@ -315,8 +314,8 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
   }
 
   private fun isPlayerId(parameter: VariableElement): Boolean {
-    return parameter.simpleName.contentEquals("playerId")
-      && parameter.asType().asTypeName() == Long::class.asTypeName()
+    return parameter.simpleName.contentEquals("playerId") &&
+      parameter.asType().asTypeName() == Long::class.asTypeName()
   }
 
   private fun isRequest(parameter: VariableElement): Boolean {

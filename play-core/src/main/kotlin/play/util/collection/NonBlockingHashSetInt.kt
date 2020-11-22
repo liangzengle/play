@@ -6,7 +6,7 @@ import java.util.*
 import java.util.stream.IntStream
 import java.util.stream.StreamSupport
 
-class NonBlockingHashSetInt : MutableSetInt, MutableSet<Int> {
+class NonBlockingHashSetInt : MutableSetInt {
   @Transient
   private val map = NonBlockingHashMapLong<Boolean>()
 
@@ -26,18 +26,23 @@ class NonBlockingHashSetInt : MutableSetInt, MutableSet<Int> {
     return modified
   }
 
+  override fun addAll(elements: MutableSetInt): Boolean {
+    var modified = false
+    for (e in elements) {
+      if (add(e)) {
+        modified = true
+      }
+    }
+    return modified
+  }
+
   override fun clear() {
     map.clear()
   }
 
-  @Deprecated("use `iter` instead.", ReplaceWith("iter()"))
-  override fun iterator(): MutableIterator<Int> {
-    return iter().toJava()
-  }
-
-  @Suppress("UNCHECKED_CAST")
-  override fun iter(): IntIterator {
+  override fun iterator(): IntIterator {
     return object : IntIterator {
+      @Suppress("UNCHECKED_CAST")
       private val it = map.keys() as NonBlockingHashMapLong<Boolean>.IteratorLong
       override fun hasNext(): Boolean = it.hasNext()
 
@@ -45,14 +50,12 @@ class NonBlockingHashSetInt : MutableSetInt, MutableSet<Int> {
     }
   }
 
-  fun stream(): IntStream {
+  override fun stream(): IntStream {
     return StreamSupport.intStream(
-      Spliterators.spliterator(iter().toJava(), size.toLong(), Spliterator.DISTINCT),
+      Spliterators.spliterator(iterator().toJava(), size.toLong(), Spliterator.DISTINCT),
       false
     )
   }
-
-  override fun toStream(): IntStream = stream()
 
   override fun remove(element: Int): Boolean {
     return map.remove(element.toLong())
@@ -68,8 +71,22 @@ class NonBlockingHashSetInt : MutableSetInt, MutableSet<Int> {
     return modified
   }
 
+  override fun removeAll(elements: MutableSetInt): Boolean {
+    var modified = false
+    for (e in elements) {
+      if (remove(e)) {
+        modified = true
+      }
+    }
+    return modified
+  }
+
   override fun retainAll(elements: Collection<Int>): Boolean {
     return map.keys.retainAll(Collections2.transform(elements) { it?.toLong() })
+  }
+
+  override fun retainAll(elements: MutableSetInt): Boolean {
+    return map.keys.retainAll(Collections2.transform(elements.toJava()) { it?.toLong() })
   }
 
   override fun contains(element: Int): Boolean {
@@ -85,9 +102,60 @@ class NonBlockingHashSetInt : MutableSetInt, MutableSet<Int> {
     return true
   }
 
+  override fun containsAll(elements: MutableSetInt): Boolean {
+    for (e in elements) {
+      if (!contains(e)) {
+        return false
+      }
+    }
+    return true
+  }
+
   override fun isEmpty(): Boolean = map.isEmpty()
 
   override fun toJava(): MutableSet<Int> {
-    return this
+    return object : MutableSet<Int> {
+      override fun add(element: Int): Boolean {
+        return this@NonBlockingHashSetInt.add(element)
+      }
+
+      override fun addAll(elements: Collection<Int>): Boolean {
+        return this@NonBlockingHashSetInt.addAll(elements)
+      }
+
+      override fun clear() {
+        return this@NonBlockingHashSetInt.clear()
+      }
+
+      override fun iterator(): MutableIterator<Int> {
+        return this@NonBlockingHashSetInt.iterator().toJava()
+      }
+
+      override fun remove(element: Int): Boolean {
+        return this@NonBlockingHashSetInt.remove(element)
+      }
+
+      override fun removeAll(elements: Collection<Int>): Boolean {
+        return this@NonBlockingHashSetInt.removeAll(elements)
+      }
+
+      override fun retainAll(elements: Collection<Int>): Boolean {
+        return this@NonBlockingHashSetInt.retainAll(elements)
+      }
+
+      override val size: Int = this@NonBlockingHashSetInt.size
+
+      override fun contains(element: Int): Boolean {
+        return this@NonBlockingHashSetInt.contains(element)
+      }
+
+      override fun containsAll(elements: Collection<Int>): Boolean {
+        return this@NonBlockingHashSetInt.containsAll(elements)
+      }
+
+      override fun isEmpty(): Boolean {
+        return this@NonBlockingHashSetInt.isEmpty()
+      }
+    }
   }
 }

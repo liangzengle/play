@@ -19,4 +19,6 @@ abstract class PlatformService {
 
   open fun newAccount(id: Long, platformId: Byte, serverId: Short, name: String, params: LoginProto): Account =
     Account(id, name, platformId, serverId, currentMillis())
+
+  abstract fun validateLoginParams(params: LoginProto): Int
 }

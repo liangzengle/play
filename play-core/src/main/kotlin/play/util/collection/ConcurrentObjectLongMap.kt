@@ -7,6 +7,9 @@ import java.util.function.Function
 
 interface ConcurrentObjectLongMap<K> : Iterable<ConcurrentObjectLongMap.Entry<K>> {
   operator fun get(key: K): Long?
+
+  @JvmDefault
+  operator fun set(key: K, value: Long): Long? = put(key, value)
   fun getOrDefault(key: K, defaultValue: Long): Long
   fun put(key: K, value: Long): Long?
   fun putIfAbsent(key: K, value: Long): Long?
@@ -19,12 +22,26 @@ interface ConcurrentObjectLongMap<K> : Iterable<ConcurrentObjectLongMap.Entry<K>
   fun containsKey(key: K): Boolean
   val isEmpty: Boolean
   val isNotEmpty: Boolean
-  fun size(): Int
-  fun keys(): Iterable<K>
-  fun values(): LongIterable
+  val size: Int
+  val keys: Iterable<K>
+  val values: LongIterable
   fun clear()
   interface Entry<K> {
     val key: K
     val value: Long
+
+    @JvmDefault
+    operator fun component1() = key
+
+    @JvmDefault
+    operator fun component2() = value
+  }
+
+  companion object {
+    @JvmName("create")
+    operator fun <K> invoke(): ConcurrentObjectLongMap<K> = ConcurrentObjectLongHashMap()
+
+    @JvmName("create")
+    operator fun <K> invoke(initialSize: Int): ConcurrentObjectLongMap<K> = ConcurrentObjectLongHashMap(initialSize)
   }
 }

@@ -29,7 +29,7 @@ class DbGuiceModule : GuiceModule() {
 
     // repository
     val repository = ctx.conf.getString("db.repository")
-    val dbProductModuleName = "product-modules.$repository"
+    val dbProductModuleName = "vendor-modules.$repository"
     if (dbConf.hasPath(dbProductModuleName)) {
       val module = Reflect.createInstance<Module>(dbConf.getString(dbProductModuleName))
       if (module is GuiceModule) module.initContext(ctx)
@@ -46,6 +46,4 @@ class DbGuiceModule : GuiceModule() {
 
     install(EntityCacheGuiceModule())
   }
-
-
 }

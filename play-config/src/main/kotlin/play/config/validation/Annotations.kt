@@ -19,7 +19,8 @@ annotation class ReferTo(
 @Target(AnnotationTarget.FIELD, AnnotationTarget.TYPE, AnnotationTarget.FUNCTION)
 @Constraint(validatedBy = [ReferToGroupConstraintValidator::class])
 annotation class ReferToGroup(
-  val value: KClass<out AbstractConfig>, val message: String = "{javax.validation.constraints.ReferToGroup.message}",
+  val value: KClass<out AbstractConfig>,
+  val message: String = "{javax.validation.constraints.ReferToGroup.message}",
   val groups: Array<KClass<*>> = [],
   val payload: Array<KClass<out Payload>> = []
 )

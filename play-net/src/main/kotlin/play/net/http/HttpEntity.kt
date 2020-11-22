@@ -39,4 +39,3 @@ sealed class HttpEntity {
     }
   }
 }
-

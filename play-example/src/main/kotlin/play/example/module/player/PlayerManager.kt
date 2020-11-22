@@ -22,9 +22,10 @@ import play.example.module.player.event.PlayerEventDispatcher
 import play.example.module.player.exception.PlayerNotExistsException
 import play.mvc.Request
 import play.mvc.Response
+import play.util.collection.ConcurrentIntObjectMap
+import play.util.collection.ConcurrentLongObjectMap
+import play.util.collection.ConcurrentObjectLongMap
 import play.util.scheduling.Scheduler
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentMap
 import kotlin.time.seconds
 
 class PlayerManager(
@@ -37,11 +38,15 @@ class PlayerManager(
 ) : AbstractTypedActor<PlayerManager.Command>(context) {
 
   init {
+    val idToName = ConcurrentLongObjectMap<String>()
+    val serverToNameToId = ConcurrentIntObjectMap<ConcurrentObjectLongMap<String>>()
     queryService.foreach(PlayerInfo::class.java, listOf("name")) { result ->
       val id = result.getLong("id")
       val name = result.getString("name")
-      add(id, name)
+      add(id, name, idToName, serverToNameToId)
     }.await(5.seconds)
+    PlayerManager.idToName = idToName
+    PlayerManager.serverToNameToId = serverToNameToId
 
     cronScheduler.schedule(Cron.EveryDay, NewDayStart)
   }
@@ -102,21 +107,31 @@ class PlayerManager(
     return context.spawn(
       resumeSupervisor(
         PlayerActor.create(id, eventDispatcher, playerService, requestHandler)
-      ), actorName
+      ),
+      actorName
     )
   }
 
   companion object {
-    private val idToName: ConcurrentMap<Long, String> = ConcurrentHashMap(1024)
-    private val serverToNameToId: ConcurrentMap<Int, ConcurrentMap<String, Long>> = ConcurrentHashMap(1024)
+    private lateinit var idToName: ConcurrentLongObjectMap<String>
+    private lateinit var serverToNameToId: ConcurrentIntObjectMap<ConcurrentObjectLongMap<String>>
 
     private fun add(playerId: Long, playerName: String) {
+      add(playerId, playerName, idToName, serverToNameToId)
+    }
+
+    private fun add(
+      playerId: Long,
+      playerName: String,
+      idToName: ConcurrentLongObjectMap<String>,
+      serverToNameToId: ConcurrentIntObjectMap<ConcurrentObjectLongMap<String>>
+    ) {
       val prevName = idToName.putIfAbsent(playerId, playerName)
-      assert(prevName != null)
+      assert(prevName == null)
       val serverId = GameUIDGenerator.getServerId(playerId).toInt()
-      val nameToId = serverToNameToId.computeIfAbsent(serverId) { ConcurrentHashMap(1024) }
+      val nameToId = serverToNameToId.computeIfAbsent(serverId) { ConcurrentObjectLongMap(1024) }
       val prevId = nameToId.putIfAbsent(playerName, playerId)
-      assert(prevId != null)
+      assert(prevId == null)
     }
 
     private fun isPlayerNameAvailable(id: Long, name: String): Boolean {
@@ -154,7 +169,6 @@ class PlayerManager(
     fun getPlayerNameOrEmpty(playerId: Long): String {
       return idToName[playerId] ?: ""
     }
-
   }
 
   interface Command

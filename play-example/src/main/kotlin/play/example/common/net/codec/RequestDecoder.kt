@@ -1,9 +1,9 @@
 package play.example.common.net.codec
 
 import io.netty.buffer.ByteBuf
-import io.netty.channel.ChannelHandler
+import io.netty.buffer.ByteBufInputStream
 import io.netty.channel.ChannelHandlerContext
-import io.netty.channel.ChannelInboundHandlerAdapter
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder
 import play.example.common.net.message.WireRequestBody
 import play.example.request.RequestProto
 import play.mvc.Header
@@ -14,31 +14,15 @@ import play.mvc.Request
  * ByteBuf -> Request
  * @author LiangZengle
  */
-@ChannelHandler.Sharable
-class RequestDecoder(private val maxFrameLength: Int) : ChannelInboundHandlerAdapter() {
-  override fun channelRead(ctx: ChannelHandlerContext, msg: Any?) {
+class RequestDecoder(maxFrameLength: Int) : LengthFieldBasedFrameDecoder(maxFrameLength, 0, 4, 0, 4) {
+  override fun decode(ctx: ChannelHandlerContext?, `in`: ByteBuf?): Any {
+    val msg = super.decode(ctx, `in`)
     if (msg !is ByteBuf) {
-      super.channelRead(ctx, msg)
-      return
-    }
-    if (msg.readableBytes() < 4) {
-      return
-    }
-    val len = msg.readInt()
-    if (len < 0) {
-      return
-    }
-    if (len > maxFrameLength) {
-      msg.skipBytes(msg.readableBytes())
-      // TODO throw exception
-      return
+      return msg
     }
     val msgId = msg.readInt()
     val sequenceNo = msg.readInt()
-    val payload = ByteArray(len - 8)
-    msg.readBytes(payload)
-    val body = RequestProto.ADAPTER.decode(payload)
-    val request = Request(Header(MsgId(msgId), sequenceNo), WireRequestBody(body))
-    ctx.fireChannelRead(request)
+    val body = RequestProto.ADAPTER.decode(ByteBufInputStream(msg, msg.readableBytes(), true))
+    return Request(Header(MsgId(msgId), sequenceNo), WireRequestBody(body))
   }
 }

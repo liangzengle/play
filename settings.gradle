@@ -36,7 +36,8 @@ include 'play-scala-compact'
 include 'play-example'
 include 'play-config'
 include 'play-db-mongo'
-include 'play-db-mysql'
+include 'play-db-jdbc'
+include 'play-db-mysql-nosql'
 
 include 'play-modular-code'
 project(':play-modular-code').projectDir = file('./play-plugins/play-modular-code')

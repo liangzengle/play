@@ -35,10 +35,9 @@ class NetGuiceModule : GuiceModule() {
     val host = conf.getString("host")
     val port = conf.getInt("port")
     val encoder = ResponseEncoder
-    val decoder = RequestDecoder(1024)
     serverBootstrap.channelInitializer {
       it.pipeline().addLast(encoder)
-      it.pipeline().addLast(decoder)
+      it.pipeline().addLast(RequestDecoder(1024))
 
       it.config().isAutoRead = false
       sessionManager.tell(SessionManager.CreateSession(it))

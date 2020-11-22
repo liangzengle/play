@@ -2,8 +2,8 @@ package play.example.module.server
 
 import org.eclipse.collections.api.set.primitive.ImmutableIntSet
 import org.eclipse.collections.impl.factory.primitive.IntSets
+import play.ApplicationEventBus
 import play.db.QueryService
-import play.example.common.event.ApplicationEventBus
 import play.example.module.platform.domain.Platform
 import play.example.module.player.event.PlayerEventBus
 import play.example.module.server.config.ServerConfig
@@ -64,6 +64,4 @@ class ServerService @Inject constructor(
     applicationEventBus.postBlocking(ServerOpenEvent)
     playerEventBus.postToOnlinePlayers { ServerOpenPlayerEvent(it) }
   }
-
-
 }

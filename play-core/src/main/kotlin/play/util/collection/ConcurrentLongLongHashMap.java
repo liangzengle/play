@@ -635,7 +635,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
      *
      * @throws NullPointerException if any of the arguments are null
      */
-    public boolean replace(long key, long oldValue, long newValue) {
+    public boolean replace(long key, Long oldValue, long newValue) {
         return replaceNode(key, newValue, oldValue) != null;
     }
 

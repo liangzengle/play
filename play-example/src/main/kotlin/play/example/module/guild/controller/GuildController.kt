@@ -1,6 +1,7 @@
 package play.example.module.guild.controller
 
 import play.example.common.net.message.async
+import play.example.common.net.message.of
 import play.example.module.ModuleId
 import play.example.module.guild.GuildService
 import play.mvc.AbstractController
@@ -19,9 +20,13 @@ public class GuildController @Inject constructor(
   private val guildService: GuildService
 ) : AbstractController(ModuleId.Guild) {
 
-
   @Cmd(1)
   fun create(playerId: Long, guildName: String) = RequestResult.async {
     guildService.createGuild(playerId, guildName)
+  }
+
+  @Cmd(2)
+  fun join(playerId: Long, guildId: Long) = RequestResult.of {
+    guildService.joinGuild(playerId, guildId)
   }
 }

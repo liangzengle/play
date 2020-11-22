@@ -29,7 +29,5 @@ sealed class HttpResult {
     override fun toString(): String {
       return future.toString()
     }
-
   }
 }
-

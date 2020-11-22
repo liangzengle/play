@@ -7,7 +7,7 @@ import javax.validation.constraints.Min
 abstract class Reward(type: RewardType, num: Int) {
   init {
     require(num >= 0) { "num($num) >= 0" }
-    require(javaClass == type.rewardClass) { "奖励类型不匹配${javaClass.simpleName}${type}" }
+    require(javaClass == type.rewardClass) { "奖励类型不匹配${javaClass.simpleName}$type" }
   }
 
   abstract val type: RewardType

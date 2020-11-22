@@ -32,8 +32,10 @@ import play.example.module.player.PlayerManager
 import play.example.module.server.ServerService
 import play.mvc.Request
 import play.mvc.Response
+import play.util.collection.ConcurrentObjectLongMap
 import play.util.control.Result2
 import play.util.control.err
+import play.util.control.getCause
 import play.util.control.ok
 import play.util.max
 import play.util.primitive.high16
@@ -41,8 +43,6 @@ import play.util.primitive.low16
 import play.util.primitive.toInt
 import play.util.unsafeCast
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentMap
 import kotlin.time.seconds
 
 class AccountManager(
@@ -58,7 +58,7 @@ class AccountManager(
   private val idGenerators: MutableIntObjectMap<GameUIDGenerator>
 
   init {
-    accountIdToId = queryService.fold(Account::class.java, ConcurrentHashMap<AccountId, Long>()) { map, account ->
+    accountIdToId = queryService.fold(Account::class.java, ConcurrentObjectLongMap<AccountId>()) { map, account ->
       val platformService = platformServiceProvider.getService(account.platformId.toInt())
       val accountId = platformService.toAccountId(account)
       map[accountId] = account.id
@@ -129,12 +129,11 @@ class AccountManager(
     val accountActor = if (maybeAccountActor.isPresent) {
       maybeAccountActor.unsafeCast()
     } else {
-      context.spawn(AccountActor.create(accountId, playerManager), accountActorName)
+      context.spawn(AccountActor.create(accountId, accountCache, playerManager), accountActorName)
     }
     accountActor send AccountActor.Login(request, params, session)
   }
 
-  @Suppress("FoldInitializerAndIfToElvis")
   private fun getOrCreateAccount(params: LoginProto): Result2<Long> {
     val platformName = params.platform
     val platform = Platform.getOrNull(platformName)
@@ -151,9 +150,10 @@ class AccountManager(
     if (!serverService.isServerIdValid(serverId.toInt())) {
       return err(AccountErrorCode.InvalidServerId)
     }
-    val platformService = platformServiceProvider.getServiceOrNull(platform)
-    if (platformService == null) {
-      return err(AccountErrorCode.Failure)
+    val platformService = platformServiceProvider.getServiceOrNull(platform) ?: return err(AccountErrorCode.Failure)
+    val paramValidateStatus = platformService.validateLoginParams(params)
+    if (paramValidateStatus != 0) {
+      return err(paramValidateStatus)
     }
     val accountId = platformService.getAccountId(params)
     val id = accountIdToId[accountId]
@@ -165,14 +165,21 @@ class AccountManager(
       return err(AccountErrorCode.IdExhausted)
     }
     val account = platformService.newAccount(maybeId.asLong, platform.getId(), serverId, params.account, params)
-    accountCache.create(account)
     accountIdToId[accountId] = account.id
-    // TODO log account create
+    createAsync(account)
     return ok(maybeId.asLong)
   }
 
+  private fun createAsync(account: Account) {
+    future { accountCache.create(account) }
+      .onComplete {
+        if (it.isSuccess) Log.info { "账号创建成功: $account" }
+        else Log.error(it.getCause()) { "创建账号失败: $account" }
+      }
+  }
+
   companion object {
-    private lateinit var accountIdToId: ConcurrentMap<AccountId, Long>
+    private lateinit var accountIdToId: ConcurrentObjectLongMap<AccountId>
 
     fun create(
       platformServiceProvider: PlatformServiceProvider,
@@ -197,5 +204,5 @@ class AccountManager(
   }
 
   interface Command
-  private data class RequestCommand(val request: Request, val session: ActorRef<SessionActor.Command>) : Command
+  private class RequestCommand(val request: Request, val session: ActorRef<SessionActor.Command>) : Command
 }

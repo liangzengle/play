@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 package play
 
 import com.typesafe.config.Config
@@ -21,6 +23,8 @@ interface Application {
   fun stop() = lifecycle.stop()
 
   fun pid(): Long = ProcessHandle.current().pid()
+
+  val eventBus: ApplicationEventBus
 
   companion object {
 
@@ -61,5 +65,6 @@ class DefaultApplication @Inject constructor(
   override val conf: Configuration,
   override val mode: Mode,
   override val injector: Injector,
-  override val lifecycle: ApplicationLifecycle
+  override val lifecycle: ApplicationLifecycle,
+  override val eventBus: ApplicationEventBus
 ) : Application

@@ -1,26 +1,26 @@
-//package play.db.cache
+// package play.db.cache
 //
-//import com.google.common.collect.Sets
-//import play.Log
-//import play.db.*
-//import play.inject.Injector
-//import play.util.concurrent.Future
-//import play.util.control.getCause
-//import play.util.getOrNull
-//import play.util.json.Json
-//import play.util.scheduling.Scheduler
-//import play.util.time.currentMillis
-//import play.util.toOptional
-//import java.util.*
-//import java.util.concurrent.ConcurrentHashMap
-//import java.util.concurrent.ConcurrentMap
-//import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
-//import javax.annotation.Nullable
-//import kotlin.NoSuchElementException
-//import kotlin.time.minutes
-//import kotlin.time.seconds
+// import com.google.common.collect.Sets
+// import play.Log
+// import play.db.*
+// import play.inject.Injector
+// import play.util.concurrent.Future
+// import play.util.control.getCause
+// import play.util.getOrNull
+// import play.util.json.Json
+// import play.util.scheduling.Scheduler
+// import play.util.time.currentMillis
+// import play.util.toOptional
+// import java.util.*
+// import java.util.concurrent.ConcurrentHashMap
+// import java.util.concurrent.ConcurrentMap
+// import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
+// import javax.annotation.Nullable
+// import kotlin.NoSuchElementException
+// import kotlin.time.minutes
+// import kotlin.time.seconds
 //
-//internal class EntityCacheImpl2<ID : Any, E : Entity<ID>>(
+// internal class EntityCacheImpl2<ID : Any, E : Entity<ID>>(
 //  entityClass: Class<E>,
 //  private val persistService: PersistService,
 //  private val queryService: QueryService,
@@ -29,7 +29,7 @@
 //  executor: DbExecutor,
 //  private val conf: DefaultEntityCacheFactory.Config,
 //  private val entityProcessor: EntityProcessor<E>
-//) : AbstractEntityCache<ID, E>(entityClass, injector) {
+// ) : AbstractEntityCache<ID, E>(entityClass, injector) {
 //
 //  private val cache: ConcurrentMap<ID, CacheObj<ID, E>> = ConcurrentHashMap(getInitialSizeOrDefault(conf.initialSize))
 //  private val pendingPersistCache: ConcurrentMap<ID, E> = ConcurrentHashMap()
@@ -351,4 +351,4 @@
 //      }
 //    }
 //  }
-//}
+// }

@@ -13,7 +13,6 @@ import javax.inject.Singleton
 
 class DbExecutor(executor: ExecutorService) : ExecutorService by executor
 
-
 @Singleton
 class DbExecutorProvider @Inject constructor(conf: Configuration, lifecycle: ApplicationLifecycle) :
   Provider<DbExecutor> {
@@ -58,5 +57,4 @@ class DbExecutorProvider @Inject constructor(conf: Configuration, lifecycle: App
   }
 
   override fun get(): DbExecutor = dbExecutor
-
 }

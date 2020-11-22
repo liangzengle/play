@@ -90,7 +90,8 @@ class HttpClient @Inject constructor(private val client: HttpClient) {
         URLEncoder.encode(k, Charsets.UTF_8) +
           "=" +
           URLEncoder.encode(v.toString(), Charsets.UTF_8)
-      })
+      }
+    )
   }
 
   fun sendAsync(request: HttpRequest): Future<HttpResponse<String>> {
@@ -105,29 +106,31 @@ class HttpClient @Inject constructor(private val client: HttpClient) {
   private fun logRequest(requestNo: Long, request: HttpRequest) {
     request.bodyPublisher().filter { it.contentLength() > 0 }.ifPresentOrElse(
       {
-        it.subscribe(object : Flow.Subscriber<ByteBuffer?> {
-          override fun onComplete() {
-          }
+        it.subscribe(
+          object : Flow.Subscriber<ByteBuffer?> {
+            override fun onComplete() {
+            }
 
-          override fun onSubscribe(subscription: Flow.Subscription) {
-            subscription.request(1)
-          }
+            override fun onSubscribe(subscription: Flow.Subscription) {
+              subscription.request(1)
+            }
 
-          override fun onNext(item: ByteBuffer?) {
-            item?.asReadOnlyBuffer()?.let { buffer ->
-              val byteArray = ByteArray(buffer.remaining())
-              buffer.get(byteArray)
-              logger.info { "[$requestNo] sending http request: $request ${String(byteArray, Charsets.UTF_8)}" }
+            override fun onNext(item: ByteBuffer?) {
+              item?.asReadOnlyBuffer()?.let { buffer ->
+                val byteArray = ByteArray(buffer.remaining())
+                buffer.get(byteArray)
+                logger.info { "[$requestNo] sending http request: $request ${String(byteArray, Charsets.UTF_8)}" }
+              }
+            }
+
+            override fun onError(throwable: Throwable) {
+              logger.error(throwable) { "error occurred when subscribing http request: $request" }
+              if (throwable.isFatal()) {
+                throw throwable
+              }
             }
           }
-
-          override fun onError(throwable: Throwable) {
-            logger.error(throwable) { "error occurred when subscribing http request: $request" }
-            if (throwable.isFatal()) {
-              throw throwable
-            }
-          }
-        })
+        )
       },
       { logger.info { "[$requestNo] sending http request: $request" } }
     )

@@ -116,6 +116,5 @@ class PlayerActor(
 
   class Login(val request: Request, val loginParams: LoginProto, val session: ActorRef<SessionActor.Command>) : Command
 
-
   class RequestCommand(val request: Request) : Command
 }

@@ -145,6 +145,9 @@ object rd {
 
   fun <T> randomDistinct(iterable: Iterable<T>, expectedCount: Int, weigher: (T) -> Int): MutableList<T> {
     val elems = iterable.toMutableSet()
+    if (elems.size < expectedCount) {
+      return elems.toMutableList()
+    }
     val result = ArrayList<T>(expectedCount)
     while (result.size < expectedCount) {
       val totalProb = elems.sumBy(weigher)
@@ -167,4 +170,3 @@ object rd {
     return result
   }
 }
-

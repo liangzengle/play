@@ -9,7 +9,14 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.javadsl.*
 import org.slf4j.Logger
+import play.scala.toResult
+import play.scala.toScala
+import play.util.concurrent.PlayFuture
+import scala.PartialFunction
 import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
 
 abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavior<T>(context) {
   protected inline val self: ActorRef<T> get() = context.self
@@ -65,6 +72,55 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
     return onSignal(T1::class.java) {
       f()
     }
+  }
+
+  protected inline fun <T> future(noinline f: () -> T): Future<T> = Future.apply(f, ec)
+
+  protected inline fun <T, S> Future<T>.map(noinline f: (T) -> S): Future<S> = map(f, ec)
+
+  protected inline fun <T, S> Future<T>.flatMap(noinline f: (T) -> Future<S>): Future<S> = flatMap(f, ec)
+
+  protected inline fun <T> Future<T>.foreach(noinline f: (T) -> Unit) = foreach(f, ec)
+
+  protected inline fun <T> Future<T>.filter(noinline f: (T) -> Boolean): Future<T> = filter(f, ec)
+
+  protected inline fun <U, T : U> Future<T>.recover(noinline f: (Throwable) -> U): Future<U> =
+    recover(PartialFunction.fromFunction(f), ec)
+
+  protected inline fun <U, T : U> Future<T>.recoverWith(noinline f: (Throwable) -> Future<U>): Future<U> =
+    recoverWith(PartialFunction.fromFunction(f), ec)
+
+  protected inline fun <U, T> Future<T>.andThen(noinline f: (Result<T>) -> U): Future<T> =
+    andThen(
+      PartialFunction.fromFunction {
+        when (it) {
+          is Success<T> -> f(Result.success(it.value()))
+          is Failure<T> -> f(Result.failure(it.exception()))
+          else -> error("won't happen")
+        }
+      },
+      ec
+    )
+
+  protected inline fun <T> Future<T>.onComplete(noinline f: (Result<T>) -> Unit) {
+    onComplete(
+      {
+        when (it) {
+          is Success<T> -> f(Result.success(it.value()))
+          is Failure<T> -> f(Result.failure(it.exception()))
+          else -> error("won't happen")
+        }
+      },
+      ec
+    )
+  }
+
+  protected inline fun <U> Future<U>.pipToSelf(noinline resultMapper: (Result<U>) -> T) {
+    context.asScala().pipeToSelf(this) { t -> resultMapper(t.toResult()) }
+  }
+
+  protected inline fun <U> PlayFuture<U>.pipToSelf(noinline resultMapper: (Result<U>) -> T) {
+    context.asScala().pipeToSelf(this.toScala()) { t -> resultMapper(t.toResult()) }
   }
 }
 

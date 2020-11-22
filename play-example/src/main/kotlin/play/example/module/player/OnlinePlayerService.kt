@@ -1,28 +1,39 @@
 package play.example.module.player
 
 import org.jctools.maps.NonBlockingHashMapLong
-import play.example.common.collection.toJava
 import play.example.common.net.SessionActor
 import play.example.module.account.message.LoginProto
+import play.util.collection.keysIterator
+import play.util.scheduling.Scheduler
 import play.util.unsafeCast
+import java.time.Duration
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 import java.util.function.LongConsumer
 import java.util.stream.LongStream
 import java.util.stream.StreamSupport
+import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class OnlinePlayerService {
+class OnlinePlayerService @Inject constructor(private val scheduler: Scheduler) {
 
-  private val onlinePlayers = ConcurrentHashMap<Long, OnlinePlayer>() // TODO 离线保留5分钟
+  private val onlinePlayers = NonBlockingHashMapLong<LoginProto>()
+
+  private val offlinePlayers = NonBlockingHashMapLong<LoginProto>()
 
   fun login(self: Self, loginProto: LoginProto) {
-    onlinePlayers.computeIfAbsent(self.id) { id -> OnlinePlayer(id, loginProto) }
+    onlinePlayers[self.id] = loginProto
+    offlinePlayers.remove(self.id)
   }
 
   fun logout(self: Self) {
-    onlinePlayers.remove(self.id)
+    val playerId = self.id
+    val p = onlinePlayers.remove(playerId)
+    // delay remove
+    offlinePlayers[playerId] = p
+    scheduler.schedule(Duration.ofSeconds(30)) {
+      offlinePlayers.remove(playerId, p.unsafeCast<Any>())
+    }
   }
 
   fun onlineCount() = onlinePlayers.size
@@ -39,25 +50,23 @@ class OnlinePlayerService {
     return StreamSupport.longStream(splitter, false)
   }
 
-  private fun onLinePlayerIdIterator() =
-    onlinePlayers.keys().unsafeCast<NonBlockingHashMapLong<OnlinePlayer>.IteratorLong>().toJava()
+  fun onLinePlayerIdIterator() = onlinePlayers.keysIterator()
 
   fun foreach(action: LongConsumer) {
     val it = onLinePlayerIdIterator()
     it.forEachRemaining(action)
   }
-}
 
-class OnlinePlayer(val playerId: Long, val loginParams: LoginProto) {
-  override fun equals(other: Any?): Boolean {
-    return other is OnlinePlayer && other.playerId == playerId
+  fun getLoginParams(playerId: Long): Optional<LoginProto> {
+    return Optional.ofNullable(getLoginParamsOrNull(playerId))
   }
 
-  override fun hashCode(): Int {
-    return playerId.hashCode()
-  }
-
-  override fun toString(): String {
-    return "OnlinePlayer($playerId)"
+  fun getLoginParamsOrNull(playerId: Long): LoginProto? {
+    var p = onlinePlayers[playerId]
+    if (p != null) {
+      return p
+    }
+    p = offlinePlayers[playerId]
+    return p
   }
 }

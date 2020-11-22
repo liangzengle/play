@@ -32,12 +32,12 @@ internal class ImmutableCollectionDeserializers : Deserializers.Base() {
   ): JsonDeserializer<*>? {
     val rawClass = type.rawClass
     if (SortedMap::class.java.isAssignableFrom(rawClass)) {
-      return ImmutableSortedMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null);
+      return ImmutableSortedMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null)
     }
     if (Map::class.java.isAssignableFrom(rawClass)) {
-      return ImmutableMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null);
+      return ImmutableMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null)
     }
-    return null;
+    return null
   }
 
   override fun findCollectionDeserializer(
@@ -57,7 +57,6 @@ internal class ImmutableCollectionDeserializers : Deserializers.Base() {
     if (List::class.java.isAssignableFrom(rawClass)) {
       return ImmutableListDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
     }
-    return null;
+    return null
   }
 }
-

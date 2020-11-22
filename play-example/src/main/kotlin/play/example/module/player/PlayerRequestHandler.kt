@@ -64,7 +64,7 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
 
   private fun onResult(playerId: Long, request: Request, result: RequestResult<*>?) {
     if (result == null) {
-      logger.warn { "Player(${playerId})的请求无法处理: $request" }
+      logger.warn { "Player($playerId)的请求无法处理: $request" }
       return
     }
     when (result) {
@@ -93,4 +93,6 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
   }
 }
 
-data class PlayerRequest(@JvmField val playerId: Long, @JvmField val request: Request) : FriendManager.Command
+data class PlayerRequest(@JvmField val playerId: Long, @JvmField val request: Request) : FriendManager.Command {
+  fun msgId() = request.header.msgId.toInt()
+}

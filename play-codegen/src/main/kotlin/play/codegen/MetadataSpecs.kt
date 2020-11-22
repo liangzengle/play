@@ -21,4 +21,3 @@ fun ImmutableKmType?.toTypeName(): TypeName {
   }
   return typeName.parameterizedBy(arguments.map { it.type.toTypeName() })
 }
-

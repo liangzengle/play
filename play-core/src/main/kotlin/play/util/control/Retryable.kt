@@ -36,7 +36,6 @@ class Retryable(
     task
   )
 
-
   init {
     require(intervalMillis > 0) { "`attemptInterval`" }
     require(attempts >= -1) { "`attempts`" }

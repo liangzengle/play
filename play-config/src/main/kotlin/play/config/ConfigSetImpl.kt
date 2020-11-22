@@ -12,7 +12,9 @@ import javax.annotation.Nullable
 import kotlin.Comparator
 import kotlin.NoSuchElementException
 
-internal interface SuperConfigSet<K, T, G, E> : ConfigSet<K, T>, ExtensionConfigSet<E, T>,
+internal interface SuperConfigSet<K, T, G, E> :
+  ConfigSet<K, T>,
+  ExtensionConfigSet<E, T>,
   GroupedConfigSet<G, K, T> where T : AbstractConfig, E : ConfigExtension<T>
 
 @Suppress("UNCHECKED_CAST")
@@ -40,7 +42,6 @@ internal class ConfigSetImpl<K, T, G, E>(
     }
   }
 
-
   private val hashMap: IntObjectMap<T> by lazy(LazyThreadSafetyMode.NONE) {
     val map = IntObjectHashMap<T>(list.size)
     list.forEach { map.put(it.id, it) }
@@ -59,7 +60,6 @@ internal class ConfigSetImpl<K, T, G, E>(
       b.build()
     }
   }
-
 
   private val groupMap: Map<G, ConfigSet<K, T>> by lazy(LazyThreadSafetyMode.NONE) {
     assert(isGrouped)

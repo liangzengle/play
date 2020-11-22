@@ -3,6 +3,7 @@ package play.db.cache
 import play.db.Entity
 import play.util.concurrent.Future
 import java.util.*
+import java.util.stream.Stream
 import kotlin.NoSuchElementException
 
 interface EntityCache<ID : Any, E : Entity<ID>> {
@@ -44,6 +45,11 @@ interface EntityCache<ID : Any, E : Entity<ID>> {
    * 获取缓存中所有的实体
    */
   fun asSequence(): Sequence<E>
+
+  /**
+   * 获取缓存中所有的实体
+   */
+  fun asStream(): Stream<E>
 
   /**
    * 创建实体，如果实体已经存在则抛异常: [EntityExistsException]

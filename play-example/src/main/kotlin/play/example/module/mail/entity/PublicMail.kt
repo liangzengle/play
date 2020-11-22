@@ -4,9 +4,9 @@ import play.db.EntityInt
 import play.db.Merge
 import play.db.cache.CacheSpec
 import play.db.cache.NeverExpireEvaluator
-import play.example.common.collection.NonBlockingHashSetLong
 import play.example.module.mail.domain.ReceiverQualification
 import play.example.module.reward.config.RawReward
+import play.util.collection.NonBlockingHashSetLong
 
 /**
  * 公共邮件

@@ -1,7 +1,7 @@
 package play.example.module.friend.entity
 
-import org.eclipse.collections.api.block.predicate.primitive.LongPredicate
 import org.eclipse.collections.impl.factory.primitive.LongSets
+import play.example.module.player.PlayerManager
 import play.example.module.player.entity.PlayerEntity
 
 /**
@@ -18,8 +18,7 @@ class PlayerFriendEntity(id: Long) : PlayerEntity(id) {
 
   fun removeFriend(targetId: Long) = friends.remove(targetId)
 
-  fun cleanUp(removalFilter: LongPredicate) {
-    friends.removeIf(removalFilter)
+  override fun postLoad() {
+    friends.removeIf { !PlayerManager.isPlayerExists(it) }
   }
 }
-

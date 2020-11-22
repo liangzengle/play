@@ -1,7 +1,7 @@
 package play.example.common.gm
 
 @Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.FUNCTION)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
 annotation class GmCommand(val desc: String, val name: String = "")
 
 @Retention(AnnotationRetention.RUNTIME)

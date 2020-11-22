@@ -134,8 +134,8 @@ data class IntTuple4(val _1: Int, val _2: Int, val _3: Int, val _4: Int) : IntTu
   }
 }
 
-data class IntTuple5(val _1: Int, val _2: Int, val _3: Int, val _4: Int, val _5: Int) : IntTuple,
-  Comparable<IntTuple5> {
+data class IntTuple5(val _1: Int, val _2: Int, val _3: Int, val _4: Int, val _5: Int) :
+  IntTuple, Comparable<IntTuple5> {
   override fun compareTo(other: IntTuple5): Int {
     return ComparisonChain.start()
       .compare(_1, other._1)

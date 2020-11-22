@@ -48,7 +48,7 @@ object AddPrivateFunctions : EntityCacheComponent() {
         if (entities.isNotEmpty()) {
           persistService.batchInsertOrUpdate(entities)
         }
-      """.trimIndent()
+          """.trimIndent()
         )
         .endControlFlow()
         .build()
@@ -65,7 +65,9 @@ object AddPrivateFunctions : EntityCacheComponent() {
           """
             val accessTimeThreshold = currentMillis() - conf.expireAfterAccess.toMillis()
             cache.values.asSequence()
-              .filter { it.hasEntity() && it.accessTime <= accessTimeThreshold && expireEvaluator.canExpire(it.getEntitySilently()!!) }
+              .filter { 
+                it.accessTime <= accessTimeThreshold && (!it.hasEntity() || expireEvaluator.canExpire(it.getEntitySilently()!!)) 
+              }
               .forEach {
                 cache.computeIfPresent(it.getId()) { _, v ->
                   if (v.accessTime > accessTimeThreshold) {
@@ -79,7 +81,7 @@ object AddPrivateFunctions : EntityCacheComponent() {
                   }
                 }
               }
-              """.trimIndent()
+          """.trimIndent()
         )
         .endControlFlow()
         .build()
@@ -119,7 +121,7 @@ object AddPrivateFunctions : EntityCacheComponent() {
                   logger.error(result.%M()) { "持久化失败: ${'$'}{entityClass.simpleName}(${'$'}id)" }
                 }
               }
-        """.trimIndent(),
+          """.trimIndent(),
           getId(),
           """
             缓存中对象与持久化队列中的对象不一致:

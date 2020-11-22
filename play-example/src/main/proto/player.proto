@@ -6,3 +6,9 @@ message PlayerProto {
     int64 id = 1;
     string name = 2;
 }
+
+// gm指令执行结果
+message GmResultProto {
+    bool success = 1;
+    string message = 2;
+}

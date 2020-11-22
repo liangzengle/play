@@ -12,5 +12,4 @@ class PlayerMail(id: Long) : PlayerEntity(id) {
   }
 
   fun count() = mails.size
-
 }

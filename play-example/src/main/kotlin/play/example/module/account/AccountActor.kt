@@ -6,10 +6,13 @@ import akka.actor.typed.Terminated
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import play.Log
 import play.akka.*
 import play.example.common.net.SessionActor
 import play.example.common.net.message.WireMessage
 import play.example.common.net.write
+import play.example.module.StatusCode
+import play.example.module.account.entity.AccountEntityCache
 import play.example.module.account.message.LoginProto
 import play.example.module.common.message.BoolValue
 import play.example.module.player.PlayerManager
@@ -23,6 +26,7 @@ import play.mvc.Response
 class AccountActor(
   context: ActorContext<Command>,
   val id: Long,
+  private val accountEntityCache: AccountEntityCache,
   private val playerManager: ActorRef<PlayerManager.Command>
 ) : AbstractTypedActor<AccountActor.Command>(context) {
 
@@ -48,7 +52,14 @@ class AccountActor(
     val request = cmd.request
     return when (request.header.msgId.toInt()) {
       PlayerControllerInvoker.create -> {
-        playerManager send PlayerManager.CreatePlayerRequest(id, request, loginParams, session)
+        val account = accountEntityCache.getOrNull(id)
+        // Account may create failed, make sure it has been created.
+        if (account == null) {
+          Log.error("Player($id)创建失: Account未创建")
+          session.write(Response(request.header, StatusCode.Failure))
+        } else {
+          playerManager send PlayerManager.CreatePlayerRequest(id, request, loginParams, session)
+        }
         sameBehavior()
       }
       PlayerControllerInvoker.login -> {
@@ -76,9 +87,13 @@ class AccountActor(
   private fun onSessionClosed(terminated: Terminated): Behavior<Command> = stoppedBehavior()
 
   companion object {
-    fun create(id: Long, playerManager: ActorRef<PlayerManager.Command>): Behavior<Command> {
+    fun create(
+      id: Long,
+      accountEntityCache: AccountEntityCache,
+      playerManager: ActorRef<PlayerManager.Command>
+    ): Behavior<Command> {
       return Behaviors.setup { ctx ->
-        AccountActor(ctx, id, playerManager)
+        AccountActor(ctx, id, accountEntityCache, playerManager)
       }
     }
   }

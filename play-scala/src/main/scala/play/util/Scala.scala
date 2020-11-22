@@ -2,6 +2,7 @@ package play.util
 
 import kotlin.Pair
 
+import scala.concurrent.Promise
 import scala.jdk.CollectionConverters._
 
 /**
@@ -38,4 +39,6 @@ object Scala {
   def mapOf[K, V](key: K, value: V): Map[K, V] = Map(key -> value)
 
   def mapOf[K, V](pair: Pair[K, V]): Map[K, V] = Map(pair.component1() -> pair.component2())
+
+  def promise[T](): Promise[T] = Promise()
 }

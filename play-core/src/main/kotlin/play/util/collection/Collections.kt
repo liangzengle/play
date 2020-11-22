@@ -1,4 +1,4 @@
-@file:Suppress("NOTHING_TO_INLINE")
+@file:Suppress("NOTHING_TO_INLINE", "unused")
 
 package play.util.collection
 
@@ -66,19 +66,19 @@ fun <E> Iterator<E>.groupByCounting(): Map<E, Int> {
   return map
 }
 
-inline fun <T : Any> T.asIterator(): Iterator<T> = SingletonIterator(this)
+fun <T> iteratorOf(elem: T): Iterator<T> = SingletonIterator(elem)
 
-inline fun <T : Any> T.asList(): List<T> = Collections.singletonList(this)
+fun <T> listOf(elem: T): List<T> = Collections.singletonList(elem)
 
-inline fun <T : Any> T.asSet(): Set<T> = Collections.singleton(this)
-
-inline fun <K, V> Pair<K, V>.asMap(): Map<K, V> = Collections.singletonMap(first, second)
+fun <T> setOf(elem: T): Set<T> = Collections.singleton(elem)
 
 fun <K, V> mapOf(key: K, value: V): Map<K, V> = Collections.singletonMap(key, value)
 
-inline fun <T : Any> T.asSequence(): Sequence<T> = Sequence { this@asSequence.asIterator() }
+fun <K, V> sequenceOf(key: K, value: V): Map<K, V> = Collections.singletonMap(key, value)
 
-inline fun <T : Any> T.asStream(): Stream<T> = Stream.of(this)
+fun <T> sequenceOf(elem: T): Sequence<T> = Sequence { iteratorOf(elem) }
+
+fun <T> streamOf(elem: T): Stream<T> = Stream.of(elem)
 
 inline fun <T, K> Array<T>.toImmutableMap(keyMapper: (T) -> K): Map<K, T> {
   val builder = ImmutableMap.builder<K, T>()

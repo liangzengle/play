@@ -146,8 +146,8 @@ class ConfigManager @Inject constructor(
     var success = true
     val eventType = event.javaClass
     for ((listenedEventType, listener) in listeners) {
-      if (listenedEventType.isAssignableFrom(eventType)
-        && (listener !is GenericConfigRefreshListener<*, *> || event.contains(listener.configClass))
+      if (listenedEventType.isAssignableFrom(eventType) &&
+        (listener !is GenericConfigRefreshListener<*, *> || event.contains(listener.configClass))
       ) {
         try {
           listener.onEvent(event)
@@ -333,4 +333,3 @@ class ConfigManager @Inject constructor(
     }
   }
 }
-

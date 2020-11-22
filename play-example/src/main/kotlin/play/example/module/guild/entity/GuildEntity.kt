@@ -4,6 +4,8 @@ import play.db.EntityLong
 import play.db.Merge
 import play.db.cache.CacheSpec
 import play.db.cache.NeverExpireEvaluator
+import play.example.module.guild.message.GuildProto
+import play.util.collection.ConcurrentHashSet
 
 /**
  * 工会实体类
@@ -16,4 +18,10 @@ class GuildEntity(id: Long, val name: String) : EntityLong(id) {
   var leaderId = 0L
 
   var leaderName = ""
+
+  val members: MutableSet<Long> = ConcurrentHashSet()
+
+  fun toProto(): GuildProto {
+    return GuildProto(id, name, leaderId, leaderName, members.size)
+  }
 }

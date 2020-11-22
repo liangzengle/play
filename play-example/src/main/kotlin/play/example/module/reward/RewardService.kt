@@ -1,6 +1,5 @@
 package play.example.module.reward
 
-import com.google.common.collect.Collections2
 import play.example.module.StatusCode
 import play.example.module.mail.MailService
 import play.example.module.player.Self
@@ -8,7 +7,6 @@ import play.example.module.reward.exception.RewardProcessorNotFoundException
 import play.example.module.reward.model.*
 import play.example.module.reward.processor.RewardProcessor
 import play.getLogger
-import play.util.collection.asList
 import play.util.control.Result2
 import play.util.control.err
 import play.util.control.map
@@ -22,29 +20,6 @@ class RewardService @Inject constructor(private val mailService: MailService) {
 
   private val processors = mapOf<RewardType, RewardProcessor<Reward>>()
 
-  fun merge(rewards: Collection<Reward>): List<Reward> {
-    return merge(rewards, false)
-  }
-
-  private fun merge(rewards: Collection<Reward>, isCost: Boolean): List<Reward> {
-    val size = rewards.size;
-    return when (rewards.size) {
-      0 -> emptyList()
-      1 -> if (rewards is List) rewards else rewards.first().asList()
-      else -> {
-        val merged = ArrayList<Reward>(size)
-        rewards.forEach { r ->
-          if (r.num > 0) {
-            val i = merged.indexOfFirst { it.canMerge(r, isCost) }
-            if (i == -1) merged += r
-            else merged[i] = merged[i] + r.num
-          }
-        }
-        merged
-      }
-    }
-  }
-
   fun tryReward(
     self: Self,
     reward: Reward,
@@ -52,7 +27,7 @@ class RewardService @Inject constructor(private val mailService: MailService) {
     bagFullStrategy: BagFullStrategy = BagFullStrategy.Mail,
     checkFcm: Boolean = true
   ): Result2<TryRewardResultSet> {
-    return tryReward(self, reward.asList(), source, bagFullStrategy, checkFcm)
+    return tryReward(self, listOf(reward), source, bagFullStrategy, checkFcm)
   }
 
   fun tryReward(
@@ -62,7 +37,7 @@ class RewardService @Inject constructor(private val mailService: MailService) {
     bagFullStrategy: BagFullStrategy = BagFullStrategy.Mail,
     checkFcm: Boolean = true
   ): Result2<TryRewardResultSet> {
-    val rewardList = merge(rewards)
+    val rewardList = RewardHelper.mergeReward(rewards)
     var errorCode = 0
     var usedBagSize = 0
     val resultList = ArrayList<TryRewardResult>(rewardList.size)
@@ -110,11 +85,11 @@ class RewardService @Inject constructor(private val mailService: MailService) {
   }
 
   fun tryCost(self: Self, cost: Cost, source: Int): Result2<TryCostResultSet> {
-    return tryCost(self, cost.asList(), source)
+    return tryCost(self, listOf(cost), source)
   }
 
   fun tryCost(self: Self, costs: Collection<Cost>, source: Int): Result2<TryCostResultSet> {
-    val costList = merge(Collections2.transform(costs) { it?.reward }, true)
+    val costList = RewardHelper.mergeCost(costs)
     val resultList = ArrayList<TryCostResult>(costList.size)
     var errorCode = 0
     for (i in costList.indices) {

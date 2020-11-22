@@ -4,6 +4,7 @@ import play.db.EntityInt
 import play.util.concurrent.Future
 import play.util.function.IntToObjFunction
 import java.util.*
+import java.util.stream.Stream
 import kotlin.NoSuchElementException
 
 /**
@@ -11,7 +12,6 @@ import kotlin.NoSuchElementException
  * @author LiangZengle
  */
 interface EntityCacheInt<E : EntityInt> {
-
 
   @JvmDefault
   operator fun invoke(id: Int): E = getOrThrow(id)
@@ -51,6 +51,11 @@ interface EntityCacheInt<E : EntityInt> {
    * 获取缓存中所有的实体
    */
   fun asSequence(): Sequence<E>
+
+  /**
+   * 获取缓存中所有的实体
+   */
+  fun asStream(): Stream<E>
 
   /**
    * 创建实体，如果实体已经存在则抛异常: [EntityExistsException]

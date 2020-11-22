@@ -19,8 +19,10 @@ import play.akka.stoppedBehavior
 import play.getLogger
 import play.mvc.Request
 import play.mvc.Response
+import play.util.collection.LongIterable
 import java.time.Duration
 import java.util.*
+import java.util.stream.LongStream
 
 class SessionActor(
   context: ActorContext<Command>,
@@ -35,6 +37,9 @@ class SessionActor(
   private var id = 0L
 
   private var subscriber: ActorRef<Request>? = null
+
+  @Volatile
+  private var terminated = false
 
   init {
     ch.pipeline().addLast("Forwarding", ForwardingChannelHandler())
@@ -92,12 +97,18 @@ class SessionActor(
   }
 
   private fun forceClose(reason: String, cause: Throwable? = null) {
-    ch.close()
-    self.tell(Close(reason, cause))
+    if (!terminated) {
+      terminated = true
+      ch.close()
+      self.tell(Close(reason, cause))
+    }
   }
 
   private fun identify(cmd: Identify) {
-    require(this.id == 0L) { "Session already identified as $id" }
+    if (this.id != 0L) {
+      logger.error { "Session already identified as $id" }
+      return
+    }
     this.id = cmd.id
     val prev = sessions.putIfAbsent(cmd.id, writer)
     if (prev != null) {
@@ -122,7 +133,9 @@ class SessionActor(
       val receiver = subscriber
       if (receiver == null) {
         val unhandledRequest = UnhandledRequest(msg, context.self)
-        unhandledRequestReceivers.forEach { it.tell(unhandledRequest) }
+        for (index in unhandledRequestReceivers.indices) {
+          unhandledRequestReceivers[index].tell(unhandledRequest)
+        }
       } else {
         receiver.tell(msg)
       }
@@ -135,7 +148,7 @@ class SessionActor(
             forceClose("Read Idle Timeout")
           }
         }
-        else -> println("userEventTriggered: $evt")
+        else -> logger.info { "userEventTriggered: $evt" }
       }
     }
 
@@ -167,10 +180,20 @@ class SessionActor(
       }
     }
 
+    fun writeAll(ids: LongIterable, msg: Any) {
+      for (id in ids) {
+        sessions[id]?.write(msg)
+      }
+    }
+
     fun writeAll(ids: PrimitiveIterator.OfLong, msg: Any) {
       while (ids.hasNext()) {
         sessions[ids.nextLong()]?.write(msg)
       }
+    }
+
+    fun writeAll(ids: LongStream, msg: Any) {
+      writeAll(ids.iterator(), msg)
     }
 
     fun count(): Int = sessions.size

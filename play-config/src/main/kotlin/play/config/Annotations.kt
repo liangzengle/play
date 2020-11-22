@@ -80,4 +80,3 @@ annotation class Join(val table: KClass<out AbstractConfig>)
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 annotation class JoinGroup(val table: KClass<out AbstractConfig>)
-

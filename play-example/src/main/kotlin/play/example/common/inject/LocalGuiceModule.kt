@@ -16,6 +16,7 @@ import play.example.module.platform.PlatformServiceProvider
 import play.example.module.player.PlayerManager
 import play.example.module.player.PlayerRequestHandler
 import play.example.module.player.PlayerService
+import play.example.module.player.event.PlayerEventBus
 import play.example.module.player.event.PlayerEventDispatcher
 import play.example.module.player.event.PlayerEventDispatcherProvider
 import play.example.module.server.ServerService
@@ -108,8 +109,13 @@ class LocalGuiceModule : AkkaGuiceModule() {
     systemProvider: ActorSystemProvider,
     guildEntityCache: GuildEntityCache,
     requestHandler: PlayerRequestHandler,
-    playerService: PlayerService
+    playerService: PlayerService,
+    playerEventBus: PlayerEventBus
   ): ActorRef<GuildManager.Command> {
-    return spawn(systemProvider, GuildManager.create(requestHandler, guildEntityCache, playerService), "GuildManager")
+    return spawn(
+      systemProvider,
+      GuildManager.create(requestHandler, guildEntityCache, playerService, playerEventBus),
+      "GuildManager"
+    )
   }
 }

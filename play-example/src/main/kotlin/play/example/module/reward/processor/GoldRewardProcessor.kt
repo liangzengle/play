@@ -23,5 +23,4 @@ class GoldRewardProcessor : CurrencyRewardProcessor() {
   }
 
   override val rewardType: RewardType = RewardType.Gold
-
 }

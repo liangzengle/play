@@ -35,5 +35,4 @@ class PlayerArgs(private val self: Self, private val argProviders: Map<String, P
   override fun isEmpty(): Boolean {
     throw UnsupportedOperationException()
   }
-
 }

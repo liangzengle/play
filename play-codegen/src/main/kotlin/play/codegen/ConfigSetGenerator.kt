@@ -17,7 +17,6 @@ import javax.lang.model.util.ElementFilter
 import kotlin.collections.LinkedHashSet
 import kotlin.reflect.KFunction
 
-
 @AutoService(Processor::class)
 class ConfigSetGenerator : PlayAnnotationProcessor() {
 
@@ -79,12 +78,14 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
     classBuilder.addProperty(
       PropertySpec
         .builder("configSet", genericBasicConfigSet, KModifier.PRIVATE)
+        .addAnnotation(JvmStatic::class)
         .initializer("%T.get(%T::class.java) as %T", DelegatedConfigSet, elem.asType(), genericBasicConfigSet)
         .build()
     )
 
     val asBasicConfigSet = FunSpec.builder("unwrap")
       .addStatement("return configSet")
+      .addAnnotation(JvmStatic::class)
       .build()
     classBuilder.addFunction(asBasicConfigSet)
 
@@ -96,6 +97,7 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
       }
       val params = func.valueParameters.asSequence().map { it.name }.joinToString(", ")
       funBuilder.addModifiers(getModifiers(func))
+        .addAnnotation(JvmStatic::class)
         .addStatement("return configSet.%L(%L)", func.name, params)
       classBuilder.addFunction(funBuilder.build())
     }
@@ -142,6 +144,7 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
             func.name,
             params
           )
+          .addAnnotation(JvmStatic::class)
         classBuilder.addFunction(funBuilder.build())
       }
   }
@@ -191,6 +194,7 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
             func.name,
             params
           )
+          .addAnnotation(JvmStatic::class)
         classBuilder.addFunction(funBuilder.build())
       }
   }
@@ -213,6 +217,7 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
         uniqueKeyTypeName,
         elem
       )
+      .addAnnotation(JvmStatic::class)
     classBuilder.addFunction(getByKeyFromGroup.build())
   }
 
@@ -236,6 +241,7 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
           extensionType,
           elem
         )
+        .addAnnotation(JvmStatic::class)
         .build()
     )
   }
@@ -275,10 +281,11 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
             .build()
           val property =
             PropertySpec.builder(p.simpleName.toString(), p.asType().javaToKotlinType()).getter(getter)
+              .addAnnotation(JvmStatic::class)
               .build()
           classBuilder.addProperty(property)
         } else {
-          val funcBuilder = FunSpec.builder(funName).addModifiers(KModifier.PUBLIC)
+          val funcBuilder = FunSpec.builder(funName).addModifiers(KModifier.PUBLIC).addAnnotation(JvmStatic::class)
           elem.parameters.forEach { p ->
             funcBuilder.addParameter(
               ParameterSpec.builder(

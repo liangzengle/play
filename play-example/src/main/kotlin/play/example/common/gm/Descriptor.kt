@@ -7,4 +7,3 @@ data class GmCommandDescriptor(
 )
 
 data class GmCommandArgDescriptor(val name: String, val desc: String, val defaultValue: String?)
-

@@ -11,7 +11,6 @@ class ConcurrentHashSet<E> : MutableSet<E> {
   @Transient
   private val set = ConcurrentHashMap<E, Boolean>().keySet(java.lang.Boolean.TRUE)
 
-
   override fun add(element: E): Boolean = set.add(element)
 
   override fun addAll(elements: Collection<E>): Boolean = set.addAll(elements)

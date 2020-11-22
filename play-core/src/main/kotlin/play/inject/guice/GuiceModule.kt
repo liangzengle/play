@@ -72,8 +72,13 @@ internal class BootstrapGuiceModule : GuiceModule() {
   override fun configure() {
     binder().disableCircularProxies()
     bindListener(Matchers.any(), LifecycleBeanManager(ctx.lifecycle))
+    bindListener(
+      Matchers.any(),
+      AutoRegisterProvisionListener(ApplicationEventBus)
+    )
 
     bind<Configuration>().toInstance(ctx.conf)
+    bind<ApplicationEventBus>().toInstance(ApplicationEventBus)
     bind<Application>().to<DefaultApplication>()
     bind<Mode>().toInstance(ctx.mode)
     bind<ClassScanner>().toInstance(ctx.classScanner)

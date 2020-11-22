@@ -49,10 +49,10 @@ interface ConcurrentLongLongMap : Iterable<ConcurrentLongLongMap.Entry> {
   companion object {
     @JvmStatic
     @JvmName("create")
-    operator fun invoke() = ConcurrentLongLongHashMap()
+    operator fun invoke(): ConcurrentLongLongMap = ConcurrentLongLongHashMap()
 
     @JvmStatic
     @JvmName("create")
-    operator fun invoke(initialCapacity: Int) = ConcurrentLongLongHashMap(initialCapacity)
+    operator fun invoke(initialCapacity: Int): ConcurrentLongLongMap = ConcurrentLongLongHashMap(initialCapacity)
   }
 }

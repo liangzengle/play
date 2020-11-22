@@ -11,8 +11,8 @@ open class DelegatedConfigSet<K, T, G, E> internal constructor() :
   companion object {
     private val instances = ConcurrentHashMap<Class<*>, AnyDelegatedConfigSet>()
     fun get(clazz: Class<*>) = instances.computeIfAbsent(clazz) {
-      if (it.isAnnotationPresent(SingletonConfig::class.java)
-        || it.isAnnotationPresent(Resource::class.java)
+      if (it.isAnnotationPresent(SingletonConfig::class.java) ||
+        it.isAnnotationPresent(Resource::class.java)
       ) {
         SingletonDelegatedConfigSet()
       } else {

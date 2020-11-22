@@ -9,7 +9,8 @@ interface SingletonConfigSet<T> {
   fun get(): T
 }
 
-internal class SingletonConfigSetImpl<K, T, G, E>(private val elem: T) : SingletonConfigSet<T>,
+internal class SingletonConfigSetImpl<K, T, G, E>(private val elem: T) :
+  SingletonConfigSet<T>,
   SuperConfigSet<K, T, G, E> where T : AbstractConfig, E : ConfigExtension<T> {
 
   override fun get(): T = elem

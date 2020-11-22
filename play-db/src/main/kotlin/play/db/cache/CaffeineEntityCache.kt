@@ -10,6 +10,7 @@ import play.Log
 import play.db.*
 import play.getLogger
 import play.inject.Injector
+import play.util.collection.filterNotNull
 import play.util.concurrent.CommonPool
 import play.util.control.getCause
 import play.util.getOrNull
@@ -22,6 +23,7 @@ import play.util.unsafeCast
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
+import java.util.stream.Stream
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -106,8 +108,10 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     val persistStrategy = cacheSpec?.persistStrategy ?: CacheSpec.PersistStrategy.Scheduled
     if (persistStrategy == CacheSpec.PersistStrategy.Scheduled) {
       scheduler.scheduleAtFixedRate(
-        conf.persistInterval, conf.persistInterval.dividedBy(2),
-        executor, createPersistTask()
+        conf.persistInterval,
+        conf.persistInterval.dividedBy(2),
+        executor,
+        createPersistTask()
       )
     } else {
       Log.info { "[${entityClass.simpleName}] using [$persistStrategy] persist strategy." }
@@ -188,13 +192,16 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     } ?: error("won't happen")
   }
 
-
   override fun getCached(id: ID): Optional<E> {
     return computeIfAbsent(id, null).toOptional()
   }
 
   override fun asSequence(): Sequence<E> {
-    return cache.asMap().values.asSequence().map { it.entity!! }.filterNotNull()
+    return cache.asMap().values.asSequence().map { it.entity }.filterNotNull()
+  }
+
+  override fun asStream(): Stream<E> {
+    return cache.asMap().values.stream().map { it.entity }.filterNotNull()
   }
 
   override fun create(e: E): E {
@@ -275,7 +282,9 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     override fun delete(id: ID, e: E?, cause: RemovalCause) {
       if (!cause.wasEvicted()) {
         if (delete(id)) {
-          persistService.deleteById(id, entityClass)
+          persistService.deleteById(id, entityClass).onFailure {
+            logger.error(it) { "${entityClass.simpleName}($id)删除失败" }
+          }
         }
       } else if (e != null) {
         if (evictShelter != null && !expireEvaluator.canExpire(e)) {
