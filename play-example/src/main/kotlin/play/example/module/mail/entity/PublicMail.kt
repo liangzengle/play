@@ -17,7 +17,7 @@ import play.util.collection.NonBlockingHashSetLong
  * @param qualification 接收条件
  * @param received 已接收的玩家
  * @param rewards 奖励
- * @param source 来源
+ * @param logSource 来源
  * @param startTime 生效起始时间
  * @param endTime 过期时间
  * @param createTime 创建时间
@@ -31,7 +31,7 @@ class PublicMail(
   val qualification: ReceiverQualification,
   val received: NonBlockingHashSetLong,
   val rewards: List<RawReward>,
-  val source: Int,
+  val logSource: Int,
   val startTime: Long,
   val endTime: Long,
   val createTime: Long

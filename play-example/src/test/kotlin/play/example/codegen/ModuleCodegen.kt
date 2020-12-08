@@ -1,13 +1,6 @@
 package play.example.codegen
 
 import com.squareup.kotlinpoet.*
-import play.SystemProperties
-import play.example.module.LogSource
-import play.example.module.ModularCode
-import play.example.module.ModuleId
-import play.example.module.StatusCode
-import play.mvc.AbstractController
-import play.mvc.Controller
 import java.io.StringWriter
 import java.nio.file.Files
 import java.nio.file.Path
@@ -15,6 +8,15 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import javax.inject.Inject
 import javax.inject.Singleton
+import play.SystemProps
+import play.config.AbstractConfig
+import play.example.module.LogSource
+import play.example.module.ModularCode
+import play.example.module.ModuleId
+import play.example.module.StatusCode
+import play.example.module.player.entity.PlayerEntity
+import play.mvc.AbstractController
+import play.mvc.Controller
 
 /**
  * 生成模块的模板代码
@@ -23,14 +25,14 @@ import javax.inject.Singleton
  */
 object ModuleCodegen {
 
-  private val moduleName = "Guild"
-  private val moduleDesc = "工会"
+  private val moduleName = "Task"
+  private val moduleDesc = "任务基础"
 
   private val modulePackage = "play.example.module"
   private val moduleDir =
-    Paths.get(SystemProperties.userDir() + "/play-example/src/main/kotlin/play/example/module/${moduleName.toLowerCase()}")
+    Paths.get(SystemProps.userDir() + "/play-example/src/main/kotlin/play/example/module/${moduleName.toLowerCase()}")
   private val protoDir =
-    Paths.get(SystemProperties.userDir() + "/play-example/src/main/proto")
+    Paths.get(SystemProps.userDir() + "/play-example/src/main/proto")
 
   private val ModuleId = ModuleId::class.java.asTypeName()
 
@@ -49,9 +51,29 @@ object ModuleCodegen {
     write("$modulePackage.${moduleName.toLowerCase()}", moduleDir, createService())
     write("$modulePackage.${moduleName.toLowerCase()}.domain", domainDir, createErrorCode())
     write("$modulePackage.${moduleName.toLowerCase()}.domain", domainDir, createLogSource())
-    write("$modulePackage.${moduleName.toLowerCase()}.controller", controllerDir, createController())
+    write("$modulePackage.${moduleName.toLowerCase()}", controllerDir, createController())
+    write("$modulePackage.${moduleName.toLowerCase()}.entity", entityDir, createEntity())
+    write("$modulePackage.${moduleName.toLowerCase()}.config", configDir, createConfig())
 
     createProtoFile()
+  }
+
+  private fun createConfig(): TypeSpec {
+    val className = "${moduleName}Config"
+    return TypeSpec.classBuilder(className)
+      .addKdoc("${moduleDesc}配置")
+      .superclass(AbstractConfig::class)
+      .build()
+  }
+
+  private fun createEntity(): TypeSpec {
+    val className = "${moduleName}Entity"
+    return TypeSpec.classBuilder(className)
+      .primaryConstructor(FunSpec.constructorBuilder().addParameter("playerId", Long::class).build())
+      .addKdoc("${moduleDesc}数据")
+      .superclass(PlayerEntity::class)
+      .addSuperclassConstructorParameter("playerId")
+      .build()
   }
 
   private fun createErrorCode(): TypeSpec {
@@ -60,7 +82,7 @@ object ModuleCodegen {
       .addKdoc("${moduleDesc}错误码")
       .superclass(StatusCode::class)
       .addSuperclassConstructorParameter("%T.$moduleName", ModuleId)
-      .addAnnotation(ModularCode::class)
+//      .addAnnotation(ModularCode::class)
       .addAnnotation(
         AnnotationSpec.builder(SuppressWarnings::class).addMember("%S", "MayBeConstant").build()
       )
@@ -88,7 +110,7 @@ object ModuleCodegen {
     val className = "${moduleName}Service"
     val classBuilder = TypeSpec.classBuilder(className)
     val entityCacheClass = toClassName("$modulePackage.${moduleName.toLowerCase()}.entity.$entityCacheClassName")
-    val cachePropertyName = "${moduleName.toLowerCase()}EntityCache"
+    val cachePropertyName = "${moduleName.decapitalize()}EntityCache"
     classBuilder
       .addKdoc("${moduleDesc}模块逻辑处理")
       .addAnnotation(Singleton::class)
@@ -111,7 +133,7 @@ object ModuleCodegen {
     val className = "${moduleName}Controller"
     val classBuilder = TypeSpec.classBuilder(className)
     val serviceClass = toClassName("$modulePackage.${moduleName.toLowerCase()}.${moduleName}Service")
-    val serviceName = "${moduleName.toLowerCase()}Service"
+    val serviceName = "${moduleName.decapitalize()}Service"
     classBuilder
       .addKdoc("${moduleDesc}模块请求处理")
       .addAnnotation(Singleton::class)
@@ -154,9 +176,8 @@ object ModuleCodegen {
       val c = input[i]
       if (b.isNotEmpty() && c.isUpperCase()) {
         b.append('_')
-      } else {
-        b.append(c.toLowerCase())
       }
+      b.append(c.toLowerCase())
     }
     return b.toString()
   }

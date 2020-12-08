@@ -6,8 +6,9 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import play.akka.AbstractTypedActor
 import play.example.module.ModuleId
-import play.example.module.player.PlayerRequest
 import play.example.module.player.PlayerRequestHandler
+import play.mvc.AbstractPlayerRequest
+import play.mvc.PlayerRequest
 
 /**
  * 好友管理器
@@ -19,7 +20,9 @@ class FriendManager(
 ) : AbstractTypedActor<FriendManager.Command>(ctx) {
 
   init {
-    requestHandler.register(self.unsafeUpcast()) { moduleId, _ -> moduleId == ModuleId.Friend.toInt() }
+    requestHandler.register(
+      context.messageAdapter(PlayerRequest::class.java, ::FriendPlayerRequest)
+    ) { moduleId, _ -> moduleId == ModuleId.Friend.toInt() }
   }
 
   override fun createReceive(): Receive<Command> {
@@ -39,4 +42,6 @@ class FriendManager(
   }
 
   interface Command
+
+  class FriendPlayerRequest(req: PlayerRequest) : AbstractPlayerRequest(req.playerId, req.request), Command
 }

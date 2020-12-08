@@ -1,6 +1,7 @@
 package play.example.module.server.config
 
 import com.google.common.primitives.Bytes
+import org.eclipse.collections.api.set.primitive.ImmutableIntSet
 import play.Configuration
 import play.example.module.platform.domain.Platform
 import javax.inject.Inject
@@ -9,16 +10,30 @@ import javax.inject.Singleton
 
 class ServerConfig private constructor(val serverId: Short, val platformIds: List<Byte>) {
   companion object {
-    private var config: ServerConfig? = null
+    private lateinit var config: ServerConfig
 
-    val serverId: Short get() = get().serverId
-    val platformId: Byte get() = get().platformIds[0]
+    lateinit var serverIds: ImmutableIntSet
+      private set
 
-    fun get(): ServerConfig = checkNotNull(config)
+    val serverId: Short get() = config.serverId
+    val platformId: Byte get() = config.platformIds[0]
 
+    fun get(): ServerConfig = config
+
+    @Synchronized
     fun init(serverId: Short, platformIds: List<Byte>) {
-      check(config == null) { "ServerConfig initialized." }
+      if (this::config.isInitialized) {
+        throw IllegalStateException("config has been initialized.")
+      }
       config = ServerConfig(serverId, platformIds)
+    }
+
+    @Synchronized
+    fun initServerIds(serverIds: ImmutableIntSet) {
+      if (this::serverIds.isInitialized) {
+        throw IllegalStateException("serverIds has been initialized.")
+      }
+      this.serverIds = serverIds
     }
   }
 

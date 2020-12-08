@@ -97,7 +97,7 @@ object AddProperties : EntityCacheComponent() {
             .beginControlFlow("try")
             .addStatement("val entity: E? = f.get(5.%M).%M()", seconds, getOrNull)
             .beginControlFlow("if (entity != null)")
-            .addStatement("entityProcessor.postLoad(entity)")
+            .addStatement("entity.postLoad()")
             .endControlFlow()
             .addStatement("entity")
             .nextControlFlow("catch (e: Exception)")

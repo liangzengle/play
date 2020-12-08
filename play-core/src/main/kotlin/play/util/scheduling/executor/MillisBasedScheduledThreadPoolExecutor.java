@@ -16,7 +16,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * Copied from java.util.concurrent.ScheduledThreadPoolExecutor
  */
 @SuppressWarnings({"NullableProblems", "unused", "WeakerAccess"})
-final class MillisBasedScheduledThreadPoolExecutor
+class MillisBasedScheduledThreadPoolExecutor
         extends ThreadPoolExecutor
         implements ScheduledExecutorService {
     private static final RejectedExecutionHandler defaultHandler = new AbortPolicy();

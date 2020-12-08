@@ -15,10 +15,10 @@ object PlayerErrorCode : StatusCode(ModuleId.Player) {
   /**
    * 角色不存在
    */
-  val PlayerNotExists = 1
+  val PlayerNotExists = code(1)
 
   /**
    * 名字不可用
    */
-  val PlayerNameNotAvailable = 2
+  val PlayerNameNotAvailable = code(2)
 }

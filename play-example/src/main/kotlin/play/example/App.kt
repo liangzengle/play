@@ -1,20 +1,22 @@
 package play.example
 
 import com.typesafe.config.ConfigFactory
+import kotlin.system.exitProcess
 import play.*
 import play.example.common.ServerMode
 import play.example.module.server.event.ApplicationStartedEvent
 import play.inject.getInstanceOrNull
 import play.net.netty.TcpServer
 import play.util.collection.UnsafeAccessor
-import kotlin.system.exitProcess
+import play.util.concurrent.LoggingUncaughtExceptionHandler
 
 object App {
   init {
-    SystemProperties.set("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager")
+    Thread.setDefaultUncaughtExceptionHandler(LoggingUncaughtExceptionHandler)
+    SystemProps.set("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager")
   }
 
-  val serverMode: ServerMode = ServerMode.forName(SystemProperties.getOrDefault("SERVER_MODE", "local"))
+  val serverMode: ServerMode = ServerMode.forName(SystemProps.getOrDefault("SERVER_MODE", "local"))
 
   @JvmStatic
   fun main(args: Array<String>) {
@@ -43,16 +45,16 @@ object App {
   val mode: Mode get() = Application.current().mode
 
   private fun setWindowsProperties() {
-    SystemProperties.setIfAbsent("MODE", Mode.Dev)
-    SystemProperties.setIfAbsent("SERVER_MODE", ServerMode.Local)
-    SystemProperties.setIfAbsent("io.netty.availableProcessors", "4")
+    SystemProps.setIfAbsent("MODE", Mode.Dev)
+    SystemProps.setIfAbsent("SERVER_MODE", ServerMode.Local)
+    SystemProps.setIfAbsent("io.netty.availableProcessors", "4")
   }
 }
 
 object AppRemote {
   @JvmStatic
   fun main(args: Array<String>) {
-    SystemProperties.set("SERVER_MODE", ServerMode.Remote.toString())
+    SystemProps.set("SERVER_MODE", ServerMode.Remote.toString())
     App.main(args)
   }
 }

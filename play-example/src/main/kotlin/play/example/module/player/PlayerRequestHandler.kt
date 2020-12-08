@@ -2,18 +2,15 @@ package play.example.module.player
 
 import ControllerInvokerManager
 import akka.actor.typed.ActorRef
+import javax.inject.Inject
+import javax.inject.Singleton
 import play.example.common.net.SessionActor
 import play.example.module.StatusCode
-import play.example.module.friend.FriendManager
 import play.getLogger
-import play.mvc.Request
-import play.mvc.RequestResult
-import play.mvc.Response
+import play.mvc.*
 import play.util.control.getCause
 import play.util.exception.isFatal
 import play.util.function.IntIntPredicate
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * 玩家请求处理
@@ -44,12 +41,16 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
     return null
   }
 
-  fun handle(req: PlayerRequest) {
+  fun handle(req: AbstractPlayerRequest) {
+    handle(req.playerId, req.request)
+  }
+
+  fun handle(playerId: Long, request: Request) {
     try {
-      val result = controllerInvokerManager.invoke(req.playerId, req.request)
-      onResult(req.playerId, req.request, result)
+      val result = controllerInvokerManager.invoke(playerId, request)
+      onResult(playerId, request, result)
     } catch (e: Exception) {
-      onFailure(req.playerId, req.request, e)
+      onFailure(playerId, request, e)
     }
   }
 
@@ -62,6 +63,10 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
     }
   }
 
+  fun onResult(req: AbstractPlayerRequest, result: RequestResult<*>?) {
+    onResult(req.playerId, req.request, result)
+  }
+
   private fun onResult(playerId: Long, request: Request, result: RequestResult<*>?) {
     if (result == null) {
       logger.warn { "Player($playerId)的请求无法处理: $request" }
@@ -69,7 +74,10 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
     }
     when (result) {
       is RequestResult.Code -> write(playerId, Response(request.header, result.code))
-      is RequestResult.Ok<*> -> write(playerId, Response(request.header, 0, result.value))
+      is RequestResult.Ok<*> -> write(
+        playerId,
+        Response(request.header, 0, if (result.value is Unit) null else result.value)
+      )
       is RequestResult.Future -> {
         result.future.onComplete {
           if (it.isSuccess) onResult(playerId, request, it.getOrThrow())
@@ -83,7 +91,7 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
 
   private fun onFailure(playerId: Long, request: Request, e: Throwable) {
     logger.error(e) { "Player($playerId) ${controllerInvokerManager.formatToString(request)}" }
-    write(playerId, Response(request.header, StatusCode.Failure))
+    write(playerId, Response(request.header, StatusCode.Failure.getErrorCode()))
     if (e.isFatal()) throw e
   }
 
@@ -91,8 +99,4 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
   private inline fun write(playerId: Long, response: Response) {
     SessionActor.write(playerId, response)
   }
-}
-
-data class PlayerRequest(@JvmField val playerId: Long, @JvmField val request: Request) : FriendManager.Command {
-  fun msgId() = request.header.msgId.toInt()
 }

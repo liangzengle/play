@@ -1,6 +1,10 @@
-[
-  {
-    "id": 1,
-    "defaultMailId": 1
-  }
-]
+[ {
+  "id" : 1,
+  "levelMax" : 100,
+  "teamSize" : 5,
+  "obj" : {
+    "key" : 1
+  },
+  "array" : [ 1, 2, 3 ],
+  "array2" : [ 1, 2, 3 ]
+} ]

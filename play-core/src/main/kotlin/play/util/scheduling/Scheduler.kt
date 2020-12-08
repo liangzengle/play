@@ -1,11 +1,5 @@
 package play.util.scheduling
 
-import play.getLogger
-import play.util.concurrent.CommonPool
-import play.util.getOrNull
-import play.util.scheduling.executor.ScheduledExecutor
-import play.util.time.currentDateTime
-import play.util.time.currentMillis
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
@@ -14,6 +8,12 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import javax.inject.Provider
 import javax.inject.Singleton
+import play.getLogger
+import play.util.concurrent.CommonPool
+import play.util.getOrNull
+import play.util.scheduling.executor.ScheduledExecutor
+import play.util.time.currentDateTime
+import play.util.time.currentMillis
 
 /**
  * Created by LiangZengle on 2020/2/20.
@@ -22,7 +22,7 @@ import javax.inject.Singleton
 class Scheduler {
   private val logger = getLogger()
 
-  private val executor = ScheduledExecutor.get()
+  private val executor = ScheduledExecutor
 
   private val workerPool = CommonPool
 

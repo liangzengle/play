@@ -1,5 +1,7 @@
 package play.example.module.reward
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import play.example.module.StatusCode
 import play.example.module.mail.MailService
 import play.example.module.player.Self
@@ -11,8 +13,6 @@ import play.util.control.Result2
 import play.util.control.err
 import play.util.control.map
 import play.util.control.ok
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class RewardService @Inject constructor(private val mailService: MailService) {
@@ -23,17 +23,17 @@ class RewardService @Inject constructor(private val mailService: MailService) {
   fun tryReward(
     self: Self,
     reward: Reward,
-    source: Int,
+    logSource: Int,
     bagFullStrategy: BagFullStrategy = BagFullStrategy.Mail,
     checkFcm: Boolean = true
   ): Result2<TryRewardResultSet> {
-    return tryReward(self, listOf(reward), source, bagFullStrategy, checkFcm)
+    return tryReward(self, listOf(reward), logSource, bagFullStrategy, checkFcm)
   }
 
   fun tryReward(
     self: Self,
     rewards: Collection<Reward>,
-    source: Int,
+    logSource: Int,
     bagFullStrategy: BagFullStrategy = BagFullStrategy.Mail,
     checkFcm: Boolean = true
   ): Result2<TryRewardResultSet> {
@@ -48,11 +48,11 @@ class RewardService @Inject constructor(private val mailService: MailService) {
       }
       val processor = processors[reward.type]
       if (processor == null) {
-        errorCode = StatusCode.Failure
+        errorCode = StatusCode.Failure.getErrorCode()
         logger.error(RewardProcessorNotFoundException(reward.type)) { "奖励预判异常: $reward" }
         continue
       }
-      val tryResult = processor.tryReward(self, reward, source, usedBagSize, bagFullStrategy, checkFcm)
+      val tryResult = processor.tryReward(self, reward, logSource, usedBagSize, bagFullStrategy, checkFcm)
       if (tryResult.hasValue()) {
         val result = tryResult.get()
         usedBagSize += result.usedBagSize
@@ -64,31 +64,51 @@ class RewardService @Inject constructor(private val mailService: MailService) {
         break
       }
     }
-    return if (errorCode == 0) ok(TryRewardResultSet(resultList, bagFullStrategy, source)) else err(errorCode)
+    return if (errorCode == 0) ok(TryRewardResultSet(resultList, bagFullStrategy, logSource)) else err(errorCode)
   }
 
   @Suppress("MapGetWithNotNullAssertionOperator")
-  fun execReward(self: Self, tryResultSet: TryRewardResultSet): List<RewardResult> {
+  fun execReward(self: Self, tryResultSet: TryRewardResultSet): RewardResultSet {
     if (tryResultSet.results.isEmpty()) {
-      return emptyList()
+      return RewardResultSet(emptyList())
     }
-    val source = tryResultSet.source
-    val results = tryResultSet.results.map { processors[it.reward.type]!!.execReward(self, it, source) }
+    val logSource = tryResultSet.logSource
+    val results = tryResultSet.results.map { processors[it.reward.type]!!.execReward(self, it, logSource) }
     if (tryResultSet.bagFullStrategy == BagFullStrategy.Mail) {
       val mailRewards = results.mapNotNull { it.mailReward }
       if (mailRewards.isNotEmpty()) {
-        mailService.sendMail(self, 1, mailRewards, source)
+        mailService.sendMail(self, 1, mailRewards, logSource)
       }
     }
-    log(self, results, source)
-    return results
+    log(self, results, logSource)
+    return RewardResultSet(results)
   }
 
-  fun tryCost(self: Self, cost: Cost, source: Int): Result2<TryCostResultSet> {
-    return tryCost(self, listOf(cost), source)
+  fun tryAndExecReward(
+    self: Self,
+    reward: Reward,
+    logSource: Int,
+    bagFullStrategy: BagFullStrategy = BagFullStrategy.Mail,
+    checkFcm: Boolean = true
+  ): Result2<RewardResultSet> {
+    return tryReward(self, reward, logSource, bagFullStrategy, checkFcm).map { execReward(self, it) }
   }
 
-  fun tryCost(self: Self, costs: Collection<Cost>, source: Int): Result2<TryCostResultSet> {
+  fun tryAndExecReward(
+    self: Self,
+    rewards: Collection<Reward>,
+    logSource: Int,
+    bagFullStrategy: BagFullStrategy = BagFullStrategy.Mail,
+    checkFcm: Boolean = true
+  ): Result2<RewardResultSet> {
+    return tryReward(self, rewards, logSource, bagFullStrategy, checkFcm).map { execReward(self, it) }
+  }
+
+  fun tryCost(self: Self, cost: Cost, logSource: Int): Result2<TryCostResultSet> {
+    return tryCost(self, listOf(cost), logSource)
+  }
+
+  fun tryCost(self: Self, costs: Collection<Cost>, logSource: Int): Result2<TryCostResultSet> {
     val costList = RewardHelper.mergeCost(costs)
     val resultList = ArrayList<TryCostResult>(costList.size)
     var errorCode = 0
@@ -99,11 +119,11 @@ class RewardService @Inject constructor(private val mailService: MailService) {
       }
       val processor = processors[cost.type]
       if (processor == null) {
-        errorCode = StatusCode.Failure
+        errorCode = StatusCode.Failure.getErrorCode()
         logger.error(RewardProcessorNotFoundException(cost.type)) { "消耗预判失败: $cost" }
         break
       }
-      val tryResult = processor.tryCost(self, cost, source)
+      val tryResult = processor.tryCost(self, cost, logSource)
       if (tryResult.hasValue()) {
         tryResult.get().appendTo(resultList)
       } else {
@@ -111,25 +131,25 @@ class RewardService @Inject constructor(private val mailService: MailService) {
         break
       }
     }
-    return if (errorCode == 0) ok(TryCostResultSet(resultList, source)) else err(errorCode)
+    return if (errorCode == 0) ok(TryCostResultSet(resultList, logSource)) else err(errorCode)
   }
 
   fun execCost(self: Self, tryResultSet: TryCostResultSet): CostResultSet {
-    val source = tryResultSet.source
+    val logSource = tryResultSet.logSource
     val results = tryResultSet.results.map {
       val processor = processors[it.cost.type] ?: error("should not happen.")
-      processor.execCost(self, it, source)
+      processor.execCost(self, it, logSource)
     }
-    log(self, results, source)
+    log(self, results, logSource)
     return CostResultSet(results)
   }
 
-  fun tryAndExecCost(self: Self, costs: Collection<Cost>, source: Int): Result2<CostResultSet> {
+  fun tryAndExecCost(self: Self, costs: Collection<Cost>, logSource: Int): Result2<CostResultSet> {
     if (costs.isEmpty()) return ok(CostResultSet(emptyList()))
-    return tryCost(self, costs, source).map { execCost(self, it) }
+    return tryCost(self, costs, logSource).map { execCost(self, it) }
   }
 
-  private fun log(self: Self, results: List<RewardOrCostResult>, source: Int) {
+  private fun log(self: Self, results: List<RewardOrCostResult>, logSource: Int) {
     // TODO
   }
 }

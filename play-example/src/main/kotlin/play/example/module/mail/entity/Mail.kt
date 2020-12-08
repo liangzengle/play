@@ -8,7 +8,7 @@ class Mail(
   val title: String,
   val content: String,
   val rewards: List<Reward>,
-  val source: Int,
+  val logSource: Int,
   var status: Int,
   val createTime: Long
 ) {
@@ -35,6 +35,6 @@ data class MailBuilder(
   val title: String,
   val content: String,
   val rewards: List<Reward>,
-  val source: Int,
+  val logSource: Int,
   val createTime: Long = currentMillis()
 )

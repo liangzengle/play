@@ -41,7 +41,6 @@ val Scheduler = ClassName.bestGuess("play.util.scheduling.Scheduler")
 val DbExecutor = ClassName.bestGuess("play.db.DbExecutor")
 
 val EntityCacheConf = ClassName.bestGuess("play.db.cache.AbstractEntityCacheFactory.Config")
-val EntityProcessor_E = ClassName.bestGuess("play.db.EntityProcessor").parameterizedBy(E)
 
 val EntityCacheHelper = ClassName.bestGuess("play.db.cache.EntityCacheHelper")
 

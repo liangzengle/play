@@ -5,6 +5,10 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import java.util.*
+import kotlin.time.seconds
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.protobuf.ProtoBuf
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap
 import org.eclipse.collections.impl.factory.primitive.IntLongMaps
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
@@ -16,16 +20,13 @@ import play.example.common.id.GameUIDGenerator
 import play.example.common.net.SessionActor
 import play.example.common.net.SessionManager
 import play.example.common.net.UnhandledRequest
-import play.example.common.net.message.WireMessage
-import play.example.common.net.message.WireRequestBody
 import play.example.common.net.write
 import play.example.module.account.controller.AccountControllerInvoker
 import play.example.module.account.domain.AccountErrorCode
 import play.example.module.account.domain.AccountId
 import play.example.module.account.entity.Account
 import play.example.module.account.entity.AccountEntityCache
-import play.example.module.account.message.LoginProto
-import play.example.module.account.message.PongProto
+import play.example.module.account.message.LoginParams
 import play.example.module.platform.PlatformServiceProvider
 import play.example.module.platform.domain.Platform
 import play.example.module.player.PlayerManager
@@ -42,8 +43,6 @@ import play.util.primitive.high16
 import play.util.primitive.low16
 import play.util.primitive.toInt
 import play.util.unsafeCast
-import java.util.*
-import kotlin.time.seconds
 
 class AccountManager(
   context: ActorContext<Command>,
@@ -107,7 +106,7 @@ class AccountManager(
       AccountControllerInvoker.login -> login(request, session)
       AccountControllerInvoker.ping -> {
         println("ping")
-        session write Response(request.header, 0, WireMessage(PongProto("hello")))
+        session write Response(request.header, 0, "hello")
       }
       else -> Log.warn { "unhandled request: $request" }
     }
@@ -115,8 +114,7 @@ class AccountManager(
 
   private fun login(request: Request, session: ActorRef<SessionActor.Command>) {
     val requestBody = request.body
-    requestBody as WireRequestBody
-    val params = LoginProto.ADAPTER.decode(requestBody.proto.byteList)
+    val params = ProtoBuf.decodeFromByteArray<LoginParams>(requestBody.bytes)
     val result = getOrCreateAccount(params)
     if (result.isErr()) {
       session write Response(request.header, result.getErrorCode())
@@ -134,23 +132,23 @@ class AccountManager(
     accountActor send AccountActor.Login(request, params, session)
   }
 
-  private fun getOrCreateAccount(params: LoginProto): Result2<Long> {
+  private fun getOrCreateAccount(params: LoginParams): Result2<Long> {
     val platformName = params.platform
     val platform = Platform.getOrNull(platformName)
     val serverId = params.serverId.toShort()
     if (serverId.toInt() != params.serverId) {
-      return err(AccountErrorCode.ParamErr)
+      return AccountErrorCode.ParamErr
     }
     if (platform == null) {
-      return err(AccountErrorCode.NoSuchPlatform)
+      return AccountErrorCode.NoSuchPlatform
     }
     if (!serverService.isPlatformValid(platform)) {
-      return err(AccountErrorCode.InvalidPlatform)
+      return AccountErrorCode.InvalidPlatform
     }
     if (!serverService.isServerIdValid(serverId.toInt())) {
-      return err(AccountErrorCode.InvalidServerId)
+      return AccountErrorCode.InvalidServerId
     }
-    val platformService = platformServiceProvider.getServiceOrNull(platform) ?: return err(AccountErrorCode.Failure)
+    val platformService = platformServiceProvider.getServiceOrNull(platform) ?: return AccountErrorCode.Failure
     val paramValidateStatus = platformService.validateLoginParams(params)
     if (paramValidateStatus != 0) {
       return err(paramValidateStatus)
@@ -162,7 +160,7 @@ class AccountManager(
     }
     val maybeId = nextId(platform.getId(), serverId)
     if (maybeId.isEmpty) {
-      return err(AccountErrorCode.IdExhausted)
+      return AccountErrorCode.IdExhausted
     }
     val account = platformService.newAccount(maybeId.asLong, platform.getId(), serverId, params.account, params)
     accountIdToId[accountId] = account.id

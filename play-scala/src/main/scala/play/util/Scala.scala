@@ -2,6 +2,7 @@ package play.util
 
 import kotlin.Pair
 
+import scala.collection.immutable.ArraySeq
 import scala.concurrent.Promise
 import scala.jdk.CollectionConverters._
 
@@ -26,7 +27,7 @@ object Scala {
 
   def seqOf[T](elem: T): Seq[T] = Seq(elem)
 
-  def seqOf[T <: AnyRef](elems: Array[T]): Seq[T] = Seq(elems: _*)
+  def seqOf[T <: AnyRef](elems: Array[T]): Seq[T] = ArraySeq.unsafeWrapArray(elems)
 
   def seqOf[T](elems: java.lang.Iterable[T]): Seq[T] = elems.asScala.toSeq
 

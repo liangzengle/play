@@ -11,7 +11,7 @@ gradlePlugin {
     plugins {
         simplePlugin {
             id = "play.modular-code"
-            implementationClass = "play.plugin.modularcode.PlayModularCodeGradlePlugin"
+            implementationClass = "play.plugin.modularcode.ModularCodeGradlePlugin"
         }
     }
 }
@@ -19,6 +19,8 @@ gradlePlugin {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-gradle-plugin-api:${kotlin_version}"
     implementation "org.jetbrains.kotlin:kotlin-compiler-embeddable:${kotlin_version}"
+//    implementation "org.jetbrains.kotlin:kotlin-compiler:${kotlin_version}"
+    implementation "org.jetbrains.kotlin:kotlin-reflect:${kotlin_version}"
     implementation auto_service
     kapt auto_service
 }

@@ -49,6 +49,7 @@ interface Application {
           ConfigFactory.defaultApplication().withFallback(setting).withFallback(referenceConf).resolve()
         val conf = (applicationConf + referenceConf).getConfig("app").toConfiguration()
         val mode = Mode.forName(conf.getString("mode"))
+        ModeDependent.setMode(mode)
         val packagesToScan = conf.getStringList("reflection.packages-to-scan")
         val classScanner = ClassScanner(packagesToScan)
         val lifecycle = DefaultApplicationLifecycle()

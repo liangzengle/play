@@ -1,7 +1,5 @@
 package play.example.module.item
 
-import play.example.common.gm.GmCommand
-import play.example.common.gm.GmCommandArg
 import play.example.common.gm.GmCommandModule
 import play.example.module.player.Self
 import javax.inject.Singleton
@@ -14,7 +12,7 @@ import javax.inject.Singleton
 class ItemGM : GmCommandModule() {
   override val name: String get() = "Item"
 
-  @GmCommand("add")
-  private fun addItem(self: Self, @GmCommandArg("物品id") itemId: Int, @GmCommandArg("数量") num: Int) {
+  @Cmd(desc = "添加物品")
+  private fun addItem(self: Self, @Arg("物品id") itemId: Int, @Arg("数量", "1") num: Int) {
   }
 }

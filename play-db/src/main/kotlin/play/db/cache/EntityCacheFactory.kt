@@ -13,7 +13,7 @@ import javax.inject.Singleton
 
 interface EntityCacheFactory {
 
-  fun <ID : Any, E : Entity<ID>> create(entityClass: Class<E>, entityProcessor: EntityProcessor<E>): EntityCache<ID, E>
+  fun <ID : Any, E : Entity<ID>> create(entityClass: Class<E>): EntityCache<ID, E>
 }
 
 abstract class AbstractEntityCacheFactory(conf: Configuration) : EntityCacheFactory {
@@ -43,10 +43,7 @@ class DefaultEntityCacheFactory @Inject constructor(
   @Named("cache") conf: Configuration
 ) : AbstractEntityCacheFactory(conf) {
 
-  override fun <ID : Any, E : Entity<ID>> create(
-    entityClass: Class<E>,
-    entityProcessor: EntityProcessor<E>
-  ): EntityCache<ID, E> {
+  override fun <ID : Any, E : Entity<ID>> create(entityClass: Class<E>): EntityCache<ID, E> {
     return when {
       isAssignableFrom<EntityLong>(entityClass) -> {
         EntityCacheLongImpl(
@@ -56,8 +53,7 @@ class DefaultEntityCacheFactory @Inject constructor(
           injector,
           scheduler,
           executor,
-          config,
-          entityProcessor.unsafeCast()
+          config
         ).unsafeCast()
       }
       isAssignableFrom<EntityInt>(entityClass) -> {
@@ -68,8 +64,7 @@ class DefaultEntityCacheFactory @Inject constructor(
           injector,
           scheduler,
           executor,
-          config,
-          entityProcessor.unsafeCast()
+          config
         ).unsafeCast()
       }
       else -> {
@@ -80,8 +75,7 @@ class DefaultEntityCacheFactory @Inject constructor(
           injector,
           scheduler,
           executor,
-          config,
-          entityProcessor
+          config
         )
       }
     }

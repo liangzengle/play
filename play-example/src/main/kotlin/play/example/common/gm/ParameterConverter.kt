@@ -15,12 +15,19 @@ sealed class ParameterConverter<out T : Any> {
   companion object {
     operator fun invoke(parameterType: Class<*>): ParameterConverter<*> {
       return when (parameterType) {
+        Boolean::class.java -> OfBoolean
         Int::class.java -> OfInt
         Long::class.java -> OfLong
         String::class.java -> OfString
         Optional::class.java -> OfOption
         else -> OfJson
       }
+    }
+  }
+
+  private object OfBoolean : ParameterConverter<Boolean>() {
+    override fun convert(parameter: Parameter, arg: String): Boolean {
+      return arg == "1" || arg == "true"
     }
   }
 

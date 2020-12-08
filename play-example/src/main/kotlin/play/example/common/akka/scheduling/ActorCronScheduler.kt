@@ -11,6 +11,10 @@ import java.util.concurrent.ScheduledFuture
 class ActorCronScheduler<T> constructor(private val scheduler: Scheduler, private val context: ActorContext<T>) {
   private val schedules = HashMap<String, ScheduledFuture<*>>(4)
 
+  init {
+    check(context.classicActorContext().parent().path().name() == "user") { "使用ActorCronScheduler的应该是顶层Actor" }
+  }
+
   fun schedule(cron: String, triggerEvent: T) {
     val future = scheduler.scheduleCron(cron) {
       context.self.tell(triggerEvent)
@@ -20,5 +24,10 @@ class ActorCronScheduler<T> constructor(private val scheduler: Scheduler, privat
 
   fun cancel(cron: String) {
     schedules.remove(cron)?.cancel(false)
+  }
+
+  fun cancelAll() {
+    schedules.values.forEach { it.cancel(false) }
+    schedules.clear()
   }
 }

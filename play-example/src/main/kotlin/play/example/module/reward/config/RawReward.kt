@@ -34,20 +34,20 @@ object NonRawReward : RawReward(RewardType.None, "0") {
   override fun toReward(args: PlayerArgs): NonReward = NonReward
 }
 
-data class RawCurrencyReward(override val type: RewardType, override val num: String) : RawReward(type, num) {
+data class CurrencyRawReward(override val type: RewardType, override val num: String) : RawReward(type, num) {
   override fun toReward(args: PlayerArgs): CurrencyReward = CurrencyReward(type, getCount(args))
 }
 
-abstract class RawItemLikeReward(type: RewardType, num: String) : RawReward(type, num) {
+abstract class ItemLikeRawReward(type: RewardType, num: String) : RawReward(type, num) {
   abstract val cfgId: Int
 }
 
-data class RawItemReward(
+data class ItemRawReward(
   @field:Min(1)
   @ReferTo(ItemConfig::class)
   override val cfgId: Int,
   override val num: String
-) : RawItemLikeReward(RewardType.Item, num) {
+) : ItemLikeRawReward(RewardType.Item, num) {
 
   override val type: RewardType = RewardType.Item
 

@@ -273,6 +273,22 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
       }?.value?.value as? T ?: defaultValue
   }
 
+  @Suppress("UNCHECKED_CAST")
+  protected fun <T> getAnnotationValue(
+    element: Element,
+    annotationClass: ClassName,
+    propertyName: String
+  ): T? {
+    return element
+      .annotationMirrors
+      .first { it.annotationType.asTypeName() == annotationClass }
+      .elementValues
+      .entries
+      .firstOrNull {
+        it.key.simpleName.toString() == propertyName
+      }?.value?.value as? T
+  }
+
   protected fun TypeElement.listMethods(): MutableList<ExecutableElement> {
     return ElementFilter.methodsIn(enclosedElements)
   }

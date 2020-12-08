@@ -14,7 +14,7 @@ class GmCommandService @Inject constructor(private val injector: Injector) {
   private val invokers: Map<String, Map<String, GmCommandInvoker>> by lazy {
     injector.getInstancesOfType(GmCommandModule::class.java).asSequence().map { module ->
       module.name to module.javaClass.declaredMethods.asSequence()
-        .filter { it.isAnnotationPresent(GmCommand::class.java) }
+        .filter { it.isAnnotationPresent(GmCommandModule.Cmd::class.java) }
         .map { method ->
           getCommandName(method) to GmCommandInvoker(method, module)
         }.toImmutableMap()
@@ -24,14 +24,14 @@ class GmCommandService @Inject constructor(private val injector: Injector) {
   private val descriptors: Map<String, List<GmCommandDescriptor>> by lazy {
     injector.getInstancesOfType(GmCommandModule::class.java).map { module ->
       module.name to module.javaClass.declaredMethods.asSequence()
-        .filter { it.isAnnotationPresent(GmCommand::class.java) }
+        .filter { it.isAnnotationPresent(GmCommandModule.Cmd::class.java) }
         .map(::toDescriptor)
         .toList()
     }.toMap()
   }
 
   private fun getCommandName(method: Method): String {
-    var name = method.getAnnotation(GmCommand::class.java)?.name
+    var name = method.getAnnotation(GmCommandModule.Cmd::class.java)?.name
     if (name.isNullOrEmpty()) {
       name = method.name
     }
@@ -40,12 +40,12 @@ class GmCommandService @Inject constructor(private val injector: Injector) {
 
   private fun toDescriptor(method: Method): GmCommandDescriptor {
     val args = method.parameters.asSequence().drop(1).map(::toDescriptor).toList()
-    val desc = method.getAnnotation(GmCommand::class.java)?.desc ?: "未知"
+    val desc = method.getAnnotation(GmCommandModule.Cmd::class.java)?.desc ?: "未知"
     return GmCommandDescriptor(getCommandName(method), desc, args)
   }
 
   private fun toDescriptor(parameter: Parameter): GmCommandArgDescriptor {
-    val arg = parameter.getAnnotation(GmCommandArg::class.java)
+    val arg = parameter.getAnnotation(GmCommandModule.Arg::class.java)
     val name = parameter.name
     val desc = arg?.desc ?: "未知"
     val defaultValue = arg?.defaultValue ?: ""

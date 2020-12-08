@@ -1,11 +1,12 @@
 package play.util.control
 
-import play.getLogger
-import play.util.concurrent.CommonPool
-import play.util.scheduling.executor.ScheduledExecutor
+import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLongFieldUpdater
 import kotlin.time.Duration
+import play.getLogger
+import play.util.concurrent.CommonPool
+import play.util.scheduling.executor.ScheduledExecutor
 
 /**
  * 失败重试
@@ -19,20 +20,35 @@ class Retryable(
   val name: String,
   private val attempts: Int,
   private val intervalMillis: Int,
+  private val executor: Executor,
   private val task: () -> Boolean
 ) : Runnable {
 
-  constructor(name: String, attempts: Int, interval: Duration, task: () -> Boolean) : this(
+  constructor(
+    name: String,
+    attempts: Int,
+    interval: Duration,
+    executor: Executor = CommonPool,
+    task: () -> Boolean
+  ) : this(
     name,
     attempts,
     interval.toLongMilliseconds().toInt(),
+    executor,
     task
   )
 
-  constructor(name: String, attempts: Int, interval: java.time.Duration, task: () -> Boolean) : this(
+  constructor(
+    name: String,
+    attempts: Int,
+    interval: java.time.Duration,
+    executor: Executor = CommonPool,
+    task: () -> Boolean
+  ) : this(
     name,
     attempts,
     interval.toMillis().toInt(),
+    executor,
     task
   )
 
@@ -89,7 +105,7 @@ class Retryable(
   }
 
   private fun schedule(delayMillis: Int) {
-    ScheduledExecutor.get().schedule({ CommonPool.submit(this) }, delayMillis.toLong(), TimeUnit.MILLISECONDS)
+    ScheduledExecutor.schedule({ executor.execute(this) }, delayMillis.toLong(), TimeUnit.MILLISECONDS)
   }
 
   override fun toString(): String {
@@ -105,7 +121,8 @@ class Retryable(
     fun forever(
       name: String,
       intervalMillis: Int,
+      executor: Executor = CommonPool,
       task: () -> Boolean
-    ): Retryable = Retryable(name, -1, intervalMillis, task)
+    ): Retryable = Retryable(name, -1, intervalMillis, executor, task)
   }
 }

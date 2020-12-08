@@ -11,6 +11,7 @@ import play.example.module.player.Self
 import play.example.module.player.event.*
 import play.example.module.reward.RawRewardConverter
 import play.example.module.reward.model.Reward
+import play.example.module.server.ServerService
 import play.inject.Injector
 import play.inject.guice.PostConstruct
 import play.util.collection.toImmutableMap
@@ -25,7 +26,8 @@ class MailService @Inject constructor(
   private val playerMailCache: PlayerMailEntityCache,
   private val eventBus: PlayerEventBus,
   private val injector: Injector,
-  private val rawRewardConvert: RawRewardConverter
+  private val rawRewardConvert: RawRewardConverter,
+  private val serverService: ServerService
 ) : PostConstruct, PlayerEventListener {
   private val mailCountMax = 100
 
@@ -56,14 +58,14 @@ class MailService @Inject constructor(
 
   private fun checkMailBox(self: Self) {
     publicMailCache.asSequence()
-      .filterNot {
-        it.isReceived(self.id) &&
+      .filter {
+        !it.isReceived(self.id) &&
           receiverQualifiers[it.qualification.javaClass]?.isQualified(self, it.qualification) ?: false
       }
       .forEach { mail ->
         sendMail(
           self,
-          MailBuilder(mail.title, mail.content, rawRewardConvert.toReward(self, mail.rewards), mail.source)
+          MailBuilder(mail.title, mail.content, rawRewardConvert.toReward(self, mail.rewards), mail.logSource)
         )
       }
   }
@@ -85,7 +87,7 @@ class MailService @Inject constructor(
 
   fun sendMail(self: Self, b: MailBuilder) {
     val entity = playerMailCache.getOrCreate(self.id)
-    val mail = Mail(0, b.title, b.content, b.rewards, b.source, 0, b.createTime)
+    val mail = Mail(0, b.title, b.content, b.rewards, b.logSource, 0, b.createTime)
     entity.addMail(mail)
     // TODO
   }

@@ -2,6 +2,8 @@ package play.example.module
 
 /**
  * 日志源
- * @author LiangZengle
+ *
+ * @property moduleId 模块id
+ * @constructor
  */
 abstract class LogSource(val moduleId: Short)

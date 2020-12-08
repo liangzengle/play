@@ -1,11 +1,5 @@
 package play.example.module.player
 
-import org.jctools.maps.NonBlockingHashMapLong
-import play.example.common.net.SessionActor
-import play.example.module.account.message.LoginProto
-import play.util.collection.keysIterator
-import play.util.scheduling.Scheduler
-import play.util.unsafeCast
 import java.time.Duration
 import java.util.*
 import java.util.function.LongConsumer
@@ -13,15 +7,21 @@ import java.util.stream.LongStream
 import java.util.stream.StreamSupport
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.jctools.maps.NonBlockingHashMapLong
+import play.example.common.net.SessionActor
+import play.example.module.account.message.LoginParams
+import play.util.collection.keysIterator
+import play.util.scheduling.Scheduler
+import play.util.unsafeCast
 
 @Singleton
 class OnlinePlayerService @Inject constructor(private val scheduler: Scheduler) {
 
-  private val onlinePlayers = NonBlockingHashMapLong<LoginProto>()
+  private val onlinePlayers = NonBlockingHashMapLong<LoginParams>()
 
-  private val offlinePlayers = NonBlockingHashMapLong<LoginProto>()
+  private val offlinePlayers = NonBlockingHashMapLong<LoginParams>()
 
-  fun login(self: Self, loginProto: LoginProto) {
+  fun login(self: Self, loginProto: LoginParams) {
     onlinePlayers[self.id] = loginProto
     offlinePlayers.remove(self.id)
   }
@@ -57,11 +57,11 @@ class OnlinePlayerService @Inject constructor(private val scheduler: Scheduler) 
     it.forEachRemaining(action)
   }
 
-  fun getLoginParams(playerId: Long): Optional<LoginProto> {
+  fun getLoginParams(playerId: Long): Optional<LoginParams> {
     return Optional.ofNullable(getLoginParamsOrNull(playerId))
   }
 
-  fun getLoginParamsOrNull(playerId: Long): LoginProto? {
+  fun getLoginParamsOrNull(playerId: Long): LoginParams? {
     var p = onlinePlayers[playerId]
     if (p != null) {
       return p

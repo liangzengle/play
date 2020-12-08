@@ -27,7 +27,7 @@ public final class sys {
     }
 
     private static boolean isOS(String osName) {
-        return SystemProperties.osName().startsWith(osName);
+        return SystemProps.osName().startsWith(osName);
     }
 
     public String fileSeparator() {

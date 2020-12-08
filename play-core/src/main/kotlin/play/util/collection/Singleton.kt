@@ -1,8 +1,5 @@
 package play.util.collection
 
-import java.util.*
-import kotlin.NoSuchElementException
-
 class SingletonIterator<T>(private val value: T) : Iterator<T> {
   private var exhausted = false
 
@@ -20,5 +17,3 @@ class SingletonIterator<T>(private val value: T) : Iterator<T> {
 class SingletonIterable<T>(private val value: T) : Iterable<T> {
   override fun iterator(): Iterator<T> = SingletonIterator(value)
 }
-
-inline fun <T> T.asSingletonList(): List<T> = Collections.singletonList(this)

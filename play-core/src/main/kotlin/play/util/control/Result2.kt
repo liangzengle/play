@@ -1,8 +1,8 @@
 package play.util.control
 
-import play.util.unsafeCast
 import java.io.Serializable
 import java.util.*
+import play.util.unsafeCast
 
 @Suppress("UNCHECKED_CAST")
 inline class Result2<out T>(private val value: Any?) {
@@ -25,14 +25,15 @@ inline class Result2<out T>(private val value: Any?) {
 
   fun getErrorCode(): Int = (value as? Err)?.code ?: 0
 
+  fun asErr(): Err = value as Err
+
+  fun <T> asErrResult(): Result2<T> = Result2(asErr())
+
   override fun toString(): String {
     return if (isErr()) "Err(${getErrorCode()})" else "Ok($value)"
   }
 
   class Err(@JvmField val code: Int) : Serializable {
-    init {
-      require(code != 0) { "code != 0" }
-    }
 
     override fun equals(other: Any?): Boolean {
       return other is Err && code == other.code
@@ -48,7 +49,7 @@ inline class Result2<out T>(private val value: Any?) {
   }
 }
 
-fun <T> ok(): Result2<T> = Result2<Nothing>(null)
+fun <T> ok(): Result2<T> = Result2<Nothing>(Unit)
 
 fun <T> ok(value: T): Result2<T> = Result2(value)
 

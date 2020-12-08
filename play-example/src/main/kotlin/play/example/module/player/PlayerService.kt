@@ -1,21 +1,21 @@
 package play.example.module.player
 
 import com.google.common.eventbus.Subscribe
+import javax.inject.Inject
+import javax.inject.Singleton
 import play.ApplicationEventListener
 import play.Log
-import play.example.module.account.message.LoginProto
+import play.example.module.account.message.LoginParams
 import play.example.module.player.entity.Player
 import play.example.module.player.entity.PlayerEntityCache
 import play.example.module.player.event.*
-import play.example.module.player.message.PlayerProto
+import play.example.module.player.message.PlayerInfo
 import play.example.module.server.event.ApplicationStartedEvent
 import play.example.module.server.event.ServerOpenEvent
 import play.util.time.currentMillis
 import play.util.time.isCurrentMonth
 import play.util.time.isCurrentWeek
 import play.util.time.isToday
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class PlayerService @Inject constructor(
@@ -51,11 +51,11 @@ class PlayerService @Inject constructor(
     onNewDayStart(self)
   }
 
-  fun login(self: Self, loginParams: LoginProto): PlayerProto {
+  fun login(self: Self, loginParams: LoginParams): PlayerInfo {
     val player = playerCache.getOrThrow(self.id)
     onlinePlayerService.login(self, loginParams)
     println("player login: $self")
-    return PlayerProto(self.id, player.name)
+    return PlayerInfo(self.id, player.name)
   }
 
   fun createPlayer(id: Long, name: String) {
@@ -77,5 +77,27 @@ class PlayerService @Inject constructor(
   @Subscribe
   private fun onApplicationStarted(event: ApplicationStartedEvent) {
     Log.info { "testing receive event: $event" }
+  }
+
+  /**
+   * 判断玩家的创角时间是否在指定的范围内
+   *
+   * @param self 玩家自己
+   * @param from 起始时间（毫秒），0表示不限
+   * @param to 截止时间（毫秒），0表示不限
+   */
+  fun isCreateTimeInRange(self: Self, from: Long, to: Long): Boolean {
+    val entity = playerCache.getOrThrow(self.id)
+    if (from > 0 && entity.ctime < from) {
+      return false
+    }
+    if (to > 0 && entity.ctime > to) {
+      return false
+    }
+    return true
+  }
+
+  fun getPlayerLevel(id: Long): Int {
+    TODO("Not yet implemented")
   }
 }

@@ -22,6 +22,7 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.util.concurrent.DefaultThreadFactory
 import java.net.InetSocketAddress
 import java.net.SocketAddress
+import play.util.collection.EmptyByteArray
 
 /**
  * Created by LiangZengle on 2020/2/20.
@@ -40,9 +41,11 @@ fun SocketAddress.getHostAndPort(): HostAndPort {
   else HostAndPort.fromParts("127.0.0.1", -1)
 }
 
-fun ByteBuf.toArray(): ByteArray {
-  val byteArray = ByteArray(this.readableBytes())
-  this.readBytes(byteArray)
+fun ByteBuf.copyToArray(): ByteArray {
+  val len = readableBytes()
+  if (len == 0) return EmptyByteArray
+  val byteArray = ByteArray(len)
+  readBytes(byteArray)
   return byteArray
 }
 

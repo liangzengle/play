@@ -1,25 +1,31 @@
 package play.mvc
 
+import kotlinx.serialization.Serializable
 import play.util.collection.EmptyByteArray
+import play.util.collection.EmptyIntArray
+import play.util.collection.EmptyLongArray
+import play.util.collection.EmptyStringArray
 
-interface Message {
-  fun encodeToByteArray(): ByteArray
+data class Request(@JvmField val header: Header, @JvmField val body: RequestBody) {
+  fun msgId() = header.msgId.toInt()
 }
 
-class ByteArrayMessage(private val array: ByteArray) : Message {
-  override fun encodeToByteArray(): ByteArray = array
+abstract class AbstractPlayerRequest(@JvmField val playerId: Long, @JvmField val request: Request) {
+  fun msgId() = request.msgId()
+  val moduleId get() = request.header.moduleId
+  val cmd get() = request.header.cmd
 
-  companion object {
-    val Empty = ByteArrayMessage(EmptyByteArray)
+  override fun toString(): String {
+    return "${javaClass.simpleName}(playerId=$playerId, request=$request)"
   }
 }
 
-data class Request(@JvmField val header: Header, @JvmField val body: RequestBody)
+class PlayerRequest(playerId: Long, request: Request) : AbstractPlayerRequest(playerId, request)
 
 data class Response(
   @JvmField val header: Header,
   @JvmField val statusCode: Int,
-  @JvmField val body: Message = ByteArrayMessage.Empty
+  @JvmField val body: Any? = null
 )
 
 inline class MsgId(val value: Int) {
@@ -57,23 +63,110 @@ inline class Header(private val value: Long) {
   }
 }
 
-interface RequestBody {
+@Serializable
+class RequestBody(
+  val b1: Boolean = false,
+  val b2: Boolean = false,
+  val b3: Boolean = false,
+  val i1: Int = 0,
+  val i2: Int = 0,
+  val i3: Int = 0,
+  val l1: Long = 0,
+  val l2: Long = 0,
+  val l3: Long = 0,
+  val s1: String = "",
+  val s2: String = "",
+  val s3: String = "",
+  val ints: IntArray = EmptyIntArray,
+  val longs: LongArray = EmptyLongArray,
+  val strings: Array<String> = EmptyStringArray,
+  val bytes: ByteArray = EmptyByteArray
+) {
+  private var booleanIndex = 0
+  private var intIndex = 0
+  private var longIndex = 0
+  private var stringIndex = 0
 
-  fun reset()
+  fun reset() {
+    booleanIndex = 0
+    intIndex = 0
+    longIndex = 0
+    stringIndex = 0
+  }
 
-  fun readBoolean(): Boolean
+  fun readBoolean(): Boolean {
+    val value = when (booleanIndex) {
+      0 -> b1
+      1 -> b2
+      2 -> b3
+      else -> throw IndexOutOfBoundsException("booleanIndex: $booleanIndex")
+    }
+    booleanIndex++
+    return value
+  }
 
-  fun readInt(): Int
+  fun readInt(): Int {
+    val value = when (intIndex) {
+      0 -> i1
+      1 -> i2
+      2 -> i3
+      else -> throw IndexOutOfBoundsException("intIndex: $intIndex")
+    }
+    intIndex++
+    return value
+  }
 
-  fun readLong(): Long
+  fun readLong(): Long {
+    val value = when (longIndex) {
+      0 -> l1
+      1 -> l2
+      2 -> l3
+      else -> throw IndexOutOfBoundsException("longIndex: $longIndex")
+    }
+    longIndex++
+    return value
+  }
 
-  fun readString(): String
+  fun readString(): String {
+    val value = when (stringIndex) {
+      0 -> s1
+      1 -> s2
+      2 -> s3
+      else -> throw IndexOutOfBoundsException("stringIndex: $stringIndex")
+    }
+    stringIndex++
+    return value
+  }
 
-  fun readIntList(): List<Int>
+  fun getIntList(): List<Int> {
+    return ints.asList()
+  }
 
-  fun readLongList(): List<Long>
+  fun getIntArray(): IntArray {
+    return ints
+  }
 
-  fun readByteArray(): ByteArray
+  fun getLongList(): List<Long> {
+    return longs.asList()
+  }
 
-  fun encodeToByteArray(): ByteArray
+  fun getLongArray(): LongArray {
+    return longs
+  }
+
+  fun getStringList(): List<String> {
+    return strings.asList()
+  }
+
+  fun getStringArray(): Array<String> {
+    return strings
+  }
+
+  fun getByteList(): List<Byte> {
+    return bytes.asList()
+  }
+
+  fun getByteArray(): ByteArray {
+    return bytes
+  }
 }

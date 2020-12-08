@@ -1,14 +1,10 @@
 package play.example.module.friend.controller
 
-import play.mvc.Message
-import play.util.collection.EmptyByteArray
+import kotlinx.serialization.Serializable
 
 /**
  *
  * @author LiangZengle
  */
-class FriendInfo : Message {
-  override fun encodeToByteArray(): ByteArray {
-    return EmptyByteArray
-  }
-}
+@Serializable
+class FriendInfo

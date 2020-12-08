@@ -121,6 +121,9 @@ object Json {
     return mapper.readValue(src, type)
   }
 
+  @JvmStatic
+  fun <T> convert(fromValue: Any, toValueType: Class<T>): T = mapper.convertValue(fromValue, toValueType)
+
   inline fun <reified E> to(content: String): E = mapper.readValue(content)
   inline fun <reified E> to(src: ByteArray): E = mapper.readValue(src)
   inline fun <reified E> to(src: URL): E = mapper.readValue(src)

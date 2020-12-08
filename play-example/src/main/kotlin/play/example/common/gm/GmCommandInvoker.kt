@@ -20,7 +20,7 @@ class GmCommandInvoker(private val method: Method, private val target: Any) {
       val parameter = parameters[i]
       val arg: String
       if (args.size <= i) {
-        arg = parameter.getAnnotation(GmCommandArg::class.java)?.defaultValue ?: ""
+        arg = parameter.getAnnotation(GmCommandModule.Arg::class.java)?.defaultValue ?: ""
         if (arg.isEmpty()) {
           throw GmCommandArgMissingException("缺少第${i + 1}个参数")
         }

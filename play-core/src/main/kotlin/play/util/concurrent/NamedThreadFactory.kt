@@ -6,11 +6,12 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 /**
  * @author LiangZengle
  */
-class NamedThreadFactory(
+class NamedThreadFactory constructor(
   private val namePrefix: String,
   private val isDaemon: Boolean = false,
   private val priority: Int = Thread.currentThread().priority,
-  private val threadGroup: ThreadGroup? = null
+  private val threadGroup: ThreadGroup?,
+  private val exceptionHandler: Thread.UncaughtExceptionHandler?
 ) : ThreadFactory {
 
   @Suppress("unused")
@@ -22,6 +23,7 @@ class NamedThreadFactory(
     thread.name = namePrefix + "-" + COUNTER.incrementAndGet(this)
     thread.isDaemon = isDaemon
     thread.priority = priority
+    thread.uncaughtExceptionHandler = exceptionHandler
     return thread
   }
 
@@ -29,5 +31,39 @@ class NamedThreadFactory(
     @JvmStatic
     private val COUNTER =
       AtomicIntegerFieldUpdater.newUpdater(NamedThreadFactory::class.java, "count")
+
+    @JvmStatic
+    fun newBuilder(namePrefix: String) = Builder(namePrefix)
+  }
+
+  class Builder constructor(private val namePrefix: String) {
+    private var daemon: Boolean = false
+    private var priority: Int = Thread.currentThread().priority
+    private var threadGroup: ThreadGroup? = null
+    private var exceptionHandler: Thread.UncaughtExceptionHandler? = null
+
+    fun daemon(isDaemon: Boolean): Builder {
+      this.daemon = isDaemon
+      return this
+    }
+
+    fun priority(priority: Int): Builder {
+      this.priority = priority
+      return this
+    }
+
+    fun threadGroup(threadGroup: ThreadGroup?): Builder {
+      this.threadGroup = threadGroup
+      return this
+    }
+
+    fun exceptionHandler(exceptionHandler: Thread.UncaughtExceptionHandler?): Builder {
+      this.exceptionHandler = exceptionHandler
+      return this
+    }
+
+    fun build(): NamedThreadFactory {
+      return NamedThreadFactory(namePrefix, daemon, priority, threadGroup, exceptionHandler)
+    }
   }
 }

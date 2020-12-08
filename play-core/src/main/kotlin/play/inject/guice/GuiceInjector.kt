@@ -22,7 +22,7 @@ class GuiceInjector(private val guice: Injector, private val classScanner: Class
   }
 
   override fun <T> getInstancesOfType(type: Class<T>): List<T> {
-    return classScanner.getConcreteSubTypesStream(type)
+    return classScanner.getOrdinarySubTypesStream(type)
       .filter {
         it.isAnnotationPresent(Singleton::class.java) || it.isAnnotationPresent(com.google.inject.Singleton::class.java)
       }

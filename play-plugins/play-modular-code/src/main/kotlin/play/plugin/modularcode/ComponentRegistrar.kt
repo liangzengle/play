@@ -8,7 +8,6 @@ import org.jetbrains.kotlin.codegen.DelegatingClassBuilder
 import org.jetbrains.kotlin.codegen.extensions.ClassBuilderInterceptorExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
-import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticSink
 import org.jetbrains.kotlin.name.FqName
@@ -21,19 +20,32 @@ import org.jetbrains.org.objectweb.asm.Opcodes
 import java.lang.reflect.Modifier
 
 @AutoService(ComponentRegistrar::class)
-class PlayModularCodeComponentRegistrar : ComponentRegistrar {
-  override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
+class ModularCodeComponentRegistrar : ComponentRegistrar {
+  //  override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
+//    if (configuration.get(ModularCodeConfigurationKeys.KEY_ENABLED) == false) {
+//      return
+//    }
+//    ClassBuilderInterceptorExtension.registerExtension(
+//      project,
+//      ModularCodeClassGeneratorInterceptor(configuration[ModularCodeConfigurationKeys.KEY_ANNOTATION]!!)
+//    )
+//  }
+  override fun registerProjectComponents(
+    project: MockProject,
+    configuration: org.jetbrains.kotlin.config.CompilerConfiguration
+  ) {
     if (configuration.get(ModularCodeConfigurationKeys.KEY_ENABLED) == false) {
       return
     }
     ClassBuilderInterceptorExtension.registerExtension(
       project,
-      PlayModularCodeClassGeneratorInterceptor(configuration[ModularCodeConfigurationKeys.KEY_ANNOTATION]!!)
+      ModularCodeClassGeneratorInterceptor(configuration[ModularCodeConfigurationKeys.KEY_ANNOTATION]!!)
     )
   }
 }
 
-class PlayModularCodeClassGeneratorInterceptor(val annotations: List<String>) : ClassBuilderInterceptorExtension {
+class ModularCodeClassGeneratorInterceptor(annotation: String) : ClassBuilderInterceptorExtension {
+  private val annotationFqName = FqName(annotation)
 
   override fun interceptClassBuilderFactory(
     interceptedFactory: ClassBuilderFactory,
@@ -46,8 +58,8 @@ class PlayModularCodeClassGeneratorInterceptor(val annotations: List<String>) : 
       }
 
       override fun newClassBuilder(origin: JvmDeclarationOrigin): ClassBuilder {
-        return if (annotations.any { origin.descriptor?.annotations?.hasAnnotation(FqName(it)) == true }) {
-          PlayModularCodeClassBuilder(interceptedFactory.newClassBuilder(origin))
+        return if (origin.descriptor?.annotations?.hasAnnotation(annotationFqName) == true) {
+          ModularCodeClassBuilder(interceptedFactory.newClassBuilder(origin))
         } else {
           interceptedFactory.newClassBuilder(origin)
         }
@@ -55,14 +67,14 @@ class PlayModularCodeClassGeneratorInterceptor(val annotations: List<String>) : 
 
       override fun asText(builder: ClassBuilder): String {
         return when (builder) {
-          is PlayModularCodeClassBuilder -> interceptedFactory.asText(builder.classBuilder)
+          is ModularCodeClassBuilder -> interceptedFactory.asText(builder.classBuilder)
           else -> interceptedFactory.asText(builder)
         }
       }
 
       override fun asBytes(builder: ClassBuilder): ByteArray {
         return when (builder) {
-          is PlayModularCodeClassBuilder -> interceptedFactory.asBytes(builder.classBuilder)
+          is ModularCodeClassBuilder -> interceptedFactory.asBytes(builder.classBuilder)
           else -> interceptedFactory.asBytes(builder)
         }
       }
@@ -74,7 +86,7 @@ class PlayModularCodeClassGeneratorInterceptor(val annotations: List<String>) : 
   }
 }
 
-class PlayModularCodeClassBuilder(val classBuilder: ClassBuilder) :
+class ModularCodeClassBuilder(val classBuilder: ClassBuilder) :
   DelegatingClassBuilder() {
   override fun getDelegate(): ClassBuilder {
     return classBuilder

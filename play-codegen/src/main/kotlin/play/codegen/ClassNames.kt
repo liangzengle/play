@@ -11,9 +11,16 @@ internal val Controller = ClassName.bestGuess("play.mvc.Controller")
 internal val AbstractController = ClassName.bestGuess("play.mvc.AbstractController")
 internal val Request = ClassName.bestGuess("play.mvc.Request")
 internal val RequestResult = ClassName.bestGuess("play.mvc.RequestResult")
+internal val PlayerRequest = ClassName.bestGuess("play.mvc.PlayerRequest")
+internal val AbstractPlayerRequest = ClassName.bestGuess("play.mvc.AbstractPlayerRequest")
+internal val GeneratePlayerRequestMessage = ClassName.bestGuess("play.mvc.GeneratePlayerRequestMessage")
 
 // internal val NotPlayerThread = ClassName.bestGuess("play.mvc.NotPlayerThread")
 internal val Cmd = ClassName.bestGuess("play.mvc.Cmd")
+
+internal val RequestMessage = ClassName.bestGuess("play.mvc.RequestMessage")
+
+internal val MessageConverter = ClassName.bestGuess("play.mvc.MessageConverter")
 
 internal val DisableCodegen = ClassName.bestGuess("play.codegen.DisableCodegen")
 

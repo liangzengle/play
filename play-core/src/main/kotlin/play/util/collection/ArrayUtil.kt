@@ -11,6 +11,10 @@ val EmptyLongArray = longArrayOf()
 val EmptyFloatArray = floatArrayOf()
 val EmptyDoubleArray = doubleArrayOf()
 
+val EmptyStringArray = arrayOf<String>()
+
+val EmptyClassArray = arrayOf<Class<*>>()
+
 val EmptyObjectArray = arrayOf<Any>()
 
 fun IntArray.getOrDefault(index: Int, default: Int): Int {

@@ -14,5 +14,5 @@ object FriendErrorCode : StatusCode(ModuleId.Friend) {
   /**
    * 好友人数已达上限
    */
-  val FriendCountLimit = 1
+  val FriendCountLimit = code(1)
 }

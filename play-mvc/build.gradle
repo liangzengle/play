@@ -1,4 +1,8 @@
+plugins {
+    id 'org.jetbrains.kotlin.plugin.serialization' version "$kotlin_version"
+}
 dependencies {
-    compile project(':play-core')
+    api project(':play-core')
+    api kotlinx_serialization_protobuf
     kapt auto_service
 }

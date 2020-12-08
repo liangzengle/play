@@ -1,15 +1,15 @@
 package play.db
 
 import com.google.common.util.concurrent.MoreExecutors
-import play.ApplicationLifecycle
-import play.Configuration
-import play.getLogger
-import play.util.concurrent.threadFactory
 import java.time.Duration
 import java.util.concurrent.*
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
+import play.ApplicationLifecycle
+import play.Configuration
+import play.getLogger
+import play.util.concurrent.threadFactory
 
 class DbExecutor(executor: ExecutorService) : ExecutorService by executor
 
@@ -44,7 +44,7 @@ class DbExecutorProvider @Inject constructor(conf: Configuration, lifecycle: App
           Thread.currentThread().interrupt()
         }
       }
-      if (ex != null) logger.error(ex) { ex.message }
+      if (ex != null) logger.error(ex) { "Exception occurred when running $r" }
     }
   }
 

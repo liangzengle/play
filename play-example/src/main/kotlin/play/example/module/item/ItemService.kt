@@ -1,10 +1,12 @@
 package play.example.module.item
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import play.example.module.item.config.ItemConfigSet
 import play.example.module.item.domain.ItemType
 import play.example.module.player.Self
-import javax.inject.Inject
-import javax.inject.Singleton
+import play.util.control.Result2
+import play.util.control.ok
 
 /**
  * 物品模块逻辑处理
@@ -16,7 +18,7 @@ class ItemService @Inject constructor() {
     ItemConfigSet.getGroupOrThrow(ItemType.Normal).list()
   }
 
-  fun useItem(self: Self, itemUid: Int, num: Int): Int {
-    return 0
+  fun useItem(self: Self, itemUid: Int, num: Int): Result2<Unit> {
+    return ok()
   }
 }

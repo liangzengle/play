@@ -24,7 +24,6 @@ object AddConstructor : EntityCacheComponent() {
         .addParameter("scheduler", Scheduler)
         .addParameter("executor", DbExecutor)
         .addParameter("conf", EntityCacheConf)
-        .addParameter("entityProcessor", EntityProcessor_E)
         .build()
     )
       .addProperty(
@@ -43,10 +42,6 @@ object AddConstructor : EntityCacheComponent() {
       ).addProperty(
         PropertySpec.builder("conf", EntityCacheConf, KModifier.PRIVATE)
           .initializer("conf")
-          .build()
-      ).addProperty(
-        PropertySpec.builder("entityProcessor", EntityProcessor_E, KModifier.PRIVATE)
-          .initializer("entityProcessor")
           .build()
       )
   }

@@ -1,11 +1,11 @@
 package play.example.module.friend
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import play.example.module.friend.controller.FriendInfo
 import play.example.module.friend.entity.PlayerFriendEntityCache
 import play.util.control.Result2
 import play.util.control.ok
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * 好友模块逻辑处理
@@ -14,9 +14,9 @@ import javax.inject.Singleton
 class FriendService @Inject constructor(
   private val friendEntityCache: PlayerFriendEntityCache
 ) {
-  fun getInfo(playerId: Long): FriendInfo {
+  fun getInfo(playerId: Long): Result2<FriendInfo> {
     println("getInfo")
-    return FriendInfo()
+    return ok(FriendInfo())
   }
 
   fun getInfo2(playerId: Long): Result2<FriendInfo> {

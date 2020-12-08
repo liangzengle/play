@@ -1,14 +1,13 @@
 package play.example.common.net.codec
 
 import io.netty.buffer.ByteBuf
-import io.netty.buffer.ByteBufInputStream
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder
-import play.example.common.net.message.WireRequestBody
-import play.example.request.RequestProto
 import play.mvc.Header
 import play.mvc.MsgId
 import play.mvc.Request
+import play.mvc.RequestBody
+import play.net.netty.copyToArray
 
 /**
  * ByteBuf -> Request
@@ -22,7 +21,7 @@ class RequestDecoder(maxFrameLength: Int) : LengthFieldBasedFrameDecoder(maxFram
     }
     val msgId = msg.readInt()
     val sequenceNo = msg.readInt()
-    val body = RequestProto.ADAPTER.decode(ByteBufInputStream(msg, msg.readableBytes(), true))
-    return Request(Header(MsgId(msgId), sequenceNo), WireRequestBody(body))
+    val requestBody = PB.decode<RequestBody>(msg.copyToArray())
+    return Request(Header(MsgId(msgId), sequenceNo), requestBody)
   }
 }

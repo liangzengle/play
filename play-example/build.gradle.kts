@@ -14,9 +14,9 @@ buildscript {
 plugins {
   idea
   application
-  id("play.modular-code") version "0.1"
+  kotlin("plugin.serialization") version "1.4.20"
   id("org.jetbrains.dokka") version "1.4.10.2"
-  id("com.squareup.wire")
+  id("play.modular-code") version "0.1"
 }
 
 repositories {
@@ -39,16 +39,19 @@ dependencies {
   implementation(project(":play-akka"))
   implementation(project(":play-net"))
   implementation(project(":play-config"))
+  // use mysql
   implementation(project(":play-db-mysql-nosql"))
-//  implementation(project(":play-scala-compact"))
+  implementation("mysql:mysql-connector-java:8.0.22")
+  // use mongodb
 //    implementation project(":play-db-mongo")
-//    compileOnly project(path: ":play-codegen", configuration: "default")
+
   compileOnly(project(":play-codegen"))
   kapt(project(":play-codegen"))
-
-  implementation("mysql:mysql-connector-java:8.0.20")
   implementation("org.jctools:jctools-core:3.0.0")
-  implementation("com.squareup.wire:wire-runtime:3.3.0")
+
+  implementation("io.github.esentsov:kotlin-visibility:1.1.0")
+
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-protobuf:1.0.1")
 }
 
 tasks.withType<Test> {
@@ -62,12 +65,9 @@ kapt {
   }
 }
 
-wire {
-  kotlin {}
-}
-
 modularCode {
-  annotation = listOf("play.example.module.ModularCode")
+  enabled = true
+  annotation = "play.example.module.ModularCode"
 }
 
 tasks.register<DokkaTask>("dokkaJson") {

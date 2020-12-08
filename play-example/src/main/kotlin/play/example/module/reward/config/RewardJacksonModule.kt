@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.google.auto.service.AutoService
 import play.Log
+import play.ModeDependent
 import play.example.module.reward.model.NonReward
 import play.example.module.reward.model.Reward
 import play.example.module.reward.model.RewardType
@@ -43,13 +44,16 @@ private class RewardJacksonDeserializer : StdDeserializer<Reward>(Reward::class.
 private class RawRewardJacksonDeserializer : StdDeserializer<RawReward>(RawReward::class.java) {
   override fun deserialize(p: JsonParser, ctxt: DeserializationContext): RawReward {
     val node = p.codec.readTree<JsonNode>(p)
-    val type = node.get("type")?.asInt() ?: RewardType.None.id
-    val rewardType = RewardType.getOrDefault(type, RewardType.None)
-    if (rewardType == RewardType.None) {
-      Log.error { "错误的奖励类型(RawReward): $node" }
-      return NonRawReward
+    return try {
+      val type = node.get("type").asText()
+      val rewardType = RewardType.valueOf(type)
+      if (rewardType == RewardType.None) {
+        return NonRawReward
+      }
+      val clazz = rewardType.rawRewardClass
+      p.codec.treeToValue(node, clazz)
+    } catch (e: Exception) {
+      ModeDependent.logAndRecover(e, NonRawReward) { "奖励配置解析失败: $node" }
     }
-    val clazz = rewardType.rawRewardClass
-    return p.codec.treeToValue(node, clazz)
   }
 }

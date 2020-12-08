@@ -163,6 +163,105 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
       .addType(classBuilder.build())
       .build()
       .writeTo(file)
+
+    generateRequestMessages(typeElement)
+  }
+
+  private fun generateRequestMessages(typeElement: ControllerTypeElement) {
+    if (!typeElement.typeElement.isAnnotationPresent(GeneratePlayerRequestMessage)) {
+      return
+    }
+    val interfaceType =
+      getAnnotationValue<DeclaredType>(typeElement.typeElement, GeneratePlayerRequestMessage, "interfaceType")!!
+    val moduleName = getModuleName(typeElement)
+    val converterSimpleName = moduleName + "MessageConverter"
+    val objectBuilder = TypeSpec.objectBuilder(converterSimpleName)
+    objectBuilder.superclass(MessageConverter)
+    val convert = FunSpec.builder("convert")
+      .addModifiers(KModifier.PUBLIC, KModifier.OVERRIDE)
+      .addParameter("pr", PlayerRequest)
+      .returns(interfaceType.toClassName())
+    val codeBlock = CodeBlock.builder()
+    codeBlock.beginControlFlow("return when(pr.cmd.toInt())")
+
+    val baseModuleMessage =
+      TypeSpec.classBuilder(moduleName + "PlayerRequest").addModifiers(KModifier.PUBLIC, KModifier.OPEN)
+        .superclass(AbstractPlayerRequest)
+        .addSuperinterface(interfaceType.toClassName())
+        .addSuperclassConstructorParameter("playerId, request")
+        .primaryConstructor(
+          FunSpec.constructorBuilder()
+            .addParameter("playerId", LONG)
+            .addParameter("request", Request)
+            .build()
+        ).build()
+
+    val messagePackage = typeElement.typeElement.getPackage() + ".message"
+
+    val messageTypes = arrayListOf<TypeSpec>()
+    for (method in typeElement.cmdMethods) {
+      val messageSimpleName = method.simpleName.toString().capitalize() + moduleName + "Request"
+
+      val messageClassName = ClassName.bestGuess("$messagePackage.$messageSimpleName")
+      val messageBuilder = TypeSpec.classBuilder(messageSimpleName)
+        .superclass(AbstractPlayerRequest)
+        .addSuperclassConstructorParameter("playerId, request")
+        .addSuperinterface(interfaceType.asTypeName())
+      val messageCtorBuilder = FunSpec.constructorBuilder()
+        .addParameter("playerId", LONG)
+        .addParameter("request", Request)
+
+      val methodName = "to$messageSimpleName"
+      val b = FunSpec.builder(methodName).addParameter("pr", PlayerRequest).returns(messageClassName)
+      b.addStatement("val playerId = pr.playerId")
+      b.addStatement("val request = pr.request")
+      val paramList = StringBuilder()
+      paramList.append("playerId, request")
+      for (parameter in method.parameters) {
+        if (!isPlayerId(parameter)) {
+          b.addStatement("val %L = %L", parameter.simpleName, readStmt(parameter))
+          messageCtorBuilder.addParameter(parameter.simpleName.toString(), parameter.asType().javaToKotlinType())
+          messageBuilder.addProperty(
+            PropertySpec.builder(
+              parameter.simpleName.toString(),
+              parameter.asType().javaToKotlinType(),
+              KModifier.PUBLIC
+            )
+              .addAnnotation(JvmField::class)
+              .initializer(parameter.simpleName.toString())
+              .build()
+          )
+          paramList.append(',').append(" ").append(parameter.simpleName)
+        }
+      }
+      messageBuilder.primaryConstructor(messageCtorBuilder.build())
+      messageTypes.add(messageBuilder.build())
+      b.addStatement("return %T(%L)", messageClassName, paramList.toString())
+      objectBuilder.addFunction(b.build())
+      codeBlock.addStatement("%L -> %L(pr)", method.cmd, methodName)
+    }
+    codeBlock.addStatement("else -> %L(pr.playerId, pr.request)", baseModuleMessage.name)
+    codeBlock.endControlFlow()
+    convert.addCode(codeBlock.build())
+    objectBuilder.addFunction(convert.build())
+
+    val file = File(generatedSourcesRoot)
+    val fileBuilder = FileSpec.builder(messagePackage, "Request")
+    fileBuilder.addType(objectBuilder.build())
+    fileBuilder.addType(baseModuleMessage)
+    for (messageType in messageTypes) {
+      fileBuilder.addType(messageType)
+    }
+    fileBuilder.build().writeTo(file)
+  }
+
+  private fun getModuleName(typeElement: ControllerTypeElement): String {
+    val controllerSimpleName = typeElement.simpleName.toString()
+    return if (controllerSimpleName.endsWith("Controller")) {
+      controllerSimpleName.dropLast("Controller".length)
+    } else {
+      controllerSimpleName
+    }
   }
 
   private fun genCompanionObject(typeElement: ControllerTypeElement): TypeSpec {
@@ -341,14 +440,14 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
       TypeKind.ARRAY -> {
         val componentType = (element.asType() as ArrayType).componentType
         when (componentType.kind) {
-          TypeKind.BYTE -> "readByteArray()"
-          TypeKind.INT -> "readIntArray()"
-          TypeKind.LONG -> "readLongArray()"
-          TypeKind.DOUBLE -> "readDoubleArray()"
+          TypeKind.BYTE -> "getByteArray()"
+          TypeKind.INT -> "getIntArray()"
+          TypeKind.LONG -> "getLongArray()"
+          TypeKind.DOUBLE -> "getDoubleArray()"
           TypeKind.DECLARED -> {
             componentType as DeclaredType
             if (componentType.asElement().simpleName.contentEquals("String")) {
-              "readStringArray()"
+              "getStringArray()"
             } else {
               throw UnsupportedOperationException("Unsupported parameter type: ${element.asType()}")
             }
@@ -363,10 +462,10 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
         } else if (isList(declaredType)) {
           val typeMirror = declaredType.typeArguments[0]
           when (typeMirror.kind) {
-            TypeKind.BYTE -> "readByteList()"
-            TypeKind.INT -> "readIntList()"
-            TypeKind.LONG -> "readLongList()"
-            TypeKind.DECLARED -> "readStringList()"
+            TypeKind.BYTE -> "getByteList()"
+            TypeKind.INT -> "getIntList()"
+            TypeKind.LONG -> "getLongList()"
+            TypeKind.DECLARED -> "getStringList()"
             else -> throw UnsupportedOperationException("Unsupported parameter type: ${element.asType()}")
           }
         } else {

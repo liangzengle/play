@@ -2,7 +2,6 @@
   {
     "id": 1,
     "name": "名称1",
-    "desc": "描述1",
     "jsonValue": {
       "a": 1
     },
@@ -28,5 +27,12 @@
     "id": 2,
     "name": "物品2",
     "numberValue": 100
+  },
+  {
+    "id": 3,
+    "name": "物品1",
+    "jsonValue": {
+      "type": 1
+    }
   }
 ]

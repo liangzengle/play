@@ -3,13 +3,12 @@ package play.db.cache
 import play.ApplicationLifecycle
 import play.Configuration
 import play.Log
-import play.db.*
+import play.db.Entity
+import play.db.EntityInt
+import play.db.EntityLong
 import play.getLogger
-import play.inject.Injector
-import play.inject.guice.PostConstruct
-import play.util.collection.toImmutableMap
 import play.util.control.getCause
-import play.util.reflect.Reflect
+import play.util.unsafeCast
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -21,18 +20,15 @@ import kotlin.time.seconds
 @Singleton
 class EntityCacheManager @Inject constructor(
   private val factory: EntityCacheFactory,
-  private val injector: Injector,
   @Named("db") private val conf: Configuration,
   lifecycle: ApplicationLifecycle
-) : PostConstruct {
+) {
 
   private val logger = getLogger()
 
   private val caches = ConcurrentHashMap<Class<*>, EntityCache<*, *>>()
 
   private val dumpDir = File(conf.getString("cache-dump-dir"))
-
-  private lateinit var entityProcessors: Map<Class<*>, EntityProcessor<*>>
 
   init {
     Log.info { "Using ${factory.javaClass.simpleName}" }
@@ -79,20 +75,6 @@ class EntityCacheManager @Inject constructor(
     }
   }
 
-  override fun postConstruct() {
-    entityProcessors = injector.getInstancesOfType(EntityProcessor::class.java).asSequence()
-      .map {
-        Reflect.getRawClass<EntityProcessor<*>>(
-          Reflect.getTypeArg(
-            it.javaClass,
-            EntityProcessor::class.java,
-            0
-          )
-        ) to it
-      }
-      .toImmutableMap()
-  }
-
   fun <ID : Any, E : Entity<ID>> get(clazz: KClass<E>): EntityCache<ID, E> {
     return get(clazz.java)
   }
@@ -103,11 +85,7 @@ class EntityCacheManager @Inject constructor(
     if (cache != null) {
       return cache as EntityCache<ID, E>
     }
-    return caches.computeIfAbsent(clazz) {
-      val entityClass = it as Class<E>
-      val entityProcessor = (entityProcessors[entityClass] ?: DefaultEntityProcessor) as EntityProcessor<E>
-      factory.create(entityClass, entityProcessor)
-    } as EntityCache<ID, E>
+    return caches.computeIfAbsent(clazz) { factory.create(it as Class<E>) }.unsafeCast()
   }
 
   @Suppress("UNCHECKED_CAST")

@@ -8,6 +8,8 @@ import kotlin.streams.asSequence
 import kotlin.streams.toList
 
 /**
+ * 类扫描工具
+ *
  * Created by LiangZengle on 2020/2/16.
  */
 class ClassScanner(packagesToScan: Collection<String>) {
@@ -22,21 +24,21 @@ class ClassScanner(packagesToScan: Collection<String>) {
   /**
    * 获取[superType]的子类（不包括：MemberClass\LocalClass\AnonymousClass）
    */
-  fun <T> getConcreteSubTypesSet(superType: Class<T>): Set<Class<out T>> {
-    return getConcreteSubTypesSequence(superType).toSet()
+  fun <T> getOrdinarySubTypesSet(superType: Class<T>): Set<Class<out T>> {
+    return getOrdinarySubTypesSequence(superType).toSet()
   }
 
   /**
    * 获取[superType]的子类（不包括：MemberClass\LocalClass\AnonymousClass）
    */
-  fun <T> getConcreteSubTypesList(superType: Class<T>): List<Class<out T>> {
-    return getConcreteSubTypesStream(superType).toList()
+  fun <T> getOrdinarySubTypesList(superType: Class<T>): List<Class<out T>> {
+    return getOrdinarySubTypesStream(superType).toList()
   }
 
   /**
    * 获取[superType]的子类（不包括：MemberClass\LocalClass\AnonymousClass）
    */
-  fun <T> getConcreteSubTypesStream(superType: Class<T>): Stream<Class<out T>> {
+  fun <T> getOrdinarySubTypesStream(superType: Class<T>): Stream<Class<out T>> {
     return reflections.getSubTypesOf(superType).stream()
       .filter { !it.isAbstract() && !it.isMemberClass && !it.isLocalClass && !it.isAnonymousClass }
   }
@@ -44,8 +46,8 @@ class ClassScanner(packagesToScan: Collection<String>) {
   /**
    * 获取[superType]的子类（不包括：MemberClass\LocalClass\AnonymousClass）
    */
-  fun <T> getConcreteSubTypesSequence(superType: Class<T>): Sequence<Class<out T>> {
-    return getConcreteSubTypesStream(superType).asSequence()
+  fun <T> getOrdinarySubTypesSequence(superType: Class<T>): Sequence<Class<out T>> {
+    return getOrdinarySubTypesStream(superType).asSequence()
   }
 
   /**

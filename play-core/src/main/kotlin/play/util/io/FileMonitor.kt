@@ -9,7 +9,10 @@ import java.io.IOException
 import java.nio.file.*
 import java.time.Duration
 import java.util.*
+import java.util.concurrent.Executor
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 import kotlin.concurrent.thread
 import kotlin.math.max
@@ -34,11 +37,7 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
 
   constructor(root: File, recursive: Boolean = true) : this(root, if (recursive) Int.MAX_VALUE else 0)
 
-  protected fun interestedEvents() = arrayOf(
-    StandardWatchEventKinds.ENTRY_CREATE,
-    StandardWatchEventKinds.ENTRY_MODIFY,
-    StandardWatchEventKinds.ENTRY_DELETE
-  )
+  protected fun interestedEvents() = DefaultInterestedEvents
 
   protected open fun shouldReactTo(target: Path): Boolean = root.isDirectory || path == target
 
@@ -100,7 +99,7 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
   fun start() {
     watch(root, maxDepth)
     thread(start = true, isDaemon = true, name = "file-monitor[$path]") {
-      while (true) {
+      while (!Thread.currentThread().isInterrupted) {
         try {
           process(service.take())
         } catch (e: ClosedWatchServiceException) {
@@ -117,22 +116,32 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
 
   fun start(detectInterval: Duration, scheduler: Scheduler) {
     watch(root, maxDepth)
+    val f = scheduler.scheduleWithFixedDelay(detectInterval, detectInterval, this::runCheck)
+    cancellable = Optional.of(f)
+  }
+
+  fun start(detectInterval: Duration, scheduler: ScheduledExecutorService, executor: Executor) {
+    watch(root, maxDepth)
     val f = scheduler.scheduleWithFixedDelay(
-      detectInterval,
-      detectInterval
-    ) {
-      try {
-        service.poll()?.also { process(it) }
-      } catch (e: ClosedWatchServiceException) {
-        if (!closed && root.exists()) {
-          service = path.fileSystem.newWatchService()
-          watch(root, maxDepth)
-        } else {
-          logger.error(e) { e.message }
-        }
+      { executor.execute(this::runCheck) },
+      detectInterval.toMillis(),
+      detectInterval.toMillis(),
+      TimeUnit.MILLISECONDS
+    )
+    cancellable = Optional.of(f)
+  }
+
+  private fun runCheck() {
+    try {
+      service.poll()?.also { process(it) }
+    } catch (e: ClosedWatchServiceException) {
+      if (!closed && root.exists()) {
+        service = path.fileSystem.newWatchService()
+        watch(root, maxDepth)
+      } else {
+        logger.error(e) { e.message }
       }
     }
-    cancellable = Optional.of(f)
   }
 
   override fun close() {
@@ -168,5 +177,13 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
     onCreate(op)
     onModify(op)
     return this
+  }
+
+  companion object {
+    val DefaultInterestedEvents = arrayOf(
+      StandardWatchEventKinds.ENTRY_CREATE,
+      StandardWatchEventKinds.ENTRY_MODIFY,
+      StandardWatchEventKinds.ENTRY_DELETE
+    )
   }
 }

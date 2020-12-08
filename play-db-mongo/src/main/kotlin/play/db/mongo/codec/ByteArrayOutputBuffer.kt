@@ -3,13 +3,12 @@ package play.db.mongo.codec
 import org.bson.ByteBuf
 import org.bson.ByteBufNIO
 import org.bson.io.OutputBuffer
-import play.util.collection.asSingletonList
 import java.io.OutputStream
 import java.nio.ByteBuffer
 
 internal class ByteArrayOutputBuffer(initialCapacity: Int = 256) : OutputBuffer() {
   private val buffer = ByteBufNIO(ByteBuffer.allocate(initialCapacity))
-  private val bufferList = buffer.asSingletonList()
+  private val bufferList = listOf(buffer)
 
   override fun write(position: Int, value: Int) {
     buffer.put(position, (0xFF and value).toByte())

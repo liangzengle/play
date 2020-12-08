@@ -3,22 +3,17 @@ package play.example.client
 import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.SimpleChannelInboundHandler
-import play.example.common.net.message.WireRequestBody
-import play.example.common.net.message.decode
-import play.example.module.account.controller.AccountControllerInvoker
-import play.example.module.account.message.PongProto
-import play.example.module.common.message.BoolValue
-import play.example.module.common.message.StringValue
-import play.example.module.guild.controller.GuildControllerInvoker
-import play.example.module.guild.message.GuildProto
-import play.example.module.player.controller.PlayerControllerInvoker
-import play.example.module.player.message.PlayerProto
-import play.example.request.RequestProto
-import play.mvc.Header
-import play.mvc.MsgId
-import play.mvc.Request
-import play.mvc.Response
 import java.util.concurrent.TimeUnit
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.protobuf.ProtoBuf
+import play.example.common.net.codec.PB
+import play.example.module.account.controller.AccountControllerInvoker
+import play.example.module.guild.GuildControllerInvoker
+import play.example.module.guild.message.GuildInfo
+import play.example.module.player.controller.PlayerControllerInvoker
+import play.example.module.player.message.PlayerInfo
+import play.mvc.*
+import play.util.unsafeCast
 
 /**
  *
@@ -33,10 +28,10 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       PlayerControllerInvoker.login -> onPlayerLogin(ctx, msg)
       GuildControllerInvoker.create -> onGuildCreate(msg)
       PlayerControllerInvoker.ping -> pingPingResult(msg)
-      PlayerControllerInvoker.StringMessage -> println("收到消息推送：${StringValue.ADAPTER.decode(msg.body).value}")
+      PlayerControllerInvoker.StringMessage -> println("收到消息推送：${PB.decode<String>(msg.body!!.unsafeCast())}")
       AccountControllerInvoker.ping -> {
-        val pong = PongProto.ADAPTER.decode(msg.body.encodeToByteArray())
-        println("pong: ${pong.msg}")
+        val pong = PB.decode<String>(msg.body!!.unsafeCast())
+        println("pong: $pong")
       }
       else -> println("receive: $msg")
     }
@@ -47,7 +42,7 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       println("工会创建失败, 错误码：${response.statusCode}")
       return
     }
-    val guild = GuildProto.ADAPTER.decode(response.body)
+    val guild = ProtoBuf.decodeFromByteArray<GuildInfo>(response.body!!.unsafeCast())
     println("工会创建完成: $guild")
   }
 
@@ -57,7 +52,7 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       return
     }
     val msg = response.body
-    val pong = StringValue.ADAPTER.decode(msg).value
+    val pong = PB.decode<String>(msg!!.unsafeCast())
     println("pong: $pong")
   }
 
@@ -66,14 +61,15 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       println("玩家登录失败：${msg.statusCode}")
       return
     }
-    println("玩家登录成功：${PlayerProto.ADAPTER.decode(msg.body)}")
+    val playerInfo = PB.decode<PlayerInfo>(msg.body!!.unsafeCast())
+    println("玩家登录成功：$playerInfo")
     ctx.executor().scheduleWithFixedDelay(
       {
         val pingMsg = "hello"
         ctx.writeAndFlush(
           Request(
             Header(MsgId(PlayerControllerInvoker.ping)),
-            WireRequestBody(RequestProto(s1 = pingMsg))
+            RequestBody(s1 = pingMsg)
           )
         )
         println("ping: $pingMsg")
@@ -86,14 +82,14 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
     ctx.writeAndFlush(
       Request(
         Header(MsgId(GuildControllerInvoker.create)),
-        WireRequestBody(RequestProto(s1 = "丐帮"))
+        RequestBody(s1 = "丐帮")
       )
     )
 
     ctx.writeAndFlush(
       Request(
         Header(MsgId(GuildControllerInvoker.create)),
-        WireRequestBody(RequestProto(s1 = "少林"))
+        RequestBody(s1 = "少林")
       )
     )
   }
@@ -106,7 +102,7 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       ctx.writeAndFlush(
         Request(
           Header(MsgId(PlayerControllerInvoker.login)),
-          WireRequestBody(RequestProto())
+          RequestBody()
         )
       )
     }
@@ -118,22 +114,22 @@ object SimpleClientHandler : SimpleChannelInboundHandler<Response>() {
       return
     }
     val msg = response.body
-    val hasPlayer = BoolValue.ADAPTER.decode(msg).value
+    val hasPlayer = PB.decode<Boolean>(msg!!.unsafeCast())
     if (hasPlayer) {
       println("账号登录成功, 角色已存在, 请求角色登录")
       ctx.writeAndFlush(
         Request(
           Header(MsgId(PlayerControllerInvoker.login)),
-          WireRequestBody(RequestProto())
+          RequestBody()
         )
       )
     } else {
       println("账号登录成功, 角色不存在，请求创角")
-      val request = RequestProto(s1 = "我是玩家名称")
+      val request = RequestBody(s1 = "我是玩家名称")
       ctx.writeAndFlush(
         Request(
           Header(MsgId(PlayerControllerInvoker.create)),
-          WireRequestBody(request)
+          request
         )
       )
     }

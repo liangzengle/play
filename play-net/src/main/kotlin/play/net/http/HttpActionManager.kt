@@ -1,5 +1,7 @@
 package play.net.http
 
+import com.google.common.collect.ImmutableList
+import com.google.common.collect.ImmutableMap
 import java.util.*
 
 abstract class HttpActionManager {
@@ -7,6 +9,10 @@ abstract class HttpActionManager {
   private var plainActions = emptyMap<String, Action>()
 
   private var variableActions = emptyList<Action>()
+
+  open fun findAction(path: String, uri: String): Optional<Action> {
+    return findAction(path)
+  }
 
   fun findAction(path: String): Optional<Action> {
     val plainAction = plainActions[path]
@@ -44,11 +50,11 @@ abstract class HttpActionManager {
       }
     }
     if (plainActions != null) {
-      this.plainActions = plainActions
+      this.plainActions = ImmutableMap.copyOf(plainActions)
     }
     if (variableActions != null) {
       variableActions.sortBy { it.path.root }
-      this.variableActions = variableActions
+      this.variableActions = ImmutableList.copyOf(variableActions)
     }
   }
 }

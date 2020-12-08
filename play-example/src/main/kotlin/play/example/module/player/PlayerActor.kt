@@ -6,23 +6,21 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import akka.actor.typed.javadsl.TimerScheduler
+import java.time.Duration
 import play.akka.AbstractTypedActor
 import play.akka.send
 import play.example.common.net.SessionActor
-import play.example.common.net.message.WireMessage
 import play.example.common.net.write
-import play.example.module.account.message.LoginProto
-import play.example.module.player.event.PlayerEvent
-import play.example.module.player.event.PlayerEventDispatcher
-import play.example.module.player.event.PlayerPreLoginEvent
-import play.example.module.player.event.PlayerRequestEvent
+import play.example.module.account.message.LoginParams
+import play.example.module.player.event.*
 import play.example.module.player.scheduling.PlayerRepeatedSchedule
 import play.example.module.player.scheduling.PlayerSchedule
 import play.example.module.player.scheduling.PlayerScheduleCancellation
+import play.example.module.task.TaskEventReceiver
+import play.mvc.PlayerRequest
 import play.mvc.Request
 import play.mvc.Response
 import play.util.time.currentMillis
-import java.time.Duration
 
 class PlayerActor(
   context: ActorContext<Command>,
@@ -30,7 +28,8 @@ class PlayerActor(
   playerId: Long,
   private val eventDispatcher: PlayerEventDispatcher,
   private val playerService: PlayerService,
-  private val requestHandler: PlayerRequestHandler
+  private val requestHandler: PlayerRequestHandler,
+  private val taskEventReceiver: TaskEventReceiver
 ) : AbstractTypedActor<PlayerActor.Command>(context) {
 
   private val me = Self(playerId)
@@ -68,9 +67,9 @@ class PlayerActor(
     val session = cmd.session
     this.session = session
     eventDispatcher.dispatch(me, PlayerPreLoginEvent(me.id))
-    val playerProto = playerService.login(me, cmd.loginParams)
+    val playerInfo = playerService.login(me, cmd.loginParams)
     session send SessionActor.Subscribe(context.messageAdapter(Request::class.java) { RequestCommand(it) })
-    session.write(Response(cmd.request.header, 0, WireMessage(playerProto)))
+    session.write(Response(cmd.request.header, 0, playerInfo))
   }
 
   private fun onRequest(cmd: RequestCommand) {
@@ -94,6 +93,10 @@ class PlayerActor(
       onRequest(event.message)
       return
     }
+    if (event is PlayerTaskEvent) {
+      taskEventReceiver.receive(me, event.taskEvent)
+      return
+    }
     eventDispatcher.dispatch(me, event)
   }
 
@@ -102,11 +105,12 @@ class PlayerActor(
       id: Long,
       eventDispatcher: PlayerEventDispatcher,
       playerService: PlayerService,
-      requestHandler: PlayerRequestHandler
+      requestHandler: PlayerRequestHandler,
+      taskEventReceiver: TaskEventReceiver
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
         Behaviors.withTimers { timer ->
-          PlayerActor(ctx, timer, id, eventDispatcher, playerService, requestHandler)
+          PlayerActor(ctx, timer, id, eventDispatcher, playerService, requestHandler, taskEventReceiver)
         }
       }
     }
@@ -114,7 +118,7 @@ class PlayerActor(
 
   interface Command
 
-  class Login(val request: Request, val loginParams: LoginProto, val session: ActorRef<SessionActor.Command>) : Command
+  class Login(val request: Request, val loginParams: LoginParams, val session: ActorRef<SessionActor.Command>) : Command
 
   class RequestCommand(val request: Request) : Command
 }

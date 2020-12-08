@@ -172,7 +172,7 @@ object ImplementFunctions : EntityCacheComponent() {
           .addStatement("var entity = dbLoader(it)")
           .beginControlFlow("if (entity == null)")
           .addStatement("entity = creation(it)")
-          .addStatement("entityProcessor.postLoad(entity)")
+          .addStatement("entity.postLoad()")
           .addStatement("persistService.insert(entity).onFailure { e ->")
           .indent()
           .addStatement(

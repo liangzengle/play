@@ -23,7 +23,7 @@ object AddInitializerCodeBlock : EntityCacheComponent() {
         .beginControlFlow("if (cacheSpec?.loadAllOnInit == true)")
         .addStatement("""%T.info { "loading all [${'$'}{entityClass.simpleName}]" }""", Log)
         .beginControlFlow("queryService.foreach(entityClass)")
-        .addStatement("entityProcessor.postLoad(it)")
+        .addStatement("it.postLoad()")
         .addStatement("cache[it.%L] = CacheObj(it, %M())", getId(), currentMillis)
         .endControlFlow()
         .addStatement(".await(1.%M)", minutes)

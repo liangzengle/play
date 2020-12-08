@@ -70,7 +70,7 @@ class ConfigManager @Inject constructor(
   private var configSets = emptyMap<Class<AbstractConfig>, AnyConfigSet>()
 
   private var configClasses: Set<Class<out AbstractConfig>> =
-    classScanner.getConcreteSubTypesSequence(AbstractConfig::class.java)
+    classScanner.getOrdinarySubTypesSequence(AbstractConfig::class.java)
       .filterNot { it.isAnnotationPresent(Ignore::class.java) }.toSet()
 
   var version = "Unspecified"
@@ -99,7 +99,7 @@ class ConfigManager @Inject constructor(
   @Synchronized
   fun load() {
     if (isInitialized()) throw IllegalStateException("Cannot load twice.")
-    val classes = classScanner.getConcreteSubTypesSequence(AbstractConfig::class.java)
+    val classes = classScanner.getOrdinarySubTypesSequence(AbstractConfig::class.java)
       .filter { isLoadable(it) }.map { it as Class<AbstractConfig> }.toImmutableSet()
     classes.filterDuplicatedBy { getReader(it).getURL(it).getOrThrow() }
       .also { if (it.isNotEmpty()) throw IllegalStateException("配置路径冲突: ${it.values}") }

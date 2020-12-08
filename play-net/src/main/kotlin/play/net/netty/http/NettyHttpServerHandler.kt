@@ -47,7 +47,7 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
         return
       }
 
-      val maybeAction = actionManager.findAction(request.path())
+      val maybeAction = actionManager.findAction(request.path(), request.toNetty.uri())
       if (maybeAction.isEmpty) {
         writeResponse(ctx, request, HttpResult.notFount(), "Action Not Found")
         return

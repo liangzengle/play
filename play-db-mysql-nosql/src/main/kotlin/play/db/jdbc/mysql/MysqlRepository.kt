@@ -55,7 +55,7 @@ class MysqlRepository @Inject constructor(
         logger.info { "创建数据库: ${dbName()}" }
       }
       val nameToClass =
-        classScanner.getConcreteSubTypesSequence(Entity::class.java).map { tableNameOf(it) to it }.toMap()
+        classScanner.getOrdinarySubTypesSequence(Entity::class.java).map { tableNameOf(it) to it }.toMap()
       val createdTables = createTablesIfNotExists(conn, nameToClass)
       if (createdTables.isNotEmpty()) {
         logger.info { "创建表: $createdTables" }
@@ -69,15 +69,10 @@ class MysqlRepository @Inject constructor(
   }
 
   private fun checkRequirements(conn: Connection, conf: Configuration) {
-    val mysqlMajorVersion = conf.getInt("required-major-version")
+    logger.info { "MySQL server version: ${conn.metaData.databaseProductVersion}" }
+    logger.info { "MySQL driver version: ${conn.metaData.driverVersion}" }
     val requiredPacketSize = conf.getMemorySize("required-packet-size").toBytes()
     val panicOnSmallPacketSize = conf.getBoolean("panic-on-small-packet-size")
-    if (conn.metaData.driverMajorVersion < mysqlMajorVersion) {
-      throw IllegalStateException("Require mysql driver version $mysqlMajorVersion or higher")
-    }
-    if (conn.metaData.databaseMajorVersion < mysqlMajorVersion) {
-      throw IllegalStateException("Require mysql server version $mysqlMajorVersion or higher")
-    }
     val stmt = conn.createStatement()
     val rs = stmt.executeQuery("SHOW GLOBAL VARIABLES LIKE 'max_allowed_packet'")
     if (rs.next()) {
@@ -103,7 +98,7 @@ class MysqlRepository @Inject constructor(
   ): Collection<String> {
     return connection.use { conn ->
       val tablesToCreate = conn.createStatement().use { stmt ->
-        stmt.executeQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ${dbName()}")
+        stmt.executeQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '${dbName()}'")
           .use { rs ->
             val tableExisted = mutableSetOf<String>()
             while (rs.next()) {
@@ -117,7 +112,7 @@ class MysqlRepository @Inject constructor(
         val clazz: Class<out Entity<*>> = tables[tableName] ?: error(tableName)
         val sql =
           """
-                CREATE TABLE IF NOT EXISTS ${tableNameOf(clazz)} (
+                CREATE TABLE IF NOT EXISTS `${dbName()}`.`${tableNameOf(clazz)}` (
                     $ID ${idJdbcType(clazz)} NOT NULL,
                     $Data json NOT NULL,
                     PRIMARY KEY ($ID)

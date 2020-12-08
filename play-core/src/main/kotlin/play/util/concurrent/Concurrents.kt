@@ -8,11 +8,19 @@ import java.util.concurrent.ThreadFactory
  * Created by LiangZengle on 2020/2/20.
  */
 fun threadFactory(
-  name: String,
+  namePrefix: String,
   isDaemon: Boolean = false,
-  priority: Int = Thread.currentThread().priority
+  priority: Int = Thread.currentThread().priority,
+  threadGroup: ThreadGroup? = null,
+  exceptionHandler: Thread.UncaughtExceptionHandler? = null,
 ): ThreadFactory {
-  return NamedThreadFactory(name, isDaemon, priority)
+  return NamedThreadFactory
+    .newBuilder(namePrefix)
+    .daemon(isDaemon)
+    .priority(priority)
+    .threadGroup(threadGroup)
+    .exceptionHandler(exceptionHandler)
+    .build()
 }
 
 /**

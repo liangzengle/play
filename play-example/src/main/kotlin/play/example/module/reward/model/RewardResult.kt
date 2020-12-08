@@ -35,3 +35,5 @@ class CurrencyCostResult(tryResult: TryCostResult, val currentValue: Long) : Cos
 class ItemLikeCostResult(tryResult: TryCostResult) : CostResult(tryResult)
 
 class CostResultSet(val results: List<CostResult>)
+
+class RewardResultSet(val results: List<RewardResult>)

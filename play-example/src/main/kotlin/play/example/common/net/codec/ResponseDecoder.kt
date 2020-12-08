@@ -1,16 +1,15 @@
 package play.example.common.net.codec
 
 import io.netty.buffer.ByteBuf
-import io.netty.buffer.ByteBufInputStream
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder
-import play.example.common.net.message.ByteBufInputStreamMessage
 import play.mvc.Header
 import play.mvc.MsgId
 import play.mvc.Response
+import play.net.netty.copyToArray
 
 /**
- * ByteBuf -> Response
+ * ByteBuf -> Response(Header, StatusCode, ByteBuf)
  * @author LiangZengle
  */
 class ResponseDecoder : LengthFieldBasedFrameDecoder(1024, 0, 4, 0, 4) {
@@ -25,7 +24,7 @@ class ResponseDecoder : LengthFieldBasedFrameDecoder(1024, 0, 4, 0, 4) {
     return Response(
       Header(MsgId(msgId), sequenceNo),
       statusCode,
-      ByteBufInputStreamMessage(ByteBufInputStream(msg, msg.readableBytes(), true))
+      msg.copyToArray()
     )
   }
 }

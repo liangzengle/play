@@ -18,9 +18,10 @@ object RequestEncoder : ChannelOutboundHandlerAdapter() {
       super.write(ctx, msg, promise)
       return
     }
+
     val msgId = msg.header.msgId.value
     val sequenceNo = msg.header.sequenceNo
-    val body = msg.body.encodeToByteArray()
+    val body = PB.encode(msg.body)
     val len = 8 + body.size
     val buffer = ctx.channel().alloc().ioBuffer(len)
     buffer

@@ -1,12 +1,12 @@
 package play.util.concurrent
 
-import play.util.unsafeCast
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import kotlin.time.Duration
 import kotlin.time.milliseconds
+import play.util.unsafeCast
 
 typealias PlayFuture<T> = Future<T>
 
@@ -18,14 +18,14 @@ class Future<T>(private val cf: CompletableFuture<T>, private val ec: Executor) 
 
   constructor(cf: CompletableFuture<T>) : this(cf, cf.defaultExecutor())
 
-  fun toCompletableFuture(): CompletableFuture<T> = cf
+  fun toJava(): CompletableFuture<T> = cf
 
   fun <U> map(f: (T) -> U): Future<U> {
     return Future(cf.thenApplyAsync(f, ec))
   }
 
   fun <U> flatMap(f: (T) -> Future<U>): Future<U> {
-    return Future(cf.thenComposeAsync({ f(it).toCompletableFuture() }, ec))
+    return Future(cf.thenComposeAsync({ f(it).toJava() }, ec))
   }
 
   fun filter(predicate: (T) -> Boolean): Future<T> {

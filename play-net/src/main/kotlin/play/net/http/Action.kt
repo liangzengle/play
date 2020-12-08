@@ -82,6 +82,7 @@ data class RoutePath(val root: String, val children: List<ParPath>) {
   companion object {
     private val logger = getLogger()
 
+    @JvmStatic
     fun parse(path: String): RoutePath {
       val idx = path.indexOf('{')
       try {

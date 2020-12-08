@@ -43,6 +43,7 @@ class ServerService @Inject constructor(
       throw IllegalStateException("配置的服id在数据库中不存在: ${conf.serverId}")
     }
     this.serverIds = serverIds.toImmutable()
+    ServerConfig.initServerIds(this.serverIds)
   }
 
   fun isServerIdValid(serverId: Int) = serverIds.contains(serverId)

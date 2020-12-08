@@ -22,6 +22,7 @@ import play.example.module.player.event.PlayerEventDispatcherProvider
 import play.example.module.server.ServerService
 import play.example.module.server.config.ServerConfig
 import play.example.module.server.config.ServerConfigProvider
+import play.example.module.task.TaskEventReceiver
 import play.util.scheduling.Scheduler
 import javax.inject.Singleton
 
@@ -77,7 +78,8 @@ class LocalGuiceModule : AkkaGuiceModule() {
     queryService: QueryService,
     playerService: PlayerService,
     requestHandler: PlayerRequestHandler,
-    scheduler: Scheduler
+    scheduler: Scheduler,
+    taskEventReceiver: TaskEventReceiver
   ): ActorRef<PlayerManager.Command> {
     return spawn(
       systemProvider,
@@ -87,7 +89,8 @@ class LocalGuiceModule : AkkaGuiceModule() {
           queryService,
           playerService,
           requestHandler,
-          scheduler
+          scheduler,
+          taskEventReceiver
         )
       ),
       "PlayerManager"

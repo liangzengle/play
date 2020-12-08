@@ -7,7 +7,10 @@ import com.github.benmanes.caffeine.cache.RemovalCause
 import com.google.common.collect.Sets
 import play.Configuration
 import play.Log
-import play.db.*
+import play.db.DbExecutor
+import play.db.Entity
+import play.db.PersistService
+import play.db.QueryService
 import play.getLogger
 import play.inject.Injector
 import play.util.collection.filterNotNull
@@ -45,10 +48,7 @@ class CaffeineEntityCacheFactory @Inject constructor(
   @Named("cache") conf: Configuration
 ) : AbstractEntityCacheFactory(conf) {
 
-  override fun <ID : Any, E : Entity<ID>> create(
-    entityClass: Class<E>,
-    entityProcessor: EntityProcessor<E>
-  ): EntityCache<ID, E> {
+  override fun <ID : Any, E : Entity<ID>> create(entityClass: Class<E>): EntityCache<ID, E> {
     return CaffeineEntityCache(
       entityClass,
       persistService,
@@ -56,7 +56,6 @@ class CaffeineEntityCacheFactory @Inject constructor(
       injector,
       scheduler,
       executor,
-      entityProcessor,
       config
     )
   }
@@ -69,7 +68,6 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   injector: Injector,
   scheduler: Scheduler,
   executor: DbExecutor,
-  private val entityProcessor: EntityProcessor<E>,
   private val conf: AbstractEntityCacheFactory.Config
 ) : EntityCache<ID, E> {
 
@@ -122,7 +120,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     if (isLoadAllOnInit) {
       Log.info { "loading all [${entityClass.simpleName}]" }
       queryService.foreach(entityClass) {
-        entityProcessor.postLoad(it)
+        it.postLoad()
         cache.put(it.id(), CacheObj(it))
       }.get(1.minutes)
       Log.info { "loaded ${cache.estimatedSize()} [${entityClass.simpleName}]" }
@@ -158,7 +156,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     try {
       val entity: E? = f.get(5.seconds).getOrNull()
       if (entity != null) {
-        entityProcessor.postLoad(entity)
+        entity.postLoad()
       }
       return entity
     } catch (e: Exception) {
@@ -185,7 +183,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
       var entity = load(k)
       if (entity == null) {
         entity = creation(k)
-        entityProcessor.postLoad(entity)
+        entity.postLoad()
         persistService.insert(entity)
       }
       entity

@@ -7,4 +7,8 @@ data class TryRewardResult(val reward: Reward, val usedBagSize: Int, val changeC
   val mailReward: Reward? = if (mailCount > 0) reward.copy(mailCount) else null
 }
 
-data class TryRewardResultSet(val results: List<TryRewardResult>, val bagFullStrategy: BagFullStrategy, val source: Int)
+data class TryRewardResultSet(
+  val results: List<TryRewardResult>,
+  val bagFullStrategy: BagFullStrategy,
+  val logSource: Int
+)

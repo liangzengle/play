@@ -21,6 +21,7 @@ data class JdbcConfiguration(
 
   fun getUrl(): String {
     val b = StringBuilder(256)
+      .append("jdbc:")
       .append(protocol)
       .append("://")
       .append(host).append(':')
@@ -35,6 +36,7 @@ data class JdbcConfiguration(
 
   fun getUrlNoDB(): String {
     val b = StringBuilder(256)
+      .append("jdbc:")
       .append(protocol)
       .append("://")
       .append(host).append(':')

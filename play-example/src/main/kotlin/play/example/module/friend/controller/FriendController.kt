@@ -1,5 +1,7 @@
 package play.example.module.friend.controller
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import play.example.module.ModuleId
 import play.example.module.friend.FriendService
 import play.mvc.AbstractController
@@ -7,8 +9,6 @@ import play.mvc.Cmd
 import play.mvc.Controller
 import play.mvc.RequestResult
 import play.util.concurrent.PlayFuture
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * 好友模块请求处理

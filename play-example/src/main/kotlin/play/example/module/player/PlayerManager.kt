@@ -5,6 +5,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import kotlin.time.seconds
 import play.akka.AbstractTypedActor
 import play.akka.resumeSupervisor
 import play.akka.send
@@ -14,19 +15,20 @@ import play.example.common.id.GameUIDGenerator
 import play.example.common.net.SessionActor
 import play.example.common.net.write
 import play.example.common.scheduling.Cron
-import play.example.module.account.message.LoginProto
+import play.example.module.account.message.LoginParams
 import play.example.module.player.domain.PlayerErrorCode
-import play.example.module.player.entity.PlayerInfo
+import play.example.module.player.entity.Player2
 import play.example.module.player.event.PlayerEvent
 import play.example.module.player.event.PlayerEventDispatcher
 import play.example.module.player.exception.PlayerNotExistsException
+import play.example.module.task.TaskEventReceiver
 import play.mvc.Request
 import play.mvc.Response
 import play.util.collection.ConcurrentIntObjectMap
 import play.util.collection.ConcurrentLongObjectMap
 import play.util.collection.ConcurrentObjectLongMap
 import play.util.scheduling.Scheduler
-import kotlin.time.seconds
+import play.util.unsafeCast
 
 class PlayerManager(
   context: ActorContext<Command>,
@@ -34,13 +36,14 @@ class PlayerManager(
   queryService: QueryService,
   private val playerService: PlayerService,
   private val requestHandler: PlayerRequestHandler,
-  cronScheduler: ActorCronScheduler<Command>
+  cronScheduler: ActorCronScheduler<Command>,
+  private val taskEventReceiver: TaskEventReceiver
 ) : AbstractTypedActor<PlayerManager.Command>(context) {
 
   init {
     val idToName = ConcurrentLongObjectMap<String>()
     val serverToNameToId = ConcurrentIntObjectMap<ConcurrentObjectLongMap<String>>()
-    queryService.foreach(PlayerInfo::class.java, listOf("name")) { result ->
+    queryService.foreach(Player2::class.java, listOf("name")) { result ->
       val id = result.getLong("id")
       val name = result.getString("name")
       add(id, name, idToName, serverToNameToId)
@@ -64,7 +67,7 @@ class PlayerManager(
     val playerId = cmd.id
     val session = cmd.session
     if (!playerService.isPlayerExists(playerId)) {
-      session write Response(cmd.request.header, PlayerErrorCode.PlayerNotExists)
+      session write Response(cmd.request.header, PlayerErrorCode.PlayerNotExists.getErrorCode())
       return
     }
     val player = getPlayer(playerId)!!
@@ -83,7 +86,7 @@ class PlayerManager(
     val playerId = cmd.id
     val playerName = cmd.request.body.readString()
     if (!isPlayerNameAvailable(playerId, playerName)) {
-      cmd.session write Response(cmd.request.header, PlayerErrorCode.PlayerNameNotAvailable)
+      cmd.session write Response(cmd.request.header, PlayerErrorCode.PlayerNameNotAvailable.getErrorCode())
       return
     }
     playerService.createPlayer(playerId, playerName)
@@ -102,11 +105,11 @@ class PlayerManager(
     val actorName = id.toString()
     val opt = context.getChild(actorName)
     if (opt.isPresent) {
-      return opt.get().unsafeUpcast()
+      return opt.get().unsafeCast()
     }
     return context.spawn(
       resumeSupervisor(
-        PlayerActor.create(id, eventDispatcher, playerService, requestHandler)
+        PlayerActor.create(id, eventDispatcher, playerService, requestHandler, taskEventReceiver)
       ),
       actorName
     )
@@ -148,7 +151,8 @@ class PlayerManager(
       queryService: QueryService,
       playerService: PlayerService,
       requestHandler: PlayerRequestHandler,
-      scheduler: Scheduler
+      scheduler: Scheduler,
+      taskEventReceiver: TaskEventReceiver
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
         PlayerManager(
@@ -157,7 +161,8 @@ class PlayerManager(
           queryService,
           playerService,
           requestHandler,
-          ActorCronScheduler(scheduler, ctx)
+          ActorCronScheduler(scheduler, ctx),
+          taskEventReceiver
         )
       }
     }
@@ -178,14 +183,14 @@ class PlayerManager(
   class CreatePlayerRequest(
     val id: Long,
     val request: Request,
-    val loginParams: LoginProto,
+    val loginParams: LoginParams,
     val session: ActorRef<SessionActor.Command>
   ) : Command
 
   class LoginPlayerRequest(
     val id: Long,
     val request: Request,
-    val loginParams: LoginProto,
+    val loginParams: LoginParams,
     val session: ActorRef<SessionActor.Command>
   ) : Command
 

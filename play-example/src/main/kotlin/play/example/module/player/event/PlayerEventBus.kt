@@ -4,6 +4,7 @@ import akka.actor.typed.ActorRef
 import play.example.module.player.OnlinePlayerService
 import play.example.module.player.PlayerManager
 import play.example.module.player.Self
+import play.example.module.task.event.TaskEvent
 import java.util.function.LongFunction
 import javax.inject.Inject
 import javax.inject.Provider
@@ -15,7 +16,6 @@ class PlayerEventBus @Inject constructor(
   private val onlinePlayerService: OnlinePlayerService,
   private val dispatcher: PlayerEventDispatcherProvider
 ) {
-  // is it necessary to avoid volatile read?
   private var _playerManager: ActorRef<PlayerManager.Command>? = null
   private var _dispatcher: PlayerEventDispatcher? = null
 
@@ -24,6 +24,14 @@ class PlayerEventBus @Inject constructor(
       _playerManager = playerManager.get()
     }
     _playerManager!!.tell(event)
+  }
+
+  fun post(playerId: Long, event: TaskEvent) {
+    post(PlayerTaskEvent(playerId, event))
+  }
+
+  fun post(self: Self, event: TaskEvent) {
+    post(self.id, event)
   }
 
   fun postBlocking(self: Self, event: PlayerEvent) {

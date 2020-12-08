@@ -15,7 +15,7 @@ data class TryCostResult(val cost: Reward, val changeCount: Int = 0) : TryCostRe
   override fun asList(): List<TryCostResult> = this.asList()
 }
 
-data class TryCostResultSet(val results: List<TryCostResult>, val source: Int) : TryCostResultSetLike() {
+data class TryCostResultSet(val results: List<TryCostResult>, val logSource: Int) : TryCostResultSetLike() {
   override fun appendTo(results: MutableList<TryCostResult>) {
     results.addAll(this.results)
   }

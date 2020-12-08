@@ -12,25 +12,25 @@ import play.plugin.modularcode.ModularCodeConfigurationKeys.KEY_ENABLED
 
 object ModularCodeConfigurationKeys {
   val KEY_ENABLED = CompilerConfigurationKey.create<Boolean>("enabled")
-  val KEY_ANNOTATION = CompilerConfigurationKey.create<List<String>>("annotation")
+  val KEY_ANNOTATION = CompilerConfigurationKey.create<String>("annotation")
 }
 
 @AutoService(CommandLineProcessor::class)
-class PlayModularCodeCommandLingProcessor : CommandLineProcessor {
+class ModularCodeCommandLingProcessor : CommandLineProcessor {
   companion object {
     val PLUGIN_ID = "play.modular-code"
-    val ENABLE_OPTION = CliOption("enabled", "<true|false>", "whether plugin is enabled", false)
+    val ENABLED_OPTION = CliOption("enabled", "<true|false>", "whether plugin is enabled", false)
     val ANNOTATION_OPTION =
-      CliOption("annotation", "<fqname>", "Annotation qualified names", true, allowMultipleOccurrences = true)
+      CliOption("annotation", "<fqname>", "Annotation qualified names", true)
   }
 
   override val pluginId: String = PLUGIN_ID
-  override val pluginOptions: Collection<AbstractCliOption> = listOf(ENABLE_OPTION, ANNOTATION_OPTION)
+  override val pluginOptions: Collection<AbstractCliOption> = listOf(ENABLED_OPTION, ANNOTATION_OPTION)
 
   override fun processOption(option: AbstractCliOption, value: String, configuration: CompilerConfiguration) {
     when (option) {
-      ENABLE_OPTION -> configuration.put(KEY_ENABLED, value.toBoolean())
-      ANNOTATION_OPTION -> configuration.appendList(KEY_ANNOTATION, value)
+      ENABLED_OPTION -> configuration.put(KEY_ENABLED, value.toBoolean())
+      ANNOTATION_OPTION -> configuration.put(KEY_ANNOTATION, value)
       else -> throw CliOptionProcessingException("Unknown option: ${option.optionName}")
     }
   }

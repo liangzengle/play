@@ -32,7 +32,7 @@ inline fun OptionalInt.map(f: (Int) -> Int): OptionalInt {
   return if (isPresent) OptionalInt.of(f(asInt)) else this
 }
 
-inline fun <T> OptionalInt.mapToObj(f: (Int) -> T): Optional<T> {
+inline fun <T : Any> OptionalInt.mapToObj(f: (Int) -> T): Optional<T> {
   return if (isPresent) Optional.of(f(asInt)) else Optional.empty()
 }
 
@@ -48,7 +48,7 @@ inline fun OptionalDouble.map(f: (Double) -> Double): OptionalDouble {
   return if (isPresent) OptionalDouble.of(f(asDouble)) else this
 }
 
-inline fun <T> OptionalDouble.mapToObj(f: (Double) -> T): Optional<T> {
+inline fun <T : Any> OptionalDouble.mapToObj(f: (Double) -> T): Optional<T> {
   return if (isPresent) Optional.of(f(asDouble)) else Optional.empty()
 }
 

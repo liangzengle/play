@@ -4,7 +4,7 @@ import play.util.collection.EmptyByteArray
 import play.util.concurrent.Future
 import play.util.json.Json
 import play.util.mapToObj
-import play.util.reflect.isAssignableFrom
+import play.util.reflect.isSubclassOf
 import java.lang.invoke.MethodHandle
 import java.lang.invoke.MethodHandles
 import java.lang.reflect.Method
@@ -71,7 +71,7 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
       for (i in parameters.indices) {
         val p = parameters[i]
         val type = p.type
-        val value = if (isAssignableFrom<BasicHttpRequest>(type)) {
+        val value = if (type.isSubclassOf<BasicHttpRequest>()) {
           httpRequest
         } else {
           getParameter(p.name, p.parameterizedType, httpRequest, false)

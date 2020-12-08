@@ -11,6 +11,8 @@ import java.lang.reflect.*
 @Suppress("UNCHECKED_CAST")
 object Reflect {
 
+  val stackWalker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+
   fun <T> getClass(fqcn: String): Class<out T> {
     val clazz = Class.forName(fqcn)
     return clazz as Class<out T>
@@ -59,6 +61,10 @@ object Reflect {
     }
     return createInstance(clazz as Class<out T>)
   }
+
+  fun getCallerClass(): Class<*> {
+    return stackWalker.walk { it.map { f -> f.declaringClass }.skip(2).findFirst().orElseThrow() }
+  }
 }
 
 fun <T> Class<T>.getTypeArg(superType: Class<in T>, index: Int): Type {
@@ -86,6 +92,8 @@ fun Class<*>.isStrict() = Modifier.isStrict(modifiers)
 inline fun <reified T> classOf(): Class<T> = T::class.java
 
 inline fun <reified T> isAssignableFrom(clazz: Class<*>): Boolean = T::class.java.isAssignableFrom(clazz)
+
+inline fun <reified T> Class<*>.isSubclassOf() = T::class.java.isAssignableFrom(this)
 
 @Suppress("UNCHECKED_CAST")
 fun <T> Field.getUnchecked(target: Any?): T? {

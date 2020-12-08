@@ -9,7 +9,7 @@ import play.util.control.Result2
  */
 sealed class RequestResult<out T> {
 
-  data class Ok<T : Message>(val value: T) : RequestResult<T>()
+  data class Ok<T>(val value: T) : RequestResult<T>()
 
   data class Code(val code: Int) : RequestResult<kotlin.Nothing>()
 
@@ -18,33 +18,23 @@ sealed class RequestResult<out T> {
   data class Future<T>(val future: PlayFuture<RequestResult<T>>) : RequestResult<T>()
 
   companion object {
-    operator fun invoke(result: Result2<Message>): RequestResult<Message> =
+
+    operator fun <T> invoke(result: Result2<T>): RequestResult<T> =
       if (result.isErr()) Code(result.getErrorCode()) else Ok(result.get())
+
+    operator fun <T : Any> invoke(f: PlayFuture<Result2<T>>): RequestResult<T> = Future(f.map { RequestResult(it) })
 
     @JvmName("unit")
     @OverloadResolutionByLambdaReturnType
-    inline operator fun invoke(f: () -> Unit): RequestResult<Unit> {
+    inline fun unit(f: () -> Unit): RequestResult<Unit> {
       f()
       return Nothing
     }
 
-    @JvmName("code")
-    @OverloadResolutionByLambdaReturnType
-    inline operator fun invoke(f: () -> Int): RequestResult<Int> {
-      return Code(f())
-    }
-
-    @JvmName("ok")
-    @OverloadResolutionByLambdaReturnType
-    inline operator fun invoke(f: () -> Message): RequestResult<Message> {
-      return Ok(f())
-    }
-
     @JvmName("of")
     @OverloadResolutionByLambdaReturnType
-    inline operator fun invoke(f: () -> Result2<Message>): RequestResult<Message> {
-      val r = f()
-      return RequestResult(r)
+    inline operator fun <T> invoke(f: () -> Result2<T>): RequestResult<T> {
+      return RequestResult(f())
     }
 
     @JvmName("async")

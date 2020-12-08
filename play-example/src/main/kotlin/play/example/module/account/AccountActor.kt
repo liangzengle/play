@@ -9,12 +9,10 @@ import akka.actor.typed.javadsl.Receive
 import play.Log
 import play.akka.*
 import play.example.common.net.SessionActor
-import play.example.common.net.message.WireMessage
 import play.example.common.net.write
 import play.example.module.StatusCode
 import play.example.module.account.entity.AccountEntityCache
-import play.example.module.account.message.LoginProto
-import play.example.module.common.message.BoolValue
+import play.example.module.account.message.LoginParams
 import play.example.module.player.PlayerManager
 import play.example.module.player.controller.PlayerControllerInvoker
 import play.mvc.Request
@@ -30,7 +28,7 @@ class AccountActor(
   private val playerManager: ActorRef<PlayerManager.Command>
 ) : AbstractTypedActor<AccountActor.Command>(context) {
 
-  private lateinit var loginParams: LoginProto
+  private lateinit var loginParams: LoginParams
   private lateinit var session: ActorRef<SessionActor.Command>
 
   private val requestAdapter = context.messageAdapter(Request::class.java) {
@@ -56,7 +54,7 @@ class AccountActor(
         // Account may create failed, make sure it has been created.
         if (account == null) {
           Log.error("Player($id)创建失: Account未创建")
-          session.write(Response(request.header, StatusCode.Failure))
+          session.write(Response(request.header, StatusCode.Failure.getErrorCode()))
         } else {
           playerManager send PlayerManager.CreatePlayerRequest(id, request, loginParams, session)
         }
@@ -80,7 +78,7 @@ class AccountActor(
     session send SessionActor.Identify(id)
     session send SessionActor.Subscribe(requestAdapter)
     val hasPlayer = PlayerManager.isPlayerExists(id)
-    session.write(Response(cmd.request.header, 0, WireMessage(BoolValue(hasPlayer))))
+    session.write(Response(cmd.request.header, 0, hasPlayer))
     return waitingPlayerCreate
   }
 
@@ -100,7 +98,7 @@ class AccountActor(
 
   interface Command
 
-  class Login(val request: Request, val params: LoginProto, val session: ActorRef<SessionActor.Command>) : Command
+  class Login(val request: Request, val params: LoginParams, val session: ActorRef<SessionActor.Command>) : Command
 
   private class RequestCommand(val request: Request) : Command
 }

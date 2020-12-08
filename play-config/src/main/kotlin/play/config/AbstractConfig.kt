@@ -3,8 +3,10 @@ package play.config
 /**
  * 所有配置的基类
  */
-abstract class AbstractConfig {
-  open val id = 0
+abstract class AbstractConfig constructor(@JvmField val id: Int) {
+
+  // for deserialization
+  constructor() : this(0)
 
   open fun postInitialize(errors: MutableList<String>) {}
 

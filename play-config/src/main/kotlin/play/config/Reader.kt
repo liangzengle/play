@@ -1,6 +1,7 @@
 package play.config
 
 import com.fasterxml.jackson.core.JsonProcessingException
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
 import com.typesafe.config.ConfigSyntax
@@ -65,27 +66,39 @@ class ResourceReader : Reader {
   }
 }
 
-interface ConfigReader : Reader {
-  val format: String
+abstract class ConfigReader : Reader {
+  abstract val format: String
 
-  val resolver: ConfigResolver
+  abstract val resolver: ConfigResolver
 
   override fun getURL(clazz: Class<*>): Result<URL> {
     val name = clazz.getAnnotation(ConfigPath::class.java)?.value ?: clazz.simpleName
     return resolver.resolve("$name.$format")
+  }
+
+  fun getURL(fileNameNoExtension: String): Result<URL> {
+    return resolver.resolve("$fileNameNoExtension.$format")
   }
 }
 
 @Singleton
 class JsonConfigReader @Inject constructor(
   override val resolver: ConfigResolver
-) : ConfigReader {
+) : ConfigReader() {
 
   override val format: String = "json"
 
   override fun <T> read(clazz: Class<T>): List<T> {
     return try {
-      val url = getURL(clazz).getOrThrow()
+      val originalResult = getURL(clazz)
+      var result = originalResult
+      if (originalResult.isFailure && !clazz.isAnnotationPresent(ConfigPath::class.java)) {
+        result = getURL(trimClassicPostfix(clazz.simpleName))
+      }
+      if (result.isFailure) {
+        originalResult.getOrThrow()
+      }
+      val url = result.getOrThrow()
       jsonToList(url, clazz)
     } catch (e: JsonProcessingException) {
       throw e
@@ -96,7 +109,9 @@ class JsonConfigReader @Inject constructor(
   }
 
   companion object {
-    val objectMapper = Json.mapper.copy().registerModule(ImmutableCollectionModule())
+    val objectMapper = Json.mapper.copy()
+      .configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true)
+      .registerModule(ImmutableCollectionModule())
 
     fun <T> jsonToList(src: URL, elemType: Class<T>): List<T> {
       val type = objectMapper.typeFactory.constructCollectionType(List::class.java, elemType)
@@ -105,6 +120,16 @@ class JsonConfigReader @Inject constructor(
 
     fun <T> jsonToObject(src: String, type: Class<T>): T {
       return objectMapper.readValue(src, type)
+    }
+
+    fun trimClassicPostfix(simpleName: String): String {
+      if (simpleName.endsWith("Config")) {
+        return simpleName.substring(0, simpleName.length - 6)
+      }
+      if (simpleName.endsWith("Resource")) {
+        return simpleName.substring(0, simpleName.length - 8)
+      }
+      return simpleName
     }
   }
 }

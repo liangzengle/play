@@ -9,8 +9,7 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.javadsl.*
 import org.slf4j.Logger
-import play.scala.toResult
-import play.scala.toScala
+import play.scala.toJava
 import play.util.concurrent.PlayFuture
 import scala.PartialFunction
 import scala.concurrent.ExecutionContext
@@ -116,11 +115,15 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
   }
 
   protected inline fun <U> Future<U>.pipToSelf(noinline resultMapper: (Result<U>) -> T) {
-    context.asScala().pipeToSelf(this) { t -> resultMapper(t.toResult()) }
+    context.pipeToSelf(this.toJava()) { v, e ->
+      resultMapper(if (e != null) Result.failure(e) else Result.success(v))
+    }
   }
 
   protected inline fun <U> PlayFuture<U>.pipToSelf(noinline resultMapper: (Result<U>) -> T) {
-    context.asScala().pipeToSelf(this.toScala()) { t -> resultMapper(t.toResult()) }
+    context.pipeToSelf(this.toJava()) { v, e ->
+      resultMapper(if (e != null) Result.failure(e) else Result.success(v))
+    }
   }
 }
 

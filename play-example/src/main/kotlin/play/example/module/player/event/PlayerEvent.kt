@@ -4,6 +4,7 @@ import play.example.module.player.PlayerActor
 import play.example.module.player.PlayerManager
 import play.example.module.reward.model.Cost
 import play.example.module.reward.model.CostResultSet
+import play.example.module.task.event.TaskEvent
 import play.util.concurrent.PlayPromise
 import play.util.control.Result2
 
@@ -21,6 +22,8 @@ data class PlayerExecCost(
   val logSource: Int,
   val promise: PlayPromise<Result2<CostResultSet>>
 ) : PlayerEvent
+
+data class PlayerTaskEvent(override val playerId: Long, val taskEvent: TaskEvent) : PlayerEvent
 
 data class PlayerRequestEvent(override val playerId: Long, val message: PlayerActor.RequestCommand) : PlayerEvent
 

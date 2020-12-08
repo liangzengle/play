@@ -2,15 +2,15 @@ package play.example.client
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.ChannelOption
+import play.example.common.net.codec.PB
 import play.example.common.net.codec.RequestEncoder
 import play.example.common.net.codec.ResponseDecoder
-import play.example.common.net.message.WireRequestBody
 import play.example.module.account.controller.AccountControllerInvoker
-import play.example.module.account.message.LoginProto
-import play.example.request.RequestProto
+import play.example.module.account.message.LoginParams
 import play.mvc.Header
 import play.mvc.MsgId
 import play.mvc.Request
+import play.mvc.RequestBody
 import play.net.netty.TcpClient
 import play.net.netty.channelInitializer
 import play.net.netty.createChannelFactory
@@ -27,12 +27,12 @@ object Client {
   fun main(args: Array<String>) {
     val client = TcpClient("test", "localhost", 8080, bootstrap())
     client.connect()
-    val loginMsg = LoginProto("dev", 1, "", "someone")
-    val msg = RequestProto(byteList = loginMsg.encodeByteString())
+    val loginMsg = LoginParams("dev", 1, "someone")
+    val body = RequestBody(bytes = PB.encode(loginMsg))
     client.write(
       Request(
         Header(MsgId(AccountControllerInvoker.login), 1),
-        WireRequestBody(msg)
+        body
       )
     )
   }
