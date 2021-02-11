@@ -1,14 +1,11 @@
 package play.util.scheduling
 
+import java.lang.reflect.UndeclaredThrowableException
+import java.time.Duration
+import java.time.LocalDateTime
 import play.util.time.currentDateTime
 import play.util.time.currentMillis
 import play.util.time.toMillis
-import java.lang.reflect.UndeclaredThrowableException
-import java.time.LocalDateTime
-import java.util.concurrent.Delayed
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 
 /**
  * Created by LiangZengle on 2020/2/20.
@@ -16,23 +13,23 @@ import java.util.concurrent.TimeUnit
 class ReschedulingRunnable(
   task: Runnable,
   private val trigger: Trigger,
-  private val executor: ScheduledExecutorService,
+  private val scheduler: Scheduler,
   errorHandler: ErrorHandler
-) : DelegatingErrorHandlingRunnable(task, errorHandler), ScheduledFuture<Any> {
+) : DelegatingErrorHandlingRunnable(task, errorHandler), Cancellable {
 
   private val triggerContext = SimpleTriggerContext()
   private val triggerContextMonitor = Any()
   private var scheduledExecutionTime: LocalDateTime? = null
-  private var currentFuture: ScheduledFuture<*>? = null
+  private var currentFuture: Cancellable? = null
 
-  fun schedule(): ScheduledFuture<*>? {
+  fun schedule(): Cancellable {
     synchronized(triggerContextMonitor) {
       scheduledExecutionTime = trigger.nextExecutionTime(triggerContext)
       return scheduledExecutionTime?.let {
         val initialDelay = it.toMillis() - currentMillis()
-        currentFuture = executor.schedule(this, initialDelay, TimeUnit.MILLISECONDS)
+        currentFuture = scheduler.schedule(Duration.ofMillis(initialDelay), this::run)
         this
-      }
+      } ?: Cancellable.cancelled
     }
   }
 
@@ -40,62 +37,26 @@ class ReschedulingRunnable(
     val actualExecutionTime = currentDateTime()
     super.run()
     if (cancelSchedule) {
-      currentFuture?.cancel(false)
+      currentFuture?.cancel()
     }
     val completionTime = currentDateTime()
     synchronized(triggerContextMonitor) {
       triggerContext.update(scheduledExecutionTime, actualExecutionTime, completionTime)
-      if (!currentFuture!!.isCancelled) schedule()
+      if (!currentFuture!!.isCancelled()) schedule()
     }
   }
 
-  override fun cancel(mayInterruptIfRunning: Boolean): Boolean {
+  override fun cancel(): Boolean {
     synchronized(triggerContextMonitor) {
-      return this.currentFuture!!.cancel(mayInterruptIfRunning)
+      val f = currentFuture
+      return f != null && f.cancel()
     }
   }
 
   override fun isCancelled(): Boolean {
     synchronized(triggerContextMonitor) {
-      return this.currentFuture!!.isCancelled
-    }
-  }
-
-  override fun isDone(): Boolean {
-    synchronized(triggerContextMonitor) {
-      return this.currentFuture!!.isDone
-    }
-  }
-
-  override fun get(): Any {
-    var curr: ScheduledFuture<*>?
-    synchronized(triggerContextMonitor) {
-      curr = this.currentFuture
-    }
-    return curr!!.get()
-  }
-
-  override fun get(timeout: Long, unit: TimeUnit): Any {
-    var curr: ScheduledFuture<*>?
-    synchronized(triggerContextMonitor) {
-      curr = this.currentFuture
-    }
-    return curr!!.get(timeout, unit)
-  }
-
-  override fun getDelay(unit: TimeUnit): Long {
-    var curr: ScheduledFuture<*>?
-    synchronized(triggerContextMonitor) {
-      curr = this.currentFuture
-    }
-    return curr!!.getDelay(unit)
-  }
-
-  override fun compareTo(other: Delayed): Int {
-    return if (this === other) 0
-    else {
-      val diff = getDelay(TimeUnit.MILLISECONDS) - other.getDelay(TimeUnit.MILLISECONDS)
-      if (diff == 0L) 0 else if (diff < 0) -1 else 1
+      val f = currentFuture
+      return f != null && f.isCancelled()
     }
   }
 }

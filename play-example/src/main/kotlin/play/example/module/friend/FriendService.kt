@@ -2,8 +2,8 @@ package play.example.module.friend
 
 import javax.inject.Inject
 import javax.inject.Singleton
-import play.example.module.friend.controller.FriendInfo
 import play.example.module.friend.entity.PlayerFriendEntityCache
+import play.example.module.friend.message.FriendInfo
 import play.util.control.Result2
 import play.util.control.ok
 

@@ -1,10 +1,10 @@
 package play.example.module.reward.config
 
+import javax.validation.constraints.Min
 import play.config.validation.ReferTo
 import play.example.module.item.config.ItemConfig
 import play.example.module.player.args.PlayerArgs
 import play.example.module.reward.model.*
-import javax.validation.constraints.Min
 
 abstract class RawReward(type: RewardType, num: String) {
   private val count = try {
@@ -22,7 +22,7 @@ abstract class RawReward(type: RewardType, num: String) {
   abstract val type: RewardType
   protected abstract val num: String
 
-  fun getCount(args: Map<String, Any>): Int = if (count >= 0) count else TODO("eval")
+  fun getCount(args: Map<String, Any>): Int = if (count >= 0) count else TODO("implements eval")
 
   abstract fun toReward(args: PlayerArgs): Reward
 }
@@ -32,6 +32,8 @@ object NonRawReward : RawReward(RewardType.None, "0") {
   override val num: String = "0"
 
   override fun toReward(args: PlayerArgs): NonReward = NonReward
+
+  override fun toString(): String = this.javaClass.simpleName
 }
 
 data class CurrencyRawReward(override val type: RewardType, override val num: String) : RawReward(type, num) {

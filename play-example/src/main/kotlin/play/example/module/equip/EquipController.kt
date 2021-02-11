@@ -1,9 +1,8 @@
-package play.example.module.equip.controller
+package play.example.module.equip
 
 import javax.inject.Inject
 import javax.inject.Singleton
 import play.example.module.ModuleId
-import play.example.module.equip.EquipService
 import play.example.module.player.Self
 import play.mvc.AbstractController
 import play.mvc.Cmd

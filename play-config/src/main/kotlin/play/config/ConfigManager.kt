@@ -1,6 +1,14 @@
 package play.config
 
 import com.google.common.collect.ImmutableList
+import java.io.File
+import java.nio.file.Paths
+import java.util.*
+import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Singleton
+import kotlin.Comparator
+import kotlin.NoSuchElementException
 import play.ClassScanner
 import play.Configuration
 import play.Log
@@ -16,14 +24,6 @@ import play.util.reflect.isAbstract
 import play.util.reflect.isAssignableFrom
 import play.util.scheduling.Scheduler
 import play.util.unsafeCast
-import java.io.File
-import java.nio.file.Paths
-import java.util.*
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
-import kotlin.Comparator
-import kotlin.NoSuchElementException
 
 internal typealias AnyConfigSet = SuperConfigSet<Any, AbstractConfig, Any, ConfigExtension<AbstractConfig>>
 
@@ -195,7 +195,7 @@ class ConfigManager @Inject constructor(
   }
 
   private fun setupAutoReload() {
-    val action: (Set<File>) -> Unit = { changeList ->
+    fun reloadChangedFiles(changeList: Set<File>) {
       val changeSet = changeList.asSequence().map { it.toURI().toURL() }.toSet()
       val classesToReload = configClasses.asSequence()
         .filter { clazz ->
@@ -213,13 +213,13 @@ class ConfigManager @Inject constructor(
       }
       .distinct()
       .forEach { dir ->
-        ConfigDirectoryMonitor(dir, action).start(modificationDetectInterval, scheduler)
+        ConfigDirectoryMonitor(dir, ::reloadChangedFiles).start(modificationDetectInterval, scheduler)
       }
 
     // 监听策划配置文件
     try {
       val dir = Paths.get(resolver.rootPath).toFile()
-      ConfigDirectoryMonitor(dir, action).start(modificationDetectInterval, scheduler)
+      ConfigDirectoryMonitor(dir, ::reloadChangedFiles).start(modificationDetectInterval, scheduler)
     } catch (e: UnsupportedOperationException) {
       Log.info { "启用配置自动重加载失败, 配置文件的路径不是文件路径: ${resolver.rootPath}" }
     }

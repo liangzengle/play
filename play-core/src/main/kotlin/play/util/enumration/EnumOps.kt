@@ -2,7 +2,7 @@ package play.util.enumration
 
 import com.google.common.collect.Maps
 import org.eclipse.collections.api.map.primitive.IntObjectMap
-import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 import play.Log
 import play.util.collection.filterDuplicatedBy
 
@@ -40,6 +40,8 @@ interface IdNamedEnumOps<T> : IdEnumOps<T>, NamedEnumOps<T> where T : Enum<T>, T
 
 private class IdEnumOpsImpl<T>(override val elems: List<T>) : IdEnumOps<T> where T : Enum<T>, T : IdEnum<T> {
 
+  private val map: IntObjectMap<T>?
+
   init {
     val duplicated = elems.asSequence().filterDuplicatedBy { it.id }.values
     if (duplicated.isNotEmpty()) {
@@ -47,10 +49,13 @@ private class IdEnumOpsImpl<T>(override val elems: List<T>) : IdEnumOps<T> where
       Log.error { msg }
       throw IllegalStateException(msg)
     }
+    val idMap = IntObjectHashMap<T>(elems.size)
+    for (i in elems.indices) {
+      val e = elems[i]
+      idMap.put(e.id, e)
+    }
+    map = idMap.toImmutable()
   }
-
-  private val map: IntObjectMap<T>? =
-    if (elems.size > 8) IntObjectMaps.immutable.from(elems, { it.id }, { it }) else null
 
   override val size: Int get() = elems.size
 

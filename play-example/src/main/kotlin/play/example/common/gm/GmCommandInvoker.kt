@@ -1,9 +1,9 @@
 package play.example.common.gm
 
+import java.lang.reflect.Method
 import play.example.module.player.Self
 import play.util.collection.mkString
-import play.util.reflect.invokeUnchecked
-import java.lang.reflect.Method
+import play.util.reflect.Reflect
 
 class GmCommandInvoker(private val method: Method, private val target: Any) {
   init {
@@ -33,7 +33,7 @@ class GmCommandInvoker(private val method: Method, private val target: Any) {
         throw GmCommandIllegalArgException("第${i + 1}个参数错误")
       }
     }
-    return method.invokeUnchecked(target, *params)
+    return Reflect.invoke(method, target, *params)
   }
 
   override fun equals(other: Any?): Boolean {

@@ -6,7 +6,7 @@ import org.eclipse.collections.impl.factory.primitive.IntIntMaps
  * 玩家任务基类
  * @author LiangZengle
  */
-abstract class AbstractPlayerTask(val id: Int) {
+abstract class AbstractTask(val id: Int) {
 
   /**
    * 任务状态

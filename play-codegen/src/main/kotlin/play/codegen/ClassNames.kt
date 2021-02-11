@@ -48,3 +48,5 @@ internal val ExtensionConfigSet = ClassName.bestGuess("play.config.ExtensionConf
 internal val SingletonConfigSet = ClassName.bestGuess("play.config.SingletonConfigSet")
 internal val SingletonConfig = ClassName.bestGuess("play.config.SingletonConfig")
 internal val Resource = ClassName.bestGuess("play.config.Resource")
+
+internal val UnsafeEntityCacheOps = ClassName.bestGuess("play.db.cache.UnsafeEntityCacheOps")

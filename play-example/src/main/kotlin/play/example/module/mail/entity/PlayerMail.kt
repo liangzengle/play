@@ -1,8 +1,8 @@
 package play.example.module.mail.entity
 
-import play.example.module.player.entity.PlayerEntity
+import play.example.module.player.entity.AbstractPlayerEntity
 
-class PlayerMail(id: Long) : PlayerEntity(id) {
+class PlayerMail(id: Long) : AbstractPlayerEntity(id) {
 
   private val mails = HashMap<Int, Mail>()
 

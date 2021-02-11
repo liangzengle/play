@@ -3,6 +3,8 @@
 package play.util
 
 import java.util.concurrent.ThreadLocalRandom
+import javax.annotation.Nullable
+import kotlin.math.max
 
 /**
  * Random Utilities
@@ -32,9 +34,9 @@ object rd {
 
   fun nextDouble() = current().nextDouble()
 
-  fun test(prob: Int, boundProb: Int): Boolean = prob >= boundProb || prob > nextInt(boundProb)
+  fun test(prob: Int, boundProb: Int): Boolean = prob > 0 && (prob >= boundProb || prob > nextInt(boundProb))
 
-  fun test(prob: Long, boundProb: Long): Boolean = prob >= boundProb || prob > nextLong(boundProb)
+  fun test(prob: Long, boundProb: Long): Boolean = prob > 0 && (prob >= boundProb || prob > nextLong(boundProb))
 
   fun testWith100(prob: Int): Boolean = test(prob, 100)
   fun testWith10000(prob: Int): Boolean = test(prob, 10000)
@@ -67,36 +69,55 @@ object rd {
     return test(probLong, bound)
   }
 
-  fun <T> random(list: List<T>): T {
-    require(list.isNotEmpty()) { "list is empty." }
+  @Nullable
+  fun <T> randomOrNull(list: List<T>?): T? {
+    if (list.isNullOrEmpty()) return null
     return list[nextInt(list.size)]
   }
 
-  fun <T> random(array: Array<T>): T {
-    require(array.isNotEmpty()) { "array is empty." }
-    return array[nextInt(array.size)]
+  fun <T> random(nonEmptyList: List<T>): T {
+    require(nonEmptyList.isNotEmpty()) { "list is empty." }
+    return nonEmptyList[nextInt(nonEmptyList.size)]
   }
 
-  fun <T> random(array: IntArray): Int {
-    require(array.isNotEmpty()) { "array is empty." }
-    return array[nextInt(array.size)]
+  fun <T> random(nonEmptyArray: Array<T>): T {
+    require(nonEmptyArray.isNotEmpty()) { "array is empty." }
+    return nonEmptyArray[nextInt(nonEmptyArray.size)]
   }
 
-  fun <T> random(array: LongArray): Long {
-    require(array.isNotEmpty()) { "array is empty." }
-    return array[nextInt(array.size)]
+  fun <T> random(nonEmptyArray: IntArray): Int {
+    require(nonEmptyArray.isNotEmpty()) { "array is empty." }
+    return nonEmptyArray[nextInt(nonEmptyArray.size)]
   }
 
-  fun <T> random(elems: Iterable<T>): T {
-    if (elems is List<T>) return random(elems)
-    val size = if (elems is Collection<T>) elems.size else {
-      var count = 0
-      for (e in elems) {
-        count += 1
-      }
-      count
-    }
+  fun <T> random(nonEmptyArray: LongArray): Long {
+    require(nonEmptyArray.isNotEmpty()) { "array is empty." }
+    return nonEmptyArray[nextInt(nonEmptyArray.size)]
+  }
+
+  fun <T> random(nonEmptyElems: Iterable<T>): T {
+    if (nonEmptyElems is List<T>) return random(nonEmptyElems)
+    val size = nonEmptyElems.count()
     require(size > 0) { "elems is empty." }
+    val idx = nextInt(size)
+    var i = 0
+    @Suppress("UseWithIndex")
+    for (e in nonEmptyElems) {
+      if (i == idx) {
+        return e
+      }
+      i++
+    }
+    throw IllegalStateException("should not happen.")
+  }
+
+  fun <T> randomOrNull(elems: Iterable<T>?): T? {
+    if (elems == null) return null
+    if (elems is List<T>) return random(elems)
+    val size = elems.count()
+    if (size == 0) {
+      return null
+    }
     val idx = nextInt(size)
     var i = 0
     @Suppress("UseWithIndex")
@@ -109,12 +130,15 @@ object rd {
     throw IllegalStateException("should not happen.")
   }
 
-  fun <T> randomOne(elems: Iterable<T>, weigher: (T) -> Int): T {
-    val totalProb = elems.sumBy(weigher)
+  fun <T> random(elems: Iterable<T>, weigher: (T) -> Int): T {
+    val totalProb = elems.sumBy { max(weigher(it), 0) }
     if (totalProb < 1) throw IllegalStateException("total prob is $totalProb")
     var r = nextInt(totalProb)
     for (elem in elems) {
       val weights = weigher(elem)
+      if (weights < 1) {
+        continue
+      }
       if (weights > r) return elem
       r -= weights
     }
@@ -122,7 +146,7 @@ object rd {
   }
 
   fun <T> random(elems: Iterable<T>, count: Int, weigher: (T) -> Int): List<T> {
-    val totalProb = elems.sumBy(weigher)
+    val totalProb = elems.sumBy { max(weigher(it), 0) }
     if (totalProb < 1) {
       return emptyList()
     }
@@ -132,6 +156,9 @@ object rd {
       var r = nextInt(totalProb)
       for (elem in elems) {
         val weights = weigher(elem)
+        if (weights < 1) {
+          continue
+        }
         if (weights > r) {
           n++
           result += elem
@@ -143,25 +170,29 @@ object rd {
     return result
   }
 
-  fun <T> randomDistinct(iterable: Iterable<T>, expectedCount: Int, weigher: (T) -> Int): MutableList<T> {
-    val elems = iterable.toMutableSet()
-    if (elems.size < expectedCount) {
-      return elems.toMutableList()
+  fun <T> randomDistinct(elems: Iterable<T>, expectedCount: Int, weigher: (T) -> Int): MutableList<T> {
+    val distinctElems = elems.toMutableList()
+    if (distinctElems.size < expectedCount) {
+      return distinctElems
     }
     val result = ArrayList<T>(expectedCount)
+    var totalProb = distinctElems.sumBy { max(weigher(it), 0) }
     while (result.size < expectedCount) {
-      val totalProb = elems.sumBy(weigher)
       if (totalProb < 1) {
         break
       }
       var r = nextInt(totalProb)
-      val it = elems.iterator()
+      val it = distinctElems.iterator()
       while (it.hasNext()) {
         val elem = it.next()
         val weights = weigher(elem)
+        if (weights < 1) {
+          continue
+        }
         if (weights > r) {
           result += elem
           it.remove()
+          totalProb -= weights
           break
         }
         r -= weights

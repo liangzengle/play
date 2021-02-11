@@ -11,7 +11,7 @@ import play.util.concurrent.CommonPool
 @Suppress("UnstableApiUsage")
 object ApplicationEventBus : EventBus("application") {
 
-  // override to disable `Beta` warning
+  // override to get rid of `Beta` warning
   override fun register(`object`: Any) {
     super.register(`object`)
   }

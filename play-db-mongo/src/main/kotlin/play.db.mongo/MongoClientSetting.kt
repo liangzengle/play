@@ -3,9 +3,19 @@ package play.db.mongo
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mongodb.MongoClientSettings
 import com.mongodb.MongoCredential
+import com.mongodb.connection.netty.NettyStreamFactoryFactory
 import de.undercouch.bson4jackson.BsonFactory
 import de.undercouch.bson4jackson.BsonGenerator
 import de.undercouch.bson4jackson.BsonParser
+import io.netty.channel.EventLoopGroup
+import io.netty.channel.epoll.EpollEventLoopGroup
+import io.netty.channel.epoll.EpollSocketChannel
+import io.netty.channel.socket.nio.NioSocketChannel
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Provider
+import javax.inject.Singleton
 import org.bson.codecs.configuration.CodecRegistries
 import play.Configuration
 import play.db.EntityInt
@@ -16,16 +26,12 @@ import play.db.mongo.codec.MongoIntIdMixIn
 import play.db.mongo.codec.MongoLongIdMixIn
 import play.db.mongo.codec.MongoStringIdMixIn
 import play.util.json.Json
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Provider
-import javax.inject.Singleton
 
 @Singleton
 class MongoClientSettingBuilderProvider @Inject constructor(
   appConf: Configuration,
-  @Named("mongodb") val conf: Configuration
+  @Named("mongodb") val conf: Configuration,
+  @Named("mongo") val eventLoopGroup: EventLoopGroup
 ) : Provider<MongoClientSettings.Builder> {
 
   private val threadPoolSize = appConf.getInt("db.thread-pool-size")
@@ -54,8 +60,21 @@ class MongoClientSettingBuilderProvider @Inject constructor(
     builder.applyToConnectionPoolSettings {
       it.maxSize(threadPoolSize).maxWaitTime(10, TimeUnit.SECONDS)
     }
+    builder.streamFactoryFactory(newNettyStreamFactory())
     builder.codecRegistry(codecRegistry)
     return builder
+  }
+
+  private fun newNettyStreamFactory(): NettyStreamFactoryFactory {
+    val socketChannelClass = if (eventLoopGroup is EpollEventLoopGroup) {
+      EpollSocketChannel::class.java
+    } else {
+      NioSocketChannel::class.java
+    }
+    return NettyStreamFactoryFactory.builder()
+      .eventLoopGroup(eventLoopGroup)
+      .socketChannelClass(socketChannelClass)
+      .build()
   }
 }
 

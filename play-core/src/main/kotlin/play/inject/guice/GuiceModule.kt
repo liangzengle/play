@@ -11,11 +11,13 @@ import com.google.inject.binder.ScopedBindingBuilder
 import com.google.inject.matcher.Matchers
 import com.google.inject.multibindings.OptionalBinder
 import com.google.inject.name.Names
+import java.util.concurrent.ScheduledExecutorService
 import org.reflections.Reflections
 import play.*
+import play.inject.NullProvider
 import play.inject.PlayInjector
+import play.util.scheduling.DefaultSchedulerProvider
 import play.util.scheduling.Scheduler
-import play.util.scheduling.SchedulerProvider
 
 /**
  * Created by LiangZengle on 2020/2/20.
@@ -86,6 +88,8 @@ internal class BootstrapGuiceModule : GuiceModule() {
     bind<ApplicationLifecycle>().toInstance(ctx.lifecycle)
     bind<GuiceInjector>().toProvider(GuiceInjectorProvider::class.java)
     bind<PlayInjector>().to<GuiceInjector>()
-    bind<Scheduler>().toProvider(SchedulerProvider::class.java)
+
+    optionalBind<ScheduledExecutorService>().setDefault().toProvider(NullProvider.of())
+    optionalBind<Scheduler>().setDefault().toProvider(DefaultSchedulerProvider::class.java)
   }
 }

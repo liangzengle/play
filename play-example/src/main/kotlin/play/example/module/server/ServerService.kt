@@ -1,5 +1,9 @@
 package play.example.module.server
 
+import java.time.LocalDate
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.time.seconds
 import org.eclipse.collections.api.set.primitive.ImmutableIntSet
 import org.eclipse.collections.impl.factory.primitive.IntSets
 import play.ApplicationEventBus
@@ -17,10 +21,6 @@ import play.util.reflect.classOf
 import play.util.time.betweenDays
 import play.util.time.currentDate
 import play.util.time.currentDateTime
-import java.time.LocalDate
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.time.seconds
 
 @Singleton
 class ServerService @Inject constructor(
@@ -35,7 +35,7 @@ class ServerService @Inject constructor(
 
   init {
     val idList = queryService.listIds(classOf<Server>()).get(5.seconds)
-    val serverIds = IntSets.mutable.ofAll(idList)
+    val serverIds = IntSets.mutable.ofAll(idList.stream().mapToInt(Int::toInt))
     if (serverIds.isEmpty) {
       serverCache.create(Server(conf.serverId.toInt()))
       serverIds.add(conf.serverId.toInt())

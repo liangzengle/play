@@ -3,6 +3,7 @@ package play
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import org.apache.logging.log4j.LogManager
 
 /**
  * Created by LiangZengle on 2020/2/16.
@@ -39,11 +40,12 @@ class DefaultApplicationLifecycle : ApplicationLifecycle {
     synchronized(this) {
       val succeed = hooks.sorted().fold(true) { status, hook -> hook.run() && status }
       if (succeed) {
-        Log.info { "Application shutdown successfully!" }
+        Log.info { "Application shutdown successfully." }
       } else {
-        Log.warn { "Application shutdown EXCEPTIONALLY!" }
+        Log.warn { "Application shutdown EXCEPTIONALLY!!!" }
       }
     }
+    LogManager.shutdown()
   }
 
   private val hooks = LinkedList<PriorityShutdownHook>()

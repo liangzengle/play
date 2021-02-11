@@ -11,7 +11,7 @@ import play.example.module.task.config.AbstractTaskConfig
 import play.example.module.task.domain.TaskErrorCode
 import play.example.module.task.domain.TaskLogSource
 import play.example.module.task.domain.TaskTargetType
-import play.example.module.task.entity.AbstractPlayerTask
+import play.example.module.task.entity.AbstractTask
 import play.example.module.task.entity.TaskStatus
 import play.example.module.task.event.TaskEvent
 import play.example.module.task.target.TaskTarget
@@ -25,7 +25,7 @@ import play.util.max
  *
  * @author LiangZengle
  */
-abstract class AbstractTaskService<PlayerTask : AbstractPlayerTask, TaskConfig : AbstractTaskConfig> {
+abstract class AbstractTaskService<PlayerTask : AbstractTask, TaskConfig : AbstractTaskConfig> {
 
   @Inject
   protected lateinit var targetHandlerProvider: TargetHandlerProvider

@@ -11,7 +11,7 @@ import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap
 import org.eclipse.collections.impl.factory.primitive.IntLongMaps
-import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 import play.Log
 import play.akka.AbstractTypedActor
 import play.akka.send
@@ -29,6 +29,7 @@ import play.example.module.account.entity.AccountEntityCache
 import play.example.module.account.message.LoginParams
 import play.example.module.platform.PlatformServiceProvider
 import play.example.module.platform.domain.Platform
+import play.example.module.player.PlayerEntityCacheInitializer
 import play.example.module.player.PlayerManager
 import play.example.module.server.ServerService
 import play.mvc.Request
@@ -51,7 +52,8 @@ class AccountManager(
   sessionManager: ActorRef<SessionManager.Command>,
   private val serverService: ServerService,
   private val accountCache: AccountEntityCache,
-  private val playerManager: ActorRef<PlayerManager.Command>
+  private val playerManager: ActorRef<PlayerManager.Command>,
+  private val playerEntityCacheInitializer: PlayerEntityCacheInitializer
 ) : AbstractTypedActor<AccountManager.Command>(context) {
 
   private val idGenerators: MutableIntObjectMap<GameUIDGenerator>
@@ -70,11 +72,13 @@ class AccountManager(
       maxIds.updateValue(key, id) { it max id }
     }
 
-    idGenerators = IntObjectMaps.mutable.from(
-      maxIds.keyValuesView(),
-      { it.one },
-      { GameUIDGenerator(it.one.high16().toInt(), it.one.low16().toInt(), OptionalLong.of(it.two)) }
-    )
+    val idGeneratorMap = IntObjectHashMap<GameUIDGenerator>(maxIds.keyValuesView().size())
+    for (e in maxIds.keyValuesView()) {
+      val key = e.one
+      val value = GameUIDGenerator(e.one.high16().toInt(), e.one.low16().toInt(), OptionalLong.of(e.two))
+      idGeneratorMap.put(key, value)
+    }
+    idGenerators = idGeneratorMap
 
     val subscriber =
       context.messageAdapter(UnhandledRequest::class.java) { RequestCommand(it.request, it.session) }
@@ -158,6 +162,7 @@ class AccountManager(
     if (id != null) {
       return ok(id)
     }
+    // 账号不存在，新注册用户
     val maybeId = nextId(platform.getId(), serverId)
     if (maybeId.isEmpty) {
       return AccountErrorCode.IdExhausted
@@ -169,11 +174,19 @@ class AccountManager(
   }
 
   private fun createAsync(account: Account) {
-    future { accountCache.create(account) }
-      .onComplete {
-        if (it.isSuccess) Log.info { "账号创建成功: $account" }
-        else Log.error(it.getCause()) { "创建账号失败: $account" }
+    accountCache.unsafeOps().initWithEmptyValue(account.id)
+    accountCache.create(account)
+    Log.info { "账号创建成功: $account" }
+    val id = account.id
+    future {
+      playerEntityCacheInitializer.initWithEmptyValue(id)
+    }.onComplete {
+      if (it.isSuccess) {
+        Log.info { "玩家实体缓存初始化完成: $id" }
+      } else {
+        Log.error(it.getCause()) { "玩家实体缓存初始化失败: $id" }
       }
+    }
   }
 
   companion object {
@@ -185,7 +198,8 @@ class AccountManager(
       sessionManager: ActorRef<SessionManager.Command>,
       serverService: ServerService,
       accountCache: AccountEntityCache,
-      playerManager: ActorRef<PlayerManager.Command>
+      playerManager: ActorRef<PlayerManager.Command>,
+      playerEntityCacheInitializer: PlayerEntityCacheInitializer
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
         AccountManager(
@@ -195,7 +209,8 @@ class AccountManager(
           sessionManager,
           serverService,
           accountCache,
-          playerManager
+          playerManager,
+          playerEntityCacheInitializer
         )
       }
     }

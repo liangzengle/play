@@ -5,6 +5,10 @@ import com.google.inject.Provides
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.ChannelOption
 import io.netty.channel.EventLoopGroup
+import io.netty.channel.WriteBufferWaterMark
+import javax.inject.Named
+import javax.inject.Provider
+import javax.inject.Singleton
 import play.Configuration
 import play.example.common.net.codec.RequestDecoder
 import play.example.common.net.codec.ResponseEncoder
@@ -13,15 +17,12 @@ import play.net.netty.TcpServer
 import play.net.netty.channelInitializer
 import play.net.netty.createEventLoopGroup
 import play.net.netty.createServerChannelFactory
-import javax.inject.Named
-import javax.inject.Provider
-import javax.inject.Singleton
 
 class NetGuiceModule : GuiceModule() {
   override fun configure() {
     bind<Configuration>().qualifiedWith("net").toInstance(ctx.conf.getConfiguration("net"))
-    bind<EventLoopGroup>().qualifiedWith("acceptor").toProvider(EventLoopProvider("acceptor", 1))
-    bind<EventLoopGroup>().qualifiedWith("io").toProvider(EventLoopProvider("io", 0))
+    bind<EventLoopGroup>().qualifiedWith("net-accept").toProvider(EventLoopProvider("net-accept", 1))
+    bind<EventLoopGroup>().qualifiedWith("net-io").toProvider(EventLoopProvider("net-io", 0))
   }
 
   @Singleton
@@ -47,14 +48,17 @@ class NetGuiceModule : GuiceModule() {
 
   @Provides
   private fun serverBootstrap(
-    @Named("acceptor") parent: EventLoopGroup,
-    @Named("io") child: EventLoopGroup,
+    @Named("net-accept") parent: EventLoopGroup,
+    @Named("net-io") child: EventLoopGroup,
   ): ServerBootstrap {
     return ServerBootstrap()
       .group(parent, child)
       .channelFactory(createServerChannelFactory())
       .option(ChannelOption.SO_REUSEADDR, true)
       .childOption(ChannelOption.TCP_NODELAY, true)
+      .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
+      .childOption(ChannelOption.SO_RCVBUF, 8 * 1024)
+      .childOption(ChannelOption.SO_SNDBUF, 32 * 1024)
   }
 }
 

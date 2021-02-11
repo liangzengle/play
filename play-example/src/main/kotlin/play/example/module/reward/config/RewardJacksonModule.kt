@@ -46,7 +46,7 @@ private class RawRewardJacksonDeserializer : StdDeserializer<RawReward>(RawRewar
     val node = p.codec.readTree<JsonNode>(p)
     return try {
       val type = node.get("type").asText()
-      val rewardType = RewardType.valueOf(type)
+      val rewardType = RewardType.getOrDefault(type, RewardType.None)
       if (rewardType == RewardType.None) {
         return NonRawReward
       }

@@ -29,22 +29,19 @@ inline class Result2<out T>(private val value: Any?) {
 
   fun <T> asErrResult(): Result2<T> = Result2(asErr())
 
+  operator fun invoke(msg: String): Result2<T> = if (isErr()) err(getErrorCode(), msg) else this
+
   override fun toString(): String {
-    return if (isErr()) "Err(${getErrorCode()})" else "Ok($value)"
+    return if (isErr()) asErr().toString() else "Ok($value)"
   }
 
-  class Err(@JvmField val code: Int) : Serializable {
+  class Err(@JvmField val code: Int, @JvmField val msg: String?) : Serializable {
+    constructor(code: Int) : this(code, null)
 
-    override fun equals(other: Any?): Boolean {
-      return other is Err && code == other.code
-    }
-
-    override fun hashCode(): Int {
-      return code.hashCode()
-    }
+    fun codeEquals(other: Err) = this.code == other.code
 
     override fun toString(): String {
-      return "Err($code)"
+      return if (msg == null) "Err($code)" else "Err($code, $msg)"
     }
   }
 }
@@ -57,12 +54,18 @@ inline fun <T> ok(supplier: () -> T): Result2<T> = Result2(supplier())
 
 fun err(code: Int): Result2<Nothing> = Result2(Result2.Err(code))
 
+fun err(code: Int, msg: String): Result2<Nothing> = Result2(Result2.Err(code, msg))
+
 inline fun <R, T : R> Result2<T>.recover(f: () -> R): Result2<R> {
   return if (isErr()) ok(f()) else this
 }
 
 inline fun <R, T : R> Result2<T>.recover(f: (Int) -> R): Result2<R> {
   return if (isErr()) ok(f(getErrorCode())) else this
+}
+
+inline fun <R, T : R> Result2<T>.recover(filter: (Int) -> Boolean, f: (Int) -> R): Result2<R> {
+  return if (isErr() && filter(getErrorCode())) ok(f(getErrorCode())) else this
 }
 
 @Suppress("UNCHECKED_CAST")

@@ -1,4 +1,4 @@
-package play.example.module.friend.controller
+package play.example.module.friend.message
 
 import kotlinx.serialization.Serializable
 

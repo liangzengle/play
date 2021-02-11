@@ -2,9 +2,6 @@ package play.util.scheduling
 
 import java.time.LocalDateTime
 
-/**
- * Created by LiangZengle on 2020/2/20.
- */
 interface TriggerContext {
   /**
    * Return the last <i>scheduled</i> execution time of the task,
@@ -25,7 +22,7 @@ interface TriggerContext {
   fun lastCompletionTime(): LocalDateTime?
 }
 
-class SimpleTriggerContext(
+internal class SimpleTriggerContext(
   @Volatile private var lastScheduledExecutionTime: LocalDateTime?,
   @Volatile private var lastActualExecutionTime: LocalDateTime?,
   @Volatile private var lastCompletionTime: LocalDateTime?

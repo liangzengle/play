@@ -17,9 +17,9 @@ public class GuildController @Inject constructor(
   private val guildService: GuildService
 ) : AbstractController(ModuleId.Guild) {
 
-  @Cmd(1)
+  @Cmd(1, dummy = true)
   fun create(playerId: Long, guildName: String): RequestResult<GuildInfo> = throw UnsupportedOperationException()
 
-  @Cmd(2)
+  @Cmd(2, dummy = true)
   fun join(playerId: Long, guildId: Long): RequestResult<GuildInfo> = throw UnsupportedOperationException()
 }

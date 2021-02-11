@@ -1,9 +1,9 @@
-package play.example.module.friend.controller
+package play.example.module.friend
 
 import javax.inject.Inject
 import javax.inject.Singleton
 import play.example.module.ModuleId
-import play.example.module.friend.FriendService
+import play.example.module.friend.message.FriendInfo
 import play.mvc.AbstractController
 import play.mvc.Cmd
 import play.mvc.Controller

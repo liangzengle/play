@@ -1,21 +1,19 @@
 package play.util.io
 
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
-import play.getLogger
-import play.util.forEach
-import play.util.scheduling.Scheduler
 import java.io.File
 import java.io.IOException
 import java.nio.file.*
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.Executor
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 import kotlin.concurrent.thread
 import kotlin.math.max
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
+import play.getLogger
+import play.util.forEach
+import play.util.scheduling.Cancellable
+import play.util.scheduling.Scheduler
 
 open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
   private val logger = getLogger()
@@ -28,7 +26,7 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
   private var modifyCallback = Optional.empty<(File) -> Unit>()
   private var deleteCallback = Optional.empty<(File) -> Unit>()
 
-  private var cancellable = Optional.empty<ScheduledFuture<*>>()
+  private var cancellable = Optional.empty<Cancellable>()
 
   @Volatile
   private var closed = false
@@ -81,7 +79,7 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
 
   protected fun watch(file: File, depth: Int) {
     val fileToWatch = if (file.isDirectory) {
-      Files.walk(file.toPath(), depth).map { it.toFile() }.filter { it.isDirectory && it.exists() }
+      Files.walk(file.toPath(), depth).map { it.toFile() }.filter { it.isDirectory }
     } else {
       if (file.exists()) Stream.empty() else Stream.of(file.parentFile)
     }
@@ -91,7 +89,7 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
       try {
         it.toPath().register(service, interestedEvents)
       } catch (e: IOException) {
-        logger.error(e) { "Failed to register to FileService: $it" }
+        logger.error(e) { "Failed to watch: $it" }
       }
     }
   }
@@ -120,13 +118,13 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
     cancellable = Optional.of(f)
   }
 
-  fun start(detectInterval: Duration, scheduler: ScheduledExecutorService, executor: Executor) {
+  fun start(detectInterval: Duration, scheduler: Scheduler, executor: Executor) {
     watch(root, maxDepth)
     val f = scheduler.scheduleWithFixedDelay(
-      { executor.execute(this::runCheck) },
-      detectInterval.toMillis(),
-      detectInterval.toMillis(),
-      TimeUnit.MILLISECONDS
+      detectInterval,
+      detectInterval,
+      executor,
+      this::runCheck
     )
     cancellable = Optional.of(f)
   }
@@ -147,7 +145,7 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
   override fun close() {
     closed = true
     service.close()
-    cancellable.forEach { it.cancel(false) }
+    cancellable.forEach { it.cancel() }
   }
 
   protected open fun onEvent(kind: WatchEvent.Kind<Path>, file: File) {
@@ -180,7 +178,7 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
   }
 
   companion object {
-    val DefaultInterestedEvents = arrayOf(
+    private val DefaultInterestedEvents = arrayOf(
       StandardWatchEventKinds.ENTRY_CREATE,
       StandardWatchEventKinds.ENTRY_MODIFY,
       StandardWatchEventKinds.ENTRY_DELETE

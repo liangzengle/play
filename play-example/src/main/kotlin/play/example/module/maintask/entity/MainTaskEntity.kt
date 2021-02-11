@@ -1,11 +1,11 @@
 package play.example.module.maintask.entity
 
-import play.example.module.player.entity.PlayerEntity
+import play.example.module.player.entity.AbstractPlayerEntity
 
 /**
  * 主线任务数据
  */
-public class MainTaskEntity(playerId: Long) : PlayerEntity(playerId) {
+public class MainTaskEntity(playerId: Long) : AbstractPlayerEntity(playerId) {
 
   /**
    * 当前任务

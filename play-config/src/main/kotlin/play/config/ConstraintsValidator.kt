@@ -1,12 +1,12 @@
 package play.config
 
+import java.util.*
+import javax.validation.Validation
 import org.hibernate.validator.HibernateValidatorFactory
 import org.reflections.ReflectionUtils
 import play.Log
 import play.util.collection.filterDuplicated
-import play.util.reflect.getUnchecked
-import java.util.*
-import javax.validation.Validation
+import play.util.reflect.Reflect
 
 internal class ConstraintsValidator(
   private val configSets: Map<Class<AbstractConfig>, AnyConfigSet>
@@ -60,7 +60,7 @@ internal class ConstraintsValidator(
       fields.asSequence()
         .filter { it.isAnnotationPresent(Unique::class.java) }
         .flatMap { f ->
-          sequenceOf(set.sequence().map { f.getUnchecked<Any>(it) }.filterDuplicated())
+          sequenceOf(set.sequence().map { Reflect.get<Any>(f, it) }.filterDuplicated())
             .filter { it.isNotEmpty() }
             .map { "${clazz.simpleName}.${f.name}的值不能重复: $it" }
         }.forEach { errors.add(it) }
@@ -71,7 +71,7 @@ internal class ConstraintsValidator(
           if (f.type != Byte::class.java || f.type != Short::class.java || f.type != Int::class.java || f.type != Long::class.java) {
             throw UnsupportedOperationException()
           }
-          val it = set.sequence().map { f.getUnchecked<Number>(it)!!.toLong() }.iterator()
+          val it = set.sequence().map { Reflect.get<Number>(f, it)!!.toLong() }.iterator()
           val start = if (it.hasNext()) it.next() else 0L
           var next = start + 1
           while (it.hasNext()) {

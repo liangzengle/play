@@ -6,7 +6,13 @@ import java.util.*
 
 inline fun <T> T?.toOptional() = Optional.ofNullable(this)
 
+inline fun Int?.toOptional(): OptionalInt = if (this == null) OptionalInt.empty() else OptionalInt.of(this)
+
+inline fun Long?.toOptional(): OptionalLong = if (this == null) OptionalLong.empty() else OptionalLong.of(this)
+
 inline fun <T> empty() = Optional.empty<T>()
+inline fun emptyInt() = OptionalInt.empty()
+inline fun emptyLong() = OptionalLong.empty()
 
 inline fun OptionalLong.forEach(f: (Long) -> Unit) {
   if (isPresent) f(asLong)

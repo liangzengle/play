@@ -1,13 +1,12 @@
 package play.example.common.gm
 
 import com.fasterxml.jackson.core.JsonProcessingException
-import play.util.empty
-import play.util.json.Json
-import play.util.toOptional
-import play.util.unsafeCast
 import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
 import java.util.*
+import play.util.json.Json
+import play.util.toOptional
+import play.util.unsafeCast
 
 sealed class ParameterConverter<out T : Any> {
   abstract fun convert(parameter: Parameter, arg: String): T
@@ -67,7 +66,7 @@ sealed class ParameterConverter<out T : Any> {
 
   private object OfOption : ParameterConverter<Optional<*>>() {
     override fun convert(parameter: Parameter, arg: String): Optional<*> {
-      if (arg.isNotEmpty()) return empty<Any>()
+      if (arg.isNotEmpty()) return Optional.empty<Any>()
       val pType =
         parameter.parameterizedType.unsafeCast<ParameterizedType>().actualTypeArguments[0].unsafeCast<Class<*>>()
       return ParameterConverter(pType).convert(parameter, arg).toOptional()

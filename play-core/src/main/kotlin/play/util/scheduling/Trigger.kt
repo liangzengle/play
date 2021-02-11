@@ -1,13 +1,10 @@
 package play.util.scheduling
 
+import java.time.LocalDateTime
 import play.util.time.currentDateTime
 import play.util.time.toDate
 import play.util.time.toLocalDateTime
-import java.time.LocalDateTime
 
-/**
- * Created by LiangZengle on 2020/2/20.
- */
 interface Trigger {
   fun nextExecutionTime(triggerContext: TriggerContext): LocalDateTime?
 }

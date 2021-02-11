@@ -4,9 +4,10 @@ package play
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import javax.inject.Inject
 import play.inject.Injector
 import play.util.reflect.createInstance
-import javax.inject.Inject
+import play.util.scheduling.Scheduler
 
 /**
  * Created by LiangZengle on 2020/2/15.
@@ -25,6 +26,8 @@ interface Application {
   fun pid(): Long = ProcessHandle.current().pid()
 
   val eventBus: ApplicationEventBus
+
+  val scheduler: Scheduler
 
   companion object {
 
@@ -67,5 +70,6 @@ class DefaultApplication @Inject constructor(
   override val mode: Mode,
   override val injector: Injector,
   override val lifecycle: ApplicationLifecycle,
-  override val eventBus: ApplicationEventBus
+  override val eventBus: ApplicationEventBus,
+  override val scheduler: Scheduler
 ) : Application

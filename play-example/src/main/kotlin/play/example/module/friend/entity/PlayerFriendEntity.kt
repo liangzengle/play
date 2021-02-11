@@ -2,13 +2,13 @@ package play.example.module.friend.entity
 
 import org.eclipse.collections.impl.factory.primitive.LongSets
 import play.example.module.player.PlayerManager
-import play.example.module.player.entity.PlayerEntity
+import play.example.module.player.entity.AbstractPlayerEntity
 
 /**
  * 好友
  * @author LiangZengle
  */
-class PlayerFriendEntity(id: Long) : PlayerEntity(id) {
+class PlayerFriendEntity(id: Long) : AbstractPlayerEntity(id) {
 
   private var friends = LongSets.mutable.empty()
 

@@ -1,5 +1,6 @@
 package play.example
 
+import EagerlyLoader
 import com.typesafe.config.ConfigFactory
 import kotlin.system.exitProcess
 import play.*
@@ -12,8 +13,9 @@ import play.util.concurrent.LoggingUncaughtExceptionHandler
 
 object App {
   init {
+    EagerlyLoader.load()
     Thread.setDefaultUncaughtExceptionHandler(LoggingUncaughtExceptionHandler)
-    SystemProps.set("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager")
+    SystemProps["java.util.logging.manager"] = "org.apache.logging.log4j.jul.LogManager"
   }
 
   val serverMode: ServerMode = ServerMode.forName(SystemProps.getOrDefault("SERVER_MODE", "local"))
@@ -21,7 +23,7 @@ object App {
   @JvmStatic
   fun main(args: Array<String>) {
     UnsafeAccessor.disableWarning()
-    if (sys.isWindows()) {
+    if (sys.isWindows) {
       setWindowsProperties()
     }
 

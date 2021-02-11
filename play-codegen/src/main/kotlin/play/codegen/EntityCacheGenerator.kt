@@ -89,18 +89,56 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
     if (primitiveIdCacheType == null) {
       classBuilder.addSuperinterface(
         EntityCache.parameterizedBy(idType.asTypeName()).plusParameter(elemClassName),
-        CodeBlock.of("cacheManager.get(%L::class.java)", elem.simpleName.toString())
+        CodeBlock.of("cacheManager.get(%T::class.java)", elem.asType())
+      )
+      classBuilder.addProperty(
+        PropertySpec.builder(
+          "delegatee",
+          EntityCache.parameterizedBy(idType.asTypeName()).plusParameter(elemClassName),
+          KModifier.PRIVATE
+        )
+          .initializer(CodeBlock.of("cacheManager.get(%T::class.java)", elem))
+          .build()
+      )
+
+      classBuilder.addFunction(
+        FunSpec.builder("unsafeOps")
+          .addStatement(
+            "return delegatee as %T",
+            UnsafeEntityCacheOps.parameterizedBy(idType.asTypeName())
+          )
+          .build()
       )
     } else {
       classBuilder.addSuperinterface(
         primitiveIdCacheType,
-        CodeBlock.of("cacheManager.get(%L::class.java) as %T", elem.simpleName.toString(), primitiveIdCacheType)
+        CodeBlock.of("cacheManager.get(%T::class.java) as %T", elem, primitiveIdCacheType)
       )
         .addAnnotation(
           AnnotationSpec.builder(Suppress::class)
             .addMember("%S", "UNCHECKED_CAST")
             .build()
         )
+      classBuilder.addProperty(
+        PropertySpec.builder(
+          "delegatee",
+          primitiveIdCacheType,
+          KModifier.PRIVATE
+        )
+          .initializer(
+            CodeBlock.of("cacheManager.get(%T::class.java) as %T", elem, primitiveIdCacheType)
+          )
+          .build()
+      )
+
+      classBuilder.addFunction(
+        FunSpec.builder("unsafeOps")
+          .addStatement(
+            "return delegatee as %T",
+            UnsafeEntityCacheOps.parameterizedBy(idType.asTypeName())
+          )
+          .build()
+      )
     }
     if (func != null) {
       classBuilder.addFunction(func)

@@ -1,10 +1,10 @@
 package play.db.cache
 
-import play.db.Entity
-import play.util.concurrent.Future
 import java.util.*
 import java.util.stream.Stream
 import kotlin.NoSuchElementException
+import play.db.Entity
+import play.util.concurrent.Future
 
 interface EntityCache<ID : Any, E : Entity<ID>> {
 
@@ -100,7 +100,5 @@ interface EntityCache<ID : Any, E : Entity<ID>> {
   /**
    * 缓存入库
    */
-  fun flush(): Future<Unit> {
-    throw NotImplementedError()
-  }
+  fun flush(): Future<Unit>
 }

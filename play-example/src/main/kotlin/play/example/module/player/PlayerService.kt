@@ -7,6 +7,8 @@ import play.ApplicationEventListener
 import play.Log
 import play.example.module.account.message.LoginParams
 import play.example.module.player.entity.Player
+import play.example.module.player.entity.Player2
+import play.example.module.player.entity.Player2EntityCache
 import play.example.module.player.entity.PlayerEntityCache
 import play.example.module.player.event.*
 import play.example.module.player.message.PlayerInfo
@@ -21,7 +23,8 @@ import play.util.time.isToday
 class PlayerService @Inject constructor(
   private val eventBus: PlayerEventBus,
   private val playerCache: PlayerEntityCache,
-  private val onlinePlayerService: OnlinePlayerService,
+  private val player2Cache: Player2EntityCache,
+  private val onlinePlayerService: OnlinePlayerService
 ) : PlayerEventListener, ApplicationEventListener {
 
   override fun playerEventReceive(): PlayerEventReceive {
@@ -53,14 +56,21 @@ class PlayerService @Inject constructor(
 
   fun login(self: Self, loginParams: LoginParams): PlayerInfo {
     val player = playerCache.getOrThrow(self.id)
+    val player2 = player2Cache.getOrThrow(self.id)
     onlinePlayerService.login(self, loginParams)
     println("player login: $self")
-    return PlayerInfo(self.id, player.name)
+    return PlayerInfo(self.id, player2.name)
   }
 
   fun createPlayer(id: Long, name: String) {
     println("create player: $name")
-    playerCache.create(Player(id, name, currentMillis()))
+    val now = currentMillis()
+    val player = Player(id, now)
+    val player2 = Player2(id, name)
+    player2.lastLoginTime = now
+    player2.lastLogoutTime = now
+    playerCache.create(player)
+    player2Cache.create(player2)
   }
 
   fun isOnline(playerId: Long) = onlinePlayerService.isOnline(playerId)

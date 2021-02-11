@@ -1,12 +1,11 @@
 package play.util.control
 
 import java.util.concurrent.Executor
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLongFieldUpdater
 import kotlin.time.Duration
 import play.getLogger
 import play.util.concurrent.CommonPool
-import play.util.scheduling.executor.ScheduledExecutor
+import play.util.scheduling.Scheduler
 
 /**
  * 失败重试
@@ -20,6 +19,7 @@ class Retryable(
   val name: String,
   private val attempts: Int,
   private val intervalMillis: Int,
+  private val scheduler: Scheduler,
   private val executor: Executor,
   private val task: () -> Boolean
 ) : Runnable {
@@ -28,12 +28,14 @@ class Retryable(
     name: String,
     attempts: Int,
     interval: Duration,
+    scheduler: Scheduler,
     executor: Executor = CommonPool,
     task: () -> Boolean
   ) : this(
     name,
     attempts,
     interval.toLongMilliseconds().toInt(),
+    scheduler,
     executor,
     task
   )
@@ -42,12 +44,14 @@ class Retryable(
     name: String,
     attempts: Int,
     interval: java.time.Duration,
+    scheduler: Scheduler,
     executor: Executor = CommonPool,
     task: () -> Boolean
   ) : this(
     name,
     attempts,
     interval.toMillis().toInt(),
+    scheduler,
     executor,
     task
   )
@@ -105,7 +109,7 @@ class Retryable(
   }
 
   private fun schedule(delayMillis: Int) {
-    ScheduledExecutor.schedule({ executor.execute(this) }, delayMillis.toLong(), TimeUnit.MILLISECONDS)
+    scheduler.schedule(java.time.Duration.ofMillis(delayMillis.toLong()), executor, this::run)
   }
 
   override fun toString(): String {
@@ -121,8 +125,9 @@ class Retryable(
     fun forever(
       name: String,
       intervalMillis: Int,
+      scheduler: Scheduler,
       executor: Executor = CommonPool,
       task: () -> Boolean
-    ): Retryable = Retryable(name, -1, intervalMillis, executor, task)
+    ): Retryable = Retryable(name, -1, intervalMillis, scheduler, executor, task)
   }
 }

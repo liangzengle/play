@@ -1,11 +1,12 @@
 package play.example.module.task
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import play.example.module.player.Self
 import play.example.module.task.event.TaskEvent
 import play.getLogger
 import play.inject.PlayInjector
-import javax.inject.Inject
-import javax.inject.Singleton
+import play.util.unsafeLazy
 
 /**
  * 任务事件接收器
@@ -17,7 +18,7 @@ class TaskEventReceiver @Inject constructor(val injector: PlayInjector) {
 
   private val logger = getLogger()
 
-  private val taskServices by lazy(LazyThreadSafetyMode.NONE) {
+  private val taskServices by unsafeLazy {
     injector.getInstancesOfType(AbstractTaskService::class)
   }
 

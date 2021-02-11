@@ -19,12 +19,6 @@ plugins {
   id("play.modular-code") version "0.1"
 }
 
-repositories {
-  mavenLocal()
-  mavenCentral()
-  maven("https://jitpack.io")
-}
-
 dependencies {
   testImplementation(platform("org.junit:junit-bom:5.7.0"))
   testImplementation("org.junit.jupiter:junit-jupiter-api")
@@ -40,13 +34,17 @@ dependencies {
   implementation(project(":play-net"))
   implementation(project(":play-config"))
   // use mysql
-  implementation(project(":play-db-mysql-nosql"))
-  implementation("mysql:mysql-connector-java:8.0.22")
+//  implementation(project(":play-db-mysql-nosql"))
+//  implementation("mysql:mysql-connector-java:8.0.22")
   // use mongodb
-//    implementation project(":play-db-mongo")
+  implementation(project(":play-db-mongo"))
 
   compileOnly(project(":play-codegen"))
   kapt(project(":play-codegen"))
+
+  compileOnly(project(":play-eagerly-load"))
+  kapt(project(":play-eagerly-load"))
+
   implementation("org.jctools:jctools-core:3.0.0")
 
   implementation("io.github.esentsov:kotlin-visibility:1.1.0")
@@ -61,7 +59,7 @@ tasks.withType<Test> {
 kapt {
   arguments {
     arg("controller.user-class", "play.example.module.player.Self")
-    arg("entityCache.specialized", "true")
+    arg("entityCache.specialized", "false")
   }
 }
 

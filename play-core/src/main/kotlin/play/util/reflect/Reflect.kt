@@ -1,9 +1,9 @@
 package play.util.reflect
 
 import com.google.common.reflect.TypeToken
+import java.lang.reflect.*
 import play.util.collection.EmptyObjectArray
 import play.util.unsafeCast
-import java.lang.reflect.*
 
 /**
  * Created by LiangZengle on 2020/2/16.
@@ -65,6 +65,20 @@ object Reflect {
   fun getCallerClass(): Class<*> {
     return stackWalker.walk { it.map { f -> f.declaringClass }.skip(2).findFirst().orElseThrow() }
   }
+
+  fun <T : Any> get(field: Field, target: Any?): T? {
+    field.trySetAccessible()
+    return field.get(target) as T?
+  }
+
+  fun <T : Any> invoke(method: Method, target: Any?, vararg parameters: Any?): T? {
+    method.trySetAccessible()
+    return method.invoke(target, parameters) as T?
+  }
+
+  fun isTopLevelClass(clazz: Class<*>): Boolean {
+    return !clazz.isMemberClass && !clazz.isLocalClass && !clazz.isAnonymousClass && clazz.declaringClass === null
+  }
 }
 
 fun <T> Class<T>.getTypeArg(superType: Class<in T>, index: Int): Type {
@@ -95,14 +109,18 @@ inline fun <reified T> isAssignableFrom(clazz: Class<*>): Boolean = T::class.jav
 
 inline fun <reified T> Class<*>.isSubclassOf() = T::class.java.isAssignableFrom(this)
 
-@Suppress("UNCHECKED_CAST")
-fun <T> Field.getUnchecked(target: Any?): T? {
-  trySetAccessible()
-  return this.get(target) as T?
-}
+fun Member.isPublic() = Modifier.isPublic(modifiers)
 
-@Suppress("UNCHECKED_CAST")
-fun <T : Any> Method.invokeUnchecked(target: Any?, vararg parameters: Any?): T? {
-  trySetAccessible()
-  return this.invoke(target, parameters) as T?
-}
+fun Member.isProtected() = Modifier.isProtected(modifiers)
+
+fun Member.isPrivate() = Modifier.isPrivate(modifiers)
+
+fun Member.isAbstract() = Modifier.isAbstract(modifiers)
+
+fun Member.isStatic() = Modifier.isStatic(modifiers)
+
+fun Member.isFinal() = Modifier.isFinal(modifiers)
+
+fun Member.isStrict() = Modifier.isStrict(modifiers)
+
+fun Field.isTransient() = Modifier.isTransient(modifiers)

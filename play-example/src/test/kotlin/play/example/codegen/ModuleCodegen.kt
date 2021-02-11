@@ -14,7 +14,7 @@ import play.example.module.LogSource
 import play.example.module.ModularCode
 import play.example.module.ModuleId
 import play.example.module.StatusCode
-import play.example.module.player.entity.PlayerEntity
+import play.example.module.player.entity.AbstractPlayerEntity
 import play.mvc.AbstractController
 import play.mvc.Controller
 
@@ -71,7 +71,7 @@ object ModuleCodegen {
     return TypeSpec.classBuilder(className)
       .primaryConstructor(FunSpec.constructorBuilder().addParameter("playerId", Long::class).build())
       .addKdoc("${moduleDesc}数据")
-      .superclass(PlayerEntity::class)
+      .superclass(AbstractPlayerEntity::class)
       .addSuperclassConstructorParameter("playerId")
       .build()
   }

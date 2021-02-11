@@ -1,15 +1,17 @@
 package play.db.cache
 
-import play.Configuration
-import play.db.*
-import play.inject.Injector
-import play.util.reflect.isAssignableFrom
-import play.util.scheduling.Scheduler
-import play.util.unsafeCast
 import java.time.Duration
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
+import play.Configuration
+import play.db.*
+import play.inject.Injector
+import play.util.reflect.Reflect
+import play.util.reflect.isAbstract
+import play.util.reflect.isAssignableFrom
+import play.util.scheduling.Scheduler
+import play.util.unsafeCast
 
 interface EntityCacheFactory {
 
@@ -24,6 +26,15 @@ abstract class AbstractEntityCacheFactory(conf: Configuration) : EntityCacheFact
     val expireAfterAccess = conf.getDuration("expire-after-access")
     val persistInterval = conf.getDuration("persist-interval")
     config = Config(initialCacheSize, expireAfterAccess, persistInterval)
+  }
+
+  fun checkEntityClass(entityClass: Class<out Entity<*>>) {
+    if (entityClass.isAbstract()) {
+      throw IllegalArgumentException("")
+    }
+    if (!Reflect.isTopLevelClass(entityClass)) {
+      throw IllegalArgumentException("")
+    }
   }
 
   class Config(
@@ -44,6 +55,7 @@ class DefaultEntityCacheFactory @Inject constructor(
 ) : AbstractEntityCacheFactory(conf) {
 
   override fun <ID : Any, E : Entity<ID>> create(entityClass: Class<E>): EntityCache<ID, E> {
+    checkEntityClass(entityClass)
     return when {
       isAssignableFrom<EntityLong>(entityClass) -> {
         EntityCacheLongImpl(

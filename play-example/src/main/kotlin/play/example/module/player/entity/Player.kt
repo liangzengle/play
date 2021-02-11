@@ -2,8 +2,14 @@ package play.example.module.player.entity
 
 /**
  * 存放玩家的私人数据
+ *
+ * @property ctime Long 创建时间
+ * @property dtime Long 每日重置时间
+ * @property wtime Long 每周重置时间
+ * @property mtime Long 每月重置时间
+ * @constructor
  */
-class Player(id: Long, val name: String, val ctime: Long) : PlayerEntity(id) {
+class Player(id: Long, val ctime: Long) : AbstractPlayerEntity(id) {
 
   // 新的天时间
   var dtime = 0L

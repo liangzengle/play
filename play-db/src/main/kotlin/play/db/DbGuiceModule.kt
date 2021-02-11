@@ -39,7 +39,7 @@ class DbGuiceModule : GuiceModule() {
     }
     bind<Repository>().toBinding(binding(repository))
 
-    bind<DbExecutor>().toProvider(DbExecutorProvider::class.java)
+    optionalBind<DbExecutor>().setDefault().toProvider(DbExecutorProvider::class.java)
 
     bind<PersistService>().to<Repository>()
     bind<QueryService>().to<Repository>()

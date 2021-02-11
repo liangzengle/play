@@ -40,7 +40,9 @@ sealed class ReceiverQualification {
      * 特定id的玩家
      */
     @JvmStatic
-    fun ofPlayers(playerIds: Collection<Long>) = PlayerIdQualification(LongSets.immutable.ofAll(playerIds))
+    fun ofPlayers(playerIds: Collection<Long>) = PlayerIdQualification(
+      LongSets.immutable.ofAll(playerIds.stream().mapToLong(Long::toLong))
+    )
 
     /**
      * 特定id的玩家

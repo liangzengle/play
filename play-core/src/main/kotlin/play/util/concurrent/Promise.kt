@@ -8,9 +8,9 @@ typealias PlayPromise<T> = Promise<T>
  * A wrapper of CompletableFuture
  * @author LiangZengle
  */
-class Promise<T>(private val cf: CompletableFuture<T>) {
+inline class Promise<T>(private val cf: CompletableFuture<T>) {
 
-  val future: Future<T> = Future(cf)
+  val future: Future<T> get() = Future(cf)
 
   fun complete(result: Result<T>) {
     result.fold(cf::complete, cf::completeExceptionally)

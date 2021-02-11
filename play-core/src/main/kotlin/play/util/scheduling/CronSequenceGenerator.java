@@ -477,19 +477,19 @@ public class CronSequenceGenerator {
         if (secondsCardinality == 60) {
             return 1000;
         } else if (secondsCardinality > 1) {
-            return minInSet(seconds) * 1000;
+            return minInSet(seconds) * 1000L;
         }
         int minutesCardinality = minutes.cardinality();
         if (minutesCardinality == 60) {
             return 60000;
         } else if (minutesCardinality > 1) {
-            return minInSet(minutes) * 60000;
+            return minInSet(minutes) * 60000L;
         }
         int hoursCardinality = hours.cardinality();
         if (hoursCardinality == 24) {
             return 3600000;
         } else if (hoursCardinality > 1) {
-            return minInSet(hours) * 3600000;
+            return minInSet(hours) * 3600000L;
         }
         return 86400000;
     }

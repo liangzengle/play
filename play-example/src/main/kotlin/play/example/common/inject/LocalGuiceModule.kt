@@ -2,8 +2,11 @@ package play.example.common.inject
 
 import akka.actor.typed.ActorRef
 import com.google.inject.Provides
+import javax.inject.Singleton
 import play.akka.resumeSupervisor
 import play.db.QueryService
+import play.db.cache.CaffeineEntityCacheFactory
+import play.db.cache.EntityCacheFactory
 import play.example.common.admin.AdminGuiceModule
 import play.example.common.net.NetGuiceModule
 import play.example.common.net.SessionManager
@@ -13,6 +16,7 @@ import play.example.module.friend.FriendManager
 import play.example.module.guild.GuildManager
 import play.example.module.guild.entity.GuildEntityCache
 import play.example.module.platform.PlatformServiceProvider
+import play.example.module.player.PlayerEntityCacheInitializer
 import play.example.module.player.PlayerManager
 import play.example.module.player.PlayerRequestHandler
 import play.example.module.player.PlayerService
@@ -24,10 +28,10 @@ import play.example.module.server.config.ServerConfig
 import play.example.module.server.config.ServerConfigProvider
 import play.example.module.task.TaskEventReceiver
 import play.util.scheduling.Scheduler
-import javax.inject.Singleton
 
 class LocalGuiceModule : AkkaGuiceModule() {
   override fun configure() {
+    super.configure()
     install(NetGuiceModule())
     if (ctx.conf.getBoolean("admin.enabled")) {
       install(AdminGuiceModule())
@@ -36,7 +40,7 @@ class LocalGuiceModule : AkkaGuiceModule() {
     bind<ServerConfig>().toProvider(ServerConfigProvider::class.java).asEagerSingleton()
     bind<PlayerEventDispatcher>().toProvider(PlayerEventDispatcherProvider::class.java)
 
-//    optionalBind<EntityCacheFactory>().to<CaffeineEntityCacheFactory>()
+    optionalBind<EntityCacheFactory>().to<CaffeineEntityCacheFactory>()
   }
 
   @Singleton
@@ -54,7 +58,8 @@ class LocalGuiceModule : AkkaGuiceModule() {
     sessionManager: ActorRef<SessionManager.Command>,
     serverService: ServerService,
     accountCache: AccountEntityCache,
-    playerManager: ActorRef<PlayerManager.Command>
+    playerManager: ActorRef<PlayerManager.Command>,
+    playerEntityCacheInitializer: PlayerEntityCacheInitializer
   ): ActorRef<AccountManager.Command> {
     return spawn(
       systemProvider,
@@ -64,7 +69,8 @@ class LocalGuiceModule : AkkaGuiceModule() {
         sessionManager,
         serverService,
         accountCache,
-        playerManager
+        playerManager,
+        playerEntityCacheInitializer
       ),
       "AccountManager"
     )

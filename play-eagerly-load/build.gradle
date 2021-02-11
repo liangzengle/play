@@ -1,0 +1,6 @@
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-reflect"
+    compileOnly auto_service
+    kapt auto_service
+    compileOnly kotlin_poet
+}

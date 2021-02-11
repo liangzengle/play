@@ -16,4 +16,5 @@ fun <T> Result<T>.toEither(): Either<Throwable, T> {
   return if (isSuccess) right(getOrThrow()) else left(getCause())
 }
 
-fun <L, R> Either<L, R>.toOptional(): Optional<R> = if (this is Right<L, R>) Optional.of(value()) else Optional.empty()
+fun <L, R> Either<L, R>.toOptional(): Optional<R> =
+  if (this is Right<L, R>) Optional.ofNullable(value()) else Optional.empty()

@@ -12,6 +12,9 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.handler.timeout.IdleState
 import io.netty.handler.timeout.IdleStateEvent
+import java.time.Duration
+import java.util.*
+import java.util.stream.LongStream
 import org.jctools.maps.NonBlockingHashMapLong
 import play.akka.AbstractTypedActor
 import play.akka.sameBehavior
@@ -20,9 +23,6 @@ import play.getLogger
 import play.mvc.Request
 import play.mvc.Response
 import play.util.collection.LongIterable
-import java.time.Duration
-import java.util.*
-import java.util.stream.LongStream
 
 class SessionActor(
   context: ActorContext<Command>,
@@ -42,7 +42,7 @@ class SessionActor(
   private var terminated = false
 
   init {
-    ch.pipeline().addLast("Forwarding", ForwardingChannelHandler())
+    ch.pipeline().addLast("session", ChannelHandler())
     ch.config().isAutoRead = true
     if (flushIntervalMillis > 0) {
       writer = SessionWriter.WriteNoFlush(ch)
@@ -120,7 +120,7 @@ class SessionActor(
     subscriber = cmd.subscriber
   }
 
-  private inner class ForwardingChannelHandler : ChannelInboundHandlerAdapter() {
+  private inner class ChannelHandler : ChannelInboundHandlerAdapter() {
     override fun channelInactive(ctx: ChannelHandlerContext?) {
       forceClose("Channel Inactive")
     }
@@ -149,6 +149,14 @@ class SessionActor(
           }
         }
         else -> logger.info { "userEventTriggered: $evt" }
+      }
+    }
+
+    override fun channelWritabilityChanged(ctx: ChannelHandlerContext) {
+      if (!ctx.channel().isWritable) {
+        forceClose("Channel become unWritable")
+      } else {
+        super.channelWritabilityChanged(ctx)
       }
     }
 
