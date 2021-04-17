@@ -15,11 +15,11 @@ class ReferToGroupConstraintValidator : ConfigConstraintValidator<ReferToGroup, 
   override fun isValid(value: Any?, context: ConstraintValidatorContext): Boolean {
     if (value == null || value == 0) return true
     val configSet = getConfigSet(context, referToConfig)
-    if (configSet !is GroupedConfigSet<*, *, *>) {
+    if (configSet !is GroupedConfigSet<*, *>) {
       return false
     }
     @Suppress("UNCHECKED_CAST")
-    configSet as GroupedConfigSet<Any, *, *>
+    configSet as GroupedConfigSet<Any, *>
     return configSet.containsGroup(value)
   }
 }

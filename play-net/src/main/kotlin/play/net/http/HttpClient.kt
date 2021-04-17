@@ -1,10 +1,10 @@
 package play.net.http
 
-import play.getLogger
-import play.util.collection.mkString
 import play.util.concurrent.Future
 import play.util.concurrent.Future.Companion.toFuture
 import play.util.exception.isFatal
+import play.util.logging.getLogger
+import play.util.mkStringTo
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.*
@@ -14,22 +14,25 @@ import java.time.Duration
 import java.util.concurrent.CompletionException
 import java.util.concurrent.Flow
 import java.util.concurrent.atomic.AtomicLong
-import javax.inject.Inject
-import javax.inject.Provider
-import javax.inject.Singleton
 
 /**
  * Created by LiangZengle on 2020/2/20.
  */
-@Singleton
-class HttpClient @Inject constructor(private val client: HttpClient) {
-  private val logger = getLogger()
+class HttpClient constructor(
+  private val client: HttpClient,
+  private val readTimeout: Duration = Duration.ofSeconds(5)
+) {
+  companion object {
+    private val logger = getLogger()
+  }
+
+  init {
+    require(readTimeout > Duration.ZERO) { "readTimeout > Duration.ZERO" }
+  }
 
   private val counter = AtomicLong()
 
   fun toJava(): HttpClient = client
-
-  val readTimeout = Duration.ofSeconds(5)
 
   fun get(
     uri: String,
@@ -73,10 +76,22 @@ class HttpClient @Inject constructor(private val client: HttpClient) {
     params: Map<String, Any>,
     headers: Map<String, String>
   ): HttpRequest {
+    val uriVal = if (params.isEmpty()) {
+      URI.create(uri)
+    } else {
+      val uriBuilder = StringBuilder(32)
+      uriBuilder.append(uri)
+      if (uri.lastIndexOf('?') == -1) {
+        uriBuilder.append('?')
+      } else if (uri.last() != '?') {
+        uriBuilder.append('&')
+      }
+      makeQueryStringTo(uriBuilder, params)
+      URI.create(uriBuilder.toString())
+    }
     val b = HttpRequest.newBuilder()
-    b.uri(URI.create(uri + "?" + makeQueryString(params)))
-      .timeout(Duration.ofSeconds(5))
-      .GET()
+    b.uri(uriVal)
+    b.timeout(Duration.ofSeconds(5)).GET()
     headers.forEach { (t, u) ->
       b.header(t, u)
     }
@@ -84,11 +99,21 @@ class HttpClient @Inject constructor(private val client: HttpClient) {
   }
 
   fun makeQueryString(params: Map<String, Any>): String {
-    return params.entries.mkString(
+    val builder = StringBuilder()
+    makeQueryStringTo(builder, params)
+    return builder.toString()
+  }
+
+  fun makeQueryStringTo(builder: StringBuilder, params: Map<String, Any>) {
+    if (params.isEmpty()) {
+      return
+    }
+    params.entries.mkStringTo(
+      builder,
       '&',
       transform = { (k, v) ->
         URLEncoder.encode(k, Charsets.UTF_8) +
-          "=" +
+          '=' +
           URLEncoder.encode(v.toString(), Charsets.UTF_8)
       }
     )
@@ -158,20 +183,4 @@ class HttpClient @Inject constructor(private val client: HttpClient) {
       logger.info { "[$requestNo] http response: ${response.statusCode()} ${response.body()}" }
     }
   }
-}
-
-@Singleton
-class DefaultHttpClientProvider : Provider<HttpClient> {
-  private val client = makeClient()
-
-  private fun makeClient(): HttpClient {
-    return HttpClient.newBuilder()
-      .version(HttpClient.Version.HTTP_1_1)
-      .followRedirects(HttpClient.Redirect.NORMAL)
-      .connectTimeout(Duration.ofSeconds(2))
-//      .authenticator(Authenticator.getDefault())
-      .build()
-  }
-
-  override fun get(): HttpClient = client
 }

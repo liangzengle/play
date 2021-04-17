@@ -52,7 +52,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
     static final int NCPU = Runtime.getRuntime().availableProcessors();
 
     /* ---------------- Nodes -------------- */
-    static class Node implements ConcurrentLongLongMap.Entry {
+    static class Node implements Entry {
         final int hash;
         final long key;
         volatile long val;
@@ -86,10 +86,10 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
         }
 
         public final boolean equals(Object o) {
-            if (!(o instanceof ConcurrentLongLongMap.Entry)) {
+            if (!(o instanceof Entry)) {
                 return false;
             }
-            ConcurrentLongLongMap.Entry that = (ConcurrentLongLongMap.Entry) o;
+            Entry that = (Entry) o;
             return that.getKey() == key && that.getValue() == val;
         }
 
@@ -279,7 +279,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
 
     @NotNull
     @Override
-    public Iterator<ConcurrentLongLongMap.Entry> iterator() {
+    public Iterator<Entry> iterator() {
         return entrySet().iterator();
     }
 
@@ -555,7 +555,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
      *
      * @return the set view
      */
-    public Iterable<ConcurrentLongLongMap.Entry> entrySet() {
+    public Iterable<Entry> entrySet() {
         EntrySetView es;
         if ((es = entrySet) != null) return es;
         return entrySet = new EntrySetView(this);
@@ -668,7 +668,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
         return (v = get(key)) == null ? defaultValue : v;
     }
 
-    public void forEach(LongBiConsumer action) {
+    public void forEach(LongLongConsumer action) {
         if (action == null) throw new NullPointerException("action");
         Node[] t;
         if ((t = table) != null) {
@@ -820,7 +820,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
      * @throws RuntimeException      or Error if the remappingFunction does so,
      *                               in which case the mapping is unchanged
      */
-    public Long computeIfPresent(long key, LongToObjBiFunction<Long> remappingFunction) {
+    public Long computeIfPresent(long key, LongLongToObjFunction<Long> remappingFunction) {
         if (remappingFunction == null)
             throw new NullPointerException();
         int h = spread(Long.hashCode(key));
@@ -2378,13 +2378,13 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
     }
 
     static final class EntryIterator extends BaseIterator
-            implements Iterator<ConcurrentLongLongMap.Entry> {
+            implements Iterator<Entry> {
         EntryIterator(Node[] tab, int size, int index, int limit,
                       ConcurrentLongLongHashMap map) {
             super(tab, size, index, limit, map);
         }
 
-        public final ConcurrentLongLongMap.Entry next() {
+        public final Entry next() {
             Node p;
             if ((p = next) == null)
                 throw new NoSuchElementException();
@@ -2399,7 +2399,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
     /**
      * Exported Entry for EntryIterator.
      */
-    static final class MapEntry implements ConcurrentLongLongMap.Entry {
+    static final class MapEntry implements Entry {
         final long key; // non-null
         long val;       // non-null
         final ConcurrentLongLongHashMap map;
@@ -2427,10 +2427,10 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
         }
 
         public boolean equals(Object o) {
-            if (!(o instanceof ConcurrentLongLongMap.Entry)) {
+            if (!(o instanceof Entry)) {
                 return false;
             }
-            ConcurrentLongLongMap.Entry that = (ConcurrentLongLongMap.Entry) o;
+            Entry that = (Entry) o;
             long k = that.getKey();
             long v = that.getValue();
             return k == key && v == val;
@@ -2521,7 +2521,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
     }
 
     static final class EntrySpliterator extends Traverser
-            implements Spliterator<ConcurrentLongLongMap.Entry> {
+            implements Spliterator<Entry> {
         final ConcurrentLongLongHashMap map; // To export MapEntry
         long est;               // size estimate
 
@@ -2539,13 +2539,13 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
                             f, est >>>= 1, map);
         }
 
-        public void forEachRemaining(Consumer<? super ConcurrentLongLongMap.Entry> action) {
+        public void forEachRemaining(Consumer<? super Entry> action) {
             if (action == null) throw new NullPointerException();
             for (Node p; (p = advance()) != null; )
                 action.accept(new MapEntry(p.key, p.val, map));
         }
 
-        public boolean tryAdvance(Consumer<? super ConcurrentLongLongMap.Entry> action) {
+        public boolean tryAdvance(Consumer<? super Entry> action) {
             if (action == null) throw new NullPointerException();
             Node p;
             if ((p = advance()) == null)
@@ -2644,7 +2644,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
     }
 
     @SuppressWarnings("ManualMinMaxCalculation")
-    static final class EntrySetView implements Iterable<ConcurrentLongLongMap.Entry>, Serializable {
+    static final class EntrySetView implements Iterable<Entry>, Serializable {
         private static final long serialVersionUID = 2249069246763182397L;
         private ConcurrentLongLongHashMap map;
 
@@ -2655,7 +2655,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
         /**
          * @return an iterator over the entries of the backing map
          */
-        public Iterator<ConcurrentLongLongMap.Entry> iterator() {
+        public Iterator<Entry> iterator() {
             ConcurrentLongLongHashMap m = map;
             Node[] t;
             int f = (t = m.table) == null ? 0 : t.length;
@@ -2674,7 +2674,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
             return h;
         }
 
-        public Spliterator<ConcurrentLongLongMap.Entry> spliterator() {
+        public Spliterator<Entry> spliterator() {
             Node[] t;
             ConcurrentLongLongHashMap m = map;
             long n = m.sumCount();
@@ -2682,7 +2682,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
             return new EntrySpliterator(t, f, 0, f, n < 0L ? 0L : n, m);
         }
 
-        public void forEach(Consumer<? super ConcurrentLongLongMap.Entry> action) {
+        public void forEach(Consumer<? super Entry> action) {
             if (action == null) throw new NullPointerException();
             Node[] t;
             if ((t = map.table) != null) {

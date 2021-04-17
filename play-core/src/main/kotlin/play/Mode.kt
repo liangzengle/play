@@ -21,6 +21,7 @@ enum class Mode {
   fun isDev() = this === Dev
 
   fun isProd() = this === Prod
+
   override fun toString(): String {
     return when (this) {
       Dev -> "dev"

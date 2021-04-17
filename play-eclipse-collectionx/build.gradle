@@ -1,0 +1,37 @@
+apply plugin: 'idea'
+
+sourceSets {
+    codegen {
+        kotlin.srcDir 'src/codegen/kotlin'
+    }
+    main.kotlin.srcDirs += "build/generated-sources"
+}
+
+idea.module {
+    scopes.PROVIDED.plus += [configurations.codegenCompileClasspath]
+}
+
+dependencies {
+    codegenImplementation "com.squareup:kotlinpoet:$kotlin_poet_version"
+    codegenImplementation "org.eclipse.collections:eclipse-collections-api:$eclipse_collections_version"
+    codegenImplementation "org.eclipse.collections:eclipse-collections:$eclipse_collections_version"
+
+    implementation "org.eclipse.collections:eclipse-collections-api:$eclipse_collections_version"
+    implementation "org.eclipse.collections:eclipse-collections:$eclipse_collections_version"
+}
+
+task generateCaches(type: JavaExec) {
+    main = 'play.eclipse.collectionx.codegen.MainKt'
+    classpath = sourceSets.codegen.runtimeClasspath
+    args "${buildDir}/generated-sources/"
+
+    outputs.upToDateWhen { !tasks.compileCodegenJava.didWork }
+    outputs.dir "${buildDir}/generated-sources/"
+    outputs.cacheIf { true }
+}
+compileJava.dependsOn(generateCaches)
+compileKotlin.dependsOn(generateCaches)
+
+compileCodegenKotlin {
+    kotlinOptions.jvmTarget = "11"
+}

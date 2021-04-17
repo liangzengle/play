@@ -1,6 +1,6 @@
 package play.net.http
 
-import play.util.collection.EmptyByteArray
+import play.util.EmptyByteArray
 import play.util.contains
 import java.util.*
 

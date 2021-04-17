@@ -21,13 +21,13 @@ infix fun Long.checkedAdd(b: Long): Long = LongMath.checkedAdd(this, b)
 
 infix fun Long.checkedSubtract(b: Long): Long = LongMath.checkedSubtract(this, b)
 
-infix fun Long.checkedMultiply(b: Long): Long = LongMath.checkedSubtract(this, b)
+infix fun Long.checkedMultiply(b: Long): Long = LongMath.checkedMultiply(this, b)
 
 infix fun Long.safeAdd(b: Long): Long = LongMath.saturatedAdd(this, b)
 
 infix fun Long.safeSubtract(b: Long): Long = LongMath.saturatedSubtract(this, b)
 
-infix fun Long.safeMultiply(b: Long): Long = LongMath.saturatedSubtract(this, b)
+infix fun Long.safeMultiply(b: Long): Long = LongMath.saturatedMultiply(this, b)
 
 fun Long.high32(): Int = (this shl 32).toInt()
 
@@ -48,3 +48,5 @@ fun Long.toByteArray(): ByteArray = Longs.toByteArray(this)
 inline fun Long.toIntSaturated() = Ints.saturatedCast(this)
 
 inline fun Long.toIntChecked() = Ints.checkedCast(this)
+
+fun toLong(high: Int, low: Int): Long = high.toLong() shl 32 or (low.toLong() and 0xFFFFFFFFL)

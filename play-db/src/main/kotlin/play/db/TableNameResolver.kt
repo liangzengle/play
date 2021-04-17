@@ -1,11 +1,13 @@
 package play.db
 
 import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class TableNameResolver @Inject constructor(private val tableNameFormatter: TableNameFormatter) {
+class TableNameResolver constructor(
+  private val postfixesToTrimBeforeFormat: List<String>,
+  private val tableNameFormatter: TableNameFormatter
+) {
+
+  constructor(tableNameFormatter: TableNameFormatter) : this(emptyList(), tableNameFormatter)
 
   private val tableNameCache = ConcurrentHashMap<Class<*>, String>()
 
@@ -17,8 +19,21 @@ class TableNameResolver @Inject constructor(private val tableNameFormatter: Tabl
 
     val tableName = clazz.getAnnotation(TableName::class.java)
     var name = tableName?.value ?: clazz.simpleName
+    if (postfixesToTrimBeforeFormat.isNotEmpty()) {
+      name = trimPostfixes(name, postfixesToTrimBeforeFormat)
+    }
     name = tableNameFormatter.format(name)
-    tableNameCache[clazz] = name
+    tableNameCache[clazz] = name // harmless contention
     return name
+  }
+
+  private fun trimPostfixes(input: String, postfixesToTrim: List<String>): String {
+    for (i in postfixesToTrim.indices) {
+      val postfix = postfixesToTrim[i]
+      if (input.endsWith(postfix)) {
+        return input.substring(0, input.length - postfix.length)
+      }
+    }
+    return input
   }
 }

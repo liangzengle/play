@@ -14,4 +14,4 @@ class ParameterFormatException(name: String, cause: Throwable?) : HttpRequestPar
 class UnsupportedHttpParameterTypeException(method: Method, type: Type) :
   HttpRequestParameterException("$type in $method")
 
-class UnsuccessfulStatusCodeException(val statusCode: Int) : NoStackTraceException("$statusCode")
+class UnsuccessfulStatusCodeException(statusCode: Int) : NoStackTraceException("$statusCode")

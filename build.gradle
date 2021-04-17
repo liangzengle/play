@@ -1,5 +1,4 @@
 buildscript {
-    ext.kotlin_version = '1.4.30'
     repositories {
         mavenLocal()
         maven {
@@ -10,139 +9,36 @@ buildscript {
         }
         mavenCentral()
         maven {
-            url 'https://dl.bintray.com/kotlin/kteotlin-eap'
-        }
-        maven {
             url "https://plugins.gradle.org/m2/"
         }
-
     }
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.jetbrains.kotlin:kotlin-allopen:$kotlin_version"
         classpath "org.jlleitschuh.gradle:ktlint-gradle:9.4.1"
-        classpath "com.squareup.wire:wire-gradle-plugin:3.3.0"
     }
 }
 
-ext {
-    netty_version = '4.1.45.Final'
-    hibernat_validator_version = '6.1.2.Final'
-    javax_el_version = '3.0.0'
-    jackson_version = '2.12.1'
-    log4j_version = '2.14.0'
-    kotlin_logging_version = '1.8.3'
-    config_version = '1.4.0'
-    vavr_version = '0.10.2'
-    guava_version = '28.2-jre'
-    auto_service_version = '1.0-rc7'
-    guice_version = '4.2.2'
-    reflections_version = '0.9.12'
-    hikariCP_version = '3.4.2'
-    eclipse_collection_version = "9.1.0"
-    kotlin_poet_version = '1.7.1'
-    akka_typed_version = "2.6.10"
-    caffeine_version = "2.8.5"
-    jctools_version = "3.0.0"
-    kotlinx_serialization_version = "1.0.1"
-    metrics_version = "4.1.16"
-    micrometer_version = "1.6.2"
-}
-
-ext {
-    hibernate_validator = "org.hibernate.validator:hibernate-validator:$hibernat_validator_version"
-    netty = [
-            "io.netty:netty-all:$netty_version",
-            "io.netty:netty-transport-native-epoll:$netty_version"
-    ]
-    log4j = [
-            "io.github.microutils:kotlin-logging:$kotlin_logging_version",
-            "org.apache.logging.log4j:log4j-slf4j-impl:$log4j_version",
-            "org.apache.logging.log4j:log4j-jul:$log4j_version"
-    ]
-    config = "com.typesafe:config:$config_version"
-    vavr = [
-            "io.vavr:vavr:$vavr_version",
-            "io.vavr:vavr-kotlin:$vavr_version",
-            "io.vavr:vavr-jackson:$vavr_version",
-    ]
-    guava = "com.google.guava:guava:$guava_version"
-    auto_service = "com.google.auto.service:auto-service:$auto_service_version"
-    guice = [
-            "com.google.inject:guice:$guice_version",
-            "com.google.inject.extensions:guice-assistedinject:$guice_version"
-    ]
-    reflections = "org.reflections:reflections:$reflections_version"
-    hikariCP = "com.zaxxer:HikariCP:$hikariCP_version"
-    jackson = [
-            "com.fasterxml.jackson.module:jackson-module-kotlin:$jackson_version",
-            "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jackson_version",
-            "com.fasterxml.jackson.datatype:jackson-datatype-guava:$jackson_version",
-            "com.fasterxml.jackson.datatype:jackson-datatype-eclipse-collections:$jackson_version"
-    ]
-    eclipse_collection = [
-            "org.eclipse.collections:eclipse-collections:$eclipse_collection_version"
-    ]
-    kotlin_poet = [
-            "com.squareup:kotlinpoet:$kotlin_poet_version"
-    ]
-    kotlin_poet_metadata = [
-            "com.squareup:kotlinpoet-metadata:$kotlin_poet_version",
-            "com.squareup:kotlinpoet-metadata-specs:$kotlin_poet_version"
-    ]
-    akka_typed = [
-            "com.typesafe.akka:akka-actor-typed_2.13:$akka_typed_version"
-    ]
-    javax_el = [
-            "javax.el:javax.el-api:$javax_el_version",
-            "org.glassfish:javax.el:$javax_el_version"
-    ]
-    caffeine = "com.github.ben-manes.caffeine:caffeine:$caffeine_version"
-    jctools = "org.jctools:jctools-core:$jctools_version"
-    kotlinx_serialization_protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$kotlinx_serialization_version"
-    metrics = [
-            "io.dropwizard.metrics:metrics-jvm:${metrics_version}"
-    ]
-    micrometer = [
-            "io.micrometer:micrometer-core:$micrometer_version"
-    ]
-}
-
-subprojects {
+configure(subprojects - project(':play-scala')) {
     repositories {
         mavenLocal()
+        mavenCentral()
         maven {
             url 'https://maven.aliyun.com/repository/public/'
-        }
-        maven {
-            url 'https://maven.aliyun.com/repository/gradle-plugin'
-        }
-        maven {
-            url 'https://maven.aliyun.com/repository/jcenter'
-        }
-        mavenCentral()
-        jcenter()
-        maven {
-            url 'https://dl.bintray.com/kotlin/kotlin-eap'
-        }
-        maven {
-            url "file://$rootDir/repository"
         }
     }
     apply plugin: 'java'
     apply plugin: 'kotlin'
     apply plugin: 'org.jetbrains.kotlin.kapt'
-//    apply plugin: "org.jlleitschuh.gradle.ktlint-idea"
-    apply plugin: "org.jlleitschuh.gradle.ktlint"
+    apply plugin: "org.jlleitschuh.gradle.ktlint-idea"
+    apply plugin: "kotlin-spring"
+
 
     ktlint {
 //        debug = true
         verbose = true
     }
-
-//    tasks.withType(KtlintCheckTask) {
-//        reporterOutputDir = project.layout.buildDirectory.dir("ktlint/$name")
-//    }
 
     group 'play'
     version '1.0-SNAPSHOT'
@@ -151,6 +47,9 @@ subprojects {
         api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
         api "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
         testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
+
+        api "com.google.auto.service:auto-service:$auto_service_version"
+        kapt "com.google.auto.service:auto-service:$auto_service_version"
     }
 
     sourceCompatibility = JavaVersion.VERSION_11
@@ -199,8 +98,5 @@ subprojects {
     sourceSets {
         main.java.srcDirs += "src/main/kotlin"
         test.java.srcDirs += "src/test/kotlin"
-//        main.kotlin.srcDirs += "build/generated/source/kaptKotlin/main"
-        main.kotlin.srcDirs += "build/generated/source/wire"
-        test.kotlin.srcDirs += "build/generated/source/wire"
     }
 }

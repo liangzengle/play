@@ -25,7 +25,6 @@ sealed class RequestResult<out T> {
     operator fun <T : Any> invoke(f: PlayFuture<Result2<T>>): RequestResult<T> = Future(f.map { RequestResult(it) })
 
     @JvmName("unit")
-    @OverloadResolutionByLambdaReturnType
     inline fun unit(f: () -> Unit): RequestResult<Unit> {
       f()
       return Nothing

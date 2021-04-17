@@ -3,19 +3,20 @@ package play.config
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.ImmutableSortedMap
-import org.eclipse.collections.api.map.primitive.IntObjectMap
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
-import play.util.reflect.getRawClass
-import play.util.reflect.getTypeArg
 import java.util.*
 import javax.annotation.Nullable
 import kotlin.Comparator
 import kotlin.NoSuchElementException
+import org.eclipse.collections.api.map.primitive.IntObjectMap
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
+import play.util.getRawClass
+import play.util.getTypeArg
+import play.util.unsafeLazy
 
 internal interface SuperConfigSet<K, T, G, E> :
   ConfigSet<K, T>,
   ExtensionConfigSet<E, T>,
-  GroupedConfigSet<G, K, T> where T : AbstractConfig, E : ConfigExtension<T>
+  GroupedConfigSet<G, T> where T : AbstractConfig, E : ConfigExtension<T>
 
 @Suppress("UNCHECKED_CAST")
 internal class ConfigSetImpl<K, T, G, E>(
@@ -32,8 +33,9 @@ internal class ConfigSetImpl<K, T, G, E>(
       .getTypeArg(ExtensionKey::class.java, 0)
       .getRawClass<E>()
     try {
-      val extension = extensionClass.getDeclaredConstructor(List::class.java)
-        .newInstance(list)
+      val ctor = extensionClass.getDeclaredConstructor(List::class.java)
+      ctor.trySetAccessible()
+      val extension = ctor.newInstance(list)
       Optional.of(extension)
     } catch (e: NoSuchMethodException) {
       throw IllegalStateException("${extensionClass.simpleName}缺少构造器：${extensionClass.simpleName}(List<${configClass.simpleName}>)")
@@ -42,13 +44,13 @@ internal class ConfigSetImpl<K, T, G, E>(
     }
   }
 
-  private val hashMap: IntObjectMap<T> by lazy(LazyThreadSafetyMode.NONE) {
+  private val hashMap: IntObjectMap<T> by unsafeLazy {
     val map = IntObjectHashMap<T>(list.size)
     list.forEach { map.put(it.id, it) }
     map.toImmutable()
   }
 
-  private val treeMap: NavigableMap<K, T> by lazy(LazyThreadSafetyMode.NONE) {
+  private val treeMap: NavigableMap<K, T> by unsafeLazy {
     if (list.isEmpty()) ImmutableSortedMap.of()
     else {
       val comparator = when (val first = list.first()) {
@@ -61,7 +63,7 @@ internal class ConfigSetImpl<K, T, G, E>(
     }
   }
 
-  private val groupMap: Map<G, ConfigSet<K, T>> by lazy(LazyThreadSafetyMode.NONE) {
+  private val groupMap: Map<G, ConfigSet<K, T>> by unsafeLazy {
     assert(isGrouped)
     val map = list
       .groupBy { (it as Grouped<G>).groupId() }
@@ -139,23 +141,23 @@ internal class ConfigSetImpl<K, T, G, E>(
     return extensionOpt.orElseThrow { throw NoSuchElementException("${configClass.simpleName}.extension") }
   }
 
-  override fun getGroup(groupId: G): Optional<ConfigSet<K, T>> {
+  override fun getGroup(groupId: G): Optional<BasicConfigSet<T>> {
     if (!isGrouped) throw UnsupportedOperationException()
     return Optional.ofNullable(groupMap[groupId])
   }
 
   @Nullable
-  override fun getGroupOrNull(groupId: G): ConfigSet<K, T>? {
+  override fun getGroupOrNull(groupId: G): BasicConfigSet<T>? {
     if (!isGrouped) throw UnsupportedOperationException()
     return groupMap[groupId]
   }
 
-  override fun getGroupOrThrow(groupId: G): ConfigSet<K, T> {
+  override fun getGroupOrThrow(groupId: G): BasicConfigSet<T> {
     if (!isGrouped) throw UnsupportedOperationException()
     return groupMap[groupId] ?: throw NoSuchElementException("${configClass.simpleName} group($groupId)")
   }
 
-  override fun groupMap(): Map<G, ConfigSet<K, T>> {
+  override fun groupMap(): Map<G, BasicConfigSet<T>> {
     if (!isGrouped) throw UnsupportedOperationException()
     return groupMap
   }

@@ -1,11 +1,11 @@
 package play.util.control
 
+import play.util.logging.getLogger
+import play.scheduling.Scheduler
+import play.util.concurrent.CommonPool
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicLongFieldUpdater
 import kotlin.time.Duration
-import play.getLogger
-import play.util.concurrent.CommonPool
-import play.util.scheduling.Scheduler
 
 /**
  * 失败重试

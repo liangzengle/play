@@ -75,20 +75,20 @@ internal class SingletonConfigSetImpl<K, T, G, E>(private val elem: T) :
     throw UnsupportedOperationException()
   }
 
-  override fun getGroup(groupId: G): Optional<ConfigSet<K, T>> {
+  override fun getGroup(groupId: G): Optional<BasicConfigSet<T>> {
     throw UnsupportedOperationException()
   }
 
   @Nullable
-  override fun getGroupOrNull(groupId: G): ConfigSet<K, T>? {
+  override fun getGroupOrNull(groupId: G): BasicConfigSet<T>? {
     throw UnsupportedOperationException()
   }
 
-  override fun getGroupOrThrow(groupId: G): ConfigSet<K, T> {
+  override fun getGroupOrThrow(groupId: G): BasicConfigSet<T> {
     throw UnsupportedOperationException()
   }
 
-  override fun groupMap(): Map<G, ConfigSet<K, T>> {
+  override fun groupMap(): Map<G, BasicConfigSet<T>> {
     throw UnsupportedOperationException()
   }
 

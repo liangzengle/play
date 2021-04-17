@@ -14,7 +14,7 @@ annotation class Merge(val value: Strategy) {
     /**
      * 保留主服的数据
      */
-    PRESERVE_PRIMARY,
+    PreservePrimary,
 
     /**
      * 保留所有数据

@@ -2,8 +2,11 @@
 
 package play.util
 
+import play.util.primitive.checkedMultiply
+import java.util.*
 import java.util.concurrent.ThreadLocalRandom
 import javax.annotation.Nullable
+import kotlin.collections.ArrayList
 import kotlin.math.max
 
 /**
@@ -50,7 +53,7 @@ object rd {
     while (f != probInt.toFloat()) {
       f *= 10
       probInt = f.toInt()
-      bound *= 10
+      bound = bound checkedMultiply 10
     }
     return test(probInt, bound)
   }
@@ -64,7 +67,7 @@ object rd {
     while (d != probLong.toDouble()) {
       d *= 10
       probLong = d.toLong()
-      bound *= 10
+      bound = bound checkedMultiply 10
     }
     return test(probLong, bound)
   }
@@ -170,19 +173,19 @@ object rd {
     return result
   }
 
-  fun <T> randomDistinct(elems: Iterable<T>, expectedCount: Int, weigher: (T) -> Int): MutableList<T> {
-    val distinctElems = elems.toMutableList()
-    if (distinctElems.size < expectedCount) {
-      return distinctElems
+  fun <T> randomDistinct(distinctElements: Collection<T>, expectedCount: Int, weigher: (T) -> Int): MutableList<T> {
+    if (distinctElements.size < expectedCount) {
+      return distinctElements.toMutableList()
     }
+    val candidates = distinctElements.toCollection(LinkedList())
     val result = ArrayList<T>(expectedCount)
-    var totalProb = distinctElems.sumBy { max(weigher(it), 0) }
+    var totalProb = candidates.sumBy { max(weigher(it), 0) }
     while (result.size < expectedCount) {
       if (totalProb < 1) {
         break
       }
       var r = nextInt(totalProb)
-      val it = distinctElems.iterator()
+      val it = candidates.iterator()
       while (it.hasNext()) {
         val elem = it.next()
         val weights = weigher(elem)

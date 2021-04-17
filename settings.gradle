@@ -5,13 +5,9 @@ pluginManagement {
             url 'https://maven.aliyun.com/repository/public/'
         }
         maven {
-            url 'https://maven.aliyun.com/repository/jcenter'
-        }
-        maven {
             url 'https://maven.aliyun.com/repository/gradle-plugin'
         }
         mavenCentral()
-        jcenter()
 
         maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
 
@@ -26,20 +22,32 @@ pluginManagement {
 rootProject.name = 'play'
 
 include 'play-core'
+include 'play-logging'
 include 'play-net'
-include 'play-db'
+include 'play-entity'
 include 'play-mvc'
 include 'play-codegen'
-include 'play-eagerly-load'
+include 'play-codegen-annotations'
 include 'play-akka'
 include 'play-scala'
 include 'play-scala-compact'
 include 'play-example'
 include 'play-config'
-include 'play-db-mongo'
-include 'play-db-jdbc'
-include 'play-db-mysql-nosql'
-include 'play-db-r2dbc'
+include 'play-mongodb'
+include 'play-db'
+//include 'play-db-mongo'
+//include 'play-db-jdbc'
+//include 'play-db-mysql-nosql'
+//include 'play-db-r2dbc'
+include 'play-eclipse-collectionx'
+include 'play-eclipse-collectionx-jackson'
+
+include 'play-example-common'
+include 'play-example-game'
+include 'play-example-scene'
+project(':play-example-common').projectDir = file('./play-example/common')
+project(':play-example-game').projectDir = file('./play-example/game')
+project(':play-example-scene').projectDir = file('./play-example/scene')
 
 include 'play-modular-code'
 project(':play-modular-code').projectDir = file('./play-plugins/play-modular-code')

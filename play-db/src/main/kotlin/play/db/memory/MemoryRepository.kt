@@ -1,20 +1,20 @@
 package play.db.memory
 
-import play.ApplicationLifecycle
-import play.db.Entity
-import play.db.Repository
-import play.db.ResultMap
-import play.util.concurrent.Future
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import javax.annotation.CheckReturnValue
-import javax.inject.Inject
 import javax.inject.Singleton
+import play.db.PersistService
+import play.db.QueryService
+import play.db.Repository
+import play.db.ResultMap
+import play.entity.Entity
+import play.util.concurrent.Future
 
 @Suppress("UNCHECKED_CAST")
 @Singleton
-class MemoryRepository @Inject constructor(lifecycle: ApplicationLifecycle) : Repository(lifecycle) {
+class MemoryRepository : Repository {
   private val caches: ConcurrentMap<Class<*>, ConcurrentMap<Any, Entity<*>>> = ConcurrentHashMap()
 
   private fun getMap(entityClass: Class<*>): ConcurrentMap<Any, Entity<*>> {
@@ -85,25 +85,28 @@ class MemoryRepository @Inject constructor(lifecycle: ApplicationLifecycle) : Re
     return Future.successful(emptyList())
   }
 
-  @CheckReturnValue
-  override fun <ID, E : Entity<ID>, R> fold(entityClass: Class<E>, initial: R, f: (R, E) -> R): Future<R> {
-    val value = getMap(entityClass).values.fold(initial) { acc, entity -> f(acc, entity as E) }
+  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
+    entityClass: Class<E>,
+    where: Optional<String>,
+    order: Optional<String>,
+    limit: Optional<Int>,
+    initial: R1,
+    folder: (R1, E) -> R1
+  ): Future<R> {
+    val value = getMap(entityClass).values.fold(initial) { acc, entity -> folder(acc, entity as E) }
     return Future.successful(value)
   }
 
   @CheckReturnValue
-  override fun <ID, E : Entity<ID>, R> fold(
+  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
     entityClass: Class<E>,
     fields: List<String>,
     where: Optional<String>,
     order: Optional<String>,
     limit: Optional<Int>,
-    initial: R,
-    folder: (R, ResultMap) -> R
+    initial: R1,
+    folder: (R1, ResultMap) -> R1
   ): Future<R> {
     return Future.successful(initial)
-  }
-
-  override fun close() {
   }
 }

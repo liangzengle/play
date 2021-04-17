@@ -1,7 +1,7 @@
 package play.net.http
 
 import com.google.common.collect.Maps
-import play.getLogger
+import play.util.logging.getLogger
 
 data class RoutePath(val root: String, val children: List<ParPath>) {
 

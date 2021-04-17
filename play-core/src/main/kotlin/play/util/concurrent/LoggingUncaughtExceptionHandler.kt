@@ -3,7 +3,6 @@ package play.util.concurrent
 import play.Log
 
 /**
- *
  * @author LiangZengle
  */
 object LoggingUncaughtExceptionHandler : Thread.UncaughtExceptionHandler {

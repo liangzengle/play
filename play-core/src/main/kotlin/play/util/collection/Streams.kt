@@ -60,10 +60,6 @@ fun <K, T> Stream<T>.toImmutableMap(keyMapper: (T) -> K): Map<K, T> {
   )
 }
 
-fun IntStream.toImmutableList(): IntArrayList {
-  return ImmutableIntArrayList.wrapOf(toArray())
-}
-
 @Suppress("NOTHING_TO_INLINE")
 inline fun <T> Stream<T?>.filterNotNull(): Stream<T> {
   return filter { it != null }.unsafeCast()

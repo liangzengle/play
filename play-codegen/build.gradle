@@ -1,9 +1,11 @@
 dependencies {
-    implementation auto_service
-    kapt auto_service
+    compileOnly project(':play-codegen-annotations')
+
     implementation "org.jetbrains.kotlin:kotlin-reflect"
-    implementation kotlin_poet
-    implementation kotlin_poet_metadata
+
+    implementation "com.squareup:kotlinpoet:$kotlin_poet_version"
+    implementation "com.squareup:kotlinpoet-metadata:$kotlin_poet_version"
+    implementation "com.squareup:kotlinpoet-metadata-specs:$kotlin_poet_version"
 }
 
 compileKotlin {

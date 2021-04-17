@@ -20,6 +20,14 @@ inline class Promise<T>(private val cf: CompletableFuture<T>) {
     f.onComplete(::complete)
   }
 
+  /**
+   * Exception is properly handled.
+   * @param f
+   */
+  inline fun catchingComplete(f: () -> T) {
+    complete(runCatching(f))
+  }
+
   fun success(value: T) = cf.complete(value)
 
   fun trySuccess(value: T): Boolean = cf.complete(value)
@@ -36,6 +44,27 @@ inline class Promise<T>(private val cf: CompletableFuture<T>) {
     @JvmStatic
     fun <T> make(): Promise<T> {
       return Promise(CompletableFuture())
+    }
+
+    @JvmStatic
+    fun <T> successful(value: T): Promise<T> {
+      val promise = make<T>()
+      promise.success(value)
+      return promise
+    }
+
+    @JvmStatic
+    fun <T> failure(value: Throwable): Promise<T> {
+      val promise = make<T>()
+      promise.failure(value)
+      return promise
+    }
+
+    @JvmStatic
+    fun <T> from(result: Result<T>): Promise<T> {
+      val promise = make<T>()
+      promise.complete(result)
+      return promise
     }
   }
 }

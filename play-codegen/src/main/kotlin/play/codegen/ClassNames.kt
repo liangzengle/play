@@ -1,11 +1,21 @@
 package play.codegen
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.MemberName
 
 internal val Inject = ClassName.bestGuess("javax.inject.Inject")
 internal val Singleton = ClassName.bestGuess("javax.inject.Singleton")
 
+internal val Provides = ClassName.bestGuess("com.google.inject.Provides")
+internal val GoogleInjectModule = ClassName.bestGuess("com.google.inject.Module")
+internal val AbstractModule = ClassName.bestGuess("com.google.inject.AbstractModule")
+
 internal val GuiceModule = ClassName.bestGuess("play.inject.guice.GuiceModule")
+internal val GeneratedMultiBindModule = ClassName.bestGuess("play.inject.guice.GeneratedMultiBindModule")
+internal val EnableMultiBinding = ClassName.bestGuess("play.inject.guice.EnableMultiBinding")
+internal val MultiBindListProvider = ClassName.bestGuess("play.inject.guice.MultiBindListProvider")
+internal val MultiBindSetProvider = ClassName.bestGuess("play.inject.guice.MultiBindSetProvider")
+internal val PlayInjector = ClassName.bestGuess("play.inject.Injector")
 
 internal val Controller = ClassName.bestGuess("play.mvc.Controller")
 internal val AbstractController = ClassName.bestGuess("play.mvc.AbstractController")
@@ -24,15 +34,16 @@ internal val MessageConverter = ClassName.bestGuess("play.mvc.MessageConverter")
 
 internal val DisableCodegen = ClassName.bestGuess("play.codegen.DisableCodegen")
 
-internal val Entity = ClassName.bestGuess("play.db.Entity")
-internal val EntityInt = ClassName.bestGuess("play.db.EntityInt")
-internal val EntityLong = ClassName.bestGuess("play.db.EntityLong")
-internal val EntityString = ClassName.bestGuess("play.db.EntityString")
-internal val CacheSpec = ClassName.bestGuess("play.db.cache.CacheSpec")
-internal val EntityCacheManager = ClassName.bestGuess("play.db.cache.EntityCacheManager")
-internal val EntityCache = ClassName.bestGuess("play.db.cache.EntityCache")
-internal val EntityCacheInt = ClassName.bestGuess("play.db.cache.EntityCacheInt")
-internal val EntityCacheLong = ClassName.bestGuess("play.db.cache.EntityCacheLong")
+internal val Entity = ClassName.bestGuess("play.entity.Entity")
+internal val EntityInt = ClassName.bestGuess("play.entity.EntityInt")
+internal val EntityLong = ClassName.bestGuess("play.entity.EntityLong")
+internal val EntityString = ClassName.bestGuess("play.entity.EntityString")
+internal val CacheSpec = ClassName.bestGuess("play.entity.cache.CacheSpec")
+internal val EntityCacheManager = ClassName.bestGuess("play.entity.cache.EntityCacheManager")
+internal val EntityCache = ClassName.bestGuess("play.entity.cache.EntityCache")
+internal val EntityCacheInt = ClassName.bestGuess("play.entity.cache.EntityCacheInt")
+internal val EntityCacheLong = ClassName.bestGuess("play.entity.cache.EntityCacheLong")
+internal val UnsafeEntityCacheOps = ClassName.bestGuess("play.entity.cache.UnsafeEntityCacheOps")
 
 internal val AbstractConfig = ClassName.bestGuess("play.config.AbstractConfig")
 internal val Ignore = ClassName.bestGuess("play.config.Ignore")
@@ -49,4 +60,4 @@ internal val SingletonConfigSet = ClassName.bestGuess("play.config.SingletonConf
 internal val SingletonConfig = ClassName.bestGuess("play.config.SingletonConfig")
 internal val Resource = ClassName.bestGuess("play.config.Resource")
 
-internal val UnsafeEntityCacheOps = ClassName.bestGuess("play.db.cache.UnsafeEntityCacheOps")
+val classOf = MemberName("play.util", "classOf")

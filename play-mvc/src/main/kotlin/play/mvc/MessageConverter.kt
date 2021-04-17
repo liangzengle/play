@@ -2,7 +2,7 @@ package play.mvc
 
 /**
  *
- * convert PlayerRequest to a custom message
+ * Convert PlayerRequest to a custom message
  *
  * @author LiangZengle
  */

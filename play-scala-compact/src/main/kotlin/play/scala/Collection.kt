@@ -1,6 +1,6 @@
 package play.scala
 
-import play.util.Scala
+import play.scala.collection.Scala
 import scala.collection.Seq
 import scala.collection.immutable.Vector
 import scala.jdk.javaapi.CollectionConverters

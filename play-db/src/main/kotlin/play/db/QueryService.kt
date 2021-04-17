@@ -1,12 +1,12 @@
 package play.db
 
-import play.util.concurrent.Future
 import java.util.*
 import javax.annotation.CheckReturnValue
+import play.entity.Entity
+import play.entity.cache.EntityCacheLoader
+import play.util.concurrent.Future
 
-interface QueryService {
-
-  fun <ID, E : Entity<ID>> findById(id: ID, entityClass: Class<E>): Future<Optional<E>>
+interface QueryService : EntityCacheLoader {
 
   fun <ID, E : Entity<ID>> listAll(entityClass: Class<E>): Future<List<E>>
 
@@ -17,7 +17,9 @@ interface QueryService {
     where: Optional<String> = Optional.empty(),
     order: Optional<String> = Optional.empty(),
     limit: Optional<Int> = Optional.empty()
-  ): Future<List<E>>
+  ): Future<List<E>> {
+    return fold(entityClass, where, order, limit, LinkedList()) { list, e -> list.apply { add(e) } }
+  }
 
   fun <ID, E : Entity<ID>> query(
     entityClass: Class<E>,
@@ -25,10 +27,23 @@ interface QueryService {
     where: Optional<String> = Optional.empty(),
     order: Optional<String> = Optional.empty(),
     limit: Optional<Int> = Optional.empty()
-  ): Future<List<ResultMap>>
+  ): Future<List<ResultMap>> {
+    return fold(
+      entityClass,
+      fields,
+      where,
+      order,
+      limit,
+      LinkedList<ResultMap>(),
+    ) { list: LinkedList<ResultMap>, resultMap ->
+      list.apply {
+        add(resultMap)
+      }
+    }
+  }
 
   @CheckReturnValue
-  fun <ID, E : Entity<ID>> foreach(entityClass: Class<E>, f: (E) -> Unit): Future<Unit> {
+  override fun <ID, E : Entity<ID>> foreach(entityClass: Class<E>, f: (E) -> Unit): Future<Unit> {
     return fold(entityClass, Unit) { _, e ->
       f(e)
     }
@@ -45,21 +60,46 @@ interface QueryService {
   ): Future<Unit> {
     return fold(entityClass, fields, where, order, limit, Unit) { _, r ->
       f(r)
-      Unit
     }
   }
 
   @CheckReturnValue
-  fun <ID, E : Entity<ID>, R> fold(entityClass: Class<E>, initial: R, f: (R, E) -> R): Future<R>
+  fun <ID, E : Entity<ID>, R, R1 : R> fold(
+    entityClass: Class<E>,
+    initial: R1,
+    f: (R1, E) -> R1
+  ): Future<R> {
+    return fold(entityClass, Optional.empty(), Optional.empty(), Optional.empty(), initial, f)
+  }
 
   @CheckReturnValue
-  fun <ID, E : Entity<ID>, R> fold(
+  fun <ID, E : Entity<ID>, R, R1 : R> fold(
+    entityClass: Class<E>,
+    where: Optional<String>,
+    order: Optional<String>,
+    limit: Optional<Int>,
+    initial: R1,
+    folder: (R1, E) -> R1
+  ): Future<R>
+
+  @CheckReturnValue
+  fun <ID, E : Entity<ID>, R, R1 : R> fold(
     entityClass: Class<E>,
     fields: List<String>,
-    where: Optional<String> = Optional.empty(),
-    order: Optional<String> = Optional.empty(),
-    limit: Optional<Int> = Optional.empty(),
-    initial: R,
-    folder: (R, ResultMap) -> R
+    initial: R1,
+    folder: (R1, ResultMap) -> R1
+  ): Future<R> {
+    return fold(entityClass, fields, Optional.empty(), Optional.empty(), Optional.empty(), initial, folder)
+  }
+
+  @CheckReturnValue
+  fun <ID, E : Entity<ID>, R, R1 : R> fold(
+    entityClass: Class<E>,
+    fields: List<String>,
+    where: Optional<String>,
+    order: Optional<String>,
+    limit: Optional<Int>,
+    initial: R1,
+    folder: (R1, ResultMap) -> R1
   ): Future<R>
 }

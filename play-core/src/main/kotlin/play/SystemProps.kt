@@ -24,13 +24,12 @@ object SystemProps {
    * @return 原来的属性值，不存在为null
    */
   @JvmStatic
-  operator fun set(key: String?, value: Any): String? {
-    return System.getProperties().put(key, value.toString()) as String?
+  fun set(key: String, value: Any) {
+    System.getProperties().put(key, value.toString())
   }
 
   @JvmStatic
-  val all: Properties
-    get() = System.getProperties()
+  fun all(): Properties = System.getProperties()
 
   @JvmStatic
   fun getOrNull(key: String): String? {

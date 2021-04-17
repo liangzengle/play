@@ -1,16 +1,16 @@
 package play
 
+import com.typesafe.config.Config
+
 /**
  * Created by LiangZengle on 2020/2/16.
  */
 interface ApplicationLoader {
 
-  fun load(ctx: Context): Application
+  fun load(ctxt: Context): Application
 
   data class Context(
-    val conf: Configuration,
-    val mode: Mode,
-    val classScanner: ClassScanner,
-    val lifecycle: ApplicationLifecycle
+    val conf: Config,
+    val shutdownCoordinator: ShutdownCoordinator
   )
 }

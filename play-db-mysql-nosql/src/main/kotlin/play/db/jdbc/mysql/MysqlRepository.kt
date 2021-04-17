@@ -1,6 +1,17 @@
 package play.db.jdbc.mysql
 
 import com.fasterxml.jackson.core.JsonProcessingException
+import java.io.Closeable
+import java.sql.Connection
+import java.sql.DriverManager
+import java.sql.ResultSet
+import java.util.*
+import javax.annotation.CheckReturnValue
+import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Provider
+import javax.inject.Singleton
+import javax.sql.DataSource
 import play.*
 import play.db.*
 import play.db.jdbc.JdbcConfiguration
@@ -12,18 +23,6 @@ import play.util.json.Json
 import play.util.json.Json.toJsonString
 import play.util.reflect.isAssignableFrom
 import play.util.toOptional
-import java.io.Closeable
-import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.ResultSet
-import java.util.*
-import java.util.concurrent.Callable
-import javax.annotation.CheckReturnValue
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Provider
-import javax.inject.Singleton
-import javax.sql.DataSource
 
 @Singleton
 class MysqlRepository @Inject constructor(
@@ -286,28 +285,30 @@ class MysqlRepository @Inject constructor(
     }
   }
 
-  @CheckReturnValue
-  override fun <ID, E : Entity<ID>, R> fold(
+  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
     entityClass: Class<E>,
-    initial: R,
-    f: (R, E) -> R
+    where: Optional<String>,
+    order: Optional<String>,
+    limit: Optional<Int>,
+    initial: R1,
+    folder: (R1, E) -> R1
   ): Future<R> {
-    val promise = Promise.make<R>()
-    ds.connection.use { conn ->
-      var result = initial
-      val sql = "SELECT $Data FROM ${this.tableNameOf(entityClass)}"
-      conn.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY).use { stmt ->
-        stmt.fetchSize = Int.MIN_VALUE
-        val rs = stmt.executeQuery()
-        while (rs.next()) {
-          val data = rs.getString(1)
-          val entity = Json.toObject(data, entityClass)
-          result = f(result, entity)
+    return exec {
+      ds.connection.use { conn ->
+        var result = initial
+        val sql = "SELECT $Data FROM ${this.tableNameOf(entityClass)}"
+        conn.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY).use { stmt ->
+          stmt.fetchSize = Int.MIN_VALUE
+          val rs = stmt.executeQuery()
+          while (rs.next()) {
+            val data = rs.getString(1)
+            val entity = Json.toObject(data, entityClass)
+            result = folder(result, entity)
+          }
+          result
         }
-        promise.success(result)
       }
     }
-    return promise.future
   }
 
   override fun <ID, E : Entity<ID>> listIds(entityClass: Class<E>): Future<List<ID>> {
@@ -384,31 +385,31 @@ class MysqlRepository @Inject constructor(
   }
 
   @CheckReturnValue
-  override fun <ID, E : Entity<ID>, R> fold(
+  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
     entityClass: Class<E>,
     fields: List<String>,
     where: Optional<String>,
     order: Optional<String>,
     limit: Optional<Int>,
-    initial: R,
-    folder: (R, ResultMap) -> R
+    initial: R1,
+    folder: (R1, ResultMap) -> R1
   ): Future<R> {
-    val promise = Promise.make<R>()
-    ds.connection.use { conn ->
-      conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY).use { stmt ->
-        val sql = buildSql(entityClass, fields, where, order, limit)
-        stmt.fetchSize = Int.MIN_VALUE
-        var result = initial
-        val rs = stmt.executeQuery(sql)
-        while (rs.next()) {
-          val data = rs.getString(1)
-          val map = Json.to<Map<String, Any?>>(data)
-          result = folder(result, ResultMap(map))
+    return exec {
+      ds.connection.use { conn ->
+        conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY).use { stmt ->
+          val sql = buildSql(entityClass, fields, where, order, limit)
+          stmt.fetchSize = Int.MIN_VALUE
+          var result = initial
+          val rs = stmt.executeQuery(sql)
+          while (rs.next()) {
+            val data = rs.getString(1)
+            val map = Json.to<Map<String, Any?>>(data)
+            result = folder(result, ResultMap(map))
+          }
+          result
         }
-        promise.success(result)
       }
     }
-    return promise.future
   }
 
   private fun buildSql(
@@ -448,8 +449,16 @@ class MysqlRepository @Inject constructor(
     throw ex
   }
 
-  private fun <T : Any> exec(task: Callable<T>): Future<T> {
-    val f = executor.submit(task)
-    return Future.fromJava(f, executor)
+  private fun <T> exec(task: () -> T): Future<T> {
+    val promise = Promise.make<T>()
+    executor.execute {
+      try {
+        val value = task()
+        promise.success(value)
+      } catch (e: Throwable) {
+        promise.failure(e)
+      }
+    }
+    return promise.future
   }
 }

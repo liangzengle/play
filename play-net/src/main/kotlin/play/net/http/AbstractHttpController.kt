@@ -1,10 +1,10 @@
 package play.net.http
 
-import play.util.collection.EmptyByteArray
+import play.util.EmptyByteArray
 import play.util.concurrent.Future
+import play.util.isSubclassOf
 import play.util.json.Json
 import play.util.mapToObj
-import play.util.reflect.isSubclassOf
 import java.lang.invoke.MethodHandle
 import java.lang.invoke.MethodHandles
 import java.lang.reflect.Method
@@ -115,7 +115,7 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
     }
 
     override fun toString(): String {
-      val b = StringBuilder()
+      val b = StringBuilder(64)
       b.append(super.toString())
         .append(' ')
         .append(method.declaringClass.simpleName)

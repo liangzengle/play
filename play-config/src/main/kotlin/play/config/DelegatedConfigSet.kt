@@ -67,13 +67,13 @@ open class DelegatedConfigSet<K, T, G, E> internal constructor() :
     return delegatee.extension()
   }
 
-  override fun getGroup(groupId: G): Optional<ConfigSet<K, T>> = delegatee.getGroup(groupId)
+  override fun getGroup(groupId: G): Optional<BasicConfigSet<T>> = delegatee.getGroup(groupId)
 
-  override fun getGroupOrNull(groupId: G): ConfigSet<K, T>? = delegatee.getGroupOrNull(groupId)
+  override fun getGroupOrNull(groupId: G): BasicConfigSet<T>? = delegatee.getGroupOrNull(groupId)
 
-  override fun getGroupOrThrow(groupId: G): ConfigSet<K, T> = delegatee.getGroupOrThrow(groupId)
+  override fun getGroupOrThrow(groupId: G): BasicConfigSet<T> = delegatee.getGroupOrThrow(groupId)
 
-  override fun groupMap(): Map<G, ConfigSet<K, T>> = delegatee.groupMap()
+  override fun groupMap(): Map<G, BasicConfigSet<T>> = delegatee.groupMap()
 
   override fun containsGroup(groupId: G): Boolean = delegatee.containsGroup(groupId)
 }

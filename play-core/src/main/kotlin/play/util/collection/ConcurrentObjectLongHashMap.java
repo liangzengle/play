@@ -52,7 +52,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
     static final int NCPU = Runtime.getRuntime().availableProcessors();
 
     /* ---------------- Nodes -------------- */
-    static class Node<K> implements ConcurrentObjectLongMap.Entry<K> {
+    static class Node<K> implements Entry<K> {
         final int hash;
         final K key;
         volatile long val;
@@ -89,7 +89,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
             if (!(o instanceof ConcurrentObjectLongMap.Entry)) {
                 return false;
             }
-            ConcurrentObjectLongMap.Entry<?> that = (ConcurrentObjectLongMap.Entry<?>) o;
+            Entry<?> that = (Entry<?>) o;
             Object k = that.getKey();
             return k != null && (key == k || k.equals(key)) && that.getValue() == val;
         }
@@ -327,7 +327,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
 
     @NotNull
     @Override
-    public Iterator<ConcurrentObjectLongMap.Entry<K>> iterator() {
+    public Iterator<Entry<K>> iterator() {
         return entrySet().iterator();
     }
 
@@ -671,7 +671,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
      *
      * @return the set view
      */
-    public Iterable<ConcurrentObjectLongMap.Entry<K>> entrySet() {
+    public Iterable<Entry<K>> entrySet() {
         EntrySetView<K> es;
         if ((es = entrySet) != null) return es;
         return entrySet = new EntrySetView<K>(this);
@@ -2609,13 +2609,13 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
     }
 
     static final class EntryIterator<K> extends BaseIterator<K>
-            implements Iterator<ConcurrentObjectLongMap.Entry<K>> {
+            implements Iterator<Entry<K>> {
         EntryIterator(Node<K>[] tab, int size, int index, int limit,
                       ConcurrentObjectLongHashMap<K> map) {
             super(tab, size, index, limit, map);
         }
 
-        public final ConcurrentObjectLongMap.Entry<K> next() {
+        public final Entry<K> next() {
             Node<K> p;
             if ((p = next) == null)
                 throw new NoSuchElementException();
@@ -2630,7 +2630,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
     /**
      * Exported Entry for EntryIterator.
      */
-    static final class MapEntry<K> implements ConcurrentObjectLongMap.Entry<K> {
+    static final class MapEntry<K> implements Entry<K> {
         final K key; // non-null
         long val;       // non-null
         final ConcurrentObjectLongHashMap<K> map;
@@ -2661,7 +2661,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
             if (!(o instanceof ConcurrentObjectLongMap.Entry)) {
                 return false;
             }
-            ConcurrentObjectLongMap.Entry<?> that = (ConcurrentObjectLongMap.Entry<?>) o;
+            Entry<?> that = (Entry<?>) o;
             Object k = that.getKey();
             long v = that.getValue();
             return k != null && k.equals(key) && v == val;
@@ -2752,7 +2752,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
     }
 
     static final class EntrySpliterator<K> extends Traverser<K>
-            implements Spliterator<ConcurrentObjectLongMap.Entry<K>> {
+            implements Spliterator<Entry<K>> {
         final ConcurrentObjectLongHashMap<K> map; // To export MapEntry
         long est;               // size estimate
 
@@ -2770,13 +2770,13 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
                             f, est >>>= 1, map);
         }
 
-        public void forEachRemaining(Consumer<? super ConcurrentObjectLongMap.Entry<K>> action) {
+        public void forEachRemaining(Consumer<? super Entry<K>> action) {
             if (action == null) throw new NullPointerException();
             for (Node<K> p; (p = advance()) != null; )
                 action.accept(new MapEntry<K>(p.key, p.val, map));
         }
 
-        public boolean tryAdvance(Consumer<? super ConcurrentObjectLongMap.Entry<K>> action) {
+        public boolean tryAdvance(Consumer<? super Entry<K>> action) {
             if (action == null) throw new NullPointerException();
             Node<K> p;
             if ((p = advance()) == null)
@@ -3092,7 +3092,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
      * entries.  This class cannot be directly instantiated. See
      * {@link #entrySet()}.
      */
-    static final class EntrySetView<K> implements Iterable<ConcurrentObjectLongMap.Entry<K>>, Serializable {
+    static final class EntrySetView<K> implements Iterable<Entry<K>>, Serializable {
         private static final long serialVersionUID = 2249069246763182397L;
         private ConcurrentObjectLongHashMap<K> map;
 
@@ -3103,7 +3103,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
         /**
          * @return an iterator over the entries of the backing map
          */
-        public Iterator<ConcurrentObjectLongMap.Entry<K>> iterator() {
+        public Iterator<Entry<K>> iterator() {
             ConcurrentObjectLongHashMap<K> m = map;
             Node<K>[] t;
             int f = (t = m.table) == null ? 0 : t.length;
@@ -3122,7 +3122,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
             return h;
         }
 
-        public Spliterator<ConcurrentObjectLongMap.Entry<K>> spliterator() {
+        public Spliterator<Entry<K>> spliterator() {
             Node<K>[] t;
             ConcurrentObjectLongHashMap<K> m = map;
             long n = m.sumCount();
@@ -3130,7 +3130,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
             return new EntrySpliterator<>(t, f, 0, f, n < 0L ? 0L : n, m);
         }
 
-        public void forEach(Consumer<? super ConcurrentObjectLongMap.Entry<K>> action) {
+        public void forEach(Consumer<? super Entry<K>> action) {
             if (action == null) throw new NullPointerException();
             Node<K>[] t;
             if ((t = map.table) != null) {

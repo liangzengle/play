@@ -1,6 +1,5 @@
 dependencies {
-    api akka_typed
-    api guice
+    api "com.typesafe.akka:akka-actor-typed_2.13:$akka_version"
     api project(':play-scala-compact')
     api project(':play-core')
 }

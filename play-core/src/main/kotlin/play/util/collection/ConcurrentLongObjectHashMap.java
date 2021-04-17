@@ -138,7 +138,7 @@ import java.util.stream.StreamSupport;
  * ordering, or on any other objects or values that may transiently
  * change while computation is in progress; and except for forEach
  * actions, should ideally be side-effect-free. Bulk operations on
- * {@link ConcurrentLongObjectMap.Entry} objects do not support method {@code setValue}.
+ * {@link Entry} objects do not support method {@code setValue}.
  *
  * <ul>
  * <li>forEach: Performs a given action on each element.
@@ -348,7 +348,7 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
      * are special, and contain null keys and values (but are never
      * exported).  Otherwise, keys and vals are never null.
      */
-    static class Node<V> implements ConcurrentLongObjectMap.Entry<V> {
+    static class Node<V> implements Entry<V> {
         final int hash;
         final long key;
         volatile V val;
@@ -662,7 +662,7 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
         return !isEmpty();
     }
 
-    public Iterator<ConcurrentLongObjectMap.Entry<V>> iterator() {
+    public Iterator<Entry<V>> iterator() {
         Node<V>[] t;
         int f = (t = table) == null ? 0 : t.length;
         return new EntryIterator<V>(t, f, 0, f, this);
@@ -2880,13 +2880,13 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
     }
 
     static final class EntryIterator<V> extends BaseIterator<V>
-            implements Iterator<ConcurrentLongObjectMap.Entry<V>> {
+            implements Iterator<Entry<V>> {
         EntryIterator(Node<V>[] tab, int size, int index, int limit,
                       ConcurrentLongObjectHashMap<V> map) {
             super(tab, size, index, limit, map);
         }
 
-        public final ConcurrentLongObjectMap.Entry<V> next() {
+        public final Entry<V> next() {
             Node<V> p;
             if ((p = next) == null)
                 throw new NoSuchElementException();
@@ -2901,7 +2901,7 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
     /**
      * Exported Entry for EntryIterator.
      */
-    static final class MapEntry<V> implements ConcurrentLongObjectMap.Entry<V> {
+    static final class MapEntry<V> implements Entry<V> {
         final long key; // non-null
         V val;       // non-null
         final ConcurrentLongObjectHashMap<V> map;
@@ -2932,7 +2932,7 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
             if (!(o instanceof ConcurrentLongObjectMap.Entry)) {
                 return false;
             }
-            ConcurrentLongObjectMap.Entry<?> that = (ConcurrentLongObjectMap.Entry<?>) o;
+            Entry<?> that = (Entry<?>) o;
             return this.key == that.getKey() && this.val.equals(that.getValue());
         }
     }

@@ -5,8 +5,6 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.metadata.ImmutableKmFunction
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
-import kotlinx.metadata.Flag
-import kotlinx.metadata.KmClassifier
 import java.io.File
 import java.util.*
 import javax.annotation.processing.Processor
@@ -16,6 +14,8 @@ import javax.lang.model.type.DeclaredType
 import javax.lang.model.util.ElementFilter
 import kotlin.collections.LinkedHashSet
 import kotlin.reflect.KFunction
+import kotlinx.metadata.Flag
+import kotlinx.metadata.KmClassifier
 
 @AutoService(Processor::class)
 class ConfigSetGenerator : PlayAnnotationProcessor() {
@@ -186,10 +186,9 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
         val params = func.valueParameters.asSequence().map { it.name }.joinToString(", ")
         funBuilder.addModifiers(getModifiers(func))
           .addStatement(
-            "return (configSet as %T<%T, %T, %T>).%L(%L)",
+            "return (configSet as %T<%T, %T>).%L(%L)",
             GroupedConfigSet,
             groupIdType.javaToKotlinType(),
-            uniqueKeyType?.javaToKotlinType() ?: Int::class,
             elem,
             func.name,
             params
@@ -270,7 +269,7 @@ class ConfigSetGenerator : PlayAnnotationProcessor() {
     }.toMap()
     ElementFilter.methodsIn(type.enclosedElements).asSequence()
       .filter {
-        it.isPublic() && !it.isObjectMethod()
+        it.isPublic() && !it.isObjectMethod() && !it.simpleName.contentEquals("postInitialize")
       }
       .forEach { elem ->
         val funName = elem.simpleName.toString()

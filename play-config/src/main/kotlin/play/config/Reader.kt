@@ -4,17 +4,16 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
+import com.typesafe.config.ConfigRenderOptions
 import com.typesafe.config.ConfigSyntax
 import play.Log
 import play.config.deser.ImmutableCollectionModule
-import play.toJson
 import play.util.json.Json
 import java.io.File
 import java.io.IOException
 import java.net.URL
 import java.util.*
 import javax.inject.Inject
-import javax.inject.Singleton
 
 interface Reader {
 
@@ -23,7 +22,6 @@ interface Reader {
   fun <T> read(clazz: Class<T>): List<T>
 }
 
-@Singleton
 class ResourceReader : Reader {
 
   override fun getURL(clazz: Class<*>): Result<URL> {
@@ -45,7 +43,7 @@ class ResourceReader : Reader {
       val config =
         ConfigFactory.parseURL(url, ConfigParseOptions.defaults().setSyntax(configSyntax))
           .withFallback(ConfigFactory.parseString("{ id = 1 }"))
-      val bean = JsonConfigReader.jsonToObject(config.toJson(), clazz)
+      val bean = JsonConfigReader.jsonToObject(config.root().render(ConfigRenderOptions.concise()), clazz)
       Collections.singletonList(bean)
     } catch (e: ResourceNotFoundException) {
       Log.error(e) { e.message }
@@ -79,9 +77,21 @@ abstract class ConfigReader : Reader {
   fun getURL(fileNameNoExtension: String): Result<URL> {
     return resolver.resolve("$fileNameNoExtension.$format")
   }
+
+  companion object {
+    @JvmStatic
+    fun trimClassicPostfix(simpleName: String): String {
+      if (simpleName.endsWith("Config")) {
+        return simpleName.substring(0, simpleName.length - 6)
+      }
+      if (simpleName.endsWith("Resource")) {
+        return simpleName.substring(0, simpleName.length - 8)
+      }
+      return simpleName
+    }
+  }
 }
 
-@Singleton
 class JsonConfigReader @Inject constructor(
   override val resolver: ConfigResolver
 ) : ConfigReader() {
@@ -109,27 +119,20 @@ class JsonConfigReader @Inject constructor(
   }
 
   companion object {
+    @JvmStatic
     val objectMapper = Json.mapper.copy()
       .configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true)
       .registerModule(ImmutableCollectionModule())
 
+    @JvmStatic
     fun <T> jsonToList(src: URL, elemType: Class<T>): List<T> {
       val type = objectMapper.typeFactory.constructCollectionType(List::class.java, elemType)
       return objectMapper.readValue(src, type)
     }
 
+    @JvmStatic
     fun <T> jsonToObject(src: String, type: Class<T>): T {
       return objectMapper.readValue(src, type)
-    }
-
-    fun trimClassicPostfix(simpleName: String): String {
-      if (simpleName.endsWith("Config")) {
-        return simpleName.substring(0, simpleName.length - 6)
-      }
-      if (simpleName.endsWith("Resource")) {
-        return simpleName.substring(0, simpleName.length - 8)
-      }
-      return simpleName
     }
   }
 }

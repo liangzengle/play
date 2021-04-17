@@ -3,21 +3,27 @@ package play
 import com.google.common.eventbus.EventBus
 import java.util.concurrent.Executor
 import play.util.concurrent.CommonPool
+import play.util.logging.getLogger
 
 /**
  * A Global EventBus
  * @author LiangZengle
  */
 @Suppress("UnstableApiUsage")
-object ApplicationEventBus : EventBus("application") {
+class ApplicationEventBus : EventBus("application") {
 
-  // override to get rid of `Beta` warning
-  override fun register(`object`: Any) {
-    super.register(`object`)
+  companion object {
+    @JvmStatic
+    val logger = getLogger()
   }
 
-  override fun unregister(`object`: Any) {
-    super.unregister(`object`)
+  // override to get rid of `Beta` warning
+  override fun register(listener: Any) {
+    super.register(listener)
+  }
+
+  override fun unregister(listener: Any) {
+    super.unregister(listener)
   }
 
   /**
@@ -33,7 +39,7 @@ object ApplicationEventBus : EventBus("application") {
    * @param event 事件
    */
   override fun post(event: Any) {
-    CommonPool.execute { super.post(event) }
+    post(event, CommonPool)
   }
 
   /**

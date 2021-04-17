@@ -22,13 +22,13 @@ infix fun Int.checkedAdd(b: Int): Int = IntMath.checkedAdd(this, b)
 
 infix fun Int.checkedSubtract(b: Int): Int = IntMath.checkedSubtract(this, b)
 
-infix fun Int.checkedMultiply(b: Int): Int = IntMath.checkedSubtract(this, b)
+infix fun Int.checkedMultiply(b: Int): Int = IntMath.checkedMultiply(this, b)
 
 infix fun Int.safeAdd(b: Int): Int = IntMath.saturatedAdd(this, b)
 
 infix fun Int.safeSubtract(b: Int): Int = IntMath.saturatedSubtract(this, b)
 
-infix fun Int.safeMultiply(b: Int): Int = IntMath.saturatedSubtract(this, b)
+infix fun Int.safeMultiply(b: Int): Int = IntMath.saturatedMultiply(this, b)
 
 /**
  * 将第n位置为1
@@ -81,3 +81,5 @@ fun Int.toShortSaturated(): Short {
     else -> this.toShort()
   }
 }
+
+fun toInt(high: Short, low: Short): Int = high.toInt() shl 16 or (low.toInt() and 0xFFFF)

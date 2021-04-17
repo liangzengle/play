@@ -1,8 +1,8 @@
 package play.util.collection
 
+import play.util.function.LongLongToObjFunction
 import play.util.function.LongObjToObjFunction
 import play.util.function.LongToLongFunction
-import play.util.function.LongToObjBiFunction
 import play.util.function.LongToObjFunction
 
 interface ConcurrentLongLongMap : Iterable<ConcurrentLongLongMap.Entry> {
@@ -19,7 +19,7 @@ interface ConcurrentLongLongMap : Iterable<ConcurrentLongLongMap.Entry> {
 
   fun remove(key: Long, value: Long): Boolean
 
-  fun computeIfPresent(key: Long, remappingFunction: LongToObjBiFunction<Long?>): Long?
+  fun computeIfPresent(key: Long, remappingFunction: LongLongToObjFunction<Long?>): Long?
 
   fun computeIfAbsent(key: Long, remappingFunction: LongToObjFunction<Long?>): Long?
 

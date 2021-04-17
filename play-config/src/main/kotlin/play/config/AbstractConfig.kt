@@ -5,10 +5,10 @@ package play.config
  */
 abstract class AbstractConfig constructor(@JvmField val id: Int) {
 
-  // for deserialization
+  // for deserialization framework
   constructor() : this(0)
 
-  open fun postInitialize(errors: MutableList<String>) {}
+  open fun postInitialize(configSetSupplier: ConfigSetSupplier, errors: MutableCollection<String>) {}
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true

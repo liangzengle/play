@@ -72,11 +72,4 @@ annotation class Resource(val value: String)
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
-annotation class Join(val table: KClass<out AbstractConfig>)
-
-/**
- * 表示id与[[table]]表的分组完全一致
- */
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.CLASS)
-annotation class JoinGroup(val table: KClass<out AbstractConfig>)
+annotation class Extend(val table: KClass<out AbstractConfig>)

@@ -1,15 +1,16 @@
 package play.config
 
-import play.util.io.FileMonitor
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.StandardWatchEventKinds
 import java.nio.file.WatchEvent
+import play.util.io.FileMonitor
 
 /**
  * 配置文件变化监控：当[dir]目录中的文件发生变化时，对变化的文件执行[op]操作
  */
-class ConfigDirectoryMonitor(dir: File, private val op: (Set<File>) -> Unit) : FileMonitor(dir) {
+internal class ConfigDirectoryMonitor(dir: File, private val op: (Set<File>) -> Unit) : FileMonitor(dir) {
+
   override fun handlerEvents(path: Path, events: List<WatchEvent<Path>>) {
     super.handlerEvents(path, events)
     // 变化的文件批量操作

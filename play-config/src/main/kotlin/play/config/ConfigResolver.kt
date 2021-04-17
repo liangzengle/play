@@ -4,7 +4,7 @@ import java.io.File
 import java.net.URI
 import java.net.URL
 
-class ConfigResolver(val rootPath: URI) {
+open class ConfigResolver(val rootPath: URI) {
   companion object {
     const val ClassPathPrefix = "classpath:"
 
@@ -20,8 +20,8 @@ class ConfigResolver(val rootPath: URI) {
     }
   }
 
-  fun resolve(relativePath: String): Result<URL> {
-    return kotlin.runCatching { rootPath.resolve(relativePath).toURL() }
+  open fun resolve(relativePath: String): Result<URL> {
+    return runCatching { rootPath.resolve(relativePath).toURL() }
   }
 
   override fun toString(): String {

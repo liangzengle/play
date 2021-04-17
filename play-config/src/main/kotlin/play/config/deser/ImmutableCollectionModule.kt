@@ -35,7 +35,8 @@ internal class ImmutableCollectionDeserializers : Deserializers.Base() {
       return ImmutableSortedMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null)
     }
     if (Map::class.java.isAssignableFrom(rawClass)) {
-      return ImmutableMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null)
+      return PrimitiveImmutableCollectionDeserializers.forMap(type.keyType.rawClass, type.contentType.rawClass)
+        ?: ImmutableMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null)
     }
     return null
   }
@@ -52,10 +53,12 @@ internal class ImmutableCollectionDeserializers : Deserializers.Base() {
       return ImmutableSortedSetDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
     }
     if (Set::class.java.isAssignableFrom(rawClass)) {
-      return ImmutableSetDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
+      return PrimitiveImmutableCollectionDeserializers.forSet(type.contentType.rawClass)
+        ?: ImmutableSetDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
     }
     if (List::class.java.isAssignableFrom(rawClass)) {
-      return ImmutableListDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
+      return PrimitiveImmutableCollectionDeserializers.forList(type.contentType.rawClass)
+        ?: ImmutableListDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
     }
     return null
   }

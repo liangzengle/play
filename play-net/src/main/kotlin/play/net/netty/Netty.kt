@@ -20,9 +20,10 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.util.concurrent.DefaultThreadFactory
+import play.net.http.HttpClient
+import play.util.EmptyByteArray
 import java.net.InetSocketAddress
 import java.net.SocketAddress
-import play.util.collection.EmptyByteArray
 
 /**
  * Created by LiangZengle on 2020/2/20.
@@ -38,7 +39,7 @@ fun SocketAddress.getPort(): Int {
 @Suppress("UnstableApiUsage")
 fun SocketAddress.getHostAndPort(): HostAndPort {
   return if (this is InetSocketAddress) HostAndPort.fromParts(hostString, port)
-  else HostAndPort.fromParts("127.0.0.1", -1)
+  else HostAndPort.fromParts("127.0.0.1", 0)
 }
 
 fun ByteBuf.copyToArray(): ByteArray {

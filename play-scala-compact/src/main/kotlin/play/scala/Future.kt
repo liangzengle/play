@@ -1,8 +1,9 @@
 package play.scala
 
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
-import play.util.Scala
+import play.scala.collection.Scala
 import play.util.concurrent.PlayFuture
 import scala.compat.java8.FutureConverters
 import scala.concurrent.Future
@@ -21,3 +22,7 @@ fun <T> ScalaFuture<T>.toJava(): CompletionStage<T> = FutureConverters.toJava(th
 fun <T> ScalaFuture<T>.toPlay(): PlayFuture<T> = play.util.concurrent.Future(toJava() as CompletableFuture<T>)
 
 fun <T> promise(): ScalaPromise<T> = Scala.promise()
+
+fun <T> ScalaFuture<T>.await(timeout: Duration) = Scala.await(this, timeout.toMillis())
+
+fun <T> ScalaFuture<T>.get(timeout: Duration): T = Scala.get(this, timeout.toMillis())

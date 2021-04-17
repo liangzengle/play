@@ -1,42 +1,39 @@
 package play.config
 
 import com.google.common.collect.ImmutableList
+import com.google.common.collect.Sets
+import com.typesafe.config.Config
 import java.io.File
 import java.nio.file.Paths
 import java.util.*
+import java.util.concurrent.ConcurrentLinkedQueue
+import javax.annotation.concurrent.GuardedBy
 import javax.inject.Inject
 import javax.inject.Named
-import javax.inject.Singleton
-import kotlin.Comparator
-import kotlin.NoSuchElementException
-import play.ClassScanner
-import play.Configuration
+import kotlin.collections.setOf
 import play.Log
-import play.inject.Injector
-import play.inject.guice.PostConstruct
-import play.util.collection.filterDuplicated
-import play.util.collection.filterDuplicatedBy
-import play.util.collection.toImmutableMap
-import play.util.collection.toImmutableSet
+import play.inject.PlayInjector
+import play.inject.PostConstruct
+import play.scheduling.Scheduler
+import play.util.collection.*
 import play.util.control.exists
-import play.util.reflect.Reflect
-import play.util.reflect.isAbstract
-import play.util.reflect.isAssignableFrom
-import play.util.scheduling.Scheduler
+import play.util.isAbstract
+import play.util.reflect.ClassScanner
 import play.util.unsafeCast
+import play.util.unsafeLazy
 
 internal typealias AnyConfigSet = SuperConfigSet<Any, AbstractConfig, Any, ConfigExtension<AbstractConfig>>
 
 @Suppress("UNCHECKED_CAST")
-@Singleton
 class ConfigManager @Inject constructor(
-  @Named("config") conf: Configuration,
+  @Named("config") conf: Config,
   private val resolver: ConfigResolver,
   private val configReader: ConfigReader,
   private val resourceReader: ResourceReader,
-  private val classScanner: ClassScanner,
-  injector: Injector,
-  private val scheduler: Scheduler
+  private val injector: PlayInjector,
+  private val validators: List<ConfigValidator>,
+  private val scheduler: Scheduler,
+  classScanner: ClassScanner
 ) : PostConstruct {
 
   private val loadOnPostConstruct = conf.getBoolean("load-on-post-construct")
@@ -44,39 +41,22 @@ class ConfigManager @Inject constructor(
   private val versionFile = conf.getString("version-file")
   private val modificationDetectInterval = conf.getDuration("modification-detect-interval")
 
-  private val listeners = injector.getInstancesOfType(ConfigRefreshListener::class.java).asSequence().map { o ->
-    val eventType: Class<ConfigRefreshEvent> = if (isAssignableFrom<GenericConfigRefreshListener<*, *>>(o.javaClass)) {
-      Reflect.getRawClass(
-        Reflect.getTypeArg(
-          o.javaClass.asSubclass(GenericConfigRefreshListener::class.java),
-          GenericConfigRefreshListener::class.java,
-          1
-        )
-      )
-    } else {
-      Reflect.getRawClass(
-        Reflect.getTypeArg(
-          o.javaClass,
-          ConfigRefreshListener::class.java,
-          0
-        )
-      )
-    }
-    eventType to o.unsafeCast<ConfigRefreshListener<ConfigRefreshEvent>>()
-  }.toList()
-
-  private val validators = injector.getInstancesOfType(ConfigValidator::class.java)
+  private val reloadListeners by unsafeLazy { injector.getInstancesOfType(ConfigReloadListener::class.java) }
 
   private var configSets = emptyMap<Class<AbstractConfig>, AnyConfigSet>()
 
-  private var configClasses: Set<Class<out AbstractConfig>> =
+  private val configClasses: Set<Class<out AbstractConfig>> =
     classScanner.getOrdinarySubTypesSequence(AbstractConfig::class.java)
-      .filterNot { it.isAnnotationPresent(Ignore::class.java) }.toSet()
+      .filterNot { it.isAnnotationPresent(Ignore::class.java) }
+      .asSequence()
+      .toImmutableSet()
 
   var version = "Unspecified"
     private set
 
-  private fun isInitialized() = configSets !== emptyMap<Class<AbstractConfig>, AnyConfigSet>()
+  private val cascadeConfigTypes = hashMapOf<Class<*>, MutableSet<Class<*>>>()
+
+  private fun isInitialized() = configSets !== emptyMap<Class<*>, AnyConfigSet>()
 
   private fun isAutoReloadEnabled(): Boolean {
     return !modificationDetectInterval.isZero
@@ -99,14 +79,11 @@ class ConfigManager @Inject constructor(
   @Synchronized
   fun load() {
     if (isInitialized()) throw IllegalStateException("Cannot load twice.")
-    val classes = classScanner.getOrdinarySubTypesSequence(AbstractConfig::class.java)
-      .filter { isLoadable(it) }.map { it as Class<AbstractConfig> }.toImmutableSet()
-    classes.filterDuplicatedBy { getReader(it).getURL(it).getOrThrow() }
+    configClasses.filterDuplicatedBy { getReader(it).getURL(it).getOrThrow() }
       .also { if (it.isNotEmpty()) throw IllegalStateException("配置路径冲突: ${it.values}") }
-    configSets = load(classes, true)
+    configSets = load(configClasses, true)
     updateDelegatedConfigSets(configSets)
     updateVersion()
-    fireConfigEvent(ConfigLoadEvent(classes))
     if (isAutoReloadEnabled()) {
       setupAutoReload()
     }
@@ -120,12 +97,15 @@ class ConfigManager @Inject constructor(
     reload(setOf(clazz))
   }
 
-  fun reload(classesToReload: Set<Class<out AbstractConfig>>) {
-    val canNotReload = classesToReload.filterNot { isReloadable(it) }
+  fun reload(demandConfigsToReload: Set<Class<out AbstractConfig>>) {
+    val finalConfigsToLoad = demandConfigsToReload + demandConfigsToReload.asSequence()
+      .flatMap { cascadeConfigTypes[it] ?: emptySet() }
+      .map { it.unsafeCast<Class<out AbstractConfig>>() }.toSet()
+    val canNotReload = demandConfigsToReload.filterNot { isReloadable(it) }
     if (canNotReload.isNotEmpty()) {
       Log.warn { "以下配置类不允许重加载: $canNotReload" }
     }
-    val reloaded = load(classesToReload, validateOnReload)
+    val reloaded = load(finalConfigsToLoad, validateOnReload)
     updateDelegatedConfigSets(reloaded)
 
     fun getFileName(cls: Class<*>): String {
@@ -136,52 +116,59 @@ class ConfigManager @Inject constructor(
       }.getOrDefault("")
     }
     for (cls in reloaded.keys) {
-      Log.info { "配置重加载完成: ${cls.simpleName}(${getFileName(cls)})" }
+      val isCascade = !demandConfigsToReload.contains(cls)
+      Log.info { "配置重加载完成: ${cls.simpleName}(${getFileName(cls)})${if (isCascade) " (关联的更新)" else ""}" }
     }
     updateVersion()
-    fireConfigEvent(ConfigReloadEvent(classesToReload))
+    notifyReloadListeners(finalConfigsToLoad)
   }
 
-  private fun fireConfigEvent(event: ConfigRefreshEvent): Boolean {
-    var success = true
-    val eventType = event.javaClass
-    for ((listenedEventType, listener) in listeners) {
-      if (listenedEventType.isAssignableFrom(eventType) &&
-        (listener !is GenericConfigRefreshListener<*, *> || event.contains(listener.configClass))
-      ) {
-        try {
-          listener.onEvent(event)
-        } catch (e: Exception) {
-          success = false
-          Log.error(e) { e.message }
-        }
+  private fun notifyReloadListeners(reloaded: Set<Class<out AbstractConfig>>) {
+    for (listener in reloadListeners) {
+      try {
+        listener.onConfigReloaded(reloaded)
+      } catch (e: Exception) {
+        Log.error(e) { e.message }
       }
     }
-    return success
   }
 
+  @GuardedBy("this")
   private fun load(
     classes: Collection<Class<out AbstractConfig>>,
     validate: Boolean
   ): Map<Class<AbstractConfig>, AnyConfigSet> {
     val configClassToConfigSet = read(classes)
-    val errors = LinkedList<String>()
-    configClassToConfigSet.values.forEach {
-      it.list().forEach { e ->
-        e.postInitialize(errors)
+    val errors = ConcurrentLinkedQueue<String>()
+    val allConfigSets = this.configSets + configClassToConfigSet
+    val configSetSupplier = ConfigSetSupplier(allConfigSets)
+    val dependentMap = hashMapOf<Class<*>, Set<Class<*>>>()
+    configClassToConfigSet.values.parallelStream().forEach {
+      val dependentConfigs = ConcurrentHashSet<Class<*>>()
+      configSetSupplier.dependentConfigs = dependentConfigs
+      it.list().parallelStream().forEach { e ->
+        e.postInitialize(configSetSupplier, errors)
+      }
+      configSetSupplier.dependentConfigs = null
+      if (dependentConfigs.isNotEmpty()) {
+        dependentMap[it.firstOrThrow().javaClass] = dependentConfigs
+      }
+    }
+    for ((k, set) in dependentMap) {
+      for (v in set) {
+        cascadeConfigTypes.computeIfAbsent(v) { Sets.newHashSetWithExpectedSize(1) }.add(k)
       }
     }
     if (errors.isNotEmpty()) {
       throw InvalidConfigException(errors)
     }
     if (validate) {
-      val validationErrors = ConstraintsValidator(configClassToConfigSet).validate(classes)
+      val validationErrors = ConstraintsValidator(allConfigSets).validate(classes)
       errors += validationErrors
     }
-    val configSetManager = ConfigSetSupplier(this.configSets + configClassToConfigSet)
     validators.forEach {
       if (it !is GenericConfigValidator<*> || configClassToConfigSet.containsKey(it.configClass)) {
-        it.validate(configSetManager, errors)
+        it.validate(configSetSupplier, errors)
       }
     }
     if (errors.isNotEmpty()) {

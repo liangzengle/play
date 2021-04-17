@@ -1,10 +1,10 @@
 package play.mvc
 
 import kotlinx.serialization.Serializable
-import play.util.collection.EmptyByteArray
-import play.util.collection.EmptyIntArray
-import play.util.collection.EmptyLongArray
-import play.util.collection.EmptyStringArray
+import play.util.EmptyByteArray
+import play.util.EmptyIntArray
+import play.util.EmptyLongArray
+import play.util.EmptyStringArray
 
 data class Request(@JvmField val header: Header, @JvmField val body: RequestBody) {
   fun msgId() = header.msgId.toInt()
@@ -168,5 +168,114 @@ class RequestBody(
 
   fun getByteArray(): ByteArray {
     return bytes
+  }
+}
+
+class RequestBodyBuilder {
+  private var b1: Boolean = false
+  private var b2: Boolean = false
+  private var b3: Boolean = false
+  private var i1: Int = 0
+  private var i2: Int = 0
+  private var i3: Int = 0
+  private var l1: Long = 0
+  private var l2: Long = 0
+  private var l3: Long = 0
+  private var s1: String = ""
+  private var s2: String = ""
+  private var s3: String = ""
+  private var ints: IntArray = EmptyIntArray
+  private var longs: LongArray = EmptyLongArray
+  private var strings: Array<String> = EmptyStringArray
+  private var bytes: ByteArray = EmptyByteArray
+
+  private var boolIndex = 0
+  private var intIndex = 0
+  private var longIndex = 0
+  private var stringIndex = 0
+
+  fun writeBoolean(value: Boolean): RequestBodyBuilder {
+    when (boolIndex) {
+      0 -> b1 = value
+      1 -> b2 = value
+      2 -> b3 = value
+      else -> throw IndexOutOfBoundsException(boolIndex)
+    }
+    boolIndex++
+    return this
+  }
+
+  fun writeInt(value: Int): RequestBodyBuilder {
+    when (intIndex) {
+      0 -> i1 = value
+      1 -> i2 = value
+      2 -> i3 = value
+      else -> throw IndexOutOfBoundsException(boolIndex)
+    }
+    intIndex++
+    return this
+  }
+
+  fun writeLong(value: Long): RequestBodyBuilder {
+    when (longIndex) {
+      0 -> l1 = value
+      1 -> l2 = value
+      2 -> l3 = value
+      else -> throw IndexOutOfBoundsException(boolIndex)
+    }
+    longIndex++
+    return this
+  }
+
+  fun stringLong(value: String): RequestBodyBuilder {
+    when (stringIndex) {
+      0 -> s1 = value
+      1 -> s2 = value
+      2 -> s3 = value
+      else -> throw IndexOutOfBoundsException(boolIndex)
+    }
+    stringIndex++
+    return this
+  }
+
+  fun ints(array: IntArray): RequestBodyBuilder {
+    this.ints = array
+    return this
+  }
+
+  fun longs(array: LongArray): RequestBodyBuilder {
+    this.longs = array
+    return this
+  }
+
+  fun strings(array: Array<String>): RequestBodyBuilder {
+    this.strings = array
+    return this
+  }
+
+  fun bytes(array: ByteArray): RequestBodyBuilder {
+    this.bytes = array
+    return this
+  }
+
+  fun build(): RequestBody {
+    return RequestBody(
+      b1,
+      b2,
+      b3,
+      i1,
+      i2,
+      i3,
+      l1,
+      l2,
+      l3,
+      s1,
+      s2,
+      s3,
+      ints,
+      longs,
+      strings,
+      bytes
+    )
   }
 }

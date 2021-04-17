@@ -3,6 +3,7 @@ package play.util.concurrent
 import java.util.concurrent.*
 import kotlin.time.Duration
 import kotlin.time.milliseconds
+import play.util.control.getCause
 import play.util.unsafeCast
 
 typealias PlayFuture<T> = Future<T>
@@ -113,23 +114,38 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
     return Future(cf.whenCompleteAsync({ _, e -> if (e != null) f(e.cause ?: e) }, ec))
   }
 
+  fun tryRecover(f: (Throwable) -> Result<T>): Future<T> {
+    val newCF = CompletableFuture<T>()
+    onComplete(newCF::complete) { e ->
+      val r = f(e)
+      if (r.isSuccess) newCF.complete(r.getOrThrow()) else newCF.completeExceptionally(r.getCause())
+    }
+    return Future(newCF)
+  }
+
+  fun tryRecover(ec: Executor, f: (Throwable) -> Result<T>): Future<T> {
+    val newCF = CompletableFuture<T>()
+    onComplete(ec, newCF::complete) { e ->
+      val r = f(e)
+      if (r.isSuccess) newCF.complete(r.getOrThrow()) else newCF.completeExceptionally(r.getCause())
+    }
+    return Future(newCF)
+  }
+
   fun recover(f: (Throwable) -> T): Future<T> {
     return Future(cf.exceptionally(f))
   }
 
   fun <E : Throwable> recover(exceptionType: Class<E>, f: (Throwable) -> T): Future<T> {
     val newCF = CompletableFuture<T>()
-    onComplete(
-      { newCF.complete(it) },
-      { e ->
-        if (!exceptionType.isAssignableFrom(e.javaClass)) {
-          newCF.completeExceptionally(e)
-        } else {
-          @Suppress("UNCHECKED_CAST")
-          newCF.completeAsync { f(e as E) }
-        }
+    onComplete(newCF::complete) { e ->
+      if (!exceptionType.isAssignableFrom(e.javaClass)) {
+        newCF.completeExceptionally(e)
+      } else {
+        @Suppress("UNCHECKED_CAST")
+        newCF.completeAsync { f(e as E) }
       }
-    )
+    }
     return Future(newCF)
   }
 
@@ -137,7 +153,7 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
     val newCF = CompletableFuture<T>()
     onComplete(
       ec,
-      { newCF.complete(it) },
+      newCF::complete,
       { e ->
         if (!exceptionType.isAssignableFrom(e.javaClass)) {
           newCF.completeExceptionally(e)
@@ -152,19 +168,16 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
 
   fun recoverWith(f: (Throwable) -> Future<T>): Future<T> {
     val newCF = CompletableFuture<T>()
-    onComplete(
-      { newCF.complete(it) },
-      { e ->
-        f(e).onComplete(
-          {
-            newCF.complete(it)
-          },
-          {
-            newCF.completeExceptionally(it)
-          }
-        )
-      }
-    )
+    onComplete(newCF::complete) { e ->
+      f(e).onComplete(
+        {
+          newCF.complete(it)
+        },
+        {
+          newCF.completeExceptionally(it)
+        }
+      )
+    }
     return Future(newCF)
   }
 
@@ -172,7 +185,7 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
     val newCF = CompletableFuture<T>()
     onComplete(
       ec,
-      { newCF.complete(it) },
+      newCF::complete,
       { e ->
         f(e).onComplete(
           {
@@ -189,24 +202,21 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
 
   fun <E : Throwable> recoverWith(exceptionType: Class<E>, f: (E) -> Future<T>): Future<T> {
     val newCF = CompletableFuture<T>()
-    onComplete(
-      { newCF.complete(it) },
-      { e ->
-        if (!exceptionType.isAssignableFrom(e.javaClass)) {
-          newCF.completeExceptionally(e)
-        } else {
-          @Suppress("UNCHECKED_CAST")
-          f(e as E).onComplete(
-            {
-              newCF.complete(it)
-            },
-            {
-              newCF.completeExceptionally(it)
-            }
-          )
-        }
+    onComplete(newCF::complete) { e ->
+      if (!exceptionType.isAssignableFrom(e.javaClass)) {
+        newCF.completeExceptionally(e)
+      } else {
+        @Suppress("UNCHECKED_CAST")
+        f(e as E).onComplete(
+          {
+            newCF.complete(it)
+          },
+          {
+            newCF.completeExceptionally(it)
+          }
+        )
       }
-    )
+    }
     return Future(newCF)
   }
 
@@ -214,7 +224,7 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
     val newCF = CompletableFuture<T>()
     onComplete(
       ec,
-      { newCF.complete(it) },
+      newCF::complete,
       { e ->
         if (!exceptionType.isAssignableFrom(e.javaClass)) {
           newCF.completeExceptionally(e)
@@ -246,6 +256,15 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
   @Throws(TimeoutException::class)
   fun get(timeout: java.time.Duration): T {
     return cf.get(timeout.toMillis(), TimeUnit.MILLISECONDS)
+  }
+
+  @Throws(CancellationException::class, CompletionException::class, NoSuchElementException::class)
+  fun getNowOrThrow(): T {
+    val value = cf.unsafeCast<CompletableFuture<Any>>().getNow(DefaultValueIfAbsent)
+    if (value === DefaultValueIfAbsent) {
+      throw NoSuchElementException(cf.toString())
+    }
+    return value.unsafeCast()
   }
 
   @Throws(TimeoutException::class)
@@ -280,6 +299,9 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
   fun isFailed() = cf.isCompletedExceptionally
 
   companion object {
+    @JvmStatic
+    private val DefaultValueIfAbsent = Any()
+
     operator fun <T> invoke(executor: Executor, f: () -> T): Future<T> {
       return Future(CompletableFuture.supplyAsync(f, executor))
     }
@@ -316,21 +338,21 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
 
     @JvmStatic
     fun <T> firstOf(futures: Collection<Future<out T>>): Future<out T> {
-      val futureArrays = arrayOfNulls<CompletableFuture<out T>>(futures.size)
+      val futureArray = arrayOfNulls<CompletableFuture<out T>>(futures.size)
       futures.forEachIndexed { i, f ->
-        futureArrays[i] = f.cf
+        futureArray[i] = f.cf
       }
-      val firstCompleted = CompletableFuture.anyOf(*futureArrays)
+      val firstCompleted = CompletableFuture.anyOf(*futureArray)
       return Future(firstCompleted.unsafeCast())
     }
 
     @JvmStatic
     fun allOf(futures: Collection<Future<*>>): Future<Void> {
-      val futureArrays = arrayOfNulls<CompletableFuture<*>>(futures.size)
+      val futureArray = arrayOfNulls<CompletableFuture<*>>(futures.size)
       futures.forEachIndexed { i, f ->
-        futureArrays[i] = f.cf
+        futureArray[i] = f.cf
       }
-      return Future(CompletableFuture.allOf(*futureArrays))
+      return Future(CompletableFuture.allOf(*futureArray))
     }
   }
 }

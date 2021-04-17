@@ -3,8 +3,10 @@
 
 package play.util.time
 
+import play.util.primitive.toIntChecked
 import java.time.*
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
 import java.time.temporal.Temporal
 import java.time.temporal.WeekFields
@@ -23,9 +25,9 @@ fun currentTime(): LocalTime = LocalTime.now(clock)
 
 fun currentMillis() = clock.millis()
 
-fun currentSeconds(): Int = (clock.millis() / 1000).toInt()
+fun currentSeconds(): Int = (clock.millis() / 1000).toIntChecked()
 
-inline fun nanoTime(): Long = System.nanoTime()
+fun nanoTime(): Long = System.nanoTime()
 
 fun Clock.date(): LocalDate = LocalDate.now(this)
 
@@ -99,6 +101,12 @@ fun isToday(timeInMillis: Long): Boolean = timeInMillis.toLocalDateTime().toLoca
 fun isCurrentWeek(timeInMillis: Long): Boolean = isSameWeek(timeInMillis, currentMillis())
 
 fun isCurrentMonth(timeInMillis: Long): Boolean = isSameMonth(timeInMillis, currentMillis())
+
+fun LocalDate.atDayOfWeek(dayOfWeek: DayOfWeek): LocalDate = this.with(ChronoField.DAY_OF_WEEK, dayOfWeek.value.toLong())
+
+fun LocalDate.atEndOfWeek(): LocalDate = this.atDayOfWeek(DayOfWeek.SUNDAY)
+
+fun LocalDate.atEndOfMonth(): LocalDate = this.withDayOfMonth(this.lengthOfMonth())
 
 /**
  * 判断两个时间段是否有重叠

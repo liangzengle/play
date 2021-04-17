@@ -188,18 +188,25 @@ class R2DBCRepository @Inject constructor(
     TODO("Not yet implemented")
   }
 
-  override fun <ID, E : Entity<ID>, R> fold(entityClass: Class<E>, initial: R, f: (R, E) -> R): Future<R> {
+  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
+    entityClass: Class<E>,
+    where: Optional<String>,
+    order: Optional<String>,
+    limit: Optional<Int>,
+    initial: R1,
+    folder: (R1, E) -> R1
+  ): Future<R> {
     TODO("Not yet implemented")
   }
 
-  override fun <ID, E : Entity<ID>, R> fold(
+  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
     entityClass: Class<E>,
     fields: List<String>,
     where: Optional<String>,
     order: Optional<String>,
     limit: Optional<Int>,
-    initial: R,
-    folder: (R, ResultMap) -> R
+    initial: R1,
+    folder: (R1, ResultMap) -> R1
   ): Future<R> {
     TODO("Not yet implemented")
   }

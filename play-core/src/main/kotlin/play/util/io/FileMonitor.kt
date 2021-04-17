@@ -1,32 +1,29 @@
 package play.util.io
 
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
+import play.util.logging.getLogger
+import play.scheduling.Cancellable
+import play.scheduling.Scheduler
 import java.io.File
 import java.io.IOException
 import java.nio.file.*
 import java.time.Duration
-import java.util.*
 import java.util.concurrent.Executor
 import java.util.stream.Stream
 import kotlin.concurrent.thread
 import kotlin.math.max
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
-import play.getLogger
-import play.util.forEach
-import play.util.scheduling.Cancellable
-import play.util.scheduling.Scheduler
 
 open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
-  private val logger = getLogger()
 
   private val path = root.toPath()
 
   protected var service: WatchService = path.fileSystem.newWatchService()
 
-  private var createCallback = Optional.empty<(File) -> Unit>()
-  private var modifyCallback = Optional.empty<(File) -> Unit>()
-  private var deleteCallback = Optional.empty<(File) -> Unit>()
+  private var createCallback: ((File) -> Unit)? = null
+  private var modifyCallback: ((File) -> Unit)? = null
+  private var deleteCallback: ((File) -> Unit)? = null
 
-  private var cancellable = Optional.empty<Cancellable>()
+  private var cancellable:Cancellable? = null
 
   @Volatile
   private var closed = false
@@ -115,7 +112,7 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
   fun start(detectInterval: Duration, scheduler: Scheduler) {
     watch(root, maxDepth)
     val f = scheduler.scheduleWithFixedDelay(detectInterval, detectInterval, this::runCheck)
-    cancellable = Optional.of(f)
+    cancellable = f
   }
 
   fun start(detectInterval: Duration, scheduler: Scheduler, executor: Executor) {
@@ -126,7 +123,7 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
       executor,
       this::runCheck
     )
-    cancellable = Optional.of(f)
+    cancellable = f
   }
 
   private fun runCheck() {
@@ -145,29 +142,29 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
   override fun close() {
     closed = true
     service.close()
-    cancellable.forEach { it.cancel() }
+    cancellable?.cancel()
   }
 
   protected open fun onEvent(kind: WatchEvent.Kind<Path>, file: File) {
     when (kind) {
-      StandardWatchEventKinds.ENTRY_CREATE -> createCallback.forEach { it(file) }
-      StandardWatchEventKinds.ENTRY_MODIFY -> modifyCallback.forEach { it(file) }
-      StandardWatchEventKinds.ENTRY_DELETE -> deleteCallback.forEach { it(file) }
+      StandardWatchEventKinds.ENTRY_CREATE -> createCallback?.invoke(file)
+      StandardWatchEventKinds.ENTRY_MODIFY -> modifyCallback?.invoke(file)
+      StandardWatchEventKinds.ENTRY_DELETE -> deleteCallback?.invoke(file)
     }
   }
 
   fun onCreate(op: (File) -> Unit): FileMonitor {
-    this.createCallback = Optional.of(Objects.requireNonNull(op))
+    this.createCallback = op
     return this
   }
 
   fun onModify(op: (File) -> Unit): FileMonitor {
-    this.modifyCallback = Optional.of(Objects.requireNonNull(op))
+    this.modifyCallback = op
     return this
   }
 
   fun onDelete(op: (File) -> Unit): FileMonitor {
-    this.deleteCallback = Optional.of(Objects.requireNonNull(op))
+    this.deleteCallback = op
     return this
   }
 
@@ -178,6 +175,8 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
   }
 
   companion object {
+    private val logger = getLogger()
+
     private val DefaultInterestedEvents = arrayOf(
       StandardWatchEventKinds.ENTRY_CREATE,
       StandardWatchEventKinds.ENTRY_MODIFY,

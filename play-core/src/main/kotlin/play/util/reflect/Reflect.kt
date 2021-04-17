@@ -1,9 +1,11 @@
 package play.util.reflect
 
+import com.google.common.collect.Iterables
 import com.google.common.reflect.TypeToken
-import java.lang.reflect.*
-import play.util.collection.EmptyObjectArray
+import play.util.EmptyClassArray
+import play.util.EmptyObjectArray
 import play.util.unsafeCast
+import java.lang.reflect.*
 
 /**
  * Created by LiangZengle on 2020/2/16.
@@ -12,16 +14,6 @@ import play.util.unsafeCast
 object Reflect {
 
   val stackWalker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-
-  fun <T> getClass(fqcn: String): Class<out T> {
-    val clazz = Class.forName(fqcn)
-    return clazz as Class<out T>
-  }
-
-  fun <T> getClass(fqcn: String, classLoader: ClassLoader): Class<out T> {
-    val clazz = Class.forName(fqcn, false, classLoader)
-    return clazz as Class<out T>
-  }
 
   @Suppress("UnstableApiUsage")
   fun <T> getTypeArg(type: Class<out T>, superType: Class<T>, index: Int): Type {
@@ -66,61 +58,60 @@ object Reflect {
     return stackWalker.walk { it.map { f -> f.declaringClass }.skip(2).findFirst().orElseThrow() }
   }
 
-  fun <T : Any> get(field: Field, target: Any?): T? {
+  fun <T : Any> getFieldValue(field: Field, target: Any?): T? {
     field.trySetAccessible()
     return field.get(target) as T?
   }
 
-  fun <T : Any> invoke(method: Method, target: Any?, vararg parameters: Any?): T? {
+  fun <T : Any> invokeMethod(method: Method, target: Any?, vararg parameters: Any?): T? {
     method.trySetAccessible()
     return method.invoke(target, parameters) as T?
   }
 
-  fun isTopLevelClass(clazz: Class<*>): Boolean {
-    return !clazz.isMemberClass && !clazz.isLocalClass && !clazz.isAnonymousClass && clazz.declaringClass === null
+  fun <T : Any> invokeStaticMethodNoArgs(clazz: Class<*>, methodName: String): T? {
+    return invokeMethodNoArgs(null, clazz, methodName)
+  }
+
+  fun <T : Any> invokeMethodNoArgs(target: Any, methodName: String): T? {
+    return invokeMethodNoArgs(target, target.javaClass, methodName)
+  }
+
+  private fun <T : Any> invokeMethodNoArgs(target: Any?, targetClass: Class<*>, methodName: String): T? {
+    var method: Method? = null
+    var ex: NoSuchElementException? = null
+    var superType = targetClass
+    while (superType != Any::class.java) {
+      try {
+        method = superType.getDeclaredMethod(methodName, *EmptyClassArray)
+      } catch (e: NoSuchElementException) {
+        ex = e
+        superType = superType.superclass
+      }
+    }
+    if (method == null) {
+      throw ex!!
+    }
+    method.trySetAccessible()
+    return method.invoke(target, *EmptyObjectArray) as T?
+  }
+
+  fun getAllFields(clazz: Class<*>): Iterable<Field> {
+    var iterable = clazz.declaredFields.asIterable()
+    var superType = clazz.superclass
+    while (superType != Any::class.java) {
+      iterable = Iterables.concat(superType.declaredFields.asIterable(), iterable)
+      superType = superType.superclass
+    }
+    return iterable
+  }
+
+  fun getAllMethods(clazz: Class<*>): Iterable<Method> {
+    var iterable = clazz.declaredMethods.asIterable()
+    var superType = clazz.superclass
+    while (superType != Any::class.java) {
+      iterable = Iterables.concat(superType.declaredMethods.asIterable(), iterable)
+      superType = superType.superclass
+    }
+    return iterable
   }
 }
-
-fun <T> Class<T>.getTypeArg(superType: Class<in T>, index: Int): Type {
-  return Reflect.getTypeArg(this, superType, index)
-}
-
-fun <T> Type.getRawClass(): Class<T> = Reflect.getRawClass(this)
-
-fun <T> Class<T>.createInstance(): T = Reflect.createInstance(this)
-
-fun Class<*>.isPublic() = Modifier.isPublic(modifiers)
-
-fun Class<*>.isProtected() = Modifier.isProtected(modifiers)
-
-fun Class<*>.isPrivate() = Modifier.isPrivate(modifiers)
-
-fun Class<*>.isAbstract() = Modifier.isAbstract(modifiers)
-
-fun Class<*>.isStatic() = Modifier.isStatic(modifiers)
-
-fun Class<*>.isFinal() = Modifier.isFinal(modifiers)
-
-fun Class<*>.isStrict() = Modifier.isStrict(modifiers)
-
-inline fun <reified T> classOf(): Class<T> = T::class.java
-
-inline fun <reified T> isAssignableFrom(clazz: Class<*>): Boolean = T::class.java.isAssignableFrom(clazz)
-
-inline fun <reified T> Class<*>.isSubclassOf() = T::class.java.isAssignableFrom(this)
-
-fun Member.isPublic() = Modifier.isPublic(modifiers)
-
-fun Member.isProtected() = Modifier.isProtected(modifiers)
-
-fun Member.isPrivate() = Modifier.isPrivate(modifiers)
-
-fun Member.isAbstract() = Modifier.isAbstract(modifiers)
-
-fun Member.isStatic() = Modifier.isStatic(modifiers)
-
-fun Member.isFinal() = Modifier.isFinal(modifiers)
-
-fun Member.isStrict() = Modifier.isStrict(modifiers)
-
-fun Field.isTransient() = Modifier.isTransient(modifiers)

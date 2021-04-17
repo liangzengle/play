@@ -1,0 +1,22 @@
+package play.example.game.module.reward.config
+
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonValue
+import com.fasterxml.jackson.databind.node.ObjectNode
+import play.example.game.module.reward.model.Cost
+import play.util.json.Json
+
+data class RawCost(@field:JsonValue val reward: RawReward) {
+  companion object {
+    @JvmStatic
+    @JsonCreator
+    private fun fromJson(node: ObjectNode): RawCost {
+      val reward = Json.convert(node, RawReward::class.java)
+      return RawCost(reward)
+    }
+  }
+
+  fun toCost(args: Map<String, Any>): Cost {
+    return Cost(reward.toReward(args))
+  }
+}

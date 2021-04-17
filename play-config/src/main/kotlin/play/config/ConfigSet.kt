@@ -1,6 +1,7 @@
 package play.config
 
 import java.util.*
+import java.util.stream.Stream
 import javax.annotation.Nullable
 
 interface BasicConfigSet<T> {
@@ -27,19 +28,23 @@ interface BasicConfigSet<T> {
 
   fun lastOrThrow(): T = list().last()
 
-  fun first(): Optional<T> {
-    return if (isEmpty()) Optional.empty() else Optional.of(firstOrThrow())
-  }
+  fun firstOrNull(): T? = if (isEmpty()) null else list().first()
 
-  fun last(): Optional<T> {
-    return if (isEmpty()) Optional.empty() else Optional.of(lastOrThrow())
-  }
+  fun lastOrNull(): T? = if (isEmpty()) null else list().last()
+
+  fun first(): Optional<T> = Optional.ofNullable(firstOrNull())
+
+  fun last(): Optional<T> = Optional.ofNullable(lastOrNull())
 
   fun sequence(): Sequence<T> = list().asSequence()
 
   fun reversedSequence(): Sequence<T> = list().asReversed().asSequence()
 
   fun reversedList(): List<T> = list().asReversed()
+
+  fun stream(): Stream<T> = list().stream()
+
+  fun reversedStream(): Stream<T> = list().asReversed().stream()
 
   fun iterator(): Iterator<T> = list().iterator()
 }
@@ -103,15 +108,15 @@ interface ExtensionConfigSet<E : ConfigExtension<T>, T : AbstractConfig> {
   fun extension(): E
 }
 
-interface GroupedConfigSet<G, K, T> {
-  fun getGroup(groupId: G): Optional<ConfigSet<K, T>>
+interface GroupedConfigSet<G, T> {
+  fun getGroup(groupId: G): Optional<BasicConfigSet<T>>
 
   @Nullable
-  fun getGroupOrNull(groupId: G): ConfigSet<K, T>?
+  fun getGroupOrNull(groupId: G): BasicConfigSet<T>?
 
-  fun getGroupOrThrow(groupId: G): ConfigSet<K, T>
+  fun getGroupOrThrow(groupId: G): BasicConfigSet<T>
 
-  fun groupMap(): Map<G, ConfigSet<K, T>>
+  fun groupMap(): Map<G, BasicConfigSet<T>>
 
   fun containsGroup(groupId: G): Boolean
 }

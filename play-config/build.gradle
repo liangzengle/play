@@ -1,6 +1,7 @@
 dependencies {
     implementation project(':play-core')
-    api hibernate_validator
-    implementation javax_el
-    kapt auto_service
+    implementation project(':play-eclipse-collectionx')
+    api "org.hibernate.validator:hibernate-validator:$hibernat_validator_version"
+    api "javax.el:javax.el-api:$javax_el_version"
+    implementation "org.glassfish:javax.el:$javax_el_version"
 }
