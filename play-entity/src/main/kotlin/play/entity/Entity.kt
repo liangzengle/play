@@ -1,6 +1,6 @@
 package play.entity
 
-sealed class Entity<ID : Any> {
+sealed class Entity<ID> {
   abstract fun id(): ID
 
   /**
@@ -26,7 +26,7 @@ sealed class Entity<ID : Any> {
   }
 }
 
-abstract class EntityLong(val id: Long) : Entity<Long>() {
+abstract class LongIdEntity(val id: Long) : Entity<Long>() {
 
   @Deprecated(message = "Use id to avoid auto boxing/unboxing", replaceWith = ReplaceWith("id"))
   override fun id(): Long = id
@@ -35,7 +35,7 @@ abstract class EntityLong(val id: Long) : Entity<Long>() {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
 
-    other as EntityLong
+    other as LongIdEntity
 
     if (id != other.id) return false
 
@@ -47,15 +47,15 @@ abstract class EntityLong(val id: Long) : Entity<Long>() {
   }
 }
 
-abstract class EntityInt(val id: Int) : Entity<Int>() {
-  @Deprecated(message = "Use getId() to avoid auto boxing/unboxing", replaceWith = ReplaceWith("getId"))
+abstract class IntIdEntity(val id: Int) : Entity<Int>() {
+  @Deprecated(message = "Use id to avoid auto boxing/unboxing", replaceWith = ReplaceWith("id"))
   override fun id(): Int = id
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
 
-    other as EntityInt
+    other as IntIdEntity
 
     if (id != other.id) return false
 
@@ -67,6 +67,6 @@ abstract class EntityInt(val id: Int) : Entity<Int>() {
   }
 }
 
-abstract class EntityString(val id: String) : Entity<String>() {
-  override fun id(): String = id
+abstract class ObjIdEntity<ID : ObjId>(val id: ID) : Entity<ID>() {
+  override fun id(): ID = id
 }

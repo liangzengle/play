@@ -1,5 +1,5 @@
 dependencies {
-    api "com.typesafe.akka:akka-actor-typed_2.13:$akka_version"
+    api libs.bundles.akka
     api project(':play-scala-compact')
     api project(':play-core')
 }

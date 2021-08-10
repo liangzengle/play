@@ -13,7 +13,7 @@ import play.util.createInstance
 import java.io.IOException
 import kotlin.reflect.KClass
 
-abstract class AbstractTypeResolver<T> {
+abstract class AbstractTypeResolver<T : Any> {
 
   abstract fun resolve(node: ObjectNode): Class<out T>
 

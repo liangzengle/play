@@ -48,8 +48,8 @@ abstract class EntityCacheComponent {
 
   protected fun getDeletedSetType(): TypeName {
     return when (ctx.idType) {
-      INT -> NonBlockingHashSetInt
-      LONG -> NonBlockingHashSetLong
+      INT -> ConcurrentSetInt
+      LONG -> ConcurrentSetLong
       else -> ConcurrentHashSet
     }
   }

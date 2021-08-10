@@ -25,7 +25,7 @@ object SystemProps {
    */
   @JvmStatic
   fun set(key: String, value: Any) {
-    System.getProperties().put(key, value.toString())
+    System.getProperties()[key] = value.toString()
   }
 
   @JvmStatic
@@ -95,11 +95,6 @@ object SystemProps {
       "1", "true", "on", "enable" -> true
       else -> false
     }
-  }
-
-  @JvmStatic
-  fun osName(): String {
-    return getOrEmpty("os.name")
   }
 
   @JvmStatic

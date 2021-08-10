@@ -15,7 +15,6 @@ object Reflect {
 
   val stackWalker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
 
-  @Suppress("UnstableApiUsage")
   fun <T> getTypeArg(type: Class<out T>, superType: Class<T>, index: Int): Type {
     return getTypeArgs(type, superType)[index]
   }
@@ -25,10 +24,12 @@ object Reflect {
     if (type.superclass == superType) {
       return type.genericSuperclass.unsafeCast<ParameterizedType>().actualTypeArguments
     }
-    val directlyImplementedInterface =
-      type.genericInterfaces.find { it is ParameterizedType && it.rawType == superType }
-    if (directlyImplementedInterface != null) {
-      return directlyImplementedInterface.unsafeCast<ParameterizedType>().actualTypeArguments
+    if (superType.isInterface) {
+      val directlyImplementedInterface =
+        type.genericInterfaces.find { it is ParameterizedType && it.rawType == superType }
+      if (directlyImplementedInterface != null) {
+        return directlyImplementedInterface.unsafeCast<ParameterizedType>().actualTypeArguments
+      }
     }
     val runtimeType = TypeToken.of(type).getSupertype(superType).type
     return runtimeType.unsafeCast<ParameterizedType>().actualTypeArguments
@@ -46,12 +47,44 @@ object Reflect {
 
   fun <T> createInstance(clazz: Class<out T>): T = clazz.getDeclaredConstructor().newInstance(*EmptyObjectArray)
 
-  inline fun <reified T> createInstance(fqcn: String): T {
-    val clazz = Class.forName(fqcn)
-    if (!T::class.java.isAssignableFrom(clazz)) {
-      throw ClassCastException("${clazz.name} can't assigned to ${T::class.java.name}")
+  fun <T> createInstanceWithArgs(clazz: Class<out T>, vararg args: Any?): T {
+    outer@
+    for (ctor in clazz.declaredConstructors) {
+      if (ctor.parameterCount != args.size) {
+        continue
+      }
+      val parameterTypes = ctor.parameterTypes
+      for (i in parameterTypes.indices) {
+        val expectedType = getRawClass<Any>(parameterTypes[i])
+        val argType = args[i]?.javaClass
+        if (argType != null && !expectedType.isAssignableFrom(argType)) {
+          break@outer
+        }
+      }
+      return ctor.newInstance(*args).unsafeCast()
     }
-    return createInstance(clazz as Class<out T>)
+    throw NoSuchMethodException()
+  }
+
+
+  fun <T> createInstance(requiredType: Class<T>, fqcn: String): T {
+    return createInstanceWithArgs(requiredType, fqcn, *EmptyObjectArray)
+  }
+
+  fun <T> createInstanceWithArgs(requiredType: Class<T>, fqcn: String, vararg args: Any?): T {
+    val clazz = Class.forName(fqcn)
+    if (!requiredType.isAssignableFrom(clazz)) {
+      throw ClassCastException("${clazz.name} can't assigned to ${requiredType.name}")
+    }
+    return createInstanceWithArgs(clazz as Class<out T>, *args)
+  }
+
+  inline fun <reified T> createInstance(fqcn: String): T {
+    return createInstance(T::class.java, fqcn)
+  }
+
+  inline fun <reified T> createInstance(fqcn: String, vararg args: Any?): T {
+    return createInstanceWithArgs(T::class.java, fqcn, *args)
   }
 
   fun getCallerClass(): Class<*> {

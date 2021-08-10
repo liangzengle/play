@@ -26,7 +26,7 @@ object AddProperties : EntityCacheComponent() {
               .build()
           )
           .addProperty(
-            PropertySpec.builder("deleted", NonBlockingHashSetInt.copy(true), KModifier.PRIVATE)
+            PropertySpec.builder("deleted", ConcurrentSetInt.copy(true), KModifier.PRIVATE)
               .mutable(true)
               .initializer("null")
               .addAnnotation(Volatile::class)
@@ -49,7 +49,7 @@ object AddProperties : EntityCacheComponent() {
               .build()
           )
           .addProperty(
-            PropertySpec.builder("deleted", NonBlockingHashSetLong.copy(true), KModifier.PRIVATE)
+            PropertySpec.builder("deleted", ConcurrentSetLong.copy(true), KModifier.PRIVATE)
               .mutable(true)
               .initializer("null")
               .addAnnotation(Volatile::class)
@@ -95,7 +95,7 @@ object AddProperties : EntityCacheComponent() {
             .nextControlFlow("else")
             .addStatement("val f = queryService.findById(id, entityClass)")
             .beginControlFlow("try")
-            .addStatement("val entity: E? = f.get(5.%M).%M()", seconds, getOrNull)
+            .addStatement("val entity: E? = f.get(5.%M).orElse(null)", seconds)
             .beginControlFlow("if (entity != null)")
             .addStatement("initializer.initialize(entity)")
             .endControlFlow()

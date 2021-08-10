@@ -1,9 +1,6 @@
 dependencies {
     api project(':play-db')
-
-    implementation "org.mongodb:mongodb-driver-reactivestreams:$reactive_mongo_driver_version"
-    implementation "de.undercouch:bson4jackson:$bson4jackson_version"
-
-    api "io.netty:netty-all:$netty_version"
-    api "io.netty:netty-transport-native-epoll:$netty_version"
+    api libs.mongodb
+    api libs.bundles.netty
+    implementation libs.bson4jackson
 }

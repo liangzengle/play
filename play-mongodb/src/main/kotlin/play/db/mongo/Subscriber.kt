@@ -18,6 +18,9 @@ internal class ForOneSubscriber<T>(private val promise: Promise<T>) : Subscriber
   }
 
   override fun onComplete() {
+    if (!promise.isCompleted()) {
+      promise.failure(NoSuchElementException())
+    }
   }
 }
 

@@ -35,7 +35,7 @@ fun Clock.time(): LocalTime = LocalTime.now(this)
 
 fun Clock.dateTime(): LocalDateTime = LocalDateTime.now(this)
 
-fun Long.toLocalDateTime(): LocalDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(this), clock.zone)
+fun toLocalDateTime(timeInMillis: Long): LocalDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(timeInMillis), clock.zone)
 
 fun LocalDateTime.toMillis() = this.atZone(clock.zone).toInstant().toEpochMilli()
 
@@ -90,13 +90,13 @@ fun between(unit: ChronoUnit, fromInclusive: Temporal, toExclusive: Temporal): L
 }
 
 fun isSameDay(t1: Long, t2: Long): Boolean =
-  t1.toLocalDateTime().toLocalDate() == t2.toLocalDateTime().toLocalDate()
+  toLocalDateTime(t1).toLocalDate() == toLocalDateTime(t2).toLocalDate()
 
-fun isSameWeek(t1: Long, t2: Long): Boolean = t1.toLocalDateTime().weekEquals(t2.toLocalDateTime())
+fun isSameWeek(t1: Long, t2: Long): Boolean = toLocalDateTime(t1).weekEquals(toLocalDateTime(t2))
 
-fun isSameMonth(t1: Long, t2: Long): Boolean = t1.toLocalDateTime().monthEquals(t2.toLocalDateTime())
+fun isSameMonth(t1: Long, t2: Long): Boolean = toLocalDateTime(t1).monthEquals(toLocalDateTime(t2))
 
-fun isToday(timeInMillis: Long): Boolean = timeInMillis.toLocalDateTime().toLocalDate() == currentDate()
+fun isToday(timeInMillis: Long): Boolean = toLocalDateTime(timeInMillis).toLocalDate() == currentDate()
 
 fun isCurrentWeek(timeInMillis: Long): Boolean = isSameWeek(timeInMillis, currentMillis())
 

@@ -1,108 +1,121 @@
 package play.entity.cache.caffeine
 
 import com.github.benmanes.caffeine.cache.Cache
-import com.github.benmanes.caffeine.cache.CacheWriter
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalCause
 import com.google.common.collect.Sets
-import com.google.inject.Injector
+import mu.KLogging
 import play.entity.Entity
 import play.entity.ImmutableEntity
 import play.entity.cache.*
+import play.inject.PlayInjector
 import play.scheduling.Scheduler
 import play.util.collection.filterNotNull
 import play.util.concurrent.Future
 import play.util.control.getCause
 import play.util.getOrNull
 import play.util.json.Json
-import play.util.logging.getLogger
 import play.util.primitive.toIntSaturated
 import play.util.time.currentMillis
 import play.util.toOptional
 import play.util.unsafeCast
+import java.time.Duration
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.Executor
 import java.util.stream.Stream
-import kotlin.time.minutes
 
 internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   override val entityClass: Class<E>,
   private val entityCacheWriter: EntityCacheWriter,
   private val entityCacheLoader: EntityCacheLoader,
-  injector: Injector,
-  scheduler: Scheduler,
+  private val injector: PlayInjector,
+  private val scheduler: Scheduler,
   private val executor: Executor,
   private val settings: AbstractEntityCacheFactory.Settings,
-  private val initializer: EntityInitializer<E>
+  private val initializerProvider: EntityInitializerProvider
 ) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID> {
 
-  private val cache: Cache<ID, CacheObj<ID, E>>
+  companion object : KLogging()
+
+  @Volatile
+  private var initialized = false
+
+  private lateinit var initializer: EntityInitializer<E>
+
+  private lateinit var cache: Cache<ID, CacheObj<ID, E>>
+
   private val persistingEntities: ConcurrentMap<ID, E> = ConcurrentHashMap()
 
-  private val expireEvaluator: ExpireEvaluator
+  private lateinit var expireEvaluator: ExpireEvaluator
 
   @Volatile
   private var deleted: MutableSet<ID>? = null
 
-  private val evictShelter: ConcurrentMap<ID, E>?
-
-  companion object {
-    @JvmStatic
-    private val logger = getLogger()
-    private val DeleteNoRecord = CacheObj<Any, Entity<Any>>(null)
-  }
+  private var evictShelter: ConcurrentMap<ID, E>? = null
 
   private val isImmutable = entityClass.isAnnotationPresent(ImmutableEntity::class.java)
 
-  init {
-    val cacheSpec = entityClass.getAnnotation(CacheSpec::class.java)
-    expireEvaluator = if (cacheSpec != null && cacheSpec.expireEvaluator != DefaultExpireEvaluator::class) {
-      injector.getInstance(cacheSpec.expireEvaluator.java)
-    } else DefaultExpireEvaluator
+  private fun getCache(): Cache<ID, CacheObj<ID, E>> {
+    ensureInitialized()
+    return cache
+  }
 
-    val isNeverExpire = expireEvaluator is NeverExpireEvaluator
-    evictShelter = if (isNeverExpire) null else ConcurrentHashMap()
-
-    if (isNeverExpire) {
-      logger.info { "[${entityClass.simpleName}]缓存将永不过期" }
+  private fun ensureInitialized() {
+    if (initialized) {
+      return
     }
-
-    val builder: Caffeine<ID, CacheObj<ID, E>> = Caffeine.newBuilder().unsafeCast()
-    builder.initialCapacity(EntityCacheHelper.getInitialSizeOrDefault(entityClass, settings.initialSize))
-    if (!isNeverExpire) {
-      builder.expireAfterAccess(settings.expireAfterAccess)
-    }
-    builder.writer(Writer())
-    val cache: Cache<ID, CacheObj<ID, E>> = builder.build()
-    val isLoadAllOnInit = cacheSpec?.loadAllOnInit ?: false
-    if (isLoadAllOnInit) {
-      logger.info { "Loading all [${entityClass.simpleName}]" }
-      entityCacheLoader.foreach(entityClass) { entity ->
-        initializer.initialize(entity)
-        cache.put(entity.id(), CacheObj(entity))
-      }.await(1.minutes)
-      logger.info { "Loaded ${cache.estimatedSize()} [${entityClass.simpleName}] into cache." }
-    }
-    this.cache = cache
-
-    if (!isImmutable) {
-      scheduler.scheduleAtFixedRate(
-        settings.persistInterval,
-        settings.persistInterval.dividedBy(2),
-        executor,
-        this::scheduledPersist
-      )
-    } else {
-      logger.info { "[${entityClass.simpleName}]标记为不可变实体，将不会执行定时入库" }
+    synchronized(this) {
+      if (initialized) {
+        return
+      }
+      val cacheSpec = entityClass.getAnnotation(CacheSpec::class.java)
+      expireEvaluator = when (val expireEvaluator = cacheSpec?.expireEvaluator) {
+        null -> DefaultExpireEvaluator
+        DefaultExpireEvaluator::class -> DefaultExpireEvaluator
+        NeverExpireEvaluator::class -> NeverExpireEvaluator
+        else -> injector.getInstance(expireEvaluator.java)
+      }
+      val isNeverExpire = expireEvaluator == NeverExpireEvaluator
+      evictShelter = if (isNeverExpire) null else ConcurrentHashMap()
+      initializer = initializerProvider.get(entityClass)
+      val builder: Caffeine<ID, CacheObj<ID, E>> = Caffeine.newBuilder().unsafeCast()
+      builder.initialCapacity(EntityCacheHelper.getInitialSizeOrDefault(entityClass, settings.initialSize))
+      if (!isNeverExpire) {
+        val duration =
+          if ((cacheSpec?.expireAfterAccess ?: 0) > 0) Duration.ofSeconds(cacheSpec.expireAfterAccess.toLong())
+          else settings.expireAfterAccess
+        builder.expireAfterAccess(duration)
+      }
+      builder.evictionListener(RemovalListener())
+      val cache: Cache<ID, CacheObj<ID, E>> = builder.build()
+      val isLoadAllOnInit = cacheSpec?.loadAllOnInit ?: false
+      if (isLoadAllOnInit) {
+        logger.info { "Loading all [${entityClass.simpleName}]" }
+        entityCacheLoader.foreach(entityClass) { entity ->
+          initializer.initialize(entity)
+          cache.put(entity.id(), CacheObj(entity))
+        }.await(Duration.ofSeconds(5))
+        logger.info { "Loaded ${cache.estimatedSize()} [${entityClass.simpleName}] into cache." }
+      }
+      this.cache = cache
+      if (!isImmutable) {
+        scheduler.scheduleWithFixedDelay(
+          settings.persistInterval,
+          settings.persistInterval.dividedBy(2),
+          executor,
+          this::scheduledPersist
+        )
+      }
+      initialized = true
     }
   }
 
   private fun scheduledPersist() {
     val now = currentMillis()
     val persistTimeThreshold = now - settings.persistInterval.toMillis()
-    val entities = cache.asMap().values.asSequence()
+    val entities = getCache().asMap().values.asSequence()
       .filter {
         it.hasEntity()
           && it.lastPersistTime < persistTimeThreshold
@@ -160,15 +173,16 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     return computeIfAbsent(
       id,
       true,
-      { k -> runCreation(k, creation) },
-      { k -> load(k) ?: runCreation(k, creation) }
+      { k -> createEntity(k, creation) },
+      { k -> load(k) ?: createEntity(k, creation) }
     ) ?: error("won't happen")
   }
 
-  private fun runCreation(id: ID, creation: (ID) -> E): E {
+  private fun createEntity(id: ID, creation: (ID) -> E): E {
     val entity = creation(id)
     initializer.initialize(entity)
     entityCacheWriter.insert(entity)
+    onCreate(entity)
     return entity
   }
 
@@ -177,11 +191,11 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun asSequence(): Sequence<E> {
-    return cache.asMap().values.asSequence().map { it.accessEntity() }.filterNotNull()
+    return getCache().asMap().values.asSequence().map { it.accessEntity() }.filterNotNull()
   }
 
   override fun asStream(): Stream<E> {
-    return cache.asMap().values.stream().map { it.accessEntity() }.filterNotNull()
+    return getCache().asMap().values.stream().map { it.accessEntity() }.filterNotNull()
   }
 
   override fun create(e: E): E {
@@ -197,12 +211,12 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun deleteById(id: ID) {
+    addDeleteRecord(id)
     persistingEntities.remove(id)
-    val cached = getCached(id).isEmpty
-    cache.invalidate(id)
-    // 允许删除不在缓存的实体
-    if (!cached) {
-      recordAndDelete(id)
+    getCache().invalidate(id)
+    entityCacheWriter.deleteById(id, entityClass).onFailure {
+      // TODO what to do if failed
+      logger.error(it) { "${entityClass.simpleName}($id)删除失败" }
     }
   }
 
@@ -213,15 +227,15 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun size(): Int {
-    return cache.estimatedSize().toIntSaturated()
+    return getCache().estimatedSize().toIntSaturated()
   }
 
   override fun isCached(id: ID): Boolean {
-    return cache.asMap().containsKey(id)
+    return getCache().asMap().containsKey(id)
   }
 
   override fun isEmpty(): Boolean {
-    return cache.asMap().isEmpty()
+    return getCache().asMap().isEmpty()
   }
 
   override fun dump(): String {
@@ -231,7 +245,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
 
   @Suppress("UNCHECKED_CAST")
   override fun flush(): Future<Unit> {
-    val entities = cache.asMap().values.asSequence()
+    val entities = getCache().asMap().values.asSequence()
       .apply { if (isImmutable) filter { it.lastPersistTime == 0L } }
       .map { it.peekEntity() }
       .filterNotNull()
@@ -241,15 +255,24 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun initWithEmptyValue(id: ID) {
-    val prev = cache.asMap().putIfAbsent(id, CacheObj.empty())
+    val prev = getCache().asMap().putIfAbsent(id, CacheObj.empty())
     if (prev?.hasEntity() == false) {
       logger.warn { "初始化为空值失败, Entity已经存在: $prev" }
     }
   }
 
   override fun deleteUnprotected(id: ID) {
-    // delete operation handled by Writer.write
-    cache.asMap().putIfAbsent(id, DeleteNoRecord.unsafeCast())
+    getCache().asMap().compute(id) { key, _ ->
+      entityCacheWriter.deleteById(key, entityClass).onComplete {
+        if (it.isFailure) {
+          addDeleteRecord(key)
+          logger.error(it.getCause()) { "Unsafe delete failed: ${entityClass.simpleName}($key)" }
+        } else {
+          logger.info { "Unsafe delete: ${entityClass.simpleName}($key)" }
+        }
+      }
+      CacheObj.empty()
+    }
   }
 
   private fun computeIfAbsent(id: ID, loader: ((ID) -> E?)?): E? {
@@ -262,6 +285,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     loadOnEmpty: ((ID) -> E)?,
     loadOnAbsent: ((ID) -> E?)?
   ): E? {
+    val cache = getCache()
     var cacheObj = cache.getIfPresent(id)
     if (cacheObj != null) {
       val entity = cacheObj.accessEntity()
@@ -286,32 +310,22 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
 
   private fun isDeleted(id: ID) = deleted?.contains(id) ?: false
 
-  private inner class Writer : CacheWriter<ID, CacheObj<ID, E>> {
-    override fun write(key: ID, value: CacheObj<ID, E>) {
-      if (value === DeleteNoRecord) {
-        entityCacheWriter.deleteById(key, entityClass).onComplete {
-          if (it.isFailure) {
-            // TODO what to do if failed
-            logger.error(it.getCause()) { "Unsafe delete failed: ${entityClass.simpleName}($key)" }
-          } else {
-            logger.info { "Unsafe delete: ${entityClass.simpleName}($key)" }
-          }
-        }
+  private inner class RemovalListener :
+    com.github.benmanes.caffeine.cache.RemovalListener<ID, CacheObj<ID, E>> {
+    override fun onRemoval(key: ID?, value: CacheObj<ID, E>?, cause: RemovalCause) {
+      if (key == null) {
+        return
       }
-    }
-
-    override fun delete(id: ID, cacheObj: CacheObj<ID, E>?, cause: RemovalCause) {
-      val e = cacheObj?.peekEntity()
-      if (!cause.wasEvicted()) {
-        recordAndDelete(id)
-      } else if (e != null) {
+      val e = value?.peekEntity()
+      if (e != null && cause.wasEvicted()) {
+        val evictShelter = evictShelter
         check(evictShelter != null) { "`evictShelter` should not be null." }
         // 不允许过期则重新放回cache中
         if (!expireEvaluator.canExpire(e)) {
-          evictShelter[id] = e
+          evictShelter[key] = e
           // 异步放回
           executor.execute {
-            cache.asMap().compute(id) { k, v ->
+            getCache().asMap().compute(key) { k, v ->
               val entity = evictShelter.remove(k)
               when {
                 entity == null -> v
@@ -322,16 +336,17 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
           }
         }
         persistOnExpired(e)
+      } else if (cause == RemovalCause.EXPLICIT) {
+        recordAndDelete(key)
       }
     }
   }
 
   private fun recordAndDelete(id: ID) {
-    if (addDeleteRecord(id)) {
-      entityCacheWriter.deleteById(id, entityClass).onFailure {
-        // TODO what to do if failed
-        logger.error(it) { "${entityClass.simpleName}($id)删除失败" }
-      }
+    addDeleteRecord(id)
+    entityCacheWriter.deleteById(id, entityClass).onFailure {
+      // TODO what to do if failed
+      logger.error(it) { "${entityClass.simpleName}($id)删除失败" }
     }
   }
 
@@ -359,7 +374,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
         persistingEntities.remove(id)
       } else {
         // 写数据库失败，重新放回缓存
-        cache.asMap().compute(id) { k, v ->
+        getCache().asMap().compute(id) { k, v ->
           val pending = persistingEntities.remove(k)
           when {
             pending == null -> v

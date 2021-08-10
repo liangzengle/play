@@ -28,7 +28,8 @@ data class Response(
   @JvmField val body: Any? = null
 )
 
-inline class MsgId(val value: Int) {
+@JvmInline
+value class MsgId(val value: Int) {
   constructor(moduleId: Short, cmd: Byte) : this(moduleId.toInt() shl 8 or cmd.toInt())
 
   val moduleId: Short get() = (value shr 8 and 0x7fff).toShort()
@@ -46,7 +47,8 @@ inline class MsgId(val value: Int) {
   }
 }
 
-inline class Header(private val value: Long) {
+@JvmInline
+value class Header(private val value: Long) {
   constructor(msgId: MsgId, sequenceNo: Int) : this(msgId.value.toLong() shl 32 or sequenceNo.toLong())
   constructor(msgId: MsgId) : this(msgId, 0)
 

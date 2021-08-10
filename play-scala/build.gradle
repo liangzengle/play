@@ -6,6 +6,5 @@ repositories {
 }
 
 dependencies {
-    compile "org.scala-lang:scala-library:2.13.5"
-    compile "org.scala-lang.modules:scala-java8-compat_2.13:0.9.0"
+    api libs.bundles.scala
 }

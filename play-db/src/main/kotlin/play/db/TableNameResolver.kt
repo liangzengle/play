@@ -1,6 +1,6 @@
 package play.db
 
-import java.util.concurrent.ConcurrentHashMap
+import org.jctools.maps.NonBlockingHashMap
 
 class TableNameResolver constructor(
   private val postfixesToTrimBeforeFormat: List<String>,
@@ -9,7 +9,7 @@ class TableNameResolver constructor(
 
   constructor(tableNameFormatter: TableNameFormatter) : this(emptyList(), tableNameFormatter)
 
-  private val tableNameCache = ConcurrentHashMap<Class<*>, String>()
+  private val tableNameCache = NonBlockingHashMap<Class<*>, String>()
 
   fun resolve(clazz: Class<*>): String {
     val cached = tableNameCache[clazz]
@@ -18,12 +18,16 @@ class TableNameResolver constructor(
     }
 
     val tableName = clazz.getAnnotation(TableName::class.java)
-    var name = tableName?.value ?: clazz.simpleName
-    if (postfixesToTrimBeforeFormat.isNotEmpty()) {
-      name = trimPostfixes(name, postfixesToTrimBeforeFormat)
+    var name = clazz.simpleName
+    if (tableName == null) {
+      if (postfixesToTrimBeforeFormat.isNotEmpty()) {
+        name = trimPostfixes(clazz.simpleName, postfixesToTrimBeforeFormat)
+      }
+    } else {
+      name = tableName.value
     }
     name = tableNameFormatter.format(name)
-    tableNameCache[clazz] = name // harmless contention
+    tableNameCache[clazz] = name
     return name
   }
 

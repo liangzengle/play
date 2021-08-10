@@ -1,7 +1,7 @@
 package play.scheduling
 
 import play.scheduling.Cancellable.Companion.toCancellable
-import play.util.concurrent.CommonPool
+import java.time.Clock
 import java.time.Duration
 import java.util.concurrent.Executor
 import java.util.concurrent.ScheduledExecutorService
@@ -12,8 +12,8 @@ import java.util.concurrent.TimeUnit
  *
  * Created by LiangZengle on 2020/2/20.
  */
-class DefaultScheduler(private val scheduleService: ScheduledExecutorService, executor: Executor)
-  : Scheduler(executor), ScheduledExecutorService by scheduleService {
+class DefaultScheduler(private val scheduleService: ScheduledExecutorService, executor: Executor, clock: Clock) :
+  Scheduler(executor, clock), ScheduledExecutorService by scheduleService {
 
   override fun schedule(delay: Duration, taskExecutor: Executor, task: Runnable): Cancellable {
     return scheduleService.schedule(

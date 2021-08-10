@@ -15,24 +15,21 @@ import java.net.URL
  * Created by LiangZengle on 2020/2/15.
  */
 object Json {
-  var mapper = ObjectMapper().useDefaultConfiguration()
+  var mapper = configure(ObjectMapper())
     private set
 
   fun replaceDefaultMapper(newMapper: ObjectMapper) {
     mapper = newMapper
   }
 
-  fun configureDefault(mapper: ObjectMapper): ObjectMapper {
-    return mapper.useDefaultConfiguration()
-  }
-
-  fun ObjectMapper.useDefaultConfiguration(): ObjectMapper {
-    return this.findAndRegisterModules()
+  fun configure(mapper: ObjectMapper): ObjectMapper {
+    return mapper.findAndRegisterModules()
       .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
       .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
       .configure(DeserializationFeature.ACCEPT_FLOAT_AS_INT, true)
       .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
+      .setSerializationInclusion(JsonInclude.Include.NON_DEFAULT)
       .setVisibility(PropertyAccessor.FIELD, Visibility.ANY)
       .setVisibility(PropertyAccessor.GETTER, Visibility.NONE)
       .setVisibility(PropertyAccessor.IS_GETTER, Visibility.NONE)

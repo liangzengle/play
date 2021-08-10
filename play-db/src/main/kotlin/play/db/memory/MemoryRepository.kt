@@ -1,19 +1,15 @@
 package play.db.memory
 
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentMap
-import javax.annotation.CheckReturnValue
-import javax.inject.Singleton
-import play.db.PersistService
-import play.db.QueryService
 import play.db.Repository
 import play.db.ResultMap
 import play.entity.Entity
 import play.util.concurrent.Future
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
+import javax.annotation.CheckReturnValue
 
 @Suppress("UNCHECKED_CAST")
-@Singleton
 class MemoryRepository : Repository {
   private val caches: ConcurrentMap<Class<*>, ConcurrentMap<Any, Entity<*>>> = ConcurrentHashMap()
 

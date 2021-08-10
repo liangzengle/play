@@ -1,47 +1,37 @@
 package play.db.mongo
 
-import com.mongodb.MongoClientSettings
 import com.mongodb.bulk.BulkWriteResult
 import com.mongodb.client.model.*
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.InsertOneResult
 import com.mongodb.client.result.UpdateResult
-import com.mongodb.reactivestreams.client.MongoClients
+import com.mongodb.reactivestreams.client.MongoClient
 import com.mongodb.reactivestreams.client.MongoCollection
-import com.typesafe.config.Config
-import java.util.*
-import javax.annotation.CheckReturnValue
-import javax.inject.Inject
-import javax.inject.Named
 import org.bson.BsonDocument
 import org.bson.Document
-import play.ShutdownCoordinator
+import org.bson.conversions.Bson
 import play.db.Repository
 import play.db.ResultMap
 import play.db.TableNameResolver
+import play.db.mongo.Mongo.ID
 import play.entity.Entity
 import play.util.concurrent.Future
 import play.util.concurrent.Promise
 import play.util.forEach
+import play.util.json.Json
+import play.util.reflect.Reflect
 import play.util.toOptional
 import play.util.unsafeCast
+import java.util.*
+import javax.annotation.CheckReturnValue
 
-class MongoDBRepository @Inject constructor(
+class MongoDBRepository constructor(
+  dbName: String,
   private val tableNameResolver: TableNameResolver,
-  setting: MongoClientSettings,
-  @Named("mongodb") conf: Config,
-  shutdownCoordinator: ShutdownCoordinator
-) : Repository, AutoCloseable {
+  client: MongoClient
+) : Repository, MongoDBCommandSupport {
 
-  init {
-    shutdownCoordinator.addShutdownTask("Shutdown MongoClient", ShutdownCoordinator.PRIORITY_LOWEST) {
-      this.close()
-    }
-  }
-
-  private val client = MongoClients.create(setting)
-
-  private val db = client.getDatabase(conf.getString("db"))
+  private val db = client.getDatabase(dbName)
 
   private val unorderedBulkWrite = BulkWriteOptions().ordered(false)
   private val insertOneOptions = InsertOneOptions()
@@ -53,7 +43,7 @@ class MongoDBRepository @Inject constructor(
     return getCollection(entity.javaClass)
   }
 
-  private fun <T : Entity<*>> getCollection(clazz: Class<T>): MongoCollection<T> {
+  internal fun <T : Entity<*>> getCollection(clazz: Class<T>): MongoCollection<T> {
     return db.getCollection(tableNameResolver.resolve(clazz), clazz)
   }
 
@@ -146,13 +136,14 @@ class MongoDBRepository @Inject constructor(
   ): Future<R> {
     val promise = Promise.make<R>()
     val publisher = getRawCollection(entityClass).find()
-    publisher.projection(Projections.include(fields))
+    val includeFields = if (fields.contains(ID)) fields else fields.toMutableList().apply { add((ID)) }
+    publisher.projection(Projections.include(includeFields))
     where.forEach { publisher.filter(BsonDocument.parse(it)) }
     order.forEach { publisher.sort(BsonDocument.parse(it)) }
     limit.forEach { publisher.limit(it) }
     publisher.subscribe(FoldSubscriber(promise, initial) { r, doc ->
-      if (doc.containsKey("_id") && !doc.containsKey("id")) {
-        doc["id"] = doc["_id"]
+      if (doc.containsKey(ID) && !doc.containsKey("id")) {
+        doc["id"] = doc[ID]
       }
       folder(r, ResultMap(doc))
     })
@@ -163,13 +154,13 @@ class MongoDBRepository @Inject constructor(
     val promise = Promise.make<List<ID>>()
     getRawCollection(entityClass)
       .find()
-      .projection(Projections.include("_id"))
+      .projection(Projections.include(ID))
       .subscribe(
         FoldSubscriber(
           promise,
           LinkedList()
         ) { list, doc ->
-          val id: ID = doc["_id"]!!.unsafeCast()
+          val id = convertToID<ID>(doc[ID]!!, entityClass)
           list.add(id)
           list
         }
@@ -177,7 +168,24 @@ class MongoDBRepository @Inject constructor(
     return promise.future
   }
 
-  override fun close() {
-    client.close()
+  private fun getIdType(entityClass: Class<out Entity<*>>): Class<*> {
+    return Reflect.getRawClass<Any>(Reflect.getTypeArg(entityClass, Entity::class.java, 0))
+  }
+
+  private fun <ID> convertToID(obj: Any, entityClass: Class<out Entity<*>>): ID {
+    if (obj !is Document) {
+      return obj.unsafeCast()
+    }
+    val idType = getIdType(entityClass)
+    if (idType.isAssignableFrom(obj.javaClass)) {
+      return obj.unsafeCast()
+    }
+    return Json.convert(obj, idType).unsafeCast()
+  }
+
+  override fun runCommand(cmd: Bson): Future<Document> {
+    val promise = Promise.make<Document>()
+    db.runCommand(cmd).subscribe(ForOneSubscriber(promise))
+    return promise.future
   }
 }

@@ -11,9 +11,9 @@ sealed class RequestResult<out T> {
 
   data class Ok<T>(val value: T) : RequestResult<T>()
 
-  data class Code(val code: Int) : RequestResult<kotlin.Nothing>()
+  data class Code(val code: Int) : RequestResult<Nothing>()
 
-  object Nothing : RequestResult<Unit>()
+  object None : RequestResult<Unit>()
 
   data class Future<T>(val future: PlayFuture<RequestResult<T>>) : RequestResult<T>()
 
@@ -22,24 +22,16 @@ sealed class RequestResult<out T> {
     operator fun <T> invoke(result: Result2<T>): RequestResult<T> =
       if (result.isErr()) Code(result.getErrorCode()) else Ok(result.get())
 
-    operator fun <T : Any> invoke(f: PlayFuture<Result2<T>>): RequestResult<T> = Future(f.map { RequestResult(it) })
+    inline fun <T : Any> async(f: () -> PlayFuture<Result2<T>>): RequestResult<T> =
+      Future(f().map { RequestResult(it) })
 
-    @JvmName("unit")
-    inline fun unit(f: () -> Unit): RequestResult<Unit> {
+    inline fun noResponse(f: () -> Unit): RequestResult<Unit> {
       f()
-      return Nothing
+      return None
     }
 
-    @JvmName("of")
-    @OverloadResolutionByLambdaReturnType
     inline operator fun <T> invoke(f: () -> Result2<T>): RequestResult<T> {
       return RequestResult(f())
-    }
-
-    @JvmName("async")
-    @OverloadResolutionByLambdaReturnType
-    inline operator fun <T> invoke(f: () -> PlayFuture<RequestResult<T>>): RequestResult<T> {
-      return Future(f())
     }
   }
 }

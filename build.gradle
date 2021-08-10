@@ -20,7 +20,7 @@ buildscript {
     }
 }
 
-configure(subprojects - project(':play-scala')) {
+configure(subprojects) {
     repositories {
         mavenLocal()
         mavenCentral()
@@ -44,12 +44,11 @@ configure(subprojects - project(':play-scala')) {
     version '1.0-SNAPSHOT'
 
     dependencies {
-        api "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-        api "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-        testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
+        api libs.bundles.kotlin
+//        testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
 
-        api "com.google.auto.service:auto-service:$auto_service_version"
-        kapt "com.google.auto.service:auto-service:$auto_service_version"
+        api libs.auto.service
+        kapt libs.auto.service
     }
 
     sourceCompatibility = JavaVersion.VERSION_11

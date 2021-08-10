@@ -13,7 +13,7 @@ idea.module {
 
 dependencies {
     api project(":play-core")
-    codegenImplementation "com.squareup:kotlinpoet:$kotlin_poet_version"
+    codegenImplementation libs.kotlinpoet.poet
 }
 
 task generateCaches(type: JavaExec) {

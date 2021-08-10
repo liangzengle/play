@@ -1,5 +1,0 @@
-dependencies {
-    compileOnly "org.slf4j:slf4j-api:$slf4j_version"
-    compileOnly "org.apache.logging.log4j:log4j-api:$log4j_version"
-    compileOnly "ch.qos.logback:logback-classic:$logback_version"
-}

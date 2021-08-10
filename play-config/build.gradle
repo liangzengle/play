@@ -1,7 +1,0 @@
-dependencies {
-    implementation project(':play-core')
-    implementation project(':play-eclipse-collectionx')
-    api "org.hibernate.validator:hibernate-validator:$hibernat_validator_version"
-    api "javax.el:javax.el-api:$javax_el_version"
-    implementation "org.glassfish:javax.el:$javax_el_version"
-}

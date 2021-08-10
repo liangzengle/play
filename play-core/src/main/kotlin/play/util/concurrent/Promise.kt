@@ -8,7 +8,8 @@ typealias PlayPromise<T> = Promise<T>
  * A wrapper of CompletableFuture
  * @author LiangZengle
  */
-inline class Promise<T>(private val cf: CompletableFuture<T>) {
+@JvmInline
+value class Promise<T>(private val cf: CompletableFuture<T>) {
 
   val future: Future<T> get() = Future(cf)
 
@@ -39,6 +40,10 @@ inline class Promise<T>(private val cf: CompletableFuture<T>) {
   fun tryFailure(e: Throwable): Boolean = cf.completeExceptionally(e)
 
   fun isCompleted() = cf.isDone
+
+  override fun toString(): String {
+    return cf.toString()
+  }
 
   companion object {
     @JvmStatic

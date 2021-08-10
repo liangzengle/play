@@ -1,6 +1,6 @@
 package play.util.collection
 
-import java.util.concurrent.ConcurrentHashMap
+import org.jctools.maps.NonBlockingHashSet
 
 /**
  *
@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
 class ConcurrentHashSet<E> : MutableSet<E> {
 
   @Transient
-  private val set = ConcurrentHashMap<E, Boolean>().keySet(java.lang.Boolean.TRUE)
+  private val set = NonBlockingHashSet<E>()
 
   override fun add(element: E): Boolean = set.add(element)
 

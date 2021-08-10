@@ -1,9 +1,9 @@
 package play
 
+import play.util.logging.LogCloser
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
-import play.logging.LogCloser
 
 /**
  * 应用关闭时按顺序执行关闭任务
@@ -19,7 +19,7 @@ interface ShutdownCoordinator {
    * @param priority 优先级(越小越高): [PRIORITY_HIGHEST]、[PRIORITY_NORMAL]、[PRIORITY_LOWEST]
    * @param task 要执行的任务
    */
-  fun addShutdownTask(name: String, priority: Int = PRIORITY_NORMAL, task: () -> Unit)
+  fun addShutdownTask(name: String, priority: Int = Order.Normal, task: () -> Unit)
 
   fun shutdown()
 
@@ -30,13 +30,9 @@ interface ShutdownCoordinator {
 
     const val PRIORITY_LOWEST = Int.MAX_VALUE
   }
-
-  @Retention(AnnotationRetention.RUNTIME)
-  @Target(AnnotationTarget.FUNCTION, AnnotationTarget.CLASS)
-  annotation class Order(val value: Int)
 }
 
-internal class DefaultShutdownCoordinator : ShutdownCoordinator {
+class DefaultShutdownCoordinator : ShutdownCoordinator {
   private val stopped = AtomicBoolean()
 
   init {

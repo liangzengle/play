@@ -8,8 +8,8 @@ import java.util.concurrent.Executor
 typealias TypeVar = TypeVariableName
 
 val Entity = ClassName.bestGuess("play.entity.Entity")
-val EntityInt = ClassName.bestGuess("play.entity.EntityInt")
-val EntityLong = ClassName.bestGuess("play.entity.EntityLong")
+val EntityInt = ClassName.bestGuess("play.entity.IntIdEntity")
+val EntityLong = ClassName.bestGuess("play.entity.LongIdEntity")
 
 val EntityCache = ClassName.bestGuess("play.entity.cache.EntityCache")
 
@@ -37,10 +37,10 @@ val EntityCacheLong = ClassName.bestGuess("play.entity.cache.EntityCacheLong")
 val PersistService = ClassName.bestGuess("play.entity.cache.EntityCacheWriter")
 val QueryService = ClassName.bestGuess("play.entity.cache.EntityCacheLoader")
 
-val Injector = ClassName.bestGuess("com.google.inject.Injector")
+val Injector = ClassName.bestGuess("play.inject.PlayInjector")
 val Scheduler = ClassName.bestGuess("play.scheduling.Scheduler")
 val DbExecutor = Executor::class.asClassName()
-val Initializer_E = ClassName.bestGuess("play.entity.cache.EntityInitializer").plusParameter(E)
+val initializerProvider = ClassName.bestGuess("play.entity.cache.EntityInitializerProvider")
 
 val EntityCacheSettings = ClassName.bestGuess("play.entity.cache.AbstractEntityCacheFactory.Settings")
 
@@ -70,8 +70,8 @@ val EntityLong_CacheObj = ClassName.bestGuess("CacheObj").plusParameter(TypeVar(
 val ConcurrentLongObjectMap_CacheObj_ID_E =
   ClassName.bestGuess("play.util.collection.ConcurrentLongObjectMap").plusParameter(EntityLong_CacheObj)
 
-val NonBlockingHashSetInt = ClassName.bestGuess("play.util.collection.NonBlockingHashSetInt")
-val NonBlockingHashSetLong = ClassName.bestGuess("play.util.collection.NonBlockingHashSetLong")
+val ConcurrentSetInt = ClassName.bestGuess("play.util.collection.ConcurrentHashSetInt")
+val ConcurrentSetLong = ClassName.bestGuess("play.util.collection.ConcurrentHashSetLong")
 val MutableSet_ID = ClassName.bestGuess("kotlin.collections.MutableSet").parameterizedBy(ID)
 
 val ConcurrentHashSet = ClassName.bestGuess("play.util.collection.ConcurrentHashSet")
@@ -111,8 +111,6 @@ val Function_Long_E = LambdaTypeName.get(parameters = arrayOf(LONG), returnType 
 val Function_Unit = LambdaTypeName.get(returnType = UNIT)
 
 val EntityExistsException = ClassName.bestGuess("play.entity.cache.EntityExistsException")
-
-val getOrNull = MemberName("play.util", "getOrNull")
 
 val toOptional = MemberName("play.util", "toOptional")
 

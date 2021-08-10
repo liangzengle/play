@@ -1,54 +1,51 @@
 package play.entity.cache.chm
 
-import com.google.inject.Injector
 import com.typesafe.config.Config
-import java.util.concurrent.Executor
 import play.entity.Entity
-import play.entity.EntityInt
-import play.entity.EntityLong
+import play.entity.IntIdEntity
+import play.entity.LongIdEntity
 import play.entity.cache.*
+import play.inject.PlayInjector
 import play.scheduling.Scheduler
 import play.util.isAssignableFrom
 import play.util.unsafeCast
-import javax.inject.Inject
-import javax.inject.Named
+import java.util.concurrent.Executor
 
-class CHMEntityCacheFactory @Inject constructor(
+class CHMEntityCacheFactory(
   private val entityCacheWriter: EntityCacheWriter,
   private val entityCacheLoader: EntityCacheLoader,
   private val scheduler: Scheduler,
   private val executor: Executor,
-  private val injector: Injector,
-  @Named("entity") entityConf: Config
-) : AbstractEntityCacheFactory(entityConf.getConfig("cache")) {
+  private val injector: PlayInjector,
+  cacheConf: Config
+) : AbstractEntityCacheFactory(cacheConf) {
 
   override fun <ID : Any, E : Entity<ID>> create(
     entityClass: Class<E>,
-    initializer: EntityInitializer<E>
+    initializerProvider: EntityInitializerProvider
   ): EntityCache<ID, E> {
-    checkEntityClass(entityClass)
     return when {
-      isAssignableFrom<EntityLong>(entityClass) -> {
+      isAssignableFrom<LongIdEntity>(entityClass) -> {
         EntityCacheLongImpl(
-          entityClass.unsafeCast<Class<EntityLong>>(),
+          entityClass.unsafeCast<Class<LongIdEntity>>(),
           entityCacheWriter,
           entityCacheLoader,
           injector,
           scheduler,
           executor,
-          initializer.unsafeCast(),
+          initializerProvider,
           settings
         ).unsafeCast()
       }
-      isAssignableFrom<EntityInt>(entityClass) -> {
+      isAssignableFrom<IntIdEntity>(entityClass) -> {
         EntityCacheIntImpl(
-          entityClass.unsafeCast<Class<EntityInt>>(),
+          entityClass.unsafeCast<Class<IntIdEntity>>(),
           entityCacheWriter,
           entityCacheLoader,
           injector,
           scheduler,
           executor,
-          initializer.unsafeCast(),
+          initializerProvider,
           settings
         ).unsafeCast()
       }
@@ -60,7 +57,7 @@ class CHMEntityCacheFactory @Inject constructor(
           injector,
           scheduler,
           executor,
-          initializer,
+          initializerProvider,
           settings
         )
       }

@@ -1,22 +1,22 @@
 package play.example.common.akka.scheduling
 
 import akka.actor.typed.Scheduler
-import java.time.Duration
-import java.util.concurrent.Executor
-import javax.inject.Inject
-import javax.inject.Singleton
 import play.scheduling.Cancellable
 import play.scheduling.PlayScheduler
 import scala.concurrent.ExecutionContextExecutor
+import java.time.Clock
+import java.time.Duration
+import java.util.concurrent.Executor
 
 /**
  *
  * @author LiangZengle
  */
-class AkkaScheduler @Inject constructor(
+class AkkaScheduler(
   private val scheduler: Scheduler,
-  private val ec: ExecutionContextExecutor
-) : PlayScheduler(ec) {
+  private val ec: ExecutionContextExecutor,
+  clock: Clock
+) : PlayScheduler(ec, clock) {
 
   @Suppress("NOTHING_TO_INLINE")
   private inline fun akka.actor.Cancellable.toPlay(): Cancellable = object : Cancellable {

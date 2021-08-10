@@ -17,6 +17,7 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
   init {
     val lookup = MethodHandles.lookup().`in`(javaClass)
     val baseRoute = javaClass.getAnnotation(Route::class.java)?.value ?: ""
+    ensureStartWithSlash(baseRoute)
     val actions: List<Action> = javaClass.declaredMethods
       .asSequence()
       .filter {
@@ -31,6 +32,7 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
           throw IllegalStateException("${method}的返回值错误, 必须是${HttpResult::class.java.name}")
         }
         val subRoute = getSubRoute(method)
+        ensureStartWithSlash(subRoute)
         val httpMethods = getHttpMethods(method)
         val routePath = RoutePath.parse(baseRoute + subRoute)
         val methodHandle = lookup.unreflect(method).bindTo(this)
@@ -39,14 +41,24 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
     actionManager.register(actions)
   }
 
-  protected fun ok(result: String): HttpResult = HttpResult.Strict(HttpStatusCode.OK, HttpEntity.Strict(result))
+  private fun ensureStartWithSlash(path: String) {
+    if (path.isEmpty()) {
+      return
+    }
+    if (path.first() != '/') {
+      throw IllegalArgumentException("Should start with '/': $path")
+    }
+  }
 
-  protected fun ok(result: ByteArray): HttpResult = HttpResult.Strict(HttpStatusCode.OK, HttpEntity.Strict(result))
+  protected fun ok(result: String): HttpResult.Strict = HttpResult.Strict(HttpStatusCode.OK, HttpEntity.Strict(result))
 
-  protected fun ok(): HttpResult =
+  protected fun ok(result: ByteArray): HttpResult.Strict =
+    HttpResult.Strict(HttpStatusCode.OK, HttpEntity.Strict(result))
+
+  protected fun ok(): HttpResult.Strict =
     HttpResult.Strict(HttpStatusCode.OK, HttpEntity.Strict(EmptyByteArray, Optional.empty()))
 
-  protected fun error(statusCode: Int) =
+  protected fun error(statusCode: Int): HttpResult.Strict =
     HttpResult.Strict(statusCode, HttpEntity.Strict(EmptyByteArray, Optional.empty()))
 
   protected fun Future<HttpResult.Strict>.toHttpResult() = HttpResult.Lazy(this)

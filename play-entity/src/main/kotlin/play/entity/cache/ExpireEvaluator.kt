@@ -1,7 +1,6 @@
 package play.entity.cache
 
 import play.entity.Entity
-import javax.inject.Singleton
 
 interface ExpireEvaluator {
 
@@ -15,7 +14,6 @@ internal object DefaultExpireEvaluator : ExpireEvaluator {
   override fun canExpire(entity: Entity<*>): Boolean = true
 }
 
-@Singleton
-class NeverExpireEvaluator : ExpireEvaluator {
+object NeverExpireEvaluator : ExpireEvaluator {
   override fun canExpire(entity: Entity<*>): Boolean = false
 }

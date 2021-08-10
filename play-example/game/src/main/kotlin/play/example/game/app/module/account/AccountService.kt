@@ -1,0 +1,19 @@
+package play.example.game.app.module.account
+
+import play.example.game.app.module.account.entity.Account
+import play.example.game.app.module.account.entity.AccountEntityCache
+import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Singleton
+
+/**
+ * Created by liang on 2020/6/27.
+ */
+@Singleton
+@Named
+class AccountService @Inject constructor(private val accountCache: AccountEntityCache) {
+
+  fun getAccount(id: Long): Account {
+    return accountCache.getOrThrow(id)
+  }
+}

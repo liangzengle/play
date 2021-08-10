@@ -1,11 +1,11 @@
 dependencies {
     compileOnly project(':play-codegen-annotations')
 
-    implementation "org.jetbrains.kotlin:kotlin-reflect"
+    implementation libs.kotlin.reflect
 
-    implementation "com.squareup:kotlinpoet:$kotlin_poet_version"
-    implementation "com.squareup:kotlinpoet-metadata:$kotlin_poet_version"
-    implementation "com.squareup:kotlinpoet-metadata-specs:$kotlin_poet_version"
+    implementation libs.kotlinpoet.poet
+    implementation libs.kotlinpoet.metadata
+    implementation libs.kotlinpoet.metadataspecs
 }
 
 compileKotlin {

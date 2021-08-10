@@ -1,7 +1,11 @@
 dependencies {
     api project(":play-akka")
-    api project(":play-config")
+    api project(":play-res")
+    api project(":play-net")
 
-    api "org.apache.logging.log4j:log4j-slf4j-impl:$log4j_version"
-    api "org.apache.logging.log4j:log4j-jul:$log4j_version"
+    api libs.bundles.log4j
+
+    api(libs.spring.boot.starter) {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
 }

@@ -1,49 +1,99 @@
-package play.example
+package play.example.game
 
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.ActorRef
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import kotlin.system.exitProcess
-import play.*
-import play.example.common.ServerMode
-import play.example.game.module.server.event.ApplicationStartedEvent
-import play.inject.getInstance
+import org.springframework.boot.Banner
+import org.springframework.boot.builder.SpringApplicationBuilder
+import org.springframework.context.ApplicationContext
+import org.springframework.context.ApplicationContextInitializer
+import org.springframework.context.ConfigurableApplicationContext
+import play.Log
+import play.OS
+import play.SystemProps
+import play.example.game.container.ContainerApp
+import play.example.game.container.gs.GameServerManager
 import play.net.netty.NettyServer
+import play.res.ResourceManager
+import play.res.ResourceReloadListener
 import play.util.collection.UnsafeAccessor
+import play.util.concurrent.CommonPool
 import play.util.concurrent.LoggingUncaughtExceptionHandler
+import play.util.reflect.ClassScanner
+import play.util.unsafeCast
+import kotlin.system.exitProcess
 
+/**
+ *
+ * @author LiangZengle
+ */
 object App {
   init {
     Thread.setDefaultUncaughtExceptionHandler(LoggingUncaughtExceptionHandler)
     SystemProps.set("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager")
   }
 
-  val serverMode: ServerMode = SystemProps.getOrNull("SERVER_MODE")?.let(ServerMode::forName) ?: ServerMode.Game
-
   @JvmStatic
   fun main(args: Array<String>) {
+    Log.info { "App start" }
     UnsafeAccessor.disableWarning()
-    if (sys.isWindows) {
+    if (OS.isWindows) {
       setWindowsProperties()
     }
 
+    val config = loadConfig(null)
+    val classScanner = newClassScanner(config)
+
     try {
-      val application = Application.startWith(ConfigFactory.load("$serverMode.conf"))
-      Log.info { "ServerMode: $serverMode" }
-      application.eventBus.postBlocking(ApplicationStartedEvent)
-      startTcpServer(application, "game")
-      startTcpServer(application, "admin-http")
+      val resourceManager = ResourceManager(config.getString("play.res.path"), classScanner)
+      resourceManager.load()
+
+      val springApplication = SpringApplicationBuilder()
+        .bannerMode(Banner.Mode.OFF)
+        .sources(ContainerApp::class.java)
+        .build()
+
+      springApplication.addInitializers(
+        ApplicationContextInitializer<ConfigurableApplicationContext> {
+          it.beanFactory.registerSingleton("config", config)
+          it.beanFactory.registerSingleton("configManager", resourceManager)
+          it.beanFactory.registerSingleton("classScanner", classScanner)
+        })
+      val applicationContext = springApplication.run()
+
+      val resourceReloadListeners = applicationContext.getBeansOfType(ResourceReloadListener::class.java).values
+      resourceManager.addReloadListeners(resourceReloadListeners)
+
+      applicationContext.getBean("gameServerManager").unsafeCast<ActorRef<GameServerManager.Command>>()
+        .tell(GameServerManager.Init)
+
+      startNettyServer(applicationContext, "gameSocketServer")
+      startNettyServer(applicationContext, "adminHttpServer")
     } catch (e: Throwable) {
       e.printStackTrace()
       exitProcess(-1)
     }
   }
 
-  private fun startTcpServer(application: Application, name: String) {
-    application.injector.getInstance<NettyServer>(name).start()
+  private fun newClassScanner(conf: Config): ClassScanner {
+    val jarsToScan = conf.getStringList("play.reflection.jars-to-scan")
+    val packagesToScan = conf.getStringList("play.reflection.packages-to-scan")
+    return ClassScanner(CommonPool, jarsToScan, packagesToScan)
+  }
+
+  private fun loadConfig(priorityConf: Config?): Config {
+    val referenceConf = ConfigFactory.parseResources("reference.conf")
+    val applicationConf = ConfigFactory.defaultApplication()
+    var config = priorityConf?.withFallback(applicationConf) ?: applicationConf
+    config = config.withFallback(referenceConf).resolve()
+    return config
+  }
+
+  private fun startNettyServer(applicationContext: ApplicationContext, name: String) {
+    applicationContext.getBean(name, NettyServer::class.java).start()
   }
 
   private fun setWindowsProperties() {
-    SystemProps.setIfAbsent("MODE", Mode.Dev)
     SystemProps.setIfAbsent("io.netty.availableProcessors", "4")
   }
 }

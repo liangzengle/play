@@ -1,9 +1,9 @@
 package play.scheduling
 
 import play.util.getOrNull
-import play.util.time.clock
 import play.util.time.currentDateTime
 import play.util.time.currentMillis
+import java.time.Clock
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
@@ -16,9 +16,9 @@ typealias PlayScheduler = Scheduler
  *
  * @author LiangZengle
  */
-abstract class Scheduler(private val workerPool: Executor) {
+abstract class Scheduler(private val workerPool: Executor, val clock: Clock) {
 
-  protected fun withErrorHandling(task: Runnable, isRepeated: Boolean): Runnable =
+  fun withErrorHandling(task: Runnable, isRepeated: Boolean): Runnable =
     DelegatingErrorHandlingRunnable(task, TaskUtils.getDefaultErrorHandler(isRepeated))
 
   fun schedule(delay: Duration, task: Runnable): Cancellable {

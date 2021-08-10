@@ -12,12 +12,10 @@ idea.module {
 }
 
 dependencies {
-    codegenImplementation "com.squareup:kotlinpoet:$kotlin_poet_version"
-    codegenImplementation "org.eclipse.collections:eclipse-collections-api:$eclipse_collections_version"
-    codegenImplementation "org.eclipse.collections:eclipse-collections:$eclipse_collections_version"
+    codegenImplementation libs.kotlinpoet.poet
+    codegenImplementation libs.eclipse.collections
 
-    implementation "org.eclipse.collections:eclipse-collections-api:$eclipse_collections_version"
-    implementation "org.eclipse.collections:eclipse-collections:$eclipse_collections_version"
+    implementation libs.eclipse.collections
 }
 
 task generateCaches(type: JavaExec) {

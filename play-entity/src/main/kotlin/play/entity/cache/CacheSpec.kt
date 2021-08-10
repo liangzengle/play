@@ -9,6 +9,7 @@ import kotlin.reflect.KClass
 annotation class CacheSpec(
   val initialSize: String = SIZE_DEFAULT,
   val loadAllOnInit: Boolean = false,
+  val expireAfterAccess: Int = 0,
   val expireEvaluator: KClass<out ExpireEvaluator> = DefaultExpireEvaluator::class
 ) {
   companion object {
@@ -23,7 +24,7 @@ annotation class CacheSpec(
     const val SIZE_MIN = "16"
 
     /**
-     * app.entity.cache.initial-size
+     * play.entity.cache.initial-size
      */
     const val SIZE_DEFAULT = "x1"
   }

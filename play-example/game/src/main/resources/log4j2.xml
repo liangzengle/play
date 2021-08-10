@@ -1,19 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration name="app" shutdownHook="disable">
-    <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d %-5p %t %C{2} (%F:%L) %location - %m%n"/>
-        </Console>
-        <Console name="SimpleConsole" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d %-5p %t - %m%n"/>
-        </Console>
-    </Appenders>
-    <Loggers>
-        <Logger name="application" level="Info" additivity="false">
-            <AppenderRef ref="SimpleConsole"/>
-        </Logger>
-        <Root level="Info">
-            <AppenderRef ref="Console"/>
-        </Root>
-    </Loggers>
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d %-5p %t %C{2} (%F:%L) %location - %m%n"/>
+    </Console>
+    <Console name="SimpleConsole" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d %-5p %t - %m%n"/>
+    </Console>
+
+    <Routing name="Routing" ignoreExceptions="false">
+      <Routes pattern="$${ctx:serverId}">
+        <Route key="$${ctx:serverId}">
+          <RollingRandomAccessFile name="Container" fileName="logs/container.log"
+                                   filePattern="logs/container.%i.log">
+            <PatternLayout>
+              <Pattern>%d %-5p %t - %m%n</Pattern>
+            </PatternLayout>
+
+            <Policies>
+              <OnStartupTriggeringPolicy/>
+            </Policies>
+
+            <DefaultRolloverStrategy max="7"/>
+          </RollingRandomAccessFile>
+        </Route>
+        <Route>
+          <RollingRandomAccessFile name="App-${ctx:serverId}"
+                                   fileName="logs/${ctx:serverId}/app.log"
+                                   filePattern="logs/${ctx:serverId}/app.%i.log">
+            <PatternLayout>
+              <Pattern>%d %p %c{1.} [%t] %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+              <OnStartupTriggeringPolicy/>
+            </Policies>
+          </RollingRandomAccessFile>
+        </Route>
+      </Routes>
+    </Routing>
+  </Appenders>
+
+  <Loggers>
+    <Root level="Info">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="Routing"/>
+    </Root>
+  </Loggers>
 </Configuration>

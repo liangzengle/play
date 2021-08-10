@@ -1,30 +1,28 @@
 package play.entity.cache.caffeine
 
-import com.google.inject.Injector
 import com.typesafe.config.Config
-import java.util.concurrent.Executor
-import javax.inject.Inject
-import javax.inject.Named
 import play.entity.Entity
 import play.entity.cache.*
+import play.inject.PlayInjector
 import play.scheduling.Scheduler
+import java.util.concurrent.Executor
 
 /**
  * Factory for creating CaffeineEntityCache
  * @author LiangZengle
  */
-class CaffeineEntityCacheFactory @Inject constructor(
+class CaffeineEntityCacheFactory constructor(
   private val entityCacheWriter: EntityCacheWriter,
   private val entityCacheLoader: EntityCacheLoader,
-  private val injector: Injector,
+  private val injector: PlayInjector,
   private val scheduler: Scheduler,
   private val executor: Executor,
-  @Named("entity") entityConf: Config
-) : AbstractEntityCacheFactory(entityConf.getConfig("cache")) {
+  cacheConf: Config
+) : AbstractEntityCacheFactory(cacheConf) {
 
   override fun <ID : Any, E : Entity<ID>> create(
     entityClass: Class<E>,
-    initializer: EntityInitializer<E>
+    initializerProvider: EntityInitializerProvider
   ): EntityCache<ID, E> {
     checkEntityClass(entityClass)
     return CaffeineEntityCache(
@@ -35,7 +33,7 @@ class CaffeineEntityCacheFactory @Inject constructor(
       scheduler,
       executor,
       settings,
-      initializer
+      initializerProvider
     )
   }
 }

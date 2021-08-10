@@ -1,6 +1,6 @@
 package play.entity.cache
 
-import play.entity.EntityInt
+import play.entity.IntIdEntity
 import play.util.concurrent.Future
 import play.util.function.IntToObjFunction
 import java.util.*
@@ -11,9 +11,8 @@ import kotlin.NoSuchElementException
  *
  * @author LiangZengle
  */
-interface EntityCacheInt<E : EntityInt> {
+interface EntityCacheInt<E : IntIdEntity> {
 
-  @JvmDefault
   operator fun invoke(id: Int): E = getOrThrow(id)
 
   /**
@@ -96,7 +95,6 @@ interface EntityCacheInt<E : EntityInt> {
   /**
    * 是否不为空
    */
-  @JvmDefault
   fun isNotEmpty(): Boolean = !isEmpty()
 
   /**

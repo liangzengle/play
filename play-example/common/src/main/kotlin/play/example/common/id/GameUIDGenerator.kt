@@ -1,9 +1,9 @@
 package play.example.common.id
 
-import java.util.*
-import java.util.concurrent.atomic.AtomicLong
 import play.util.forEach
 import play.util.primitive.toInt
+import java.util.*
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Created by liang on 2020/6/27.

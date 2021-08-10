@@ -16,9 +16,11 @@ import javax.lang.model.type.TypeKind
 class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
 
   private lateinit var userClass: ClassName
+  private lateinit var managerPackage: String
 
   companion object {
     private const val ControllerUserClass = "controller.user-class"
+    private const val ControllerManagerPackage = "controller.manager.package"
   }
 
   override fun init(processingEnv: ProcessingEnvironment) {
@@ -26,6 +28,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
     userClass = processingEnv.options[ControllerUserClass]?.let {
       ClassName.bestGuess(it)
     } ?: LONG
+    managerPackage = processingEnv.options[ControllerManagerPackage] ?: ""
   }
 
   override fun getSupportedAnnotationTypes(): Set<String> {
@@ -52,21 +55,19 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
 
   private fun genInvokerManager(controllers: List<ControllerTypeElement>) {
     val ctor = FunSpec.constructorBuilder().addAnnotation(Inject)
-    controllers.forEach { c ->
-      ctor.addParameter(c.simpleName.toString().decapitalize(), getInvokerClassName(c.typeElement))
+    for (c in controllers) {
+      ctor.addParameter(c.invokerVarName, c.invokerClassName)
     }
     val className = "ControllerInvokerManager"
     val classBuilder = TypeSpec.classBuilder(className)
       .addAnnotation(Singleton)
+      .addAnnotation(Named)
       .primaryConstructor(ctor.build())
-    controllers.forEach { c ->
+    for (c in controllers) {
       classBuilder.addProperty(
-        PropertySpec.builder(
-          c.simpleName.toString().decapitalize(),
-          getInvokerClassName(c.typeElement),
-          KModifier.PRIVATE
-        )
-          .initializer(c.simpleName.toString().decapitalize())
+        PropertySpec
+          .builder(c.invokerVarName, c.invokerClassName, KModifier.PRIVATE)
+          .initializer(c.invokerVarName)
           .build()
       )
     }
@@ -75,8 +76,8 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
       .addParameter("self", self)
       .addParameter("request", Request)
     selfInvoker.beginControlFlow("return when(request.header.msgId.moduleId.toInt()) {")
-    controllers.forEach { c ->
-      selfInvoker.addStatement("%L -> %L.invoke(self, request)", c.moduleId, c.simpleName.toString().decapitalize())
+    for (c in controllers) {
+      selfInvoker.addStatement("%L -> %L.invoke(self, request)", c.moduleId, c.invokerVarName)
     }
     selfInvoker.addStatement("else -> null")
     selfInvoker.endControlFlow()
@@ -87,12 +88,14 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
         .addParameter("playerId", Long::class)
         .addParameter("request", Request)
       playerIdInvoker.beginControlFlow("return when(request.header.msgId.moduleId.toInt()) {")
-      controllers.filter { c -> c.cmdMethods.any { !parameterHasUser(it) } }.forEach { c ->
-        playerIdInvoker.addStatement(
-          "%L -> %L.invoke(playerId, request)",
-          c.moduleId,
-          c.simpleName.toString().decapitalize()
-        )
+      for (c in controllers) {
+        if (c.cmdMethods.any { !parameterHasUser(it) }) {
+          playerIdInvoker.addStatement(
+            "%L -> %L.invoke(playerId, request)",
+            c.moduleId,
+            c.invokerVarName
+          )
+        }
       }
       playerIdInvoker.addStatement("else -> null")
       playerIdInvoker.endControlFlow()
@@ -104,7 +107,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
     val formatCode = CodeBlock.builder()
     formatCode.beginControlFlow("return when(request.header.msgId.moduleId.toInt()) {")
     controllers.forEach { c ->
-      formatCode.addStatement("%L -> %L.formatToString(request)", c.moduleId, c.simpleName.toString().decapitalize())
+      formatCode.addStatement("%L -> %L.formatToString(request)", c.moduleId, c.invokerVarName)
     }
     formatCode.addStatement("else -> request.toString()")
     formatCode.endControlFlow()
@@ -113,21 +116,23 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
     classBuilder.addFunction(format.build())
 
     val file = File(generatedSourcesRoot)
-    FileSpec.builder("", className)
+    FileSpec.builder(managerPackage, className)
       .addType(classBuilder.build())
       .build()
       .writeTo(file)
   }
 
   private fun getInvokerClassName(typeElement: TypeElement): ClassName {
-    return ClassName.bestGuess(typeElement.qualifiedName.toString() + "Invoker")
+    val controllerName = typeElement.qualifiedName.toString()
+    return ClassName.bestGuess(controllerName.removeSuffix("Controller") + "Module")
   }
 
   private fun generate(typeElement: ControllerTypeElement) {
     val pkg = typeElement.typeElement.getPackage()
-    val className = getInvokerClassName(typeElement.typeElement)
+    val className = typeElement.invokerClassName
     val classBuilder = TypeSpec.classBuilder(className)
       .addAnnotation(Singleton)
+      .addAnnotation(Named)
       .primaryConstructor(
         FunSpec.constructorBuilder()
           .addAnnotation(Inject)
@@ -498,15 +503,18 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
         CmdVariableElement(cmd, dummy, element as VariableElement)
       }
       .toList()
-    return ControllerTypeElement(moduleId, typeElement, cmdMethods, cmdVariables)
+    val invokerClassName = getInvokerClassName(typeElement)
+    return ControllerTypeElement(moduleId, typeElement, cmdMethods, cmdVariables, invokerClassName)
   }
 
   private data class ControllerTypeElement(
     val moduleId: Short,
     val typeElement: TypeElement,
     val cmdMethods: List<CmdExecutableElement>,
-    val cmdVariables: List<CmdVariableElement>
+    val cmdVariables: List<CmdVariableElement>,
+    val invokerClassName: ClassName
   ) {
+    val invokerVarName = invokerClassName.simpleName.decapitalize()
     val simpleName: Name get() = typeElement.simpleName
     fun cmdElements(): Sequence<CmdElement> = cmdMethods.asSequence() + cmdVariables.asSequence()
   }

@@ -11,7 +11,7 @@ import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
-import kotlin.reflect.KClass
+import javax.lang.model.type.DeclaredType
 
 @AutoService(Processor::class)
 class EntityCacheGenerator : PlayAnnotationProcessor() {
@@ -72,6 +72,7 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
     val className = getCacheClassName(elem)
     val classBuilder = TypeSpec.classBuilder(className)
       .addAnnotation(Singleton)
+      .addAnnotation(Named)
       .primaryConstructor(
         FunSpec.constructorBuilder()
           .addAnnotation(Inject)
@@ -81,20 +82,20 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
 
     val primitiveIdCacheType: TypeName? = if (enableSpecializedEntityCache) {
       when (idType) {
-        Int::class -> EntityCacheInt.parameterizedBy(elemClassName)
-        Long::class -> EntityCacheLong.parameterizedBy(elemClassName)
+        INT -> EntityCacheInt.parameterizedBy(elemClassName)
+        LONG -> EntityCacheLong.parameterizedBy(elemClassName)
         else -> null
       }
     } else null
     if (primitiveIdCacheType == null) {
       classBuilder.addSuperinterface(
-        EntityCache.parameterizedBy(idType.asTypeName()).plusParameter(elemClassName),
-        CodeBlock.of("cacheManager.get(%T::class.java)", elem.asType())
+        EntityCache.parameterizedBy(idType).plusParameter(elemClassName),
+        CodeBlock.of("cacheManager.get(%T::class.java)", elemClassName)
       )
       classBuilder.addProperty(
         PropertySpec.builder(
           "delegatee",
-          EntityCache.parameterizedBy(idType.asTypeName()).plusParameter(elemClassName),
+          EntityCache.parameterizedBy(idType).plusParameter(elemClassName),
           KModifier.PRIVATE
         )
           .initializer(CodeBlock.of("cacheManager.get(%T::class.java)", elem))
@@ -103,9 +104,10 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
 
       classBuilder.addFunction(
         FunSpec.builder("unsafeOps")
+          .addAnnotation(AnnotationSpec.builder(Suppress::class).addMember("%S", "UNCHECKED_CAST").build())
           .addStatement(
             "return delegatee as %T",
-            UnsafeEntityCacheOps.parameterizedBy(idType.asTypeName())
+            UnsafeEntityCacheOps.parameterizedBy(idType)
           )
           .build()
       )
@@ -135,11 +137,18 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
         FunSpec.builder("unsafeOps")
           .addStatement(
             "return delegatee as %T",
-            UnsafeEntityCacheOps.parameterizedBy(idType.asTypeName())
+            UnsafeEntityCacheOps.parameterizedBy(idType)
           )
           .build()
       )
     }
+
+    classBuilder.addFunction(
+      FunSpec.builder("unwrap")
+        .addStatement("return delegatee")
+        .build()
+    )
+
     if (func != null) {
       classBuilder.addFunction(func)
     }
@@ -168,16 +177,23 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
   private val entityLongType: TypeElement by lazy(LazyThreadSafetyMode.NONE) {
     elementUtils.getTypeElement(EntityLong.canonicalName)
   }
-  private val entityStringType: TypeElement by lazy(LazyThreadSafetyMode.NONE) {
-    elementUtils.getTypeElement(EntityString.canonicalName)
-  }
 
-  private fun getIdType(elem: TypeElement): KClass<*> {
-    return when {
-      entityIntType.isAssignableFrom(elem) -> Int::class
-      entityLongType.isAssignableFrom(elem) -> Long::class
-      entityStringType.isAssignableFrom(elem) -> String::class
-      else -> throw IllegalStateException("Can't detect ID type of ${elem.simpleName}")
+  private fun getIdType(elem: TypeElement): TypeName {
+    when {
+      entityIntType.isAssignableFrom(elem) -> return INT
+      entityLongType.isAssignableFrom(elem) -> return LONG
+      else -> {
+        var superClass = elem.superclass
+        while (superClass is DeclaredType) {
+          val typeArguments = superClass.typeArguments
+          if (typeArguments.isEmpty()) {
+            superClass = superClass.asElement().unsafeCast<TypeElement>().superclass
+            continue
+          }
+          return typeArguments[0].asTypeName()
+        }
+        return TypeVariableName("ID")
+      }
     }
   }
 

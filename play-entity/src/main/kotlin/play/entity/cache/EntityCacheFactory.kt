@@ -1,16 +1,16 @@
 package play.entity.cache
 
 import com.typesafe.config.Config
-import java.time.Duration
-import play.entity.*
+import play.entity.Entity
 import play.util.ClassUtil
 import play.util.isAbstract
+import java.time.Duration
 
 interface EntityCacheFactory {
 
   fun <ID : Any, E : Entity<ID>> create(
     entityClass: Class<E>,
-    initializer: EntityInitializer<E>
+    initializerProvider: EntityInitializerProvider
   ): EntityCache<ID, E>
 }
 

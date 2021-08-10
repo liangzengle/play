@@ -1,6 +1,5 @@
 dependencies {
     implementation project(":play-core")
 
-    api "io.netty:netty-all:$netty_version"
-    api "io.netty:netty-transport-native-epoll:$netty_version"
+    api libs.bundles.netty
 }

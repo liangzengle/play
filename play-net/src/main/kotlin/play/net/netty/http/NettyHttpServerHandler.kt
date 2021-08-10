@@ -19,10 +19,9 @@ import play.util.exception.isFatal
 import play.util.forEach
 import java.util.*
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.collections.LinkedHashMap
 
 @ChannelHandler.Sharable
-abstract class NettyHttpServerHandler(private val actionManager: HttpActionManager) : ChannelInboundHandlerAdapter() {
+abstract class NettyHttpServerHandler(protected val actionManager: HttpActionManager) : ChannelInboundHandlerAdapter() {
 
   protected abstract val filters: List<HttpRequestFilter>
 
@@ -47,7 +46,7 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
         return
       }
 
-      val maybeAction = actionManager.findAction(request.path(), request.toNetty.uri())
+      val maybeAction = findAction(request)
       if (maybeAction.isEmpty) {
         writeResponse(ctx, request, HttpResult.notFount(), "Action Not Found")
         return
@@ -79,11 +78,15 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
     }
   }
 
-  private fun hasJsonData(request: FullHttpRequest): Boolean {
+  protected open fun findAction(request: BasicNettyHttpRequest): Optional<Action> {
+    return actionManager.findAction(request.path(), request.toNetty.uri())
+  }
+
+  protected fun hasJsonData(request: FullHttpRequest): Boolean {
     return isContentType(request, HttpHeaderValues.APPLICATION_JSON)
   }
 
-  private fun hasFormData(request: FullHttpRequest): Boolean {
+  protected fun hasFormData(request: FullHttpRequest): Boolean {
     return isContentType(request, HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED)
   }
 
@@ -120,7 +123,7 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
     values.add(value)
   }
 
-  private fun onException(ctx: ChannelHandlerContext, request: BasicNettyHttpRequest, exception: Throwable) {
+  protected fun onException(ctx: ChannelHandlerContext, request: BasicNettyHttpRequest, exception: Throwable) {
     if (exception.isFatal()) {
       throw exception
     }
@@ -134,7 +137,7 @@ abstract class NettyHttpServerHandler(private val actionManager: HttpActionManag
     }
   }
 
-  private fun writeResponse(
+  protected fun writeResponse(
     ctx: ChannelHandlerContext,
     request: BasicNettyHttpRequest,
     result: HttpResult.Strict,

@@ -1,6 +1,6 @@
 package play.entity.cache
 
-import play.entity.EntityLong
+import play.entity.LongIdEntity
 import play.util.concurrent.Future
 import play.util.function.LongToObjFunction
 import java.util.*
@@ -11,7 +11,7 @@ import kotlin.NoSuchElementException
  *
  * @author LiangZengle
  */
-interface EntityCacheLong<E : EntityLong> {
+interface EntityCacheLong<E : LongIdEntity> {
 
   operator fun invoke(id: Long): E = getOrThrow(id)
 

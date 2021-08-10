@@ -7,8 +7,6 @@ import java.util.stream.Stream
 
 interface ConcurrentIntObjectMap<V> : Iterable<ConcurrentIntObjectMap.Entry<V>> {
   operator fun get(key: Int): V?
-
-  @JvmDefault
   operator fun set(key: Int, value: V) = put(key, value)
   fun getOrDefault(key: Int, defaultValue: V): V
   fun put(key: Int, value: V): V?

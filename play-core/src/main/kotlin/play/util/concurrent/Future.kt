@@ -1,10 +1,10 @@
 package play.util.concurrent
 
-import java.util.concurrent.*
-import kotlin.time.Duration
-import kotlin.time.milliseconds
 import play.util.control.getCause
 import play.util.unsafeCast
+import java.util.concurrent.*
+import kotlin.time.Duration
+import kotlin.time.toKotlinDuration
 
 typealias PlayFuture<T> = Future<T>
 
@@ -12,7 +12,8 @@ typealias PlayFuture<T> = Future<T>
  * A wrapper of CompletableFuture
  * @author LiangZengle
  */
-inline class Future<T>(private val cf: CompletableFuture<T>) {
+@JvmInline
+value class Future<T>(private val cf: CompletableFuture<T>) {
 
   fun toJava(): CompletableFuture<T> = cf
 
@@ -153,16 +154,15 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
     val newCF = CompletableFuture<T>()
     onComplete(
       ec,
-      newCF::complete,
-      { e ->
-        if (!exceptionType.isAssignableFrom(e.javaClass)) {
-          newCF.completeExceptionally(e)
-        } else {
-          @Suppress("UNCHECKED_CAST")
-          newCF.completeAsync({ f(e as E) }, ec)
-        }
+      newCF::complete
+    ) { e ->
+      if (!exceptionType.isAssignableFrom(e.javaClass)) {
+        newCF.completeExceptionally(e)
+      } else {
+        @Suppress("UNCHECKED_CAST")
+        newCF.completeAsync({ f(e as E) }, ec)
       }
-    )
+    }
     return Future(newCF)
   }
 
@@ -185,18 +185,17 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
     val newCF = CompletableFuture<T>()
     onComplete(
       ec,
-      newCF::complete,
-      { e ->
-        f(e).onComplete(
-          {
-            newCF.complete(it)
-          },
-          {
-            newCF.completeExceptionally(it)
-          }
-        )
-      }
-    )
+      newCF::complete
+    ) { e ->
+      f(e).onComplete(
+        {
+          newCF.complete(it)
+        },
+        {
+          newCF.completeExceptionally(it)
+        }
+      )
+    }
     return Future(newCF)
   }
 
@@ -224,23 +223,22 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
     val newCF = CompletableFuture<T>()
     onComplete(
       ec,
-      newCF::complete,
-      { e ->
-        if (!exceptionType.isAssignableFrom(e.javaClass)) {
-          newCF.completeExceptionally(e)
-        } else {
-          @Suppress("UNCHECKED_CAST")
-          f(e as E).onComplete(
-            {
-              newCF.complete(it)
-            },
-            {
-              newCF.completeExceptionally(it)
-            }
-          )
-        }
+      newCF::complete
+    ) { e ->
+      if (!exceptionType.isAssignableFrom(e.javaClass)) {
+        newCF.completeExceptionally(e)
+      } else {
+        @Suppress("UNCHECKED_CAST")
+        f(e as E).onComplete(
+          {
+            newCF.complete(it)
+          },
+          {
+            newCF.completeExceptionally(it)
+          }
+        )
       }
-    )
+    }
     return Future(newCF)
   }
 
@@ -250,7 +248,7 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
 
   @Throws(TimeoutException::class)
   fun get(timeout: Duration): T {
-    return cf.get(timeout.toLongMilliseconds(), TimeUnit.MILLISECONDS)
+    return cf.get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
   }
 
   @Throws(TimeoutException::class)
@@ -269,7 +267,7 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
 
   @Throws(TimeoutException::class)
   fun await(timeout: Duration) {
-    cf.get(timeout.toLongMilliseconds(), TimeUnit.MILLISECONDS)
+    cf.get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
   }
 
   @Throws(TimeoutException::class)
@@ -279,7 +277,7 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
 
   fun getResult(timeout: Duration): Result<T> {
     return try {
-      val value = cf.get(timeout.toLongMilliseconds(), TimeUnit.MILLISECONDS)
+      val value = cf.get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
       Result.success(value)
     } catch (e: ExecutionException) {
       Result.failure(e.cause ?: e)
@@ -289,7 +287,7 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
   }
 
   fun getResult(timeout: java.time.Duration): Result<T> {
-    return getResult(timeout.toMillis().milliseconds)
+    return getResult(timeout.toKotlinDuration())
   }
 
   fun isCompleted() = cf.isDone
@@ -297,6 +295,10 @@ inline class Future<T>(private val cf: CompletableFuture<T>) {
   fun isSuccess() = cf.isDone && !cf.isCompletedExceptionally
 
   fun isFailed() = cf.isCompletedExceptionally
+
+  override fun toString(): String {
+    return cf.toString()
+  }
 
   companion object {
     @JvmStatic

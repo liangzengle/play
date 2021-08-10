@@ -1,11 +1,12 @@
 package play.util.control
 
-import play.util.logging.getLogger
 import play.scheduling.Scheduler
-import play.util.concurrent.CommonPool
+import play.util.logging.getLogger
+import play.util.primitive.toIntChecked
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicLongFieldUpdater
 import kotlin.time.Duration
+import kotlin.time.DurationUnit
 
 /**
  * 失败重试
@@ -29,12 +30,12 @@ class Retryable(
     attempts: Int,
     interval: Duration,
     scheduler: Scheduler,
-    executor: Executor = CommonPool,
+    executor: Executor,
     task: () -> Boolean
   ) : this(
     name,
     attempts,
-    interval.toLongMilliseconds().toInt(),
+    interval.toInt(DurationUnit.MILLISECONDS),
     scheduler,
     executor,
     task
@@ -45,12 +46,12 @@ class Retryable(
     attempts: Int,
     interval: java.time.Duration,
     scheduler: Scheduler,
-    executor: Executor = CommonPool,
+    executor: Executor,
     task: () -> Boolean
   ) : this(
     name,
     attempts,
-    interval.toMillis().toInt(),
+    interval.toMillis().toIntChecked(),
     scheduler,
     executor,
     task
@@ -126,7 +127,7 @@ class Retryable(
       name: String,
       intervalMillis: Int,
       scheduler: Scheduler,
-      executor: Executor = CommonPool,
+      executor: Executor,
       task: () -> Boolean
     ): Retryable = Retryable(name, -1, intervalMillis, scheduler, executor, task)
   }

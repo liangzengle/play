@@ -1,10 +1,10 @@
 package play.db
 
-import java.util.*
-import javax.annotation.CheckReturnValue
 import play.entity.Entity
 import play.entity.cache.EntityCacheLoader
 import play.util.concurrent.Future
+import java.util.*
+import javax.annotation.CheckReturnValue
 
 interface QueryService : EntityCacheLoader {
 

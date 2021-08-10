@@ -6,7 +6,6 @@ interface LongIterator {
   operator fun hasNext(): Boolean
   operator fun next(): Long
 
-  @JvmDefault
   fun toJava(): PrimitiveIterator.OfLong {
     return object : PrimitiveIterator.OfLong {
       override fun remove() {

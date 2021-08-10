@@ -1,12 +1,11 @@
 package play.entity.cache
 
-import java.util.*
-import java.util.stream.Stream
-import kotlin.NoSuchElementException
 import play.entity.Entity
 import play.util.concurrent.Future
+import java.util.*
+import java.util.stream.Stream
 
-interface EntityCache<ID : Any, E : Entity<ID>> {
+interface EntityCache<ID, E : Entity<ID>> {
 
   operator fun invoke(id: ID): E = getOrThrow(id)
 
@@ -56,6 +55,9 @@ interface EntityCache<ID : Any, E : Entity<ID>> {
    */
   @Throws(EntityExistsException::class)
   fun create(e: E): E
+
+  fun onCreate(e: E) {
+  }
 
   /**
    * 从缓存和数据库中移除实体

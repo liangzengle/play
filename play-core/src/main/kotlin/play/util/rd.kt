@@ -6,7 +6,6 @@ import play.util.primitive.checkedMultiply
 import java.util.*
 import java.util.concurrent.ThreadLocalRandom
 import javax.annotation.Nullable
-import kotlin.collections.ArrayList
 import kotlin.math.max
 
 /**
@@ -134,7 +133,7 @@ object rd {
   }
 
   fun <T> random(elems: Iterable<T>, weigher: (T) -> Int): T {
-    val totalProb = elems.sumBy { max(weigher(it), 0) }
+    val totalProb = elems.sumOf { max(weigher(it), 0) }
     if (totalProb < 1) throw IllegalStateException("total prob is $totalProb")
     var r = nextInt(totalProb)
     for (elem in elems) {
@@ -149,7 +148,7 @@ object rd {
   }
 
   fun <T> random(elems: Iterable<T>, count: Int, weigher: (T) -> Int): List<T> {
-    val totalProb = elems.sumBy { max(weigher(it), 0) }
+    val totalProb = elems.sumOf { max(weigher(it), 0) }
     if (totalProb < 1) {
       return emptyList()
     }
@@ -179,7 +178,7 @@ object rd {
     }
     val candidates = distinctElements.toCollection(LinkedList())
     val result = ArrayList<T>(expectedCount)
-    var totalProb = candidates.sumBy { max(weigher(it), 0) }
+    var totalProb = candidates.sumOf { max(weigher(it), 0) }
     while (result.size < expectedCount) {
       if (totalProb < 1) {
         break

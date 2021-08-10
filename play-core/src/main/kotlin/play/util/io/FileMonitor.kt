@@ -1,38 +1,28 @@
 package play.util.io
 
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
-import play.util.logging.getLogger
-import play.scheduling.Cancellable
-import play.scheduling.Scheduler
 import java.io.File
 import java.io.IOException
 import java.nio.file.*
-import java.time.Duration
-import java.util.concurrent.Executor
 import java.util.stream.Stream
 import kotlin.concurrent.thread
 import kotlin.math.max
+import play.util.logging.getLogger
 
-open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
+open class FileMonitor internal constructor(
+  val root: File,
+  private val maxDepth: Int,
+  protected val eventKinds: Array<WatchEvent.Kind<Path>>,
+  private val createCallback: ((File) -> Unit)?,
+  private val modifyCallback: ((File) -> Unit)?,
+  private val deleteCallback: ((File) -> Unit)?
+) : AutoCloseable {
 
   private val path = root.toPath()
 
   protected var service: WatchService = path.fileSystem.newWatchService()
 
-  private var createCallback: ((File) -> Unit)? = null
-  private var modifyCallback: ((File) -> Unit)? = null
-  private var deleteCallback: ((File) -> Unit)? = null
-
-  private var cancellable:Cancellable? = null
-
   @Volatile
   private var closed = false
-
-  private val lastModifyTimeCache = ObjectLongHashMap<Path>()
-
-  constructor(root: File, recursive: Boolean = true) : this(root, if (recursive) Int.MAX_VALUE else 0)
-
-  protected fun interestedEvents() = DefaultInterestedEvents
 
   protected open fun shouldReactTo(target: Path): Boolean = root.isDirectory || path == target
 
@@ -41,24 +31,14 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
     try {
       val events = key.pollEvents() as List<WatchEvent<Path>>
       if (events.isNotEmpty()) {
-        val path = key.watchable() as Path
-        val modifiedList = mutableListOf<WatchEvent<Path>>()
-        for (event in events) {
-          val lastModified = path.resolve(event.context()).toFile().lastModified()
-          val lastModifiedTime = lastModifyTimeCache.get(event.context())
-          if (lastModifiedTime != lastModified || event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-            lastModifyTimeCache.put(event.context(), lastModified)
-            modifiedList.add(event)
-          }
-        }
-        handlerEvents(path, modifiedList)
+        handleEvents(path, events)
       }
     } finally {
       key.reset()
     }
   }
 
-  protected open fun handlerEvents(path: Path, events: List<WatchEvent<Path>>) {
+  protected open fun handleEvents(path: Path, events: List<WatchEvent<Path>>) {
     for (event in events) {
       val target = path.resolve(event.context())
       if (shouldReactTo(target)) {
@@ -74,17 +54,16 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
     }
   }
 
-  protected fun watch(file: File, depth: Int) {
+  private fun watch(file: File, depth: Int) {
     val fileToWatch = if (file.isDirectory) {
       Files.walk(file.toPath(), depth).map { it.toFile() }.filter { it.isDirectory }
     } else {
       if (file.exists()) Stream.empty() else Stream.of(file.parentFile)
     }
 
-    val interestedEvents = interestedEvents()
     fileToWatch.forEach {
       try {
-        it.toPath().register(service, interestedEvents)
+        it.toPath().register(service, eventKinds)
       } catch (e: IOException) {
         logger.error(e) { "Failed to watch: $it" }
       }
@@ -96,7 +75,12 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
     thread(start = true, isDaemon = true, name = "file-monitor[$path]") {
       while (!Thread.currentThread().isInterrupted) {
         try {
-          process(service.take())
+          if (closed) {
+            break
+          }
+          val key = service.take()
+          Thread.sleep(3000)
+          process(key)
         } catch (e: ClosedWatchServiceException) {
           if (!closed && root.exists()) {
             service = path.fileSystem.newWatchService()
@@ -109,40 +93,9 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
     }
   }
 
-  fun start(detectInterval: Duration, scheduler: Scheduler) {
-    watch(root, maxDepth)
-    val f = scheduler.scheduleWithFixedDelay(detectInterval, detectInterval, this::runCheck)
-    cancellable = f
-  }
-
-  fun start(detectInterval: Duration, scheduler: Scheduler, executor: Executor) {
-    watch(root, maxDepth)
-    val f = scheduler.scheduleWithFixedDelay(
-      detectInterval,
-      detectInterval,
-      executor,
-      this::runCheck
-    )
-    cancellable = f
-  }
-
-  private fun runCheck() {
-    try {
-      service.poll()?.also { process(it) }
-    } catch (e: ClosedWatchServiceException) {
-      if (!closed && root.exists()) {
-        service = path.fileSystem.newWatchService()
-        watch(root, maxDepth)
-      } else {
-        logger.error(e) { e.message }
-      }
-    }
-  }
-
   override fun close() {
     closed = true
     service.close()
-    cancellable?.cancel()
   }
 
   protected open fun onEvent(kind: WatchEvent.Kind<Path>, file: File) {
@@ -150,37 +103,64 @@ open class FileMonitor(val root: File, val maxDepth: Int) : AutoCloseable {
       StandardWatchEventKinds.ENTRY_CREATE -> createCallback?.invoke(file)
       StandardWatchEventKinds.ENTRY_MODIFY -> modifyCallback?.invoke(file)
       StandardWatchEventKinds.ENTRY_DELETE -> deleteCallback?.invoke(file)
+      else -> logger.warn { "Unhandled event kind: $kind $file" }
     }
-  }
-
-  fun onCreate(op: (File) -> Unit): FileMonitor {
-    this.createCallback = op
-    return this
-  }
-
-  fun onModify(op: (File) -> Unit): FileMonitor {
-    this.modifyCallback = op
-    return this
-  }
-
-  fun onDelete(op: (File) -> Unit): FileMonitor {
-    this.deleteCallback = op
-    return this
-  }
-
-  fun onCreateOrModify(op: (File) -> Unit): FileMonitor {
-    onCreate(op)
-    onModify(op)
-    return this
   }
 
   companion object {
     private val logger = getLogger()
 
-    private val DefaultInterestedEvents = arrayOf(
-      StandardWatchEventKinds.ENTRY_CREATE,
-      StandardWatchEventKinds.ENTRY_MODIFY,
-      StandardWatchEventKinds.ENTRY_DELETE
-    )
+    @JvmStatic
+    fun builder() = Builder()
+
+    @JvmStatic
+    fun aggregatedBuilder() = AggregatedFileMonitor.Builder()
+  }
+
+  class Builder internal constructor() {
+    private lateinit var file: File
+    private var depth = Int.MAX_VALUE
+    private var createCallback: ((File) -> Unit)? = null
+    private var modifyCallback: ((File) -> Unit)? = null
+    private var deleteCallback: ((File) -> Unit)? = null
+
+    fun watchFileOrDir(file: File): Builder {
+      this.file = file
+      return this
+    }
+
+    fun depth(depth: Int): Builder {
+      this.depth = depth
+      return this
+    }
+
+    fun onCreate(action: (File) -> Unit): Builder {
+      this.createCallback = action
+      return this
+    }
+
+    fun onModify(action: (File) -> Unit): Builder {
+      this.modifyCallback = action
+      return this
+    }
+
+    fun onDelete(action: (File) -> Unit): Builder {
+      this.deleteCallback = action
+      return this
+    }
+
+    fun build(): FileMonitor {
+      val list = ArrayList<WatchEvent.Kind<Path>>(3)
+      if (createCallback != null) {
+        list.add(StandardWatchEventKinds.ENTRY_CREATE)
+      }
+      if (modifyCallback != null) {
+        list.add(StandardWatchEventKinds.ENTRY_MODIFY)
+      }
+      if (deleteCallback != null) {
+        list.add(StandardWatchEventKinds.ENTRY_DELETE)
+      }
+      return FileMonitor(file, depth, list.toTypedArray(), createCallback, modifyCallback, deleteCallback)
+    }
   }
 }

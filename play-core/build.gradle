@@ -1,36 +1,14 @@
 dependencies {
-    api project(':play-codegen-annotations')
-    api project(':play-logging')
-
-    api "javax.inject:javax.inject:$inject_version"
-
-//    api "javax.annotation:javax.annotation-api:$annotation_api_version"
-
-//    implementation "org.springframework.boot:spring-boot-starter:$spring_boot_version"
-//    implementation "org.springframework.boot:spring-boot-starter-actuator:$spring_boot_version"
-
-    api "com.google.guava:guava:$guava_version"
-
-    api "org.jctools:jctools-core:$jctools_version"
-
-    api "io.github.microutils:kotlin-logging:$kotlin_logging_version"
-
-    api "com.fasterxml.jackson.module:jackson-module-kotlin:$jackson_version"
-    api "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$jackson_version"
-    api "com.fasterxml.jackson.datatype:jackson-datatype-guava:$jackson_version"
-    api "com.fasterxml.jackson.datatype:jackson-datatype-eclipse-collections:$jackson_version"
-
-    api "com.typesafe:config:$config_version"
-
-    api "org.mvel:mvel2:$mvel_version"
-
-    api "io.github.classgraph:classgraph:$classgraph_version"
-
-//    api "org.checkerframework:checker-qual:$checker_version"
-
-    api "com.github.ben-manes.caffeine:caffeine:$caffeine_version"
-
-    api "com.google.inject:guice:$guice_version"
-
-//    runtimeOnly "com.netflix.governator:governator:$governator_version"
+    implementation libs.javax.inject
+    api libs.guava
+    api libs.jctools
+    api libs.bundles.logging
+    compileOnly libs.log4j.api
+    compileOnly libs.logback
+    api libs.bundles.jackson
+    api libs.typesafe.config
+    api libs.bundles.el
+    api libs.classgraph
+    api libs.caffeine
+    api project(':play-eclipse-collectionx')
 }
