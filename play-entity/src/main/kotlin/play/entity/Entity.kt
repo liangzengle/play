@@ -1,12 +1,23 @@
 package play.entity
 
-sealed class Entity<ID> {
+sealed class Entity<ID : Any> {
+
+  private var deleted: Boolean? = null
+
   abstract fun id(): ID
 
   /**
    * 初始化
    */
   open fun initialize() {}
+
+  internal fun delete() {
+    deleted = java.lang.Boolean.TRUE
+  }
+
+  internal fun isDeleted(): Boolean {
+    return deleted == java.lang.Boolean.TRUE
+  }
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
@@ -22,7 +33,11 @@ sealed class Entity<ID> {
   }
 
   override fun toString(): String {
-    return "${javaClass.simpleName}(${id()})"
+    return if (!isDeleted()) {
+      "${javaClass.simpleName}(${id()})"
+    } else {
+      "${javaClass.simpleName}(${id()}) <deleted>"
+    }
   }
 }
 

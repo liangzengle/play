@@ -30,7 +30,7 @@ import play.util.collection.ConcurrentLongObjectMap
 import play.util.collection.ConcurrentObjectLongMap
 import play.util.exception.NoStackTraceException
 import play.util.unsafeCast
-import kotlin.time.seconds
+import java.time.Duration
 
 class PlayerManager(
   context: ActorContext<Command>,
@@ -49,7 +49,7 @@ class PlayerManager(
       val id = result.getLong("id")
       val name = result.getString("name")
       add(id, name, idToName, serverToNameToId)
-    }.await(5.seconds)
+    }.await(Duration.ofSeconds(5))
     PlayerManager.idToName = idToName
     PlayerManager.serverToNameToId = serverToNameToId
 

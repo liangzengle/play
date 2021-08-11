@@ -75,7 +75,10 @@ class ImmutableCollectionGenerator {
         FunSpec.builder("iterator")
           .addModifiers(KModifier.OVERRIDE)
           .returns(Iterator::class.parameterizedBy(elemType))
-          .addStatement("return %T(underlying.%LIterator())", iteratorType, elemType.simpleName!!.decapitalize())
+          .addStatement(
+            "return %T(underlying.%LIterator())",
+            iteratorType,
+            elemType.simpleName!!.replaceFirstChar { it.lowercaseChar() })
           .build()
       )
       .build()

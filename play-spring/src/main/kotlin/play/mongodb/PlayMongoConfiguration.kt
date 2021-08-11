@@ -36,7 +36,7 @@ class PlayMongoConfiguration {
   }
 
   @Bean
-  @ConditionalOnMissingBean(MongoClientSettings::class)
+  @ConditionalOnMissingBean
   fun mongoClientSettings(
     config: Config,
     @Qualifier("dbExecutor") eventLoopGroup: EventLoopGroup
@@ -46,7 +46,7 @@ class PlayMongoConfiguration {
   }
 
   @Bean(destroyMethod = "close")
-  @ConditionalOnMissingBean(MongoClient::class)
+  @ConditionalOnMissingBean
   fun mongoClient(settings: MongoClientSettings): MongoClient {
     return MongoClients.create(settings)
   }

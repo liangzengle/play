@@ -97,7 +97,7 @@ class MutableCollectionGenerator {
           )
           .addProperty(
             PropertySpec.builder("it", eclipseMutableIteratorType)
-              .initializer("underlying.${elemType.simpleName!!.decapitalize()}Iterator()")
+              .initializer("underlying.${elemType.simpleName!!.replaceFirstChar { it.lowercaseChar() }}Iterator()")
               .build()
           )
           .addFunction(

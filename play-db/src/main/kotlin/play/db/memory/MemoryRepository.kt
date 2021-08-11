@@ -7,7 +7,6 @@ import play.util.concurrent.Future
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
-import javax.annotation.CheckReturnValue
 
 @Suppress("UNCHECKED_CAST")
 class MemoryRepository : Repository {
@@ -30,6 +29,9 @@ class MemoryRepository : Repository {
     return Future.successful(Unit)
   }
 
+  override fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any) {
+  }
+
   override fun insertOrUpdate(entity: Entity<*>): Future<out Any> {
     getMap(entity.javaClass).putIfAbsent(entity.id(), entity)
     return Future.successful(Unit)
@@ -49,7 +51,7 @@ class MemoryRepository : Repository {
     return Future.successful(Unit)
   }
 
-  override fun <ID, E : Entity<ID>> findById(id: ID, entityClass: Class<E>): Future<Optional<E>> {
+  override fun <ID, E : Entity<ID>> findById(entityClass: Class<E>, id: ID): Future<Optional<E>> {
     val e = getMap(entityClass)[id]
     return Future.successful(Optional.ofNullable(e) as Optional<E>)
   }
@@ -62,47 +64,20 @@ class MemoryRepository : Repository {
     return Future.successful(getMap(entityClass).keys.toList() as List<ID>)
   }
 
-  override fun <ID, E : Entity<ID>> query(
-    entityClass: Class<E>,
-    where: Optional<String>,
-    order: Optional<String>,
-    limit: Optional<Int>
-  ): Future<List<E>> {
-    return Future.successful(emptyList())
-  }
-
-  override fun <ID, E : Entity<ID>> query(
-    entityClass: Class<E>,
-    fields: List<String>,
-    where: Optional<String>,
-    order: Optional<String>,
-    limit: Optional<Int>
-  ): Future<List<ResultMap>> {
-    return Future.successful(emptyList())
+  override fun <ID, E : Entity<ID>, R, R1 : R> fold(entityClass: Class<E>, initial: R1, f: (R1, E) -> R1): Future<R> {
+    var result = initial
+    for (entity in getMap(entityClass).values) {
+      result = f(result, entity as E)
+    }
+    return Future.successful(result)
   }
 
   override fun <ID, E : Entity<ID>, R, R1 : R> fold(
     entityClass: Class<E>,
-    where: Optional<String>,
-    order: Optional<String>,
-    limit: Optional<Int>,
-    initial: R1,
-    folder: (R1, E) -> R1
-  ): Future<R> {
-    val value = getMap(entityClass).values.fold(initial) { acc, entity -> folder(acc, entity as E) }
-    return Future.successful(value)
-  }
-
-  @CheckReturnValue
-  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
-    entityClass: Class<E>,
     fields: List<String>,
-    where: Optional<String>,
-    order: Optional<String>,
-    limit: Optional<Int>,
     initial: R1,
     folder: (R1, ResultMap) -> R1
   ): Future<R> {
-    return Future.successful(initial)
+    return Future.failed(UnsupportedOperationException())
   }
 }

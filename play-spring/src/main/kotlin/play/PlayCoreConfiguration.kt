@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
 import org.springframework.scheduling.TaskScheduler
-import play.ShutdownCoordinator
 import play.scheduling.DefaultScheduler
 import play.scheduling.Scheduler
 import play.scheduling.SpringTaskScheduler
@@ -47,13 +46,13 @@ class PlayCoreConfiguration {
   }
 
   @Bean
-  @ConditionalOnMissingBean(ShutdownCoordinator::class)
+  @ConditionalOnMissingBean
   fun shutdownCoordinator(): ShutdownCoordinator {
     return DefaultShutdownCoordinator()
   }
 
   @Bean
-  @ConditionalOnMissingBean(ClassScanner::class)
+  @ConditionalOnMissingBean
   fun classScanner(conf: Config): ClassScanner {
     val jarsToScan = conf.getStringList("play.reflection.jars-to-scan")
     val packagesToScan = conf.getStringList("play.reflection.packages-to-scan")
@@ -61,13 +60,13 @@ class PlayCoreConfiguration {
   }
 
   @Bean
-  @ConditionalOnMissingBean(ExecutorService::class)
+  @ConditionalOnMissingBean
   fun executorService(): ExecutorService {
     return CommonPool
   }
 
   @Bean
-  @ConditionalOnMissingBean(Executor::class)
+  @ConditionalOnMissingBean
   fun executor(): Executor {
     return CommonPool
   }
@@ -84,7 +83,7 @@ class PlayCoreConfiguration {
   }
 
   @Bean
-  @ConditionalOnMissingBean(Scheduler::class)
+  @ConditionalOnMissingBean
   fun scheduler(scheduleService: ObjectFactory<ScheduledExecutorService>, executor: Executor, clock: Clock): Scheduler {
     return DefaultScheduler(scheduleService.`object`, executor, clock)
   }

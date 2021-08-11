@@ -59,7 +59,10 @@ class ImmutableSetGenerator {
         FunSpec.builder("iterator")
           .addModifiers(KModifier.OVERRIDE)
           .returns(Iterator::class.asClassName().parameterizedBy(elemType.asClassName()))
-          .addStatement("return %T(underlying.${elemType.simpleName!!.decapitalize()}Iterator())", iteratorImplType)
+          .addStatement(
+            "return %T(underlying.${elemType.simpleName!!.replaceFirstChar { it.lowercaseChar() }}Iterator())",
+            iteratorImplType
+          )
           .build()
       )
       .addFunction(

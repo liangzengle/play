@@ -7,8 +7,9 @@ import play.util.concurrent.Future
 
 interface EntityCacheLoader {
 
-  fun <ID, E : Entity<ID>> findById(id: ID, entityClass: Class<E>): Future<Optional<E>>
+  @CheckReturnValue
+  fun <ID, E : Entity<ID>> loadById(id: ID, entityClass: Class<E>): Future<Optional<E>>
 
   @CheckReturnValue
-  fun <ID, E : Entity<ID>> foreach(entityClass: Class<E>, f: (E) -> Unit): Future<Unit>
+  fun <ID, E : Entity<ID>, C, C1 : C> loadAll(entityClass: Class<E>, initial: C1, f: (C1, E) -> C1): Future<C>
 }

@@ -12,11 +12,4 @@ interface UnsafeEntityCacheOps<ID> {
    * @param id ID
    */
   fun initWithEmptyValue(id: ID)
-
-  /**
-   * 删除
-   *
-   * @param id ID
-   */
-  fun deleteUnprotected(id: ID)
 }

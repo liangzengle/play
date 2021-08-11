@@ -16,6 +16,7 @@ import play.util.control.getCause
 import play.util.forEach
 import play.util.unsafeCast
 import scala.concurrent.Promise
+import java.time.Duration
 
 /**
  *
@@ -60,7 +61,7 @@ class GameServerManager(
             self.tell(StartGameServer(serverId, PlayPromise.make()))
           }
         }
-      }
+      }.await(Duration.ofSeconds(10))
   }
 
   private fun createGameServer(cmd: CreateGameServer) {

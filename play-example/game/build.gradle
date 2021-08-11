@@ -30,5 +30,5 @@ kapt {
 
 modularCode {
     enabled = true
-    annotation = "play.example.game.app.module.ModularCode"
+    annotation = ["play.example.game.app.module.ModularCode"]
 }

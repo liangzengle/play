@@ -7,7 +7,6 @@ import com.mongodb.client.result.InsertOneResult
 import com.mongodb.client.result.UpdateResult
 import com.mongodb.reactivestreams.client.MongoClient
 import com.mongodb.reactivestreams.client.MongoCollection
-import org.bson.BsonDocument
 import org.bson.Document
 import org.bson.conversions.Bson
 import play.db.Repository
@@ -15,13 +14,13 @@ import play.db.ResultMap
 import play.db.TableNameResolver
 import play.db.mongo.Mongo.ID
 import play.entity.Entity
+import play.entity.IntIdEntity
+import play.entity.LongIdEntity
+import play.util.*
 import play.util.concurrent.Future
 import play.util.concurrent.Promise
-import play.util.forEach
 import play.util.json.Json
 import play.util.reflect.Reflect
-import play.util.toOptional
-import play.util.unsafeCast
 import java.util.*
 import javax.annotation.CheckReturnValue
 
@@ -29,7 +28,7 @@ class MongoDBRepository constructor(
   dbName: String,
   private val tableNameResolver: TableNameResolver,
   client: MongoClient
-) : Repository, MongoDBCommandSupport {
+) : Repository, MongoQueryService, MongoDBCommandSupport {
 
   private val db = client.getDatabase(dbName)
 
@@ -94,7 +93,24 @@ class MongoDBRepository constructor(
     return promise.future
   }
 
-  override fun <ID, E : Entity<ID>> findById(id: ID, entityClass: Class<E>): Future<Optional<E>> {
+  override fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any) {
+    getCollection(entityClass).updateOne(Filters.eq(ID, id), Updates.set(field, value))
+  }
+
+  override fun <ID, E : Entity<ID>, R, R1 : R> fold(entityClass: Class<E>, initial: R1, f: (R1, E) -> R1): Future<R> {
+    return fold(entityClass, empty(), empty(), empty(), initial, f)
+  }
+
+  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
+    entityClass: Class<E>,
+    fields: List<String>,
+    initial: R1,
+    folder: (R1, ResultMap) -> R1
+  ): Future<R> {
+    return fold(entityClass, fields, empty(), empty(), empty(), initial, folder)
+  }
+
+  override fun <ID, E : Entity<ID>> findById(entityClass: Class<E>, id: ID): Future<Optional<E>> {
     val promise = Promise.make<E?>()
     getCollection(entityClass).find(Filters.eq(id)).subscribe(NullableForOneSubscriber(promise))
     return promise.future.map { it.toOptional() }
@@ -109,16 +125,16 @@ class MongoDBRepository constructor(
   @CheckReturnValue
   override fun <ID, E : Entity<ID>, R, R1 : R> fold(
     entityClass: Class<E>,
-    where: Optional<String>,
-    order: Optional<String>,
+    where: Optional<Bson>,
+    order: Optional<Bson>,
     limit: Optional<Int>,
     initial: R1,
     folder: (R1, E) -> R1
   ): Future<R> {
     val promise = Promise.make<R>()
     val publisher = getCollection(entityClass).find()
-    where.forEach { publisher.filter(BsonDocument.parse(it)) }
-    order.forEach { publisher.sort(BsonDocument.parse(it)) }
+    where.forEach { publisher.filter(it) }
+    order.forEach { publisher.sort(it) }
     limit.forEach { publisher.limit(it) }
     publisher.subscribe(FoldSubscriber(promise, initial, folder))
     return promise.future
@@ -128,8 +144,8 @@ class MongoDBRepository constructor(
   override fun <ID, E : Entity<ID>, R, R1 : R> fold(
     entityClass: Class<E>,
     fields: List<String>,
-    where: Optional<String>,
-    order: Optional<String>,
+    where: Optional<Bson>,
+    order: Optional<Bson>,
     limit: Optional<Int>,
     initial: R1,
     folder: (R1, ResultMap) -> R1
@@ -138,8 +154,8 @@ class MongoDBRepository constructor(
     val publisher = getRawCollection(entityClass).find()
     val includeFields = if (fields.contains(ID)) fields else fields.toMutableList().apply { add((ID)) }
     publisher.projection(Projections.include(includeFields))
-    where.forEach { publisher.filter(BsonDocument.parse(it)) }
-    order.forEach { publisher.sort(BsonDocument.parse(it)) }
+    where.forEach { publisher.filter(it) }
+    order.forEach { publisher.sort(it) }
     limit.forEach { publisher.limit(it) }
     publisher.subscribe(FoldSubscriber(promise, initial) { r, doc ->
       if (doc.containsKey(ID) && !doc.containsKey("id")) {
@@ -152,6 +168,7 @@ class MongoDBRepository constructor(
 
   override fun <ID, E : Entity<ID>> listIds(entityClass: Class<E>): Future<List<ID>> {
     val promise = Promise.make<List<ID>>()
+    val idType = getIdType<ID>(entityClass)
     getRawCollection(entityClass)
       .find()
       .projection(Projections.include(ID))
@@ -160,7 +177,7 @@ class MongoDBRepository constructor(
           promise,
           LinkedList()
         ) { list, doc ->
-          val id = convertToID<ID>(doc[ID]!!, entityClass)
+          val id = convertToID(doc[ID]!!, idType)
           list.add(id)
           list
         }
@@ -168,19 +185,21 @@ class MongoDBRepository constructor(
     return promise.future
   }
 
-  private fun getIdType(entityClass: Class<out Entity<*>>): Class<*> {
-    return Reflect.getRawClass<Any>(Reflect.getTypeArg(entityClass, Entity::class.java, 0))
+  private fun <ID> getIdType(entityClass: Class<out Entity<*>>): Class<ID> {
+    if (isAssignableFrom<LongIdEntity>(entityClass)) {
+      return Long::class.java.unsafeCast()
+    }
+    if (isAssignableFrom<IntIdEntity>(entityClass)) {
+      return Int::class.java.unsafeCast()
+    }
+    return Reflect.getRawClass<Any>(Reflect.getTypeArg(entityClass, Entity::class.java, 0)).unsafeCast()
   }
 
-  private fun <ID> convertToID(obj: Any, entityClass: Class<out Entity<*>>): ID {
-    if (obj !is Document) {
+  private fun <ID> convertToID(obj: Any, idType: Class<ID>): ID {
+    if (idType.isInstance(obj)) {
       return obj.unsafeCast()
     }
-    val idType = getIdType(entityClass)
-    if (idType.isAssignableFrom(obj.javaClass)) {
-      return obj.unsafeCast()
-    }
-    return Json.convert(obj, idType).unsafeCast()
+    return Json.convert(obj, idType)
   }
 
   override fun runCommand(cmd: Bson): Future<Document> {
