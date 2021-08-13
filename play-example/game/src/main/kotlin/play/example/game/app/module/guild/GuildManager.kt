@@ -8,7 +8,6 @@ import akka.actor.typed.javadsl.StashBuffer
 import play.akka.AbstractTypedActor
 import play.akka.accept
 import play.akka.sameBehavior
-import play.example.common.id.GameUIDGenerator
 import play.example.game.app.module.ModuleId
 import play.example.game.app.module.guild.config.GuildSettingConf
 import play.example.game.app.module.guild.domain.GuildErrorCode
@@ -19,17 +18,14 @@ import play.example.game.app.module.guild.message.*
 import play.example.game.app.module.player.PlayerRequestHandler
 import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.reward.model.CostResultSet
-import play.example.game.app.module.server.config.ServerConfig
 import play.mvc.PlayerRequest
 import play.mvc.RequestResult
-import play.util.collection.ConcurrentLongLongMap
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.control.Result2
 import play.util.control.err
 import play.util.control.getCause
 import play.util.control.ok
-import java.util.*
 
 /**
  * Actor handling guild requests
@@ -41,10 +37,8 @@ class GuildManager(
   private val requestHandler: PlayerRequestHandler,
   private val guildEntityCache: GuildEntityCache,
   private val playerService: PlayerService,
-  private val serverConfig: ServerConfig
+  private val guildCache: GuildCache
 ) : AbstractTypedActor<GuildManager.Command>(ctx) {
-
-  private val guildIdGenerator: GameUIDGenerator
 
   init {
     // 拦截工会相关的请求
@@ -52,15 +46,6 @@ class GuildManager(
       .register(context.messageAdapter(PlayerRequest::class.java, GuildMessageConverter::convert)) { moduleId, _ ->
         moduleId == ModuleId.Guild.toInt()
       }
-
-    guildIdGenerator = guildEntityCache.asSequence().maxOfOrNull { it.id }?.let { GameUIDGenerator.fromId(it) }
-      ?: serverConfig.newIdGenerator()
-
-    guildEntityCache.asSequence().forEach { entity ->
-      for (member in entity.members) {
-        updatePlayerGuild(member, entity.id)
-      }
-    }
   }
 
   /**
@@ -94,7 +79,7 @@ class GuildManager(
   }
 
   private fun joinGuild(playerId: Long, guildId: Long): Result2<GuildInfo> {
-    if (hasGuild(playerId)) {
+    if (guildCache.hasGuild(playerId)) {
       return err(GuildErrorCode.HasGuild)
     }
     // 所有工会都在缓存中，不在说明没有这个工会，没必要读数据库
@@ -104,7 +89,7 @@ class GuildManager(
     }
     val guild = maybeGuild.get()
     guild.members.add(playerId)
-    updatePlayerGuild(playerId, guildId)
+    guildCache.updatePlayerGuild(playerId, guildId)
     return ok(guild.toMessage())
   }
 
@@ -122,7 +107,7 @@ class GuildManager(
     playerId: Long,
     guildName: String
   ): PlayFuture<Result2<GuildInfo>> {
-    if (hasGuild(playerId)) {
+    if (guildCache.hasGuild(playerId)) {
       return PlayFuture.successful(err(GuildErrorCode.HasGuild))
     }
     if (!isGuildNameAvailable(guildName)) {
@@ -164,53 +149,27 @@ class GuildManager(
       costResult.asErrResult()
     } else {
       // 消耗扣除成功后创建工会
-      val guildId = genGuildId()
+      val guildId = guildCache.genGuildId()
       val guild = GuildEntity(guildId, guildName)
       guild.leaderId = playerId
       guild.leaderName = playerService.getPlayerName(playerId)
       guild.members.add(playerId)
       guildEntityCache.unsafeOps().initWithEmptyValue(guild.id)
       guildEntityCache.create(guild)
-      updatePlayerGuild(playerId, guildId)
+      guildCache.updatePlayerGuild(playerId, guildId)
       ok(guild.toMessage())
     }
   }
 
-  /**
-   * 生成一个新的工会id
-   */
-  private fun genGuildId(): Long = guildIdGenerator.nextOrThrow()
-
   companion object {
-    private val playerIdToGuildId = ConcurrentLongLongMap()
-
-    fun hasGuild(playerId: Long) = playerIdToGuildId.containsKey(playerId)
-
-    fun updatePlayerGuild(playerId: Long, guildId: Long) {
-      playerIdToGuildId.put(playerId, guildId)
-    }
-
-    fun changePlayerGuild(playerId: Long, fromGuildId: Long, toGuildId: Long) {
-      if (playerIdToGuildId.remove(playerId, fromGuildId)) {
-        playerIdToGuildId.put(playerId, toGuildId)
-      } else {
-        // TODO log
-      }
-    }
-
-    fun getPlayerGuildId(playerId: Long): OptionalLong {
-      val guildId = playerIdToGuildId[playerId]
-      return guildId?.let { OptionalLong.of(guildId) } ?: OptionalLong.empty()
-    }
-
     fun create(
       playerRequestHandler: PlayerRequestHandler,
       guildEntityCache: GuildEntityCache,
       playerService: PlayerService,
-      serverConfig: ServerConfig
+      guildCache: GuildCache
     ): Behavior<Command> = Behaviors.setup { ctx ->
       Behaviors.withStash(Int.MAX_VALUE) { stash ->
-        GuildManager(ctx, stash, playerRequestHandler, guildEntityCache, playerService, serverConfig)
+        GuildManager(ctx, stash, playerRequestHandler, guildEntityCache, playerService, guildCache)
       }
     }
   }

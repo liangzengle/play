@@ -10,7 +10,6 @@ import java.util.stream.DoubleStream
 import java.util.stream.IntStream
 import java.util.stream.LongStream
 import java.util.stream.Stream
-import kotlin.collections.ArrayList
 
 fun <E> Sequence<E>.filterDuplicated(): Map<E, List<E>> {
   return this.iterator().filterDuplicated()
@@ -92,6 +91,14 @@ inline fun <T, K> Iterable<T>.toImmutableMap(keyMapper: (T) -> K): Map<K, T> {
   val builder = ImmutableMap.builder<K, T>()
   for (e in this) {
     builder.put(keyMapper(e), e)
+  }
+  return builder.build()
+}
+
+inline fun <T, K, V> Iterable<T>.toImmutableMap(keyMapper: (T) -> K, valueMapper: (T) -> V): Map<K, V> {
+  val builder = ImmutableMap.builder<K, V>()
+  for (e in this) {
+    builder.put(keyMapper(e), valueMapper(e))
   }
   return builder.build()
 }

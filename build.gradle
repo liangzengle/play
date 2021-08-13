@@ -63,6 +63,7 @@ configure(subprojects) {
             "-Xopt-in=kotlin.contracts.ExperimentalContracts",
             "-Xopt-in=kotlin.experimental.ExperimentalTypeInference",
             "-Xopt-in=kotlin.io.path.ExperimentalPathApi",
+            "-Xopt-in=kotlin.ExperimentalStdlibApi",
             "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi",
             "-Xopt-in=kotlinx.serialization.InternalSerializationApi",
             "-Xjvm-default=all",

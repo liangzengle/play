@@ -186,6 +186,37 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     return computeIfAbsent(id, null).toOptional()
   }
 
+  override fun getAll(ids: Iterable<ID>): List<E> {
+    val result = arrayListOf<E>()
+    val missing = arrayListOf<ID>()
+    for (id in ids) {
+      val entity = getOrNull(id)
+      if (entity != null) {
+        result.add(entity)
+      } else {
+        missing.add(id)
+      }
+    }
+    if (missing.isEmpty()) {
+      return result
+    }
+    val cache = getCache()
+    val cacheMap = cache.asMap()
+    val loaded = entityCacheLoader.loadAll(missing, entityClass).get(Duration.ofSeconds(5))
+    for (entity in loaded) {
+      if (entity.isDeleted()) {
+        continue
+      }
+      val obj = cacheMap.compute(entity.id()) { _, v ->
+        if (v == null || v.isEmpty()) CacheObj(entity) else v
+      }
+      if (obj != null && obj.isNotEmpty()) {
+        result.add(obj.accessEntity()!!)
+      }
+    }
+    return result
+  }
+
   override fun asSequence(): Sequence<E> {
     return getCache().asMap().values.asSequence().map { it.accessEntity() }.filterNotNull()
   }

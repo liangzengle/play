@@ -1,14 +1,17 @@
 package play.example.game.app.module.server
 
+import com.google.common.eventbus.Subscribe
 import org.eclipse.collections.api.set.primitive.ImmutableIntSet
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.eclipse.collections.impl.factory.primitive.IntSets
 import play.db.QueryService
+import play.event.EventBus
 import play.example.game.app.module.platform.domain.Platform
 import play.example.game.app.module.player.event.PlayerEventBus
 import play.example.game.app.module.server.config.ServerConfig
 import play.example.game.app.module.server.entity.Server
 import play.example.game.app.module.server.entity.ServerEntityCache
+import play.example.game.app.module.server.event.ServerOpenEvent
 import play.example.game.app.module.server.event.ServerOpenPlayerEvent
 import play.inject.SpringPlayInjector
 import play.util.classOf
@@ -27,9 +30,10 @@ import kotlin.time.seconds
 @Named
 class ServerService @Inject constructor(
   queryService: QueryService,
-  val serverCache: ServerEntityCache,
-  val conf: ServerConfig,
-  val playerEventBus: PlayerEventBus,
+  private val serverCache: ServerEntityCache,
+  private val conf: ServerConfig,
+  private val playerEventBus: PlayerEventBus,
+  private val eventBus: EventBus,
   injector: SpringPlayInjector
 ) {
 
@@ -69,7 +73,12 @@ class ServerService @Inject constructor(
     val server = serverCache.getOrThrow(conf.serverId.toInt())
     server.open(currentDateTime())
     // TODO post event
-//    applicationEventBus.postBlocking(ServerOpenEvent)
+    eventBus.postSync(ServerOpenEvent)
     playerEventBus.postToOnlinePlayers { ServerOpenPlayerEvent(it) }
+  }
+
+  @Subscribe
+  private fun onServerOpen(event: ServerOpenEvent) {
+    println("test event receive: $event")
   }
 }

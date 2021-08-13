@@ -1,12 +1,14 @@
 package play.example.game.app.module.modulecontrol
 
 import org.eclipse.collections.api.set.primitive.IntSet
+import play.example.game.app.module.modulecontrol.config.ModuleOpenResource
 import play.example.game.app.module.modulecontrol.config.ModuleOpenResourceSet
 import play.example.game.app.module.modulecontrol.controller.ModuleControlModule
 import play.example.game.app.module.modulecontrol.entity.PlayerModuleControlEntityCache
 import play.example.game.app.module.modulecontrol.event.PlayerModuleOpenEvent
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.player.condition.PlayerConditionService
+import play.example.game.app.module.player.condition.listenConditionEvents
 import play.example.game.app.module.player.event.*
 import play.example.game.container.net.SessionWriter
 import javax.inject.Inject
@@ -26,7 +28,7 @@ class ModuleControlService @Inject constructor(
 ) : PlayerEventListener {
   override fun playerEventReceive(): PlayerEventReceive {
     return PlayerEventReceiveBuilder()
-//      .listenConditionEvents(ModuleOpenConfigSet.list(), ModuleOpenConfig::conditions, ::checkOpen)
+      .listenConditionEvents(ModuleOpenResourceSet.list(), ModuleOpenResource::conditions, ::checkOpen)
       .build()
   }
 

@@ -39,15 +39,15 @@ class PlayerService @Inject constructor(
     val player = playerCache.getOrThrow(self.id)
     if (!isToday(player.dtime)) {
       player.dtime = currentMillis()
-      eventBus.postBlocking(self, PlayerNewDayStartEvent(self.id))
+      eventBus.postSync(self, PlayerNewDayStartEvent(self.id))
     }
     if (!isCurrentWeek(player.wtime)) {
       player.wtime = currentMillis()
-      eventBus.postBlocking(self, PlayerNewWeekStartEvent(self.id))
+      eventBus.postSync(self, PlayerNewWeekStartEvent(self.id))
     }
     if (!isCurrentMonth(player.mtime)) {
       player.mtime = currentMillis()
-      eventBus.postBlocking(self, PlayerNewMonthStartEvent(self.id))
+      eventBus.postSync(self, PlayerNewMonthStartEvent(self.id))
     }
   }
 

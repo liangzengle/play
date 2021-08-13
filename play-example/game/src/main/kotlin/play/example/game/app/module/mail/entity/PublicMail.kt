@@ -4,7 +4,7 @@ import play.db.Merge
 import play.entity.IntIdEntity
 import play.entity.cache.CacheSpec
 import play.entity.cache.NeverExpireEvaluator
-import play.example.game.app.module.mail.domain.ReceiverQualification
+import play.example.game.app.module.player.condition.PlayerCondition
 import play.example.game.app.module.reward.config.RawReward
 import play.util.collection.ConcurrentHashSetLong
 
@@ -14,7 +14,7 @@ import play.util.collection.ConcurrentHashSetLong
  * @param id 邮件id
  * @param title 标题
  * @param content 内容
- * @param qualification 接收条件
+ * @param receiveConditions 接收条件
  * @param received 已接收的玩家
  * @param rewards 奖励
  * @param logSource 来源
@@ -28,7 +28,7 @@ class PublicMail(
   id: Int,
   val title: String,
   val content: String,
-  val qualification: ReceiverQualification,
+  val receiveConditions: List<PlayerCondition>,
   val received: ConcurrentHashSetLong,
   val rewards: List<RawReward>,
   val logSource: Int,

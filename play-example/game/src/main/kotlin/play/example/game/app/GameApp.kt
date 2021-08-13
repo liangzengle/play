@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import play.entity.PlayEntityCacheConfiguration
+import play.event.EnableGuavaEventBus
 import play.example.game.container.gm.GmCommandService
 import play.inject.PlayInjector
 import play.inject.SpringPlayInjector
@@ -17,6 +18,7 @@ import play.mongodb.PlayMongoRepositoryConfiguration
  */
 @SpringBootApplication
 @Import(value = [PlayMongoRepositoryConfiguration::class, PlayEntityCacheConfiguration::class])
+@EnableGuavaEventBus
 @Configuration(proxyBeanMethods = false)
 class GameApp {
 

@@ -1,5 +1,7 @@
 package play.example.game.app.module.friend
 
+import akka.actor.typed.ActorRef
+import org.springframework.beans.factory.ObjectProvider
 import play.example.game.app.module.friend.entity.PlayerFriendEntityCache
 import play.example.game.app.module.friend.message.FriendInfo
 import play.util.control.Result2
@@ -14,6 +16,7 @@ import javax.inject.Singleton
 @Singleton
 @Named
 class FriendService @Inject constructor(
+  private val friendManagerProvider: ObjectProvider<ActorRef<FriendManager.Command>>,
   private val friendEntityCache: PlayerFriendEntityCache
 ) {
   fun getInfo(playerId: Long): Result2<FriendInfo> {

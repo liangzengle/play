@@ -116,6 +116,13 @@ class MongoDBRepository constructor(
     return promise.future.map { it.toOptional() }
   }
 
+  override fun <ID, E : Entity<ID>> loadAll(ids: Iterable<ID>, entityClass: Class<E>): Future<List<E>> {
+    val promise = Promise.make<List<E>>()
+    getCollection(entityClass).find(Filters.`in`(ID, ids))
+      .subscribe(FoldSubscriber(promise, LinkedList()) { list, e -> list.add(e); list })
+    return promise.future
+  }
+
   override fun <ID, E : Entity<ID>> listAll(entityClass: Class<E>): Future<List<E>> {
     val promise = Promise.make<List<E>>()
     getCollection(entityClass).find().subscribe(FoldSubscriber(promise, LinkedList()) { list, e -> list.add(e); list })

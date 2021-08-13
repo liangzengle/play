@@ -1,7 +1,10 @@
 package play.eclipse.collectionx.codegen
 
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.asTypeName
 import org.eclipse.collections.api.collection.primitive.*
 import org.eclipse.collections.api.iterator.*
 import org.eclipse.collections.api.iterator.BooleanIterator
@@ -71,6 +74,17 @@ object Types {
     Double::class to MutableDoubleCollection::class,
   )
 
+  val listTypes = listOf(
+    Boolean::class to BooleanList::class,
+    Byte::class to ByteList::class,
+    Short::class to ShortList::class,
+    Char::class to CharList::class,
+    Int::class to IntList::class,
+    Long::class to LongList::class,
+    Float::class to FloatList::class,
+    Double::class to DoubleList::class,
+  )
+
   val immutableListTypes = listOf(
     Boolean::class to ImmutableBooleanList::class,
     Byte::class to ImmutableByteList::class,
@@ -93,6 +107,15 @@ object Types {
     Double::class to MutableDoubleList::class,
   )
 
+  val setTypes = listOf(
+    Boolean::class to BooleanSet::class,
+    Byte::class to ByteSet::class,
+    Short::class to ShortSet::class,
+    Char::class to CharSet::class,
+    Int::class to IntSet::class,
+    Long::class to LongSet::class
+  )
+
   val immutableSetTypes = listOf(
     Boolean::class to ImmutableBooleanSet::class,
     Byte::class to ImmutableByteSet::class,
@@ -109,6 +132,80 @@ object Types {
     Char::class to MutableCharSet::class,
     Int::class to MutableIntSet::class,
     Long::class to MutableLongSet::class
+  )
+
+  val mapTypes = listOf(
+    Triple(Byte::class, Boolean::class, ByteBooleanMap::class),
+    Triple(Byte::class, Byte::class, ByteByteMap::class),
+    Triple(Byte::class, Short::class, ByteShortMap::class),
+    Triple(Byte::class, Char::class, ByteCharMap::class),
+    Triple(Byte::class, Int::class, ByteIntMap::class),
+    Triple(Byte::class, Long::class, ByteLongMap::class),
+    Triple(Byte::class, Float::class, ByteFloatMap::class),
+    Triple(Byte::class, Double::class, ByteDoubleMap::class),
+    Triple(Byte::class, Object::class, ByteObjectMap::class),
+    Triple(Short::class, Boolean::class, ShortBooleanMap::class),
+    Triple(Short::class, Byte::class, ShortByteMap::class),
+    Triple(Short::class, Short::class, ShortShortMap::class),
+    Triple(Short::class, Char::class, ShortCharMap::class),
+    Triple(Short::class, Int::class, ShortIntMap::class),
+    Triple(Short::class, Long::class, ShortLongMap::class),
+    Triple(Short::class, Float::class, ShortFloatMap::class),
+    Triple(Short::class, Double::class, ShortDoubleMap::class),
+    Triple(Short::class, Object::class, ShortObjectMap::class),
+    Triple(Char::class, Boolean::class, CharBooleanMap::class),
+    Triple(Char::class, Byte::class, CharByteMap::class),
+    Triple(Char::class, Short::class, CharShortMap::class),
+    Triple(Char::class, Char::class, CharCharMap::class),
+    Triple(Char::class, Int::class, CharIntMap::class),
+    Triple(Char::class, Long::class, CharLongMap::class),
+    Triple(Char::class, Float::class, CharFloatMap::class),
+    Triple(Char::class, Double::class, CharDoubleMap::class),
+    Triple(Char::class, Object::class, CharObjectMap::class),
+    Triple(Int::class, Boolean::class, IntBooleanMap::class),
+    Triple(Int::class, Byte::class, IntByteMap::class),
+    Triple(Int::class, Short::class, IntShortMap::class),
+    Triple(Int::class, Char::class, IntCharMap::class),
+    Triple(Int::class, Int::class, IntIntMap::class),
+    Triple(Int::class, Long::class, IntLongMap::class),
+    Triple(Int::class, Float::class, IntFloatMap::class),
+    Triple(Int::class, Double::class, IntDoubleMap::class),
+    Triple(Int::class, Object::class, IntObjectMap::class),
+    Triple(Long::class, Boolean::class, LongBooleanMap::class),
+    Triple(Long::class, Byte::class, LongByteMap::class),
+    Triple(Long::class, Short::class, LongShortMap::class),
+    Triple(Long::class, Char::class, LongCharMap::class),
+    Triple(Long::class, Int::class, LongIntMap::class),
+    Triple(Long::class, Long::class, LongLongMap::class),
+    Triple(Long::class, Float::class, LongFloatMap::class),
+    Triple(Long::class, Double::class, LongDoubleMap::class),
+    Triple(Long::class, Object::class, LongObjectMap::class),
+//    Triple(Float::class, Boolean::class, FloatBooleanMap::class),
+//    Triple(Float::class, Byte::class, FloatByteMap::class),
+//    Triple(Float::class, Short::class, FloatShortMap::class),
+//    Triple(Float::class, Char::class, FloatCharMap::class),
+//    Triple(Float::class, Int::class, FloatIntMap::class),
+//    Triple(Float::class, Long::class, FloatLongMap::class),
+//    Triple(Float::class, Float::class, FloatFloatMap::class),
+//    Triple(Float::class, Double::class, FloatDoubleMap::class),
+//    Triple(Float::class, Object::class, FloatObjectMap::class),
+//    Triple(Double::class, Boolean::class, DoubleBooleanMap::class),
+//    Triple(Double::class, Byte::class, DoubleByteMap::class),
+//    Triple(Double::class, Short::class, DoubleShortMap::class),
+//    Triple(Double::class, Char::class, DoubleCharMap::class),
+//    Triple(Double::class, Int::class, DoubleIntMap::class),
+//    Triple(Double::class, Long::class, DoubleLongMap::class),
+//    Triple(Double::class, Float::class, DoubleFloatMap::class),
+//    Triple(Double::class, Double::class, DoubleDoubleMap::class),
+//    Triple(Double::class, Object::class, DoubleObjectMap::class),
+    Triple(Object::class, Boolean::class, ObjectBooleanMap::class),
+    Triple(Object::class, Byte::class, ObjectByteMap::class),
+    Triple(Object::class, Short::class, ObjectShortMap::class),
+    Triple(Object::class, Char::class, ObjectCharMap::class),
+    Triple(Object::class, Int::class, ObjectIntMap::class),
+    Triple(Object::class, Long::class, ObjectLongMap::class),
+    Triple(Object::class, Float::class, ObjectFloatMap::class),
+    Triple(Object::class, Double::class, ObjectDoubleMap::class)
   )
 
   val immutableMapTypes = listOf(

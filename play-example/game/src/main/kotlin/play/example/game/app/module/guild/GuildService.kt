@@ -1,11 +1,12 @@
 package play.example.game.app.module.guild
 
 import akka.actor.typed.ActorRef
+import org.springframework.beans.factory.ObjectProvider
 import play.example.game.app.module.guild.entity.GuildEntityCache
+import play.util.unsafeLazy
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Named
-import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
@@ -14,13 +15,16 @@ import javax.inject.Singleton
 @Singleton
 @Named
 class GuildService @Inject constructor(
-  private val guildManager: Provider<ActorRef<GuildManager.Command>>,
-  private val guildEntityCache: GuildEntityCache
+  private val guildManagerProvider: ObjectProvider<ActorRef<GuildManager.Command>>,
+  private val guildEntityCache: GuildEntityCache,
+  private val guildCache: GuildCache
 ) {
+
+  private val guildManager by unsafeLazy { guildManagerProvider.getObject() }
 
   fun hasGuild(playerId: Long): Boolean = getPlayerGuildId(playerId).isPresent
 
   fun getPlayerGuildId(playerId: Long): OptionalLong {
-    return GuildManager.getPlayerGuildId(playerId)
+    return guildCache.getPlayerGuildId(playerId)
   }
 }

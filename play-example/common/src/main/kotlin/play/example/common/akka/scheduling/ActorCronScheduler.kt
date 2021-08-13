@@ -1,7 +1,6 @@
 package play.example.common.akka.scheduling
 
 import akka.actor.typed.javadsl.ActorContext
-import play.example.common.scheduling.ScheduledEvent
 import play.scheduling.Cancellable
 import play.scheduling.Scheduler
 
@@ -9,16 +8,18 @@ import play.scheduling.Scheduler
  * 供Actor内部使用的Cron定时计划
  * @author LiangZengle
  */
-class ActorCronScheduler<T: Any> constructor(
+class ActorCronScheduler<T : Any> constructor(
   private val scheduler: Scheduler,
   private val context: ActorContext<T>
 ) {
   private val schedules = HashMap<Any, Cancellable>(4)
 
-  init {
-    check(context.classicActorContext().parent().path().name() == "user") { "使用ActorCronScheduler的应该是顶层Actor" }
-  }
-
+  /**
+   * 添加一个定时任务
+   *
+   * @param cron cron表达式
+   * @param triggerEvent 触发时发送的事件，非单例对象需要实现hashCode和equals
+   */
   fun schedule(cron: String, triggerEvent: T) {
     val future = scheduler.scheduleCron(cron) {
       context.self.tell(triggerEvent)
@@ -26,17 +27,30 @@ class ActorCronScheduler<T: Any> constructor(
     schedules.put(triggerEvent, future)?.cancel()
   }
 
+  /**
+   * 取消定时任务
+   *
+   * @param event [schedule]添加定时任务时使用的事件
+   */
   fun cancel(event: T) {
     schedules.remove(event)?.cancel()
   }
 
+  /**
+   * 取消某种类型的定时任务
+   *
+   * @param eventType 事件类型
+   */
   fun cancelAll(eventType: Class<out T>) {
-    val eventList = schedules.keys.filter { eventType.isAssignableFrom(it.javaClass) }.toList()
+    val eventList = schedules.keys.filter { eventType.isAssignableFrom(it.javaClass) }
     for (scheduledEvent in eventList) {
       schedules.remove(scheduledEvent)?.cancel()
     }
   }
 
+  /**
+   * 取消所有定时任务
+   */
   fun cancelAll() {
     schedules.values.forEach { it.cancel() }
     schedules.clear()

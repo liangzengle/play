@@ -1,7 +1,9 @@
 package play.eclipse.collectionx.codegen
 
-import com.squareup.kotlinpoet.*
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.asClassName
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -57,7 +59,7 @@ fun main(args: Array<String>) {
   }
   // immutable list
   val immutableListGenerator = ImmutableListGenerator()
-  Types.immutableListTypes.forEach { (elemTyp, collectionType) ->
+  Types.listTypes.forEach { (elemTyp, collectionType) ->
     val typeSpec = immutableListGenerator.generate(elemTyp, collectionType)
     FileSpec.builder("org.eclipse.collectionx.list.immutable", typeSpec.name!!)
       .addType(typeSpec)
@@ -66,7 +68,7 @@ fun main(args: Array<String>) {
   }
   // immutable set
   val immutableSetGenerator = ImmutableSetGenerator()
-  Types.immutableSetTypes.forEach { (elemTyp, collectionType) ->
+  Types.setTypes.forEach { (elemTyp, collectionType) ->
     val typeSpec = immutableSetGenerator.generate(elemTyp, collectionType, iteratorTypeName(elemTyp))
     FileSpec.builder("org.eclipse.collectionx.set.immutable", typeSpec.name!!)
       .addType(typeSpec)
@@ -75,7 +77,7 @@ fun main(args: Array<String>) {
   }
   // immutable map
   val immutableMapGenerator = ImmutableMapGenerator()
-  Types.immutableMapTypes.forEach { (keyType, valueType, collectionType) ->
+  Types.mapTypes.forEach { (keyType, valueType, collectionType) ->
     val keySetTypeName = mutableKeySetTypeName(keyType)
     val valueCollectionTypeName = mutableValueCollectionTypeName(valueType)
     val unmodifiableSet = unmodifiableSet(keyType)

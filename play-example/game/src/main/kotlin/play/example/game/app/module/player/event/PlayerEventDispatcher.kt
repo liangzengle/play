@@ -38,9 +38,6 @@ class PlayerEventDispatcher @Inject constructor(private val injector: PlayInject
         } else {
           val list = oneForOne.computeIfAbsent(eventType) { ArrayList(2) }
           list.add(receiver)
-          if (list.size > 1) {
-            throw IllegalStateException("Multi Listeners for PromisedPlayerEvent: ${eventType.name}")
-          }
         }
       }
     }
@@ -88,7 +85,7 @@ class PlayerEventDispatcher @Inject constructor(private val injector: PlayInject
       }
       for (j in list.indices) {
         try {
-          list[i](self, event)
+          list[j](self, event)
         } catch (e: Exception) {
           logger.error(e) { "事件处理失败: $event" }
         }

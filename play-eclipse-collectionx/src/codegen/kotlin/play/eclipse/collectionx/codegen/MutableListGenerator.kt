@@ -13,7 +13,7 @@ import kotlin.reflect.KClass
 class MutableListGenerator {
 
   fun generate(elemType: KClass<*>, eclipseCollectionType: KClass<*>): TypeSpec {
-    return TypeSpec.classBuilder("Immutable${elemType.simpleName}ListWrapper")
+    return TypeSpec.classBuilder("Mutable${elemType.simpleName}ListWrapper")
       .superclass(java.util.AbstractList::class.parameterizedBy(elemType))
       .addSuperinterface(MutableList::class.parameterizedBy(elemType))
       .primaryConstructor(

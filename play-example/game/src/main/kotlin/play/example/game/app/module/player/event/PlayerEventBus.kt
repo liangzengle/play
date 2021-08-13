@@ -9,13 +9,12 @@ import play.example.game.app.module.task.event.TaskEvent
 import java.util.function.LongFunction
 import javax.inject.Inject
 import javax.inject.Named
-import javax.inject.Provider
 import javax.inject.Singleton
 
 @Singleton
 @Named
 class PlayerEventBus @Inject constructor(
-  private val playerManager: Provider<ActorRef<PlayerManager.Command>>,
+  private val playerManager: ObjectProvider<ActorRef<PlayerManager.Command>>,
   private val onlinePlayerService: OnlinePlayerService,
   private val dispatcher: ObjectProvider<PlayerEventDispatcher>
 ) {
@@ -24,7 +23,7 @@ class PlayerEventBus @Inject constructor(
 
   fun post(event: PlayerEvent) {
     if (_playerManager == null) {
-      _playerManager = playerManager.get()
+      _playerManager = playerManager.getObject()
     }
     _playerManager!!.tell(event)
   }
@@ -37,7 +36,7 @@ class PlayerEventBus @Inject constructor(
     post(self.id, event)
   }
 
-  fun postBlocking(self: Self, event: PlayerEvent) {
+  fun postSync(self: Self, event: PlayerEvent) {
     if (_dispatcher == null) {
       _dispatcher = dispatcher.getObject()
     }

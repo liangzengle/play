@@ -8,6 +8,7 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import com.google.common.primitives.Bytes
 import com.typesafe.config.Config
+import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.boot.Banner
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ApplicationContextInitializer
@@ -22,10 +23,13 @@ import play.example.game.container.gs.domain.GameServerId
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
 import play.spring.PlayNonWebApplicationContextFactory
+import play.spring.rootBeanDefinition
 import play.util.classOf
 import play.util.concurrent.PlayPromise
 import play.util.logging.withMDC
+import play.util.unsafeCast
 import scala.concurrent.Promise
+import kotlin.reflect.typeOf
 
 /**
  *
@@ -44,6 +48,7 @@ class GameServerActor(
   object Stop : Command
 
   private val staticMdc = mapOf("serverId" to serverId.toString())
+  private val noMdcPerMessage = akka.japi.function.Function<Any, Map<String, String>> { emptyMap() }
 
   private lateinit var applicationContext: ConfigurableApplicationContext
 
@@ -69,7 +74,7 @@ class GameServerActor(
   }
 
   private fun spawn(cmd: Spawn<Any>) {
-    val behavior = Behaviors.withMdc(Any::class.java, staticMdc, cmd.behavior)
+    val behavior = Behaviors.withMdc(Any::class.java, staticMdc, noMdcPerMessage, cmd.behavior)
     val ref = context.spawn(behavior, cmd.name)
     cmd.promise.success(ref)
   }
@@ -108,7 +113,8 @@ class GameServerActor(
 
     springApplication.addInitializers(
       ApplicationContextInitializer<ConfigurableApplicationContext> {
-        it.beanFactory.registerSingleton("gameServerActor", context.self)
+        it.unsafeCast<BeanDefinitionRegistry>()
+          .registerBeanDefinition("gameServerActor", rootBeanDefinition(typeOf<ActorRef<Command>>(), self))
         it.beanFactory.registerSingleton("gameServerId", GameServerId(serverId))
         it.beanFactory.registerSingleton("serverConfig", serverConfig)
         it.beanFactory.registerSingleton("dbNameProvider", DatabaseNameProvider { dbName })

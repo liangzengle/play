@@ -31,7 +31,7 @@ class FriendManager(
       .build()
   }
 
-  private fun onRequest(cmd: PlayerRequest) {
+  private fun onRequest(cmd: FriendPlayerRequest) {
     requestHandler.handle(cmd)
   }
 

@@ -4,6 +4,7 @@ import play.db.Repository
 import play.db.ResultMap
 import play.entity.Entity
 import play.util.concurrent.Future
+import play.util.unsafeCast
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -49,6 +50,12 @@ class MemoryRepository : Repository {
 
   override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<out Any> {
     return Future.successful(Unit)
+  }
+
+  override fun <ID, E : Entity<ID>> loadAll(ids: Iterable<ID>, entityClass: Class<E>): Future<List<E>> {
+    val map = getMap(entityClass)
+    val list = ids.asSequence().map(map::get).filterNotNull().toList()
+    return Future.successful(list.unsafeCast())
   }
 
   override fun <ID, E : Entity<ID>> findById(entityClass: Class<E>, id: ID): Future<Optional<E>> {

@@ -44,3 +44,5 @@ include 'play-example-common'
 project(':play-example-common').projectDir = file('./play-example/common')
 include 'play-example-game'
 project(':play-example-game').projectDir = file('./play-example/game')
+include 'play-example-robot'
+project(':play-example-robot').projectDir = file('./play-example/robot')
