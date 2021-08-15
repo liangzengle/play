@@ -22,7 +22,7 @@ class AccountController : AbstractController(ModuleId.Account) {
   }
 
   @Cmd(2, true)
-  fun ping(msg: String): RequestResult<Int> {
+  fun ping(msg: String): RequestResult<String> {
     throw UnsupportedOperationException()
   }
 }

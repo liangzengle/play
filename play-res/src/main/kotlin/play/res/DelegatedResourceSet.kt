@@ -11,7 +11,7 @@ open class DelegatedResourceSet<K, T, G, E> internal constructor() :
   companion object {
     private val instances = ConcurrentHashMap<Class<*>, AnyDelegatedConfigSet>()
     fun get(clazz: Class<*>) =
-      instances[clazz] ?: throw IllegalStateException("ConfigSet for [${clazz.simpleName}] not initialized.")
+      instances[clazz] ?: throw IllegalStateException("ResourceSet for [${clazz.simpleName}] is not initialized.")
 
     internal fun getOrNull(clazz: Class<*>): AnyResourceSet? {
       return instances[clazz]

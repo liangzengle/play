@@ -1,17 +1,19 @@
 package play.example.robot
 
-import com.typesafe.config.ConfigFactory
+import org.springframework.boot.SpringApplication
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import play.example.robot.net.ResponseDispatcher
+import play.example.robot.net.RobotChannelHandler
+
+@SpringBootApplication
+class RobotSource
 
 object RobotApp {
 
   @JvmStatic
   fun main(args: Array<String>) {
-    val conf = ConfigFactory.load()
-    val host = conf.getString("server.host")
-    val port = conf.getString("server.port")
-    val num = conf.getInt("robot.num")
-    for (i in 1..num) {
-      
-    }
+    val applicationContext = SpringApplication.run(RobotSource::class.java)
+    val responseDispatcher = applicationContext.getBean(ResponseDispatcher::class.java)
+    RobotChannelHandler.setDispatcher(responseDispatcher)
   }
 }

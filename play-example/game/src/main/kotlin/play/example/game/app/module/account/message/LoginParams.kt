@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  * @author LiangZengle
  */
 @Serializable
-class LoginParams(
+data class LoginParams(
   val platform: String,
   val serverId: Int,
   val account: String

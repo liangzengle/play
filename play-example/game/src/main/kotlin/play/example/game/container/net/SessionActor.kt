@@ -6,7 +6,6 @@ import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
-import akka.actor.typed.javadsl.TimerScheduler
 import io.netty.channel.Channel
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
@@ -20,14 +19,12 @@ import play.mvc.Request
 import play.mvc.Response
 import play.util.collection.LongIterable
 import play.util.logging.getLogger
-import java.time.Duration
 import java.util.*
 import java.util.stream.LongStream
 
 class SessionActor(
   context: ActorContext<Command>,
   private val ch: Channel,
-  timer: TimerScheduler<Command>,
   private val unhandledRequestReceivers: List<ActorRef<UnhandledRequest>>,
   flushIntervalMillis: Int
 ) : AbstractTypedActor<SessionActor.Command>(context) {
@@ -44,17 +41,15 @@ class SessionActor(
   init {
     ch.pipeline().addLast("session", ChannelHandler())
     ch.config().isAutoRead = true
-    if (flushIntervalMillis > 0) {
-      writer = SessionWriter.WriteNoFlush(ch)
-      timer.startTimerWithFixedDelay(Flush, Duration.ofMillis(flushIntervalMillis.toLong()))
+    writer = if (flushIntervalMillis > 0) {
+      SessionWriter.WriteNoFlush(ch)
     } else {
-      writer = SessionWriter.WriteFlush(ch)
+      SessionWriter.WriteFlush(ch)
     }
   }
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
-      .onMessageEquals(Flush) { flush() }
       .accept(::close)
       .accept(::identify)
       .accept(::subscribe)
@@ -68,14 +63,6 @@ class SessionActor(
     if (ch.isActive) {
       ch.close()
     }
-  }
-
-  private fun flush(): Behavior<Command> {
-    if (!ch.isActive) {
-      return stoppedBehavior()
-    }
-    writer.flush()
-    return sameBehavior()
   }
 
   private fun write(cmd: Write): Behavior<Command> {
@@ -173,9 +160,7 @@ class SessionActor(
 
     fun create(ch: Channel, unhandledRequestReceivers: List<ActorRef<UnhandledRequest>>): Behavior<Command> =
       Behaviors.setup { ctx ->
-        Behaviors.withTimers { timer ->
-          SessionActor(ctx, ch, timer, unhandledRequestReceivers, 50)
-        }
+        SessionActor(ctx, ch, unhandledRequestReceivers, 0)
       }
 
     fun write(id: Long, msg: Any) {
@@ -209,7 +194,6 @@ class SessionActor(
 
   interface Command
   data class Close(val reason: String, val cause: Throwable? = null) : Command
-  private object Flush : Command
   data class Identify(val id: Long) : Command
   data class Subscribe(val subscriber: ActorRef<Request>) : Command
   data class Write(val msg: Any) : Command

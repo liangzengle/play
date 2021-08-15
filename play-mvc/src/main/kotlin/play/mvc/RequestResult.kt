@@ -9,9 +9,7 @@ import play.util.control.Result2
  */
 sealed class RequestResult<out T> {
 
-  data class Ok<T>(val value: T) : RequestResult<T>()
-
-  data class Code(val code: Int) : RequestResult<Nothing>()
+  data class Normal<T>(val code: Int, val value: T?): RequestResult<T>()
 
   object None : RequestResult<Unit>()
 
@@ -19,8 +17,18 @@ sealed class RequestResult<out T> {
 
   companion object {
 
+    @JvmStatic
+    fun <T> ok(value: T) = Normal(0, value)
+
+    @JvmStatic
+    fun err(code: Int) = Normal(code, null)
+
+    @JvmStatic
+    @JvmName("of")
+    operator fun <T> invoke(code: Int, value: T) = Normal(code, value)
+
     operator fun <T> invoke(result: Result2<T>): RequestResult<T> =
-      if (result.isErr()) Code(result.getErrorCode()) else Ok(result.get())
+      if (result.isErr()) err(result.getErrorCode()) else ok(result.get())
 
     inline fun <T : Any> async(f: () -> PlayFuture<Result2<T>>): RequestResult<T> =
       Future(f().map { RequestResult(it) })

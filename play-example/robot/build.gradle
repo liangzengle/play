@@ -19,7 +19,7 @@ dependencies {
 }
 
 task generateCaches(type: JavaExec) {
-    main = 'play.entity.cache.codegen.EntityCacheGenerator'
+    main = 'play.example.robot.codegen.Generator'
     classpath = sourceSets.codegen.runtimeClasspath
     args "${buildDir}/generated-sources/"
 

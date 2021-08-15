@@ -28,7 +28,7 @@ class PlayerController @Inject constructor(
   fun create(name: String): RequestResult<Boolean> = throw UnsupportedOperationException()
 
   @Cmd(2, dummy = true)
-  fun login(name: String): RequestResult<PlayerDTO> = throw UnsupportedOperationException()
+  fun login(): RequestResult<PlayerDTO> = throw UnsupportedOperationException()
 
   @Cmd(3)
   fun ping(self: Self, msg: String): RequestResult<String> = RequestResult {

@@ -2,6 +2,7 @@ package play.example.game.container.net
 
 import io.netty.channel.Channel
 import play.util.collection.LongIterable
+import java.time.Duration
 import java.util.*
 import java.util.stream.LongStream
 
@@ -13,7 +14,7 @@ sealed class SessionWriter(protected val ch: Channel) {
 
   abstract fun write(msg: Any)
 
-  abstract fun flush()
+  abstract fun flush(): Boolean
 
   class WriteNoFlush(ch: Channel) : SessionWriter(ch) {
     @Volatile
@@ -23,11 +24,13 @@ sealed class SessionWriter(protected val ch: Channel) {
       empty = false
     }
 
-    override fun flush() {
-      if (!empty) {
-        empty = true
-        ch.flush()
+    override fun flush(): Boolean {
+      if (empty) {
+        return false
       }
+      empty = true
+      ch.flush()
+      return true
     }
   }
 
@@ -36,8 +39,9 @@ sealed class SessionWriter(protected val ch: Channel) {
       ch.writeAndFlush(msg, ch.voidPromise())
     }
 
-    override fun flush() {
+    override fun flush(): Boolean {
       ch.flush()
+      return true
     }
   }
 

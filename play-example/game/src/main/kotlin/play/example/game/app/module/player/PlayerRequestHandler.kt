@@ -75,11 +75,10 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
       return
     }
     when (result) {
-      is RequestResult.Ok<*> -> write(
+      is RequestResult.Normal<*> -> write(
         playerId,
-        Response(request.header, 0, if (result.value is Unit) null else result.value)
+        Response(request.header, result.code, result.value)
       )
-      is RequestResult.Code -> write(playerId, Response(request.header, result.code))
       is RequestResult.Future -> {
         result.future.onComplete {
           if (it.isSuccess) onResult(playerId, request, it.getOrThrow())
