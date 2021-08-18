@@ -26,7 +26,8 @@ class PlayerService @Inject constructor(
   private val eventBus: PlayerEventBus,
   private val playerCache: PlayerEntityCache,
   private val playerInfoCache: PlayerInfoEntityCache,
-  private val onlinePlayerService: OnlinePlayerService
+  private val onlinePlayerService: OnlinePlayerService,
+  private val playerIdNameCache: PlayerIdNameCache
 ) : PlayerEventListener {
 
   override fun playerEventReceive(): PlayerEventReceive {
@@ -77,9 +78,11 @@ class PlayerService @Inject constructor(
 
   fun isOnline(playerId: Long) = onlinePlayerService.isOnline(playerId)
 
-  fun isPlayerExists(playerId: Long) = PlayerManager.isPlayerExists(playerId)
+  fun isPlayerExists(playerId: Long) = playerIdNameCache.isPlayerExists(playerId)
 
-  fun getPlayerName(playerId: Long) = PlayerManager.getPlayerNameOrThrow(playerId)
+  fun getPlayerName(playerId: Long): String {
+    return if (isPlayerExists(playerId)) playerIdNameCache.getPlayerNameOrThrow(playerId) else ""
+  }
 
   /**
    * 判断玩家的创角时间是否在指定的范围内

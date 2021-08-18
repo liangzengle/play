@@ -24,8 +24,6 @@ class AccountModuleImpl @Autowired constructor(private val playerModule: PlayerM
     } else {
       playerModule.createReq(player, randomName())
     }
-
-    pingReq(player, "hello")
   }
 
   private fun randomName(): String {

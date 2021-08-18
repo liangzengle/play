@@ -4,10 +4,7 @@ import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder
 import io.netty.util.ReferenceCountUtil
-import play.mvc.Header
-import play.mvc.MsgId
-import play.mvc.Request
-import play.mvc.RequestBody
+import play.mvc.*
 import play.net.netty.copyToArray
 
 /**
@@ -23,7 +20,7 @@ class RequestDecoder(maxFrameLength: Int) : LengthFieldBasedFrameDecoder(maxFram
     try {
       val msgId = msg.readInt()
       val sequenceNo = msg.readInt()
-      val requestBody = PB.decode<RequestBody>(msg.copyToArray())
+      val requestBody = MessageCodec.decode<RequestBody>(msg.copyToArray())
       return Request(Header(MsgId(msgId), sequenceNo), requestBody)
     } finally {
       ReferenceCountUtil.release(msg)

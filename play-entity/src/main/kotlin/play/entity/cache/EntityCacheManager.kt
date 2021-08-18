@@ -68,7 +68,7 @@ class EntityCacheManagerImpl constructor(
       throw IllegalStateException("${dir.absolutePath}不是文件夹")
     }
     if (dir.exists() && dir.isDirectory && !dir.list().isNullOrEmpty()) {
-      throw UnhandledCacheDumpException(dir)
+      throw UnhandledEntityCacheDumpException(dir)
     }
   }
 

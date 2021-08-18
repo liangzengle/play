@@ -1,6 +1,7 @@
 package play.example.robot.module.player
 
 import io.netty.channel.EventLoop
+import io.netty.util.AttributeKey
 import play.example.robot.net.RequestParams
 import play.example.robot.net.Requester
 import play.example.robot.net.RobotClient
@@ -9,15 +10,22 @@ import play.example.robot.net.RobotClient
  *
  * @author LiangZengle
  */
-class RobotPlayer(val account: String, client: RobotClient, private val eventLoop: EventLoop) {
+class RobotPlayer(val account: String, private val eventLoop: EventLoop) {
+  companion object {
+    val AttrKey: AttributeKey<RobotPlayer> = AttributeKey.valueOf("RobotPlayer")
+  }
+
   var id: Long = 0
 
   var name: String = ""
 
-  private val requester = Requester(client)
+  private lateinit var client: RobotClient
 
-  init {
-    client.setPlayer(this)
+  private lateinit var requester: Requester
+
+  fun setClient(client: RobotClient) {
+    this.client = client
+    this.requester = Requester(client)
   }
 
   fun getRequestParams(requestId: Int): RequestParams? {

@@ -2,8 +2,6 @@ package play.mvc
 
 import kotlinx.serialization.Serializable
 import play.util.*
-import java.lang.IllegalArgumentException
-import java.nio.file.Files.writeString
 
 data class Request(@JvmField val header: Header, @JvmField val body: RequestBody) {
   fun msgId() = header.msgId.toInt()
@@ -21,11 +19,17 @@ abstract class AbstractPlayerRequest(@JvmField val playerId: Long, @JvmField val
 
 class PlayerRequest(playerId: Long, request: Request) : AbstractPlayerRequest(playerId, request)
 
-data class Response(
+class Response(
   @JvmField val header: Header,
   @JvmField val statusCode: Int,
-  @JvmField val body: Any? = null
-)
+  @JvmField val body: ByteArray = EmptyByteArray
+) {
+  constructor(header: Header, statusCode: Int, data: Any?) : this(header, statusCode, MessageCodec.encode(data))
+
+  override fun toString(): String {
+    return "Response(header=$header, statusCode=$statusCode, body=${body.contentToString()})"
+  }
+}
 
 @JvmInline
 value class MsgId(val value: Int) {
@@ -83,7 +87,7 @@ class RequestBody(
   val strings: Array<String> = EmptyStringArray,
   val bytes: ByteArray = EmptyByteArray
 ) {
-  companion object{
+  companion object {
     @JvmStatic
     val Empty = RequestBody()
   }

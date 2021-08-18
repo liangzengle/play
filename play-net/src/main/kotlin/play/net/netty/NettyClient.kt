@@ -2,13 +2,14 @@ package play.net.netty
 
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
-import play.util.logging.getLogger
+import io.netty.channel.ChannelPromise
+import io.netty.util.AttributeKey
+import mu.KLogging
 
 class NettyClient(
   private val name: String,
-  private val host: String,
-  private val port: Int,
   bootstrap: Bootstrap,
+  private val attributes: Map<AttributeKey<out Any>, Any> = emptyMap(),
   private val autoReconnect: Boolean = true
 ) {
 
@@ -16,8 +17,11 @@ class NettyClient(
 
   private var ch: Channel? = null
 
+  @Suppress("UNCHECKED_CAST")
   fun connect() {
-    ch = b.clone().connect(host, port).sync().channel()
+    val ch = b.clone().connect().sync().channel()
+    attributes.forEach { (k, v) -> ch.attr(k as AttributeKey<Any>).set(v) }
+    this.ch = ch
   }
 
   @Synchronized
@@ -33,6 +37,10 @@ class NettyClient(
   }
 
   fun write(msg: Any) {
+    write(msg, true, null)
+  }
+
+  fun write(msg: Any, flush: Boolean, promise: ChannelPromise?) {
     if (!isConnected()) {
       if (!autoReconnect) {
         return
@@ -43,7 +51,12 @@ class NettyClient(
       logger.error { "send msg failed: $msg" }
       return
     }
-    ch?.writeAndFlush(msg)
+    val ch = this.ch
+    if (flush) {
+      ch?.writeAndFlush(msg, promise ?: ch.voidPromise())
+    } else {
+      ch?.write(msg, promise ?: ch.voidPromise())
+    }
   }
 
   fun isConnected(): Boolean {
@@ -51,10 +64,8 @@ class NettyClient(
   }
 
   override fun toString(): String {
-    return "NettyClient(name='$name', host='$host', port=$port, autoReconnect=$autoReconnect)"
+    return "NettyClient(name='$name', bootstrap=$b, attributes=$attributes, autoReconnect=$autoReconnect)"
   }
 
-  companion object {
-    private val logger = getLogger()
-  }
+  companion object : KLogging()
 }

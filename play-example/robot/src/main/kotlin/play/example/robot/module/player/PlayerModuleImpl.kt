@@ -3,7 +3,6 @@ package play.example.robot.module.player
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.message.PlayerDTO
 import play.example.game.container.gm.GmResult
-import play.example.robot.module.AccountModule
 import play.example.robot.module.PlayerModule
 
 /**
@@ -26,7 +25,7 @@ class PlayerModuleImpl : PlayerModule() {
   }
 
   override fun pingResp(player: RobotPlayer, statusCode: Int, data: String, req: PingRequestParams?) {
-    println("pong: $data")
+    println("$player >> pong: ${req?.msg} $data")
     pingReq(player, "hello")
   }
 

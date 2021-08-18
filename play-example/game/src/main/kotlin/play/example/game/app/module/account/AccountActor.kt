@@ -12,6 +12,7 @@ import play.example.common.StatusCode
 import play.example.game.app.module.account.entity.AccountEntityCache
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.PlayerManager
+import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.player.controller.PlayerModule
 import play.example.game.container.net.SessionActor
 import play.example.game.container.net.write
@@ -25,7 +26,8 @@ class AccountActor(
   context: ActorContext<Command>,
   val id: Long,
   private val accountEntityCache: AccountEntityCache,
-  private val playerManager: ActorRef<PlayerManager.Command>
+  private val playerManager: ActorRef<PlayerManager.Command>,
+  private val playerService: PlayerService
 ) : AbstractTypedActor<AccountActor.Command>(context) {
 
   private lateinit var loginParams: LoginParams
@@ -77,7 +79,7 @@ class AccountActor(
     context.watch(session)
     session send SessionActor.Identify(id)
     session send SessionActor.Subscribe(requestAdapter)
-    val hasPlayer = PlayerManager.isPlayerExists(id)
+    val hasPlayer = playerService.isPlayerExists(id)
     session.write(Response(cmd.request.header, 0, hasPlayer))
     return waitingPlayerCreate
   }
@@ -88,10 +90,11 @@ class AccountActor(
     fun create(
       id: Long,
       accountEntityCache: AccountEntityCache,
-      playerManager: ActorRef<PlayerManager.Command>
+      playerManager: ActorRef<PlayerManager.Command>,
+      playerService: PlayerService
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
-        AccountActor(ctx, id, accountEntityCache, playerManager)
+        AccountActor(ctx, id, accountEntityCache, playerManager, playerService)
       }
     }
   }

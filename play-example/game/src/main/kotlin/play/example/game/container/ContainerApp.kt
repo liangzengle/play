@@ -15,6 +15,7 @@ import play.example.common.akka.GuardianBehavior
 import play.example.common.net.NettyServerConfiguration
 import play.example.game.container.login.LoginDispatcherActor
 import play.example.game.container.net.SessionManager
+import play.http.EnableHttpClient
 import play.mongodb.PlayMongoConfiguration
 
 /**
@@ -23,6 +24,7 @@ import play.mongodb.PlayMongoConfiguration
  */
 @SpringBootApplication
 @Configuration(proxyBeanMethods = false)
+@EnableHttpClient
 @Import(
   value = [
     PlayCoreConfiguration::class,

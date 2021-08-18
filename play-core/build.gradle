@@ -1,5 +1,6 @@
 dependencies {
     implementation libs.javax.inject
+    implementation libs.fastutil.core
     api libs.guava
     api libs.jctools
     api libs.bundles.logging
@@ -10,5 +11,6 @@ dependencies {
     api libs.bundles.el
     api libs.classgraph
     api libs.caffeine
+    api libs.micrometer.core
     api project(':play-eclipse-collectionx')
 }

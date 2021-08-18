@@ -24,12 +24,12 @@ object Json {
 
   fun configure(mapper: ObjectMapper): ObjectMapper {
     return mapper.findAndRegisterModules()
+      .registerModule(PrimitiveJdkCollectionModule())
       .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
       .configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true)
       .configure(DeserializationFeature.ACCEPT_FLOAT_AS_INT, true)
-      .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
-      .setSerializationInclusion(JsonInclude.Include.NON_DEFAULT)
+      .setSerializationInclusion(JsonInclude.Include.NON_NULL)
       .setVisibility(PropertyAccessor.FIELD, Visibility.ANY)
       .setVisibility(PropertyAccessor.GETTER, Visibility.NONE)
       .setVisibility(PropertyAccessor.IS_GETTER, Visibility.NONE)

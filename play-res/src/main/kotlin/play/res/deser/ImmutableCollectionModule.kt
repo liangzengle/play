@@ -10,6 +10,9 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.type.CollectionType
 import com.fasterxml.jackson.databind.type.MapType
 import com.fasterxml.jackson.datatype.guava.deser.*
+import play.res.IllegalConcreteTypeException
+import play.util.isAbstract
+import play.util.json.PrimitiveImmutableCollectionDeserializers
 import java.util.*
 
 /**
@@ -31,12 +34,18 @@ internal class ImmutableCollectionDeserializers : Deserializers.Base() {
     elementDeserializer: JsonDeserializer<*>?
   ): JsonDeserializer<*>? {
     val rawClass = type.rawClass
-    if (SortedMap::class.java.isAssignableFrom(rawClass)) {
+    if (!rawClass.isAbstract()) {
+      throw IllegalConcreteTypeException(rawClass)
+    }
+    val primitiveMapDeserializer = PrimitiveImmutableCollectionDeserializers.forMapType(type)
+    if (primitiveMapDeserializer != null) {
+      return primitiveMapDeserializer
+    }
+    if (NavigableMap::class.java == rawClass || SortedMap::class.java == rawClass) {
       return ImmutableSortedMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null)
     }
-    if (Map::class.java.isAssignableFrom(rawClass)) {
-      return PrimitiveImmutableCollectionDeserializers.forMap(type.keyType.rawClass, type.contentType.rawClass)
-        ?: ImmutableMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null)
+    if (Map::class.java == rawClass) {
+      return ImmutableMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null)
     }
     return null
   }
@@ -49,16 +58,21 @@ internal class ImmutableCollectionDeserializers : Deserializers.Base() {
     elementDeserializer: JsonDeserializer<*>?
   ): JsonDeserializer<*>? {
     val rawClass = type.rawClass
-    if (SortedSet::class.java.isAssignableFrom(rawClass)) {
+    if (!rawClass.isAbstract()) {
+      throw IllegalConcreteTypeException(rawClass)
+    }
+    val primitiveMapDeserializer = PrimitiveImmutableCollectionDeserializers.forCollectionType(type)
+    if (primitiveMapDeserializer != null) {
+      return primitiveMapDeserializer
+    }
+    if (SortedSet::class.java == rawClass || NavigableSet::class.java == rawClass) {
       return ImmutableSortedSetDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
     }
-    if (Set::class.java.isAssignableFrom(rawClass)) {
-      return PrimitiveImmutableCollectionDeserializers.forSet(type.contentType.rawClass)
-        ?: ImmutableSetDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
+    if (Set::class.java == rawClass) {
+      return ImmutableSetDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
     }
-    if (List::class.java.isAssignableFrom(rawClass)) {
-      return PrimitiveImmutableCollectionDeserializers.forList(type.contentType.rawClass)
-        ?: ImmutableListDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
+    if (List::class.java == rawClass) {
+      return ImmutableListDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
     }
     return null
   }

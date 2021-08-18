@@ -8,34 +8,26 @@ import akka.actor.typed.javadsl.Receive
 import play.akka.AbstractTypedActor
 import play.akka.resumeSupervisor
 import play.akka.send
-import play.db.QueryService
 import play.example.common.akka.scheduling.ActorCronScheduler
-import play.example.common.id.GameUIDGenerator
 import play.example.common.scheduling.Cron
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.domain.PlayerErrorCode
-import play.example.game.app.module.player.entity.PlayerInfoEntity
 import play.example.game.app.module.player.event.PlayerEvent
 import play.example.game.app.module.player.event.PlayerEventDispatcher
 import play.example.game.app.module.player.event.PromisedPlayerEvent
-import play.example.game.app.module.player.exception.PlayerNotExistsException
 import play.example.game.app.module.task.TaskEventReceiver
 import play.example.game.container.net.SessionActor
 import play.example.game.container.net.write
 import play.mvc.Request
 import play.mvc.Response
 import play.scheduling.Scheduler
-import play.util.collection.ConcurrentIntObjectMap
-import play.util.collection.ConcurrentLongObjectMap
-import play.util.collection.ConcurrentObjectLongMap
 import play.util.exception.NoStackTraceException
 import play.util.unsafeCast
-import java.time.Duration
 
 class PlayerManager(
   context: ActorContext<Command>,
   private val eventDispatcher: PlayerEventDispatcher,
-  queryService: QueryService,
+  private val playerIdNameCache: PlayerIdNameCache,
   private val playerService: PlayerService,
   private val requestHandler: PlayerRequestHandler,
   cronScheduler: ActorCronScheduler<Command>,
@@ -43,16 +35,6 @@ class PlayerManager(
 ) : AbstractTypedActor<PlayerManager.Command>(context) {
 
   init {
-    val idToName = ConcurrentLongObjectMap<String>()
-    val serverToNameToId = ConcurrentIntObjectMap<ConcurrentObjectLongMap<String>>()
-    queryService.foreach(PlayerInfoEntity::class.java, listOf("name")) { result ->
-      val id = result.getLong("id")
-      val name = result.getString("name")
-      add(id, name, idToName, serverToNameToId)
-    }.await(Duration.ofSeconds(5))
-    PlayerManager.idToName = idToName
-    PlayerManager.serverToNameToId = serverToNameToId
-
     cronScheduler.schedule(Cron.EveryDay, NewDayStart)
   }
 
@@ -87,12 +69,12 @@ class PlayerManager(
   private fun createPlayer(cmd: CreatePlayerRequest) {
     val playerId = cmd.id
     val playerName = cmd.request.body.readString()
-    if (!isPlayerNameAvailable(playerId, playerName)) {
+    if (!playerIdNameCache.isPlayerNameAvailable(playerId, playerName)) {
       cmd.session write Response(cmd.request.header, PlayerErrorCode.PlayerNameNotAvailable.getErrorCode())
       return
     }
     playerService.createPlayer(playerId, playerName)
-    add(playerId, playerName)
+    playerIdNameCache.add(playerId, playerName)
     cmd.session write Response(cmd.request.header, 0)
   }
 
@@ -110,7 +92,7 @@ class PlayerManager(
   }
 
   private fun getPlayer(id: Long): ActorRef<PlayerActor.Command>? {
-    if (!isPlayerExists(id)) {
+    if (!playerIdNameCache.isPlayerExists(id)) {
       return null
     }
     val actorName = id.toString()
@@ -127,39 +109,9 @@ class PlayerManager(
   }
 
   companion object {
-    private lateinit var idToName: ConcurrentLongObjectMap<String>
-    private lateinit var serverToNameToId: ConcurrentIntObjectMap<ConcurrentObjectLongMap<String>>
-
-    private fun add(playerId: Long, playerName: String) {
-      add(playerId, playerName, idToName, serverToNameToId)
-    }
-
-    private fun add(
-      playerId: Long,
-      playerName: String,
-      idToName: ConcurrentLongObjectMap<String>,
-      serverToNameToId: ConcurrentIntObjectMap<ConcurrentObjectLongMap<String>>
-    ) {
-      val prevName = idToName.putIfAbsent(playerId, playerName)
-      assert(prevName == null)
-      val serverId = GameUIDGenerator.getServerId(playerId).toInt()
-      val nameToId = serverToNameToId.computeIfAbsent(serverId) { ConcurrentObjectLongMap(1024) }
-      val prevId = nameToId.putIfAbsent(playerName, playerId)
-      assert(prevId == null)
-    }
-
-    private fun isPlayerNameAvailable(id: Long, name: String): Boolean {
-      val serverId = GameUIDGenerator.getServerId(id).toInt()
-      return serverToNameToId[serverId]?.containsKey(name) ?: true
-    }
-
-    fun isPlayerExists(playerId: Long): Boolean {
-      return idToName.containsKey(playerId)
-    }
-
     fun create(
       eventDispatcher: PlayerEventDispatcher,
-      queryService: QueryService,
+      playerIdNameCache: PlayerIdNameCache,
       playerService: PlayerService,
       requestHandler: PlayerRequestHandler,
       scheduler: Scheduler,
@@ -169,21 +121,13 @@ class PlayerManager(
         PlayerManager(
           ctx,
           eventDispatcher,
-          queryService,
+          playerIdNameCache,
           playerService,
           requestHandler,
           ActorCronScheduler(scheduler, ctx),
           taskEventReceiver
         )
       }
-    }
-
-    fun getPlayerNameOrThrow(playerId: Long): String {
-      return idToName[playerId] ?: throw PlayerNotExistsException(playerId)
-    }
-
-    fun getPlayerNameOrEmpty(playerId: Long): String {
-      return idToName[playerId] ?: ""
     }
   }
 

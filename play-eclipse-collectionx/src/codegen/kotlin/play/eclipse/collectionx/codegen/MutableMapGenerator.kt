@@ -17,8 +17,9 @@ class MutableMapGenerator {
     keySetType: TypeName,
     valueCollectionType: TypeName
   ): TypeSpec {
-    val keyType = if(Types.isObj(_keyType)) TypeVariableName("K") else _keyType.asClassName()
-    val valueType = if(Types.isObj(_valueType)) TypeVariableName("V") else _valueType.asClassName()
+    val keyType = if (Types.isObj(_keyType)) TypeVariableName("K", Any::class.asClassName()) else _keyType.asClassName()
+    val valueType =
+      if (Types.isObj(_valueType)) TypeVariableName("V", Any::class.asClassName()) else _valueType.asClassName()
     val eclipseCollectionType = when {
       Types.isObj(_keyType) -> {
         _eclipseCollectionType.asTypeName().parameterizedBy(keyType)

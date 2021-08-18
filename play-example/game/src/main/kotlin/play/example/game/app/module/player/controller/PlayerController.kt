@@ -32,7 +32,7 @@ class PlayerController @Inject constructor(
 
   @Cmd(3)
   fun ping(self: Self, msg: String): RequestResult<String> = RequestResult {
-    ok("$msg world!")
+    ok("world!")
   }
 
   @Cmd(99)

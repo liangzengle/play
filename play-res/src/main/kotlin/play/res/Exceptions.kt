@@ -10,3 +10,6 @@ class InvalidConfigException(msg: String) : NoStackTraceException(msg) {
 
   constructor(configClass: Class<*>, message: String) : this("[${configClass.simpleName}]$message")
 }
+
+class IllegalConcreteTypeException(type: Class<*>) :
+  RuntimeException("Should use Abstract Super Type instead of Concrete Type: $type")

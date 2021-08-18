@@ -5,6 +5,6 @@ class Push<T>(val msgId: MsgId) {
 
   @JvmName("of")
   operator fun invoke(message: Any?): Response {
-    return Response(Header(msgId), 0, message)
+    return Response(Header(msgId), 0, MessageCodec.encode(message))
   }
 }

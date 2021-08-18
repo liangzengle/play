@@ -77,9 +77,10 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
     when (result) {
       is RequestResult.Normal<*> -> write(
         playerId,
-        Response(request.header, result.code, result.value)
+        Response(request.header, result.code, MessageCodec.encode(result.value))
       )
       is RequestResult.Future -> {
+        // TODO should pipe to actor？
         result.future.onComplete {
           if (it.isSuccess) onResult(playerId, request, it.getOrThrow())
           else onFailure(playerId, request, it.getCause())

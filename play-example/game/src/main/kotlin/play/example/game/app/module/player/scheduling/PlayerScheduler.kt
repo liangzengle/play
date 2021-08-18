@@ -61,7 +61,7 @@ class PlayerScheduler @Inject constructor(private val playerManager: Provider<Ac
     playerId: Long,
     triggerEvent: PlayerEvent,
     delay: Duration
-  ) = scheduleAt(playerId, triggerEvent, currentMillis() + delay.toLongMilliseconds())
+  ) = scheduleAt(playerId, triggerEvent, currentMillis() + delay.inWholeMilliseconds)
 
   /**
    * 玩家的循环定时计划

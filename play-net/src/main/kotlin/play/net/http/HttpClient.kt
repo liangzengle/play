@@ -1,9 +1,9 @@
 package play.net.http
 
+import mu.KLogging
 import play.util.concurrent.Future
 import play.util.concurrent.Future.Companion.toFuture
 import play.util.exception.isFatal
-import play.util.logging.getLogger
 import play.util.mkStringTo
 import java.net.URI
 import java.net.URLEncoder
@@ -22,9 +22,7 @@ class HttpClient constructor(
   private val client: HttpClient,
   private val readTimeout: Duration = Duration.ofSeconds(5)
 ) {
-  companion object {
-    private val logger = getLogger()
-  }
+  companion object : KLogging()
 
   init {
     require(readTimeout > Duration.ZERO) { "readTimeout > Duration.ZERO" }
@@ -91,7 +89,7 @@ class HttpClient constructor(
     }
     val b = HttpRequest.newBuilder()
     b.uri(uriVal)
-    b.timeout(Duration.ofSeconds(5)).GET()
+    b.timeout(readTimeout).GET()
     headers.forEach { (t, u) ->
       b.header(t, u)
     }

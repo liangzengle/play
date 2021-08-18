@@ -2,8 +2,6 @@ package play.example.robot.codegen
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.plusParameter
-import com.squareup.kotlinpoet.TypeSpec.Companion.classBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.Self
@@ -32,6 +30,7 @@ object Generator {
       .addParameter("response", Types.Response)
     val dispatchCodeBlock = CodeBlock.builder()
     dispatchCodeBlock.beginControlFlow("when(response.header.msgId.toInt())")
+    val autowiredNotRequired = AnnotationSpec.builder(Autowired::class.java).addMember("%L", "required = false").build()
     ClassScanner(CommonPool, emptyList(), listOf("play.example")).scanResult.use {
       it.getClassesWithAnnotation(Controller::class.java.name)
         .forEach { classInfo ->
@@ -47,8 +46,12 @@ object Generator {
             dispatchCodeBlock
           )
           val propertyName = className.simpleName.replaceFirstChar { c -> c.lowercaseChar() }
-          ctor.addParameter(propertyName, className)
-          dispatcher.addProperty(PropertySpec.builder(propertyName, className).initializer(propertyName).build())
+          ctor.addParameter(
+            ParameterSpec.builder(propertyName, className.copy(true)).addAnnotation(autowiredNotRequired).build()
+          )
+          dispatcher.addProperty(
+            PropertySpec.builder(propertyName, className.copy(true)).initializer(propertyName).build()
+          )
         }
     }
     dispatchCodeBlock.addStatement("""else -> println("Unhandled response: ${'$'}response")""")
@@ -77,7 +80,10 @@ object Generator {
       val cmd = method.getAnnotation(Cmd::class.java) ?: continue
       val req = FunSpec.builder("${method.name}Req")
       req.addParameter("player", Types.RobotPlayer)
-      val paramsClassName = ClassName(className.packageName, listOf(className.simpleName, "${method.name.replaceFirstChar { it.uppercaseChar() }}RequestParams"))
+      val paramsClassName = ClassName(
+        className.packageName,
+        listOf(className.simpleName, "${method.name.replaceFirstChar { it.uppercaseChar() }}RequestParams")
+      )
       val paramsClassBuilder = TypeSpec.classBuilder(paramsClassName).superclass(Types.RequestParams)
       val ctor = FunSpec.constructorBuilder()
       val toRequestBody = FunSpec.builder("toRequestBody").addModifiers(KModifier.OVERRIDE)
@@ -131,13 +137,12 @@ object Generator {
         .addParameter("response", Types.Response)
         .addCode(
           CodeBlock.builder()
-            .addStatement("val robotClient = ctx.channel().attr(%T.AttrKey).get()", Types.RobotClient)
-            .addStatement("val player = robotClient.getPlayer()")
+            .addStatement("val player = ctx.channel().attr(%T.AttrKey).get()", Types.RobotPlayer)
             .beginControlFlow("player.execute")
             .addStatement("val requestId = response.header.sequenceNo")
             .addStatement("val req = player.getRequestParams(requestId)")
             .addStatement("val statusCode = response.statusCode")
-            .addStatement("val data = %T.decode(response.body as ByteArray, %T::class)", Types.PB, returnType)
+            .addStatement("val data = %T.decode(response.body, %T::class)", Types.MessageCodec, returnType)
             .addStatement("%L(player, statusCode, data, req as? %L)", respFunName, requestParamsClassName)
             .endControlFlow()
             .build()
@@ -152,7 +157,11 @@ object Generator {
       funSpecList.add(respRaw.build())
       funSpecList.add(resp.build())
 
-      dispatcher.addStatement("${MsgId(moduleId, cmd.value).toInt()} -> %L.%L(ctx, response)", className.simpleName.replaceFirstChar { it.lowercaseChar() }, respFunName)
+      dispatcher.addStatement(
+        "${MsgId(moduleId, cmd.value).toInt()} -> %L?.%L(ctx, response)",
+        className.simpleName.replaceFirstChar { it.lowercaseChar() },
+        respFunName
+      )
     }
 
     for (field in clazz.fields) {
@@ -167,13 +176,12 @@ object Generator {
         .addParameter("response", Types.Response)
         .addCode(
           CodeBlock.builder()
-            .addStatement("val robotClient = ctx.channel().attr(%T.AttrKey).get()", Types.RobotClient)
-            .addStatement("val player = robotClient.getPlayer()")
+            .addStatement("val player = ctx.channel().attr(%T.AttrKey).get()", Types.RobotPlayer)
             .beginControlFlow("player.execute")
             .addStatement("val requestId = response.header.sequenceNo")
             .addStatement("val req = player.getRequestParams(requestId)")
             .addStatement("val statusCode = response.statusCode")
-            .addStatement("val data = %T.decode(response.body as ByteArray, %T::class)", Types.PB, returnType)
+            .addStatement("val data = %T.decode(response.body, %T::class)", Types.MessageCodec, returnType)
             .addStatement("%L(player, statusCode, data, req)", respFunName)
             .endControlFlow()
             .build()
@@ -189,7 +197,11 @@ object Generator {
       funSpecList.add(funSpec)
       funSpecList.add(respRaw.build())
 
-      dispatcher.addStatement("${MsgId(moduleId, cmd.value).toInt()} -> %L.%L(ctx, response)", className.simpleName.replaceFirstChar { it.lowercaseChar() }, respFunName)
+      dispatcher.addStatement(
+        "${MsgId(moduleId, cmd.value).toInt()} -> %L?.%L(ctx, response)",
+        className.simpleName.replaceFirstChar { it.lowercaseChar() },
+        respFunName
+      )
     }
 
     val typeSpec = TypeSpec

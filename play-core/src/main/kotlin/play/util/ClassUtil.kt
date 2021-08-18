@@ -10,6 +10,34 @@ import java.lang.reflect.Type
  * @author LiangZengle
  */
 object ClassUtil {
+  fun isPrimitiveOrWrapper(type: Class<*>): Boolean {
+    return getPrimitiveType(type) != null
+  }
+
+  fun getPrimitiveType(type: Class<*>): Class<*>? {
+    val primitiveType = type.kotlin.javaPrimitiveType
+    return if (primitiveType == Void.TYPE) null else primitiveType
+  }
+
+  fun getPrimitiveWrapperType(type: Class<*>): Class<*> {
+    return type.kotlin.javaObjectType
+  }
+
+  fun getPrimitiveDefaultValue(type: Class<*>): Any {
+    val primitiveType = getPrimitiveType(type) ?: throw IllegalArgumentException("$type is not Primitive Type")
+    return when (primitiveType.name) {
+      "boolean" -> false
+      "byte" -> 0.toByte()
+      "short" -> 0.toShort()
+      "int" -> 0
+      "long" -> 0L
+      "float" -> 0f
+      "double" -> 0.0
+      "char" -> 0.toChar()
+      else -> throw IllegalStateException("should not happen")
+    }
+  }
+
   fun <T> loadClass(fqcn: String): Class<out T> {
     return Class.forName(fqcn, true, null).unsafeCast()
   }
@@ -34,7 +62,7 @@ object ClassUtil {
       !clazz.isInterface && !clazz.isAbstract()
   }
 
-  fun <T> newInstance(fqcn: String): T{
+  fun <T> newInstance(fqcn: String): T {
     return loadClass<T>(fqcn).createInstance()
   }
 }

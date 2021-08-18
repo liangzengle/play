@@ -6,6 +6,7 @@ caffeine = "3.0.2"
 checker = "3.15.0"
 classgraph = "4.8.114"
 eclipse-collections = "10.4.0"
+fastutil = "8.5.4"
 guava = "30.1.1-jre"
 hibernat-validator = "6.1.2.Final"
 javax-inject = "1"
@@ -18,6 +19,7 @@ kotlinpoet = "1.8.0"
 kotlinx-serialization = "1.2.1"
 log4j = "2.14.1"
 logback = "1.2.3"
+micrometer = "1.7.3"
 mongodb-driver = "4.0.5"
 mvel = "2.4.12.Final"
 netty = "4.1.65.Final"
@@ -37,6 +39,7 @@ caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "c
 checker = { module = "org.checkerframework:checker-qual", version.ref = "checker" }
 classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 eclipse-collections = { module = "org.eclipse.collections:eclipse-collections", version.ref = "eclipse-collections" }
+fastutil-core = { module = "it.unimi.dsi:fastutil-core", version.ref = "fastutil" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
 hibernat-validator = { module = "org.hibernate.validator:hibernate-validator", version.ref = "hibernat-validator" }
 javax-inject = { module = "javax.inject:javax.inject", version.ref = "javax-inject" }
@@ -59,10 +62,11 @@ log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "lo
 log4j-slf4j = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
 log4j-jul = { module = "org.apache.logging.log4j:log4j-jul", version.ref = "log4j" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+mongodb = { module = "org.mongodb:mongodb-driver-reactivestreams", version.ref = "mongodb-driver" }
 mvel = { module = "org.mvel:mvel2", version.ref = "mvel" }
 netty-all = { module = "io.netty:netty-all", version.ref = "netty" }
 netty-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
-mongodb = { module = "org.mongodb:mongodb-driver-reactivestreams", version.ref = "mongodb-driver" }
 scala-library = { module = "org.scala-lang:scala-library", version.ref = "scala-library" }
 scala-java8-compact = { module = "org.scala-lang.modules:scala-java8-compat_2.13", version.ref = "scala-java8-compact" }
 slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }

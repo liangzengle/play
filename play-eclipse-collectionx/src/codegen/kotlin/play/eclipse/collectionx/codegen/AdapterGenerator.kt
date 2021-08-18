@@ -64,6 +64,9 @@ class AdapterGenerator {
       return ClassName.bestGuess("org.eclipse.collectionx.map.mutable.${collectionType.simpleName}Wrapper")
     }
 
+    val K = TypeVariableName("K", Any::class.asClassName())
+    val V = TypeVariableName("V", Any::class.asClassName())
+
     return FileSpec.builder(pkg, fileName)
       .jvmName("Adaptor")
       .apply {
@@ -105,18 +108,18 @@ class AdapterGenerator {
             FunSpec.builder("toJava")
               .apply {
                 if (Types.isObj(keyType)) {
-                  addTypeVariable(TypeVariableName("K"))
+                  addTypeVariable(K)
                 } else if (Types.isObj(valueType)) {
-                  addTypeVariable(TypeVariableName("V"))
+                  addTypeVariable(V)
                 }
               }
               .receiver(
                 when {
                   Types.isObj(keyType) -> {
-                    collectionType.asTypeName().parameterizedBy(TypeVariableName("K"))
+                    collectionType.asTypeName().parameterizedBy(K)
                   }
                   Types.isObj(valueType) -> {
-                    collectionType.asTypeName().parameterizedBy(TypeVariableName("V"))
+                    collectionType.asTypeName().parameterizedBy(V)
                   }
                   else -> collectionType.asTypeName()
                 }
@@ -124,10 +127,10 @@ class AdapterGenerator {
               .returns(
                 when {
                   Types.isObj(keyType) -> {
-                    Map::class.asTypeName().parameterizedBy(TypeVariableName("K"), valueType.asTypeName())
+                    Map::class.asTypeName().parameterizedBy(K, valueType.asTypeName())
                   }
                   Types.isObj(valueType) -> {
-                    Map::class.asTypeName().parameterizedBy(keyType.asTypeName(), TypeVariableName("V"))
+                    Map::class.asTypeName().parameterizedBy(keyType.asTypeName(), V)
                   }
                   else -> Map::class.parameterizedBy(keyType, valueType)
                 }
@@ -178,18 +181,18 @@ class AdapterGenerator {
             FunSpec.builder("toJava")
               .apply {
                 if (Types.isObj(keyType)) {
-                  addTypeVariable(TypeVariableName("K"))
+                  addTypeVariable(K)
                 } else if (Types.isObj(valueType)) {
-                  addTypeVariable(TypeVariableName("V"))
+                  addTypeVariable(V)
                 }
               }
               .receiver(
                 when {
                   Types.isObj(keyType) -> {
-                    collectionType.asTypeName().parameterizedBy(TypeVariableName("K"))
+                    collectionType.asTypeName().parameterizedBy(K)
                   }
                   Types.isObj(valueType) -> {
-                    collectionType.asTypeName().parameterizedBy(TypeVariableName("V"))
+                    collectionType.asTypeName().parameterizedBy(V)
                   }
                   else -> collectionType.asTypeName()
                 }
@@ -197,10 +200,10 @@ class AdapterGenerator {
               .returns(
                 when {
                   Types.isObj(keyType) -> {
-                    Map::class.asTypeName().parameterizedBy(TypeVariableName("K"), valueType.asTypeName())
+                    Map::class.asTypeName().parameterizedBy(K, valueType.asTypeName())
                   }
                   Types.isObj(valueType) -> {
-                    Map::class.asTypeName().parameterizedBy(keyType.asTypeName(), TypeVariableName("V"))
+                    Map::class.asTypeName().parameterizedBy(keyType.asTypeName(), V)
                   }
                   else -> Map::class.parameterizedBy(keyType, valueType)
                 }

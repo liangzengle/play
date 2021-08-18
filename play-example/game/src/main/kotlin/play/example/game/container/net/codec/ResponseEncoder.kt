@@ -5,7 +5,6 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelOutboundHandlerAdapter
 import io.netty.channel.ChannelPromise
 import play.mvc.Response
-import play.util.EmptyByteArray
 
 /**
  * Response -> ByteBuf
@@ -21,16 +20,14 @@ object ResponseEncoder : ChannelOutboundHandlerAdapter() {
     val msgId = msg.header.msgId.value
     val sequenceNo = msg.header.sequenceNo
     val statusCode = msg.statusCode
-    val body: Any? = msg.body
-    val binaryBody = if (body == null) EmptyByteArray else PB.encode(body)
-    val len = 12 + binaryBody.size
+    val len = 12 + msg.body.size
     val buffer = ctx.channel().alloc().ioBuffer(len)
     buffer
       .writeInt(len)
       .writeInt(msgId)
       .writeInt(sequenceNo)
       .writeInt(statusCode)
-      .writeBytes(binaryBody)
+      .writeBytes(msg.body)
     ctx.write(buffer, promise)
   }
 }

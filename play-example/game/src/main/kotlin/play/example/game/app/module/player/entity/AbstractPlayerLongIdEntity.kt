@@ -18,14 +18,8 @@ abstract class PlayerObjId : ObjId() {
   abstract val playerId: Long
 }
 
-/**
- * 所有玩家实体类的父类
- */
-@CacheSpec(expireEvaluator = PlayerEntityExpireEvaluator::class)
-@Merge(Merge.Strategy.All)
-@Index(fields = ["id.playerId"], unique = false)
-abstract class AbstractPlayerObjIdEntity<ID : PlayerObjId>(id: ID) : ObjIdEntity<ID>(id) {
-  val playerId get() = id.playerId
+sealed interface PlayerEntityLike {
+  val playerId: Long
 }
 
 /**
@@ -33,8 +27,18 @@ abstract class AbstractPlayerObjIdEntity<ID : PlayerObjId>(id: ID) : ObjIdEntity
  */
 @CacheSpec(expireEvaluator = PlayerEntityExpireEvaluator::class)
 @Merge(Merge.Strategy.All)
-abstract class AbstractPlayerLongIdEntity(id: Long) : LongIdEntity(id) {
-  val playerId get() = id
+@Index(fields = ["id.playerId"], unique = false)
+abstract class AbstractPlayerObjIdEntity<ID : PlayerObjId>(id: ID) : ObjIdEntity<ID>(id), PlayerEntityLike {
+  override val playerId get() = id.playerId
+}
+
+/**
+ * 所有玩家实体类的父类
+ */
+@CacheSpec(expireEvaluator = PlayerEntityExpireEvaluator::class)
+@Merge(Merge.Strategy.All)
+abstract class AbstractPlayerLongIdEntity(id: Long) : LongIdEntity(id), PlayerEntityLike {
+  override val playerId get() = id
 }
 
 /**
@@ -45,5 +49,5 @@ abstract class AbstractPlayerLongIdEntity(id: Long) : LongIdEntity(id) {
 class PlayerEntityExpireEvaluator @Inject constructor(private val onlinePlayerService: OnlinePlayerService) :
   ExpireEvaluator {
   override fun canExpire(entity: Entity<*>): Boolean =
-    !onlinePlayerService.isOnline(entity.unsafeCast<AbstractPlayerLongIdEntity>().id)
+    !onlinePlayerService.isOnline(entity.unsafeCast<PlayerEntityLike>().playerId)
 }

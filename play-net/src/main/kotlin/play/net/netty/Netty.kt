@@ -20,7 +20,6 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.util.concurrent.DefaultThreadFactory
-import play.net.http.HttpClient
 import play.util.EmptyByteArray
 import java.net.InetSocketAddress
 import java.net.SocketAddress

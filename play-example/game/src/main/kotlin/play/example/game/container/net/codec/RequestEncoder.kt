@@ -4,6 +4,7 @@ import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelOutboundHandlerAdapter
 import io.netty.channel.ChannelPromise
+import play.mvc.MessageCodec
 import play.mvc.Request
 
 /**
@@ -21,7 +22,7 @@ object RequestEncoder : ChannelOutboundHandlerAdapter() {
 
     val msgId = msg.header.msgId.value
     val sequenceNo = msg.header.sequenceNo
-    val body = PB.encode(msg.body)
+    val body = MessageCodec.encode(msg.body)
     val len = 8 + body.size
     val buffer = ctx.channel().alloc().ioBuffer(len)
     buffer

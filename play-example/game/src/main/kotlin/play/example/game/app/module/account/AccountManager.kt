@@ -7,17 +7,11 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap
-import org.eclipse.collections.impl.factory.primitive.IntLongMaps
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 import play.Log
 import play.akka.AbstractTypedActor
 import play.akka.send
-import play.db.QueryService
-import play.example.common.id.GameUIDGenerator
 import play.example.game.app.module.account.controller.AccountModule
 import play.example.game.app.module.account.domain.AccountErrorCode
-import play.example.game.app.module.account.domain.AccountId
 import play.example.game.app.module.account.entity.Account
 import play.example.game.app.module.account.entity.AccountEntityCache
 import play.example.game.app.module.account.message.LoginParams
@@ -25,60 +19,32 @@ import play.example.game.app.module.platform.PlatformServiceProvider
 import play.example.game.app.module.platform.domain.Platform
 import play.example.game.app.module.player.PlayerEntityCacheInitializer
 import play.example.game.app.module.player.PlayerManager
+import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.server.ServerService
 import play.example.game.container.login.LoginDispatcherActor
 import play.example.game.container.net.SessionActor
 import play.example.game.container.net.write
 import play.mvc.Request
 import play.mvc.Response
-import play.util.collection.ConcurrentObjectLongMap
 import play.util.control.Result2
 import play.util.control.err
 import play.util.control.getCause
 import play.util.control.ok
-import play.util.max
-import play.util.primitive.high16
-import play.util.primitive.low16
-import play.util.primitive.toInt
 import play.util.unsafeCast
-import java.util.*
-import kotlin.time.Duration
 
 class AccountManager(
   context: ActorContext<Command>,
   private val platformServiceProvider: PlatformServiceProvider,
-  queryService: QueryService,
+  private val accountIdCache: AccountIdCache,
   loginDispatcher: ActorRef<LoginDispatcherActor.Command>,
   private val serverService: ServerService,
   private val accountCache: AccountEntityCache,
   private val playerManager: ActorRef<PlayerManager.Command>,
-  private val playerEntityCacheInitializer: PlayerEntityCacheInitializer
+  private val playerEntityCacheInitializer: PlayerEntityCacheInitializer,
+  private val playerService: PlayerService
 ) : AbstractTypedActor<AccountManager.Command>(context) {
 
-  private val idGenerators: MutableIntObjectMap<GameUIDGenerator>
-
   init {
-    accountIdToId = queryService.fold(Account::class.java, ConcurrentObjectLongMap<AccountId>()) { map, account ->
-      val platformService = platformServiceProvider.getService(account.platformId.toInt())
-      val accountId = platformService.toAccountId(account)
-      map[accountId] = account.id
-      map
-    }.get(Duration.seconds(5))
-
-    val maxIds = IntLongMaps.mutable.empty()
-    for ((accountId, id) in accountIdToId) {
-      val key = toInt(accountId.platformId.toShort(), accountId.serverId)
-      maxIds.updateValue(key, id) { it max id }
-    }
-
-    val idGeneratorMap = IntObjectHashMap<GameUIDGenerator>(maxIds.keyValuesView().size())
-    for (e in maxIds.keyValuesView()) {
-      val key = e.one
-      val value = GameUIDGenerator(e.one.high16().toInt(), e.one.low16().toInt(), OptionalLong.of(e.two))
-      idGeneratorMap.put(key, value)
-    }
-    idGenerators = idGeneratorMap
-
     val subscriber =
       context.messageAdapter(LoginDispatcherActor.UnhandledLoginRequest::class.java) {
         RequestCommand(
@@ -88,18 +54,6 @@ class AccountManager(
       }
     val serverIds = serverService.getServerIds()
     loginDispatcher.tell(LoginDispatcherActor.RegisterLoginReceiver(serverIds, subscriber))
-  }
-
-  private fun nextId(platformId: Byte, serverId: Short): OptionalLong {
-    val key = toInt(platformId.toShort(), serverId)
-    val idGenerator = idGenerators.getIfAbsentPut(key) {
-      GameUIDGenerator(
-        platformId.toInt(),
-        serverId.toInt(),
-        OptionalLong.empty()
-      )
-    }
-    return idGenerator.next()
   }
 
   override fun createReceive(): Receive<Command> {
@@ -136,7 +90,7 @@ class AccountManager(
     val accountActor = if (maybeAccountActor.isPresent) {
       maybeAccountActor.unsafeCast()
     } else {
-      context.spawn(AccountActor.create(accountId, accountCache, playerManager), accountActorName)
+      context.spawn(AccountActor.create(accountId, accountCache, playerManager, playerService), accountActorName)
     }
     accountActor send AccountActor.Login(request, params, session)
   }
@@ -163,17 +117,17 @@ class AccountManager(
       return err(paramValidateStatus)
     }
     val accountId = platformService.getAccountId(params)
-    val id = accountIdToId[accountId]
+    val id = accountIdCache.getOrNull(accountId)
     if (id != null) {
       return ok(id)
     }
     // 账号不存在，新注册用户
-    val maybeId = nextId(platform.getId(), serverId)
+    val maybeId = accountIdCache.nextId(platform.getId(), serverId)
     if (maybeId.isEmpty) {
       return AccountErrorCode.IdExhausted
     }
     val account = platformService.newAccount(maybeId.asLong, platform.getId(), serverId, params.account, params)
-    accountIdToId[accountId] = account.id
+    accountIdCache.add(accountId, account.id)
     createAsync(account)
     return ok(maybeId.asLong)
   }
@@ -195,27 +149,27 @@ class AccountManager(
   }
 
   companion object {
-    private lateinit var accountIdToId: ConcurrentObjectLongMap<AccountId>
-
     fun create(
       platformServiceProvider: PlatformServiceProvider,
-      queryService: QueryService,
+      accountIdCache: AccountIdCache,
       loginDispatcher: ActorRef<LoginDispatcherActor.Command>,
       serverService: ServerService,
       accountCache: AccountEntityCache,
       playerManager: ActorRef<PlayerManager.Command>,
-      playerEntityCacheInitializer: PlayerEntityCacheInitializer
+      playerEntityCacheInitializer: PlayerEntityCacheInitializer,
+      playerService: PlayerService
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
         AccountManager(
           ctx,
           platformServiceProvider,
-          queryService,
+          accountIdCache,
           loginDispatcher,
           serverService,
           accountCache,
           playerManager,
-          playerEntityCacheInitializer
+          playerEntityCacheInitializer,
+          playerService
         )
       }
     }
