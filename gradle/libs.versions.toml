@@ -13,8 +13,8 @@ javax-inject = "1"
 jackson = "2.12.2"
 javax-el = "3.0.0"
 jctools = "3.3.0"
-kotlin = "1.5.21"
-koltin-logging = "2.0.6"
+kotlin-lang = "1.5.21"
+kotlin-logging = "2.0.6"
 kotlinpoet = "1.8.0"
 kotlinx-serialization = "1.2.1"
 log4j = "2.14.1"
@@ -31,7 +31,8 @@ typesafe-config = "1.4.1"
 
 [libraries]
 akka-typed-actor = { module = "com.typesafe.akka:akka-actor-typed_2.13", version.ref = "akka" }
-akka-typed-remote = { module = "com.typesafe.akka:akka-remote_2.13", version.ref = "akka" }
+# akka-typed-remote = { module = "com.typesafe.akka:akka-remote-typed_2.13", version.ref = "akka" }
+akka-typed-cluster = { module = "com.typesafe.akka:akka-cluster-typed_2.13", version.ref = "akka" }
 akka-typed-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
 auto-service = { module = "com.google.auto.service:auto-service", version.ref = "auto-service" }
 bson4jackson = { module = "de.undercouch:bson4jackson", version.ref = "bson4jackson" }
@@ -50,9 +51,9 @@ jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datat
 jackson-datatype-guava = { module = "com.fasterxml.jackson.datatype:jackson-datatype-guava", version.ref = "jackson" }
 jackson-datatype-eclipse-collections = { module = "com.fasterxml.jackson.datatype:jackson-datatype-eclipse-collections", version.ref = "jackson" }
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
-kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
-kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
-koltin-logging = { module = "io.github.microutils:kotlin-logging", version.ref = "koltin-logging" }
+kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin-lang" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin-lang" }
+kotlin-logging = { module = "io.github.microutils:kotlin-logging", version.ref = "kotlin-logging" }
 kotlinpoet-poet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-metadata = { module = "com.squareup:kotlinpoet-metadata", version.ref = "kotlinpoet" }
 kotlinpoet-metadataspecs = { module = "com.squareup:kotlinpoet-metadata-specs", version.ref = "kotlinpoet" }
@@ -76,10 +77,10 @@ typesafe-config = { module = "com.typesafe:config", version.ref = "typesafe-conf
 [bundles]
 jackson = ["jackson-module-kotlin", "jackson-datatype-jdk8", "jackson-datatype-guava", "jackson-datatype-eclipse-collections"]
 javax-el = ["javax-el-api", "javax-el-impl"]
-logging = ["koltin-logging", "slf4j"]
+logging = ["kotlin-logging", "slf4j"]
 log4j = ["log4j-api", "log4j-core", "log4j-slf4j", "log4j-jul"]
 el = ["javax-el-api", "javax-el-impl", "mvel"]
 netty = ["netty-all", "netty-epoll"]
 kotlin = ["kotlin-jvm", "kotlin-reflect"]
-akka = ["akka-typed-actor", "akka-typed-remote", "akka-typed-serialization-jackson"]
+akka = ["akka-typed-actor", "akka-typed-cluster", "akka-typed-serialization-jackson"]
 scala = ["scala-library", "scala-java8-compact"]

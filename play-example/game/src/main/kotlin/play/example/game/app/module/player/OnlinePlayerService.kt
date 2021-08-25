@@ -2,10 +2,11 @@ package play.example.game.app.module.player
 
 import org.jctools.maps.NonBlockingHashMapLong
 import play.example.game.app.module.account.message.LoginParams
+import play.example.game.app.module.player.domain.OnlinePlayer
 import play.example.game.container.net.SessionActor
 import play.scheduling.Scheduler
 import play.util.collection.keysIterator
-import play.util.unsafeCast
+import play.util.time.currentMillis
 import java.time.Duration
 import java.util.*
 import java.util.function.LongConsumer
@@ -19,23 +20,31 @@ import javax.inject.Singleton
 @Named
 class OnlinePlayerService @Inject constructor(private val scheduler: Scheduler) {
 
-  private val onlinePlayers = NonBlockingHashMapLong<LoginParams>()
+  private val onlinePlayers = NonBlockingHashMapLong<OnlinePlayer>()
 
-  private val offlinePlayers = NonBlockingHashMapLong<LoginParams>()
+  private val offlinePlayers = NonBlockingHashMapLong<OnlinePlayer>()
+
+  companion object {
+    private val expireAfterLogout = Duration.ofSeconds(30)
+  }
+
+  init {
+    scheduler.scheduleWithFixedDelay(expireAfterLogout, ::cleanUp)
+  }
 
   fun login(self: Self, loginProto: LoginParams) {
-    onlinePlayers[self.id] = loginProto
-    offlinePlayers.remove(self.id)
+    val prev = offlinePlayers.remove(self.id)
+    val onlinePlayer = prev ?: OnlinePlayer(self.id, loginProto)
+    onlinePlayer.logoutTime = 0
+    onlinePlayers[self.id] = onlinePlayer
   }
 
   fun logout(self: Self) {
     val playerId = self.id
     val p = onlinePlayers.remove(playerId)
+    p.logoutTime = currentMillis()
     // delay remove
     offlinePlayers[playerId] = p
-    scheduler.schedule(Duration.ofSeconds(30)) {
-      offlinePlayers.remove(playerId, p.unsafeCast<Any>())
-    }
   }
 
   fun onlineCount() = onlinePlayers.size
@@ -66,9 +75,14 @@ class OnlinePlayerService @Inject constructor(private val scheduler: Scheduler) 
   fun getLoginParamsOrNull(playerId: Long): LoginParams? {
     var p = onlinePlayers[playerId]
     if (p != null) {
-      return p
+      return p.loginParams
     }
     p = offlinePlayers[playerId]
-    return p
+    return p?.loginParams
+  }
+
+  private fun cleanUp() {
+    val expireLoginTime = currentMillis() - expireAfterLogout.toMillis()
+    offlinePlayers.values.removeIf { it.logoutTime < expireLoginTime }
   }
 }

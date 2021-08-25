@@ -9,10 +9,7 @@ public final class UnsafeAccessor {
 
     private static final Unsafe unsafe = getUnsafe();
 
-    private UnsafeAccessor() {
-    }
-
-    public static void disableWarning() {
+    static {
         try {
             Class<?> cls = Class.forName("jdk.internal.module.IllegalAccessLogger");
             Field logger = cls.getDeclaredField("logger");
@@ -20,6 +17,9 @@ public final class UnsafeAccessor {
         } catch (Exception e) {
             // ignore
         }
+    }
+
+    private UnsafeAccessor() {
     }
 
     private static Unsafe getUnsafe() {

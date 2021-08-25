@@ -16,7 +16,6 @@ import play.example.game.container.gs.GameServerManager
 import play.net.netty.NettyServer
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
-import play.util.collection.UnsafeAccessor
 import play.util.concurrent.CommonPool
 import play.util.concurrent.LoggingUncaughtExceptionHandler
 import play.util.reflect.ClassScanner
@@ -36,7 +35,6 @@ object App {
   @JvmStatic
   fun main(args: Array<String>) {
     Log.info { "App start" }
-    UnsafeAccessor.disableWarning()
     if (OS.isWindows) {
       setWindowsProperties()
     }

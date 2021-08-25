@@ -76,9 +76,9 @@ class SessionActor(
   private fun close(cmd: Close): Behavior<Command> {
     ch.close()
     if (cmd.cause != null) {
-      logger.error(cmd.cause) { "Session Closed: ${cmd.reason}" }
+      logger.error(cmd.cause) { "Session Closed: $ch ${cmd.reason}" }
     } else {
-      logger.info { "Session Closed: ${cmd.reason}" }
+      logger.info { "Session Closed: $ch ${cmd.reason}" }
     }
     return stoppedBehavior()
   }

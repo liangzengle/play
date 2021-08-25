@@ -10,12 +10,11 @@ import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.javadsl.*
 import org.slf4j.Logger
 import play.scala.toJava
+import play.scala.toResult
 import play.util.concurrent.PlayFuture
 import scala.PartialFunction
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import scala.util.Failure
-import scala.util.Success
 
 abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavior<T>(context) {
   protected inline val self: ActorRef<T> get() = context.self
@@ -29,7 +28,6 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
   protected inline fun newBehaviorBuilder(): BehaviorBuilder<T> = BehaviorBuilder.create()
 
   @JvmName("accept")
-  @OverloadResolutionByLambdaReturnType
   protected inline fun <reified T1 : T, T> ReceiveBuilder<T>.accept(noinline f: (T1) -> Unit): ReceiveBuilder<T> {
     return onMessage(T1::class.java) {
       f(it)
@@ -38,7 +36,6 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
   }
 
   @JvmName("apply")
-  @OverloadResolutionByLambdaReturnType
   protected inline fun <reified T1 : T, T> ReceiveBuilder<T>.accept(noinline f: (T1) -> Behavior<T>): ReceiveBuilder<T> {
     return onMessage(T1::class.java, f)
   }
@@ -58,7 +55,6 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
   }
 
   @JvmName("applySignal")
-  @OverloadResolutionByLambdaReturnType
   protected inline fun <reified T1 : Signal> ReceiveBuilder<T>.acceptSignal(noinline f: (T1) -> Behavior<T>): ReceiveBuilder<T> {
     return onSignal(T1::class.java) {
       f(it)
@@ -66,7 +62,6 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
   }
 
   @JvmName("applySignal")
-  @OverloadResolutionByLambdaReturnType
   protected inline fun <reified T1 : Signal> ReceiveBuilder<T>.acceptSignal(noinline f: () -> Behavior<T>): ReceiveBuilder<T> {
     return onSignal(T1::class.java) {
       f()
@@ -90,28 +85,10 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
     recoverWith(PartialFunction.fromFunction(f), ec)
 
   protected inline fun <U, T> Future<T>.andThen(noinline f: (Result<T>) -> U): Future<T> =
-    andThen(
-      PartialFunction.fromFunction {
-        when (it) {
-          is Success<T> -> f(Result.success(it.value()))
-          is Failure<T> -> f(Result.failure(it.exception()))
-          else -> error("won't happen")
-        }
-      },
-      ec
-    )
+    andThen(PartialFunction.fromFunction { f(it.toResult()) }, ec)
 
   protected inline fun <T> Future<T>.onComplete(noinline f: (Result<T>) -> Unit) {
-    onComplete(
-      {
-        when (it) {
-          is Success<T> -> f(Result.success(it.value()))
-          is Failure<T> -> f(Result.failure(it.exception()))
-          else -> error("won't happen")
-        }
-      },
-      ec
-    )
+    onComplete({ f(it.toResult()) }, ec)
   }
 
   protected inline fun <U> Future<U>.pipToSelf(noinline resultMapper: (Result<U>) -> T) {

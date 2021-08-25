@@ -3,6 +3,7 @@ package play.entity.cache.caffeine
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.github.benmanes.caffeine.cache.RemovalCause
+import com.github.benmanes.caffeine.cache.RemovalListener
 import mu.KLogging
 import play.entity.Entity
 import play.entity.ImmutableEntity
@@ -77,6 +78,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
       evictShelter = if (isNeverExpire) null else ConcurrentHashMap()
       initializer = initializerProvider.get(entityClass)
       val builder: Caffeine<ID, CacheObj<ID, E>> = Caffeine.newBuilder().unsafeCast()
+      builder.executor(executor)
       builder.initialCapacity(EntityCacheHelper.getInitialSizeOrDefault(entityClass, settings.initialSize))
       if (!isNeverExpire) {
         val duration =
@@ -84,7 +86,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
           else settings.expireAfterAccess
         builder.expireAfterAccess(duration)
       }
-      builder.evictionListener(RemovalListener())
+      builder.evictionListener(CacheRemovalListener())
       val cache: Cache<ID, CacheObj<ID, E>> = builder.build()
       val isLoadAllOnInit = cacheSpec?.loadAllOnInit ?: false
       if (isLoadAllOnInit) {
@@ -114,7 +116,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     val persistTimeThreshold = now - settings.persistInterval.toMillis()
     val entities = getCache().asMap().values.asSequence()
       .filter {
-        it.isNotEmpty()
+        it.isNotEmpty() && it.peekEntity()?.isDeleted() != true
           && it.lastPersistTime < persistTimeThreshold
           && it.lastAccessTime > it.lastPersistTime
           && !(isImmutable && it.lastPersistTime != 0L)
@@ -143,9 +145,10 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     val f = entityCacheLoader.loadById(id, entityClass)
     try {
       val entity: E? = f.get(settings.loadTimeout).getOrNull()
-      if (entity != null) {
-        initializer.initialize(entity)
+      if (entity == null || entity.isDeleted()) {
+        return null
       }
+      initializer.initialize(entity)
       return entity
     } catch (e: Exception) {
       logger.error(e) { "Failed to load entity: ${entityClass.simpleName}($id)" }
@@ -234,30 +237,15 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun delete(e: E) {
-    deleteById(e.id())
-  }
-
-  override fun deleteById(id: ID) {
-    getCache().asMap().compute(id) { _, v ->
-      if (v != null && v.isNotEmpty()) {
-        v.peekEntity()!!.delete()
-        CacheObj.empty()
-      } else {
-        v
+    getCache().asMap().compute(e.id()) { k, v ->
+      persistingEntities.remove(k)
+      val entity = v?.peekEntity()
+      if (entity != null) {
+        entity.setDeleted()
+        deleteFromDB(k)
       }
+      CacheObj.empty()
     }
-    persistingEntities.remove(id)
-    getCache().invalidate(id)
-    entityCacheWriter.deleteById(id, entityClass).onFailure {
-      // TODO what to do if failed
-      logger.error(it) { "${entityClass.simpleName}($id)删除失败" }
-    }
-  }
-
-  override fun flush(id: ID) {
-    val cached = getCached(id).getOrNull()
-      ?: throw IllegalStateException("${entityClass.simpleName}($id)保存失败，缓存不存在")
-    entityCacheWriter.update(cached)
   }
 
   override fun size(): Int {
@@ -278,9 +266,9 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   @Suppress("UNCHECKED_CAST")
-  override fun flush(): Future<Unit> {
+  override fun persist(): Future<Unit> {
     val entities = getCache().asMap().values.asSequence()
-      .apply { if (isImmutable) filter { it.lastPersistTime == 0L } }
+      .filter { !(isImmutable && it.lastPersistTime != 0L) }
       .map { it.peekEntity() }
       .filterNotNull()
       .plus(persistingEntities.values.asSequence())
@@ -322,15 +310,13 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
       } else if (v.isEmpty() && loadOnEmpty != null) {
         CacheObj(loadOnEmpty(k))
       } else {
-        val entity = v.peekEntity()
-        if (entity != null && entity.isDeleted()) CacheObj.empty() else v
+        v
       }
     }
     return cacheObj?.accessEntity()
   }
 
-  private inner class RemovalListener :
-    com.github.benmanes.caffeine.cache.RemovalListener<ID, CacheObj<ID, E>> {
+  private inner class CacheRemovalListener : RemovalListener<ID, CacheObj<ID, E>> {
     override fun onRemoval(key: ID?, value: CacheObj<ID, E>?, cause: RemovalCause) {
       if (key == null) {
         return

@@ -56,7 +56,7 @@ object ProtobufCodec : MessageCodec {
     return try {
       ProtoBuf.decodeFromByteArray(type.serializer(), bytes)
     } catch (e: Exception) {
-      logger.error { "decode failed: type=$type, bytes=${bytes.contentToString()}" }
+      logger.error(e) { "decode failed: type=$type, bytes=${bytes.contentToString()}" }
       throw e
     }
   }

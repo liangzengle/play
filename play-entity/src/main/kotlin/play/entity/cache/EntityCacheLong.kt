@@ -5,7 +5,6 @@ import play.util.concurrent.Future
 import play.util.function.LongToObjFunction
 import java.util.*
 import java.util.stream.Stream
-import kotlin.NoSuchElementException
 
 /**
  *
@@ -68,16 +67,6 @@ interface EntityCacheLong<E : LongIdEntity> {
   fun delete(e: E)
 
   /**
-   * 从缓存和数据库中移除id对应的实体
-   */
-  fun deleteById(id: Long)
-
-  /**
-   * 更新数据库
-   */
-  fun flush(id: Long)
-
-  /**
    * 缓存中的实体数量
    */
   fun size(): Int
@@ -105,5 +94,5 @@ interface EntityCacheLong<E : LongIdEntity> {
   /**
    * 缓存入库
    */
-  fun flush(): Future<Unit>
+  fun persist(): Future<Unit>
 }

@@ -53,7 +53,7 @@ class EntityCacheManagerImpl constructor(
     checkUnhandledCacheDump()
     shutdownCoordinator.addShutdownTask("缓存数据入库") {
       caches.values.forEach { cache ->
-        val result = cache.flush().getResult(Duration.seconds(60))
+        val result = cache.persist().getResult(Duration.seconds(60))
         if (result.isFailure) {
           logger.error(result.getCause()) { "[${cache.entityClass.simpleName}]缓存数据入库失败，尝试保存到文件" }
           cacheDump(cache, dumpDir)

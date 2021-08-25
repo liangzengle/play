@@ -45,6 +45,14 @@ object Reflect {
     }
   }
 
+  fun <T : Any> getKotlinObjectOrNull(clazz: Class<T>): T? {
+    return clazz.kotlin.objectInstance
+  }
+
+  fun <T : Any> getKotlinObjectOrThrow(clazz: Class<T>): T {
+    return clazz.kotlin.objectInstance ?: throw IllegalStateException("$clazz is not declared as `object`")
+  }
+
   fun <T> createInstance(clazz: Class<out T>): T = clazz.getDeclaredConstructor().newInstance(*EmptyObjectArray)
 
   fun <T> createInstanceWithArgs(clazz: Class<out T>, vararg args: Any?): T {

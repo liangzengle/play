@@ -34,4 +34,8 @@ class PlayerModuleImpl : PlayerModule() {
       System.err.println("gm指令使用失败: ${req?.cmd} $statusCode")
     }
   }
+
+  override fun StringMessageResp(player: RobotPlayer, statusCode: Int, data: String, req: Any?) {
+    TODO("Not yet implemented")
+  }
 }

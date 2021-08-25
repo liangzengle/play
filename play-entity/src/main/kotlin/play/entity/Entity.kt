@@ -1,8 +1,11 @@
 package play.entity
 
 sealed class Entity<ID : Any> {
+  companion object {
+    const val DELETED = "_deleted"
+  }
 
-  private var deleted: Boolean? = null
+  private var _deleted: Boolean? = null
 
   abstract fun id(): ID
 
@@ -11,12 +14,12 @@ sealed class Entity<ID : Any> {
    */
   open fun initialize() {}
 
-  internal fun delete() {
-    deleted = java.lang.Boolean.TRUE
+  internal fun setDeleted() {
+    _deleted = java.lang.Boolean.TRUE
   }
 
   internal fun isDeleted(): Boolean {
-    return deleted == java.lang.Boolean.TRUE
+    return _deleted == java.lang.Boolean.TRUE
   }
 
   override fun equals(other: Any?): Boolean {

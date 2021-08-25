@@ -70,16 +70,6 @@ interface EntityCache<ID : Any, E : Entity<ID>> {
   fun delete(e: E)
 
   /**
-   * 从缓存和数据库中移除id对应的实体
-   */
-  fun deleteById(id: ID)
-
-  /**
-   * 立即将缓存实体更新到数据库
-   */
-  fun flush(id: ID)
-
-  /**
    * 缓存中的实体数量
    */
   fun size(): Int
@@ -107,5 +97,5 @@ interface EntityCache<ID : Any, E : Entity<ID>> {
   /**
    * 缓存入库
    */
-  fun flush(): Future<Unit>
+  fun persist(): Future<Unit>
 }

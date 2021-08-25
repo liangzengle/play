@@ -188,6 +188,7 @@ object Generator {
         )
 
       val funSpec = FunSpec.builder(respFunName)
+        .addModifiers(KModifier.ABSTRACT)
         .addAnnotation(AnnotationSpec.get(cmd))
         .addParameter("player", Types.RobotPlayer)
         .addParameter(ParameterSpec("statusCode", INT))
