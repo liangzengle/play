@@ -1,5 +1,6 @@
 package play.example.robot.module.player
 
+import mu.KLogging
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.message.PlayerDTO
 import play.example.game.container.gm.GmResult
@@ -11,6 +12,8 @@ import play.example.robot.module.PlayerModule
  */
 @Component
 class PlayerModuleImpl : PlayerModule() {
+  companion object : KLogging()
+
   override fun createResp(player: RobotPlayer, statusCode: Int, data: Boolean, req: CreateRequestParams?) {
     if (statusCode == 0) {
       loginReq(player)
@@ -25,7 +28,7 @@ class PlayerModuleImpl : PlayerModule() {
   }
 
   override fun pingResp(player: RobotPlayer, statusCode: Int, data: String, req: PingRequestParams?) {
-    println("$player >> pong: ${req?.msg} $data")
+    logger.info("$player >> pong: ${req?.msg} $data")
     pingReq(player, "hello")
   }
 

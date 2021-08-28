@@ -1,8 +1,6 @@
 package play.entity.cache
 
-import com.typesafe.config.Config
 import mu.KLogging
-import play.Log
 import play.ShutdownCoordinator
 import play.entity.Entity
 import play.entity.IntIdEntity
@@ -11,11 +9,14 @@ import play.inject.PlayInjector
 import play.util.control.getCause
 import play.util.unsafeCast
 import java.io.File
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 import kotlin.time.Duration
 
 abstract class EntityCacheManager {
+  abstract fun getAllCaches(): Iterable<EntityCache<*, *>>
+
   fun <ID : Any, E : Entity<ID>> get(clazz: KClass<E>): EntityCache<ID, E> {
     return get(clazz.java)
   }
@@ -35,31 +36,65 @@ abstract class EntityCacheManager {
 
 class EntityCacheManagerImpl constructor(
   private val factory: EntityCacheFactory,
-  conf: Config,
   shutdownCoordinator: ShutdownCoordinator,
-  injector: PlayInjector
+  injector: PlayInjector,
+  persistFailOver: EntityCachePersistFailOver
 ) : EntityCacheManager() {
   companion object : KLogging()
-
 
   private val initializerProvider = EntityInitializerProvider(injector)
 
   private val caches = ConcurrentHashMap<Class<*>, EntityCache<*, *>>()
 
-  private val dumpDir = File(conf.getString("play.entity.cache-dump-dir"))
-
   init {
-    Log.info { "Using ${factory.javaClass.simpleName}" }
-    checkUnhandledCacheDump()
+    logger.info { "Using ${factory.javaClass.simpleName}" }
+    logger.info { "Using ${persistFailOver.javaClass.simpleName}" }
     shutdownCoordinator.addShutdownTask("缓存数据入库") {
       caches.values.forEach { cache ->
         val result = cache.persist().getResult(Duration.seconds(60))
         if (result.isFailure) {
           logger.error(result.getCause()) { "[${cache.entityClass.simpleName}]缓存数据入库失败，尝试保存到文件" }
-          cacheDump(cache, dumpDir)
+          persistFailOver.onPersistFailed(cache)
         }
       }
     }
+  }
+
+  override fun getAllCaches(): Iterable<EntityCache<*, *>> {
+    return Collections.unmodifiableCollection(caches.values)
+  }
+
+  @Suppress("UNCHECKED_CAST")
+  override fun <ID : Any, E : Entity<ID>> get(clazz: Class<E>): EntityCache<ID, E> {
+    val cache = caches[clazz]
+    if (cache != null) {
+      return cache as EntityCache<ID, E>
+    }
+    return caches.computeIfAbsent(clazz) { factory.create(it as Class<E>, initializerProvider) }.unsafeCast()
+  }
+}
+
+interface EntityCachePersistFailOver {
+  fun onPersistFailed(entityCache: EntityCache<*, *>)
+}
+
+object NOOPEntityCachePersistFailOver : EntityCachePersistFailOver {
+  override fun onPersistFailed(entityCache: EntityCache<*, *>) {
+  }
+}
+
+class DefaultEntityCachePersistFailOver(dumpPath: String) : EntityCachePersistFailOver {
+
+  companion object : KLogging()
+
+  private val dumpDir = File(dumpPath)
+
+  init {
+    checkUnhandledCacheDump()
+  }
+
+  override fun onPersistFailed(entityCache: EntityCache<*, *>) {
+    cacheDump(entityCache, dumpDir)
   }
 
   private fun checkUnhandledCacheDump() {
@@ -72,12 +107,6 @@ class EntityCacheManagerImpl constructor(
     }
   }
 
-  fun cacheDump() {
-    caches.values.forEach { cache ->
-      cacheDump(cache, dumpDir)
-    }
-  }
-
   private fun cacheDump(cache: EntityCache<*, *>, outputDir: File) {
     val simpleName = cache.entityClass.simpleName
     try {
@@ -87,20 +116,9 @@ class EntityCacheManagerImpl constructor(
       val content = cache.dump()
       val file = outputDir.resolve("$simpleName.json")
       file.writeText(content)
-      logger.info { "[$simpleName]缓存数据保存成功： $file" }
+      logger.info { "[$simpleName]缓存数据保存文件成功: $file" }
     } catch (e: Exception) {
-      logger.error(e) { "[$simpleName]缓存数据保存失败" }
+      logger.error(e) { "[$simpleName]缓存数据保存文件失败" }
     }
-  }
-
-  @Suppress("UNCHECKED_CAST")
-  override fun <ID : Any, E : Entity<ID>> get(clazz: Class<E>): EntityCache<ID, E> {
-    val cache = caches[clazz]
-    if (cache != null) {
-      return cache as EntityCache<ID, E>
-    }
-    return caches.computeIfAbsent(clazz) {
-      factory.create(it as Class<E>, initializerProvider)
-    }.unsafeCast()
   }
 }

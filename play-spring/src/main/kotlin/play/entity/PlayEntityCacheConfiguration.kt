@@ -36,12 +36,16 @@ class PlayEntityCacheConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
+  fun entityCachePersistFailOver(): EntityCachePersistFailOver = NOOPEntityCachePersistFailOver
+
+  @Bean
+  @ConditionalOnMissingBean
   fun entityCacheManager(
     factory: EntityCacheFactory,
-    config: Config,
     shutdownCoordinator: ShutdownCoordinator,
-    injector: PlayInjector
+    injector: PlayInjector,
+    persistFailOver: EntityCachePersistFailOver
   ): EntityCacheManager {
-    return EntityCacheManagerImpl(factory, config, shutdownCoordinator, injector)
+    return EntityCacheManagerImpl(factory, shutdownCoordinator, injector, persistFailOver)
   }
 }

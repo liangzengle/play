@@ -6,8 +6,11 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import play.entity.PlayEntityCacheConfiguration
+import play.entity.cache.DefaultEntityCachePersistFailOver
+import play.entity.cache.EntityCachePersistFailOver
 import play.event.EnableGuavaEventBus
 import play.example.game.container.gm.GmCommandService
+import play.example.game.container.gs.domain.GameServerId
 import play.inject.PlayInjector
 import play.inject.SpringPlayInjector
 import play.mongodb.PlayMongoRepositoryConfiguration
@@ -28,7 +31,12 @@ class GameApp {
   }
 
   @Bean
-  private fun playInjector(applicationContext: ApplicationContext): PlayInjector {
+  fun playInjector(applicationContext: ApplicationContext): PlayInjector {
     return SpringPlayInjector(applicationContext)
+  }
+
+  @Bean
+  fun entityCachePersistFailOver(gameServerId: GameServerId): EntityCachePersistFailOver {
+    return DefaultEntityCachePersistFailOver("entity_back_up/${gameServerId.toInt()}")
   }
 }

@@ -86,7 +86,8 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
           else settings.expireAfterAccess
         builder.expireAfterAccess(duration)
       }
-      builder.evictionListener(CacheRemovalListener())
+      builder.evictionListener(CacheEvictListener())
+      builder.removalListener(CacheRemovalListener())
       val cache: Cache<ID, CacheObj<ID, E>> = builder.build()
       val isLoadAllOnInit = cacheSpec?.loadAllOnInit ?: false
       if (isLoadAllOnInit) {
@@ -134,13 +135,13 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   private fun load(id: ID): E? {
-    val pendingPersist = persistingEntities.remove(id)
-    if (pendingPersist != null) {
-      return pendingPersist
-    }
     val entityInShelter = evictShelter?.remove(id)
     if (entityInShelter != null) {
       return entityInShelter
+    }
+    val pendingPersist = persistingEntities.remove(id)
+    if (pendingPersist != null) {
+      return pendingPersist
     }
     val f = entityCacheLoader.loadById(id, entityClass)
     try {
@@ -316,33 +317,45 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     return cacheObj?.accessEntity()
   }
 
-  private inner class CacheRemovalListener : RemovalListener<ID, CacheObj<ID, E>> {
+  private inner class CacheEvictListener : RemovalListener<ID, CacheObj<ID, E>> {
     override fun onRemoval(key: ID?, value: CacheObj<ID, E>?, cause: RemovalCause) {
       if (key == null) {
         return
       }
       val e = value?.peekEntity()
       if (e != null && cause.wasEvicted()) {
+        // 过期入库
+        persistOnExpired(e)
         val evictShelter = evictShelter
         check(evictShelter != null) { "`evictShelter` should not be null." }
-        // 不允许过期则重新放回cache中
+        // 不允许过期的临时存放到evictShelter中
         if (!expireEvaluator.canExpire(e)) {
           evictShelter[key] = e
-          // 异步放回
-          executor.execute {
-            getCache().asMap().compute(key) { k, v ->
-              val entity = evictShelter.remove(k)
-              when {
-                entity == null -> v
-                v == null -> CacheObj(entity)
-                else -> error("should not happen")
-              }
+        }
+      } else if (cause == RemovalCause.EXPLICIT) {
+        deleteFromDB(key)
+      }
+    }
+  }
+
+  private inner class CacheRemovalListener : RemovalListener<ID, CacheObj<ID, E>> {
+    override fun onRemoval(key: ID?, value: CacheObj<ID, E>?, cause: RemovalCause) {
+      if (key == null) {
+        return
+      }
+      // 将evictShelter中的对象重新放回缓存中
+      if (cause.wasEvicted()) {
+        val evictShelter = evictShelter
+        if (evictShelter != null && evictShelter.containsKey(key)) {
+          getCache().asMap().compute(key) { k, v ->
+            val entity = evictShelter.remove(k)
+            when {
+              entity == null -> v
+              v == null -> CacheObj(entity)
+              else -> error("should not happen: $k")
             }
           }
         }
-        persistOnExpired(e)
-      } else if (cause == RemovalCause.EXPLICIT) {
-        deleteFromDB(key)
       }
     }
   }

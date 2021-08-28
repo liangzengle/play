@@ -14,6 +14,7 @@ import play.net.netty.NettyClient
 import play.net.netty.channelInitializer
 import play.net.netty.createChannelFactory
 import play.net.netty.createEventLoopGroup
+import kotlin.concurrent.thread
 
 /**
  *
@@ -50,5 +51,10 @@ class RobotPlayerManager @Autowired constructor(private val bt: DummyBehaviorTre
         bt.run(robotPlayer)
       }
     }
+
+    Runtime.getRuntime().addShutdownHook(thread(false) {
+      netEventLoop.shutdownGracefully().sync()
+      robotEventLoop.shutdownGracefully().sync()
+    })
   }
 }
