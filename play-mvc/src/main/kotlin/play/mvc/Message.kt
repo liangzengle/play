@@ -275,7 +275,7 @@ class RequestBodyBuilder {
       0 -> i1 = value
       1 -> i2 = value
       2 -> i3 = value
-      else -> throw IndexOutOfBoundsException(boolIndex)
+      else -> throw IndexOutOfBoundsException(intIndex)
     }
     intIndex++
     return this
@@ -286,7 +286,7 @@ class RequestBodyBuilder {
       0 -> l1 = value
       1 -> l2 = value
       2 -> l3 = value
-      else -> throw IndexOutOfBoundsException(boolIndex)
+      else -> throw IndexOutOfBoundsException(longIndex)
     }
     longIndex++
     return this
@@ -297,7 +297,7 @@ class RequestBodyBuilder {
       0 -> s1 = value
       1 -> s2 = value
       2 -> s3 = value
-      else -> throw IndexOutOfBoundsException(boolIndex)
+      else -> throw IndexOutOfBoundsException(stringIndex)
     }
     stringIndex++
     return this

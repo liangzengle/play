@@ -2,8 +2,6 @@ package play.entity.cache
 
 import com.typesafe.config.Config
 import play.entity.Entity
-import play.util.ClassUtil
-import play.util.isAbstract
 import java.time.Duration
 
 interface EntityCacheFactory {
@@ -23,11 +21,6 @@ abstract class AbstractEntityCacheFactory(conf: Config) : EntityCacheFactory {
     val persistInterval = conf.getDuration("persist-interval")
     val loadTimeout = conf.getDuration("load-timeout")
     settings = Settings(initialCacheSize, expireAfterAccess, persistInterval, loadTimeout)
-  }
-
-  fun checkEntityClass(entityClass: Class<out Entity<*>>) {
-    check(!entityClass.isAbstract()) { "" }
-    check(ClassUtil.isTopLevelConcreteClass(entityClass)) { "" }
   }
 
   class Settings(

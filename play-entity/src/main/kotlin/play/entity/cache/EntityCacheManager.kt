@@ -6,6 +6,7 @@ import play.entity.Entity
 import play.entity.IntIdEntity
 import play.entity.LongIdEntity
 import play.inject.PlayInjector
+import play.util.ClassUtil
 import play.util.control.getCause
 import play.util.unsafeCast
 import java.io.File
@@ -69,6 +70,9 @@ class EntityCacheManagerImpl constructor(
     val cache = caches[clazz]
     if (cache != null) {
       return cache as EntityCache<ID, E>
+    }
+    if (!ClassUtil.isTopLevelConcreteClass(clazz)) {
+      throw IllegalArgumentException("$clazz should be a top level concrete class.")
     }
     return caches.computeIfAbsent(clazz) { factory.create(it as Class<E>, initializerProvider) }.unsafeCast()
   }

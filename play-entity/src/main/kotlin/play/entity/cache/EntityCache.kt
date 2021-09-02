@@ -3,7 +3,6 @@ package play.entity.cache
 import play.entity.Entity
 import play.util.concurrent.Future
 import java.util.*
-import java.util.stream.Stream
 
 interface EntityCache<ID : Any, E : Entity<ID>> {
 
@@ -41,19 +40,16 @@ interface EntityCache<ID : Any, E : Entity<ID>> {
   fun getCached(id: ID): Optional<E>
 
   /**
+   * 获取当前缓存中的所有实体
+   *
+   * @return 缓存中所有实体的集合(不可修改)
+   */
+  fun getCachedEntities(): Sequence<E>
+
+  /**
    * 从缓存中获取实体对，如果不存在则从数据库中加载
    */
   fun getAll(ids: Iterable<ID>): List<E>
-
-  /**
-   * 获取缓存中所有的实体
-   */
-  fun asSequence(): Sequence<E>
-
-  /**
-   * 获取缓存中所有的实体
-   */
-  fun asStream(): Stream<E>
 
   /**
    * 创建实体，如果实体已经存在则抛异常: [EntityExistsException]
@@ -61,13 +57,15 @@ interface EntityCache<ID : Any, E : Entity<ID>> {
   @Throws(EntityExistsException::class)
   fun create(e: E): E
 
-  fun onCreate(e: E) {
-  }
-
   /**
    * 从缓存和数据库中移除实体
    */
   fun delete(e: E)
+
+  /**
+   * 从缓存和数据库中移除实体
+   */
+  fun delete(id: ID)
 
   /**
    * 缓存中的实体数量

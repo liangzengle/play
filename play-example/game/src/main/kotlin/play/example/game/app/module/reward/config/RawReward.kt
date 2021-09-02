@@ -1,14 +1,14 @@
 package play.example.game.app.module.reward.config
 
 import play.example.game.app.module.item.config.ItemResource
-import play.example.game.app.module.reward.json.RawRewardAbstractTypeResolver
+import play.example.game.app.module.reward.json.RawRewardTypeResolver
 import play.example.game.app.module.reward.model.*
 import play.res.validation.ReferTo
 import play.util.el.Eval
 import play.util.json.JsonAbstractType
 import javax.validation.constraints.Min
 
-@JsonAbstractType(RawRewardAbstractTypeResolver::class)
+@JsonAbstractType(RawRewardTypeResolver::class)
 abstract class RawReward(type: RewardType, num: String) {
   private val count = try {
     val value = num.toInt()

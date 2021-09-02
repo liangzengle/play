@@ -24,7 +24,6 @@ class CaffeineEntityCacheFactory constructor(
     entityClass: Class<E>,
     initializerProvider: EntityInitializerProvider
   ): EntityCache<ID, E> {
-    checkEntityClass(entityClass)
     return CaffeineEntityCache(
       entityClass,
       entityCacheWriter,

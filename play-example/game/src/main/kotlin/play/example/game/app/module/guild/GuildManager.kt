@@ -122,7 +122,7 @@ class GuildManager(
     return promise.future
   }
 
-  private fun isGuildNameAvailable(name: String) = guildEntityCache.asSequence().none { it.name == name }
+  private fun isGuildNameAvailable(name: String) = guildEntityCache.getCachedEntities().none { it.name == name }
 
   private fun onCostResult(cmd: CreateGuildCostResult): Behavior<Command> {
     cmd.promise.catchingComplete {

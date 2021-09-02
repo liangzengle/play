@@ -5,7 +5,7 @@ import play.example.game.app.module.task.domain.TaskTargetType
 import play.example.game.app.module.task.target.TaskTarget
 import play.util.json.AbstractTypeResolver
 
-class TaskTargetAbstractTypeResolver : AbstractTypeResolver<TaskTarget>() {
+class TaskTargetTypesResolver : AbstractTypeResolver<TaskTarget>() {
   override fun resolve(node: ObjectNode): Class<out TaskTarget> {
     val typeNode = node.get("type")
     val targetType = TaskTargetType.valueOf(typeNode.textValue())

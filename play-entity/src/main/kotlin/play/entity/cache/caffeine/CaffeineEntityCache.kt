@@ -10,7 +10,6 @@ import play.entity.ImmutableEntity
 import play.entity.cache.*
 import play.inject.PlayInjector
 import play.scheduling.Scheduler
-import play.util.collection.filterNotNull
 import play.util.concurrent.Future
 import play.util.control.getCause
 import play.util.getOrNull
@@ -24,7 +23,6 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.Executor
-import java.util.stream.Stream
 
 internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   override val entityClass: Class<E>,
@@ -57,6 +55,10 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   private fun getCache(): Cache<ID, CacheObj<ID, E>> {
     ensureInitialized()
     return cache
+  }
+
+  override fun getCachedEntities(): Sequence<E> {
+    return cache.asMap().values.asSequence().map { it.peekEntity() }.filterNotNull()
   }
 
   private fun ensureInitialized() {
@@ -135,14 +137,10 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   private fun load(id: ID): E? {
-    val entityInShelter = evictShelter?.remove(id)
-    if (entityInShelter != null) {
-      return entityInShelter
-    }
-    val pendingPersist = persistingEntities.remove(id)
-    if (pendingPersist != null) {
-      return pendingPersist
-    }
+    return load(id, ::loadFromDB)
+  }
+
+  private fun loadFromDB(id: ID): E? {
     val f = entityCacheLoader.loadById(id, entityClass)
     try {
       val entity: E? = f.get(settings.loadTimeout).getOrNull()
@@ -155,6 +153,18 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
       logger.error(e) { "Failed to load entity: ${entityClass.simpleName}($id)" }
       throw e
     }
+  }
+
+  private fun load(id: ID, fallback: (ID) -> E?): E? {
+    val entityInShelter = evictShelter?.remove(id)
+    if (entityInShelter != null) {
+      return entityInShelter
+    }
+    val pendingPersist = persistingEntities.remove(id)
+    if (pendingPersist != null) {
+      return pendingPersist
+    }
+    return fallback(id)
   }
 
   override fun get(id: ID): Optional<E> {
@@ -172,7 +182,6 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   override fun getOrCreate(id: ID, creation: (ID) -> E): E {
     return computeIfAbsent(
       id,
-      true,
       { k -> createEntity(k, creation) },
       { k -> load(k) ?: createEntity(k, creation) }
     ) ?: error("won't happen")
@@ -182,7 +191,6 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     val entity = creation(id)
     initializer.initialize(entity)
     entityCacheWriter.insert(entity)
-    onCreate(entity)
     return entity
   }
 
@@ -204,29 +212,17 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
     if (missing.isEmpty()) {
       return result
     }
-    val cache = getCache()
-    val cacheMap = cache.asMap()
     val loaded = entityCacheLoader.loadAll(missing, entityClass).get(Duration.ofSeconds(5))
     for (entity in loaded) {
       if (entity.isDeleted()) {
         continue
       }
-      val obj = cacheMap.compute(entity.id()) { _, v ->
-        if (v == null || v.isEmpty()) CacheObj(entity) else v
-      }
-      if (obj != null && obj.isNotEmpty()) {
-        result.add(obj.accessEntity()!!)
+      val e = computeIfAbsent(entity.id(), null) { entity }
+      if (e != null) {
+        result.add(e)
       }
     }
     return result
-  }
-
-  override fun asSequence(): Sequence<E> {
-    return getCache().asMap().values.asSequence().map { it.accessEntity() }.filterNotNull()
-  }
-
-  override fun asStream(): Stream<E> {
-    return getCache().asMap().values.stream().map { it.accessEntity() }.filterNotNull()
   }
 
   override fun create(e: E): E {
@@ -238,7 +234,11 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun delete(e: E) {
-    getCache().asMap().compute(e.id()) { k, v ->
+    delete(e.id())
+  }
+
+  override fun delete(id: ID) {
+    getCache().asMap().compute(id) { k, v ->
       persistingEntities.remove(k)
       val entity = v?.peekEntity()
       if (entity != null) {
@@ -262,8 +262,18 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun dump(): String {
-    val entities = (asSequence() + persistingEntities.values.asSequence()).toCollection(LinkedList())
-    return Json.stringify(entities)
+    val cache = getCache()
+    val result = HashMap<ID, E>(cache.estimatedSize().toIntSaturated() + persistingEntities.size)
+    for (entity in persistingEntities.values) {
+      result[entity.id()] = entity
+    }
+    for (obj in cache.asMap().values) {
+      val entity = obj.peekEntity()
+      if (entity != null) {
+        result[entity.id()] = entity
+      }
+    }
+    return Json.stringify(result.values)
   }
 
   @Suppress("UNCHECKED_CAST")
@@ -285,12 +295,11 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   private fun computeIfAbsent(id: ID, loader: ((ID) -> E?)?): E? {
-    return computeIfAbsent(id, false, null, loader)
+    return computeIfAbsent(id, null, loader)
   }
 
   private fun computeIfAbsent(
     id: ID,
-    createIfAbsent: Boolean,
     loadOnEmpty: ((ID) -> E)?,
     loadOnAbsent: ((ID) -> E?)?
   ): E? {
@@ -300,14 +309,14 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
       val entity = cacheObj.accessEntity()
       if (entity != null) {
         return entity
-      } else if (!createIfAbsent) {
+      } else if (loadOnEmpty == null) {
         return null
       }
     }
-    if (loadOnAbsent == null) return null
+    if (loadOnEmpty == null && loadOnAbsent == null) return null
     cacheObj = cache.asMap().compute(id) { k, v ->
       if (v == null) {
-        loadOnAbsent(k)?.let(::CacheObj) ?: CacheObj.empty()
+        if (loadOnAbsent == null) null else loadOnAbsent(k)?.let(::CacheObj) ?: CacheObj.empty()
       } else if (v.isEmpty() && loadOnEmpty != null) {
         CacheObj(loadOnEmpty(k))
       } else {

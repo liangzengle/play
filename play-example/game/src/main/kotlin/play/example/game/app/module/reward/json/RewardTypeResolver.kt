@@ -6,7 +6,7 @@ import play.example.game.app.module.reward.model.Reward
 import play.example.game.app.module.reward.model.RewardType
 import play.util.json.AbstractTypeResolver
 
-class RawRewardAbstractTypeResolver : AbstractTypeResolver<RawReward>() {
+class RawRewardTypeResolver : AbstractTypeResolver<RawReward>() {
   override fun resolve(node: ObjectNode): Class<out RawReward> {
     return getRewardType(node).rawRewardClass
   }
@@ -18,7 +18,7 @@ class RawRewardAbstractTypeResolver : AbstractTypeResolver<RawReward>() {
 }
 
 
-class RewardAbstractTypeResolver : AbstractTypeResolver<Reward>() {
+class RewardTypeResolver : AbstractTypeResolver<Reward>() {
   override fun resolve(node: ObjectNode): Class<out Reward> {
     return getRewardType(node).rewardClass
   }

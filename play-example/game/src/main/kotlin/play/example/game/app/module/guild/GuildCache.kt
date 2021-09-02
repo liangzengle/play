@@ -22,14 +22,14 @@ class GuildCache @Autowired constructor(
   private lateinit var guildIdGenerator: GameUIDGenerator
 
   override fun afterSingletonsInstantiated(beanFactory: BeanFactory) {
-    playerIdToGuildId = guildEntityCache.asSequence().fold(ConcurrentLongLongMap()) { r, entity ->
+    playerIdToGuildId = guildEntityCache.getCachedEntities().fold(ConcurrentLongLongMap()) { r, entity ->
       for (member in entity.members) {
         r.put(member, entity.id)
       }
       r
     }
 
-    guildIdGenerator = guildEntityCache.asSequence().maxOfOrNull { it.id }?.let { GameUIDGenerator.fromId(it) }
+    guildIdGenerator = guildEntityCache.getCachedEntities().maxOfOrNull { it.id }?.let { GameUIDGenerator.fromId(it) }
       ?: serverConfig.newIdGenerator()
   }
 

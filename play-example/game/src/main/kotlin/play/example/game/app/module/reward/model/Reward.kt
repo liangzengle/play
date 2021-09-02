@@ -1,12 +1,12 @@
 package play.example.game.app.module.reward.model
 
 import play.example.game.app.module.item.config.ItemResource
-import play.example.game.app.module.reward.json.RewardAbstractTypeResolver
+import play.example.game.app.module.reward.json.RewardTypeResolver
 import play.res.validation.ReferTo
 import play.util.json.JsonAbstractType
 import javax.validation.constraints.Min
 
-@JsonAbstractType(RewardAbstractTypeResolver::class)
+@JsonAbstractType(RewardTypeResolver::class)
 abstract class Reward(type: RewardType, num: Int) {
   init {
     require(num >= 0) { "num($num) >= 0" }
