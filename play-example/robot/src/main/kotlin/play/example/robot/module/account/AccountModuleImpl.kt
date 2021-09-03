@@ -13,12 +13,12 @@ import play.util.rd
  */
 @Component
 class AccountModuleImpl @Autowired constructor(private val playerModule: PlayerModule) : AccountModule() {
-  override fun pingResp(player: RobotPlayer, statusCode: Int, data: String, req: PingRequestParams?) {
-    playerModule.pingResp(player, statusCode, data, req?.let { PlayerModule.PingRequestParams(it.msg) })
+  override fun pingResp(player: RobotPlayer, data: String, req: PingRequestParams?) {
+    playerModule.pingResp(player, data, req?.let { PlayerModule.PingRequestParams(it.msg) })
     pingReq(player, "hello")
   }
 
-  override fun loginResp(player: RobotPlayer, statusCode: Int, data: Boolean, req: LoginRequestParams?) {
+  override fun loginResp(player: RobotPlayer, data: Boolean, req: LoginRequestParams?) {
     if (data) {
       playerModule.loginReq(player)
     } else {

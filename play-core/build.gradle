@@ -12,5 +12,6 @@ dependencies {
     api libs.classgraph
     api libs.caffeine
     api libs.micrometer.core
+    api libs.unsafe.accessor
     api project(':play-eclipse-collectionx')
 }

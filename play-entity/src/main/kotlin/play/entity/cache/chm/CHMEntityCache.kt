@@ -11,7 +11,7 @@ import play.util.concurrent.Future
 import play.util.control.getCause
 import play.util.getOrNull
 import play.util.json.Json
-import play.util.time.currentMillis
+import play.util.time.Time.currentMillis
 import play.util.toOptional
 import play.util.unsafeCast
 import java.time.Duration

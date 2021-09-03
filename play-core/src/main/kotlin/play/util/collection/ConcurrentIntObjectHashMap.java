@@ -1,5 +1,6 @@
 package play.util.collection;
 
+import io.github.karlatemp.unsafeaccessor.Unsafe;
 import org.jetbrains.annotations.NotNull;
 import play.util.function.IntObjToObjFunction;
 import play.util.function.IntToObjFunction;
@@ -2780,7 +2781,7 @@ public class ConcurrentIntObjectHashMap<V> implements ConcurrentIntObjectMap<V>,
     // -------------------------------------------------------
 
     // Unsafe mechanics
-    private static final UnsafeAccessor U = UnsafeAccessor.UNSAFE_ACCESSOR;
+    private static final Unsafe U = Unsafe.getUnsafe();
     private static final long SIZECTL
             = U.objectFieldOffset(ConcurrentIntObjectHashMap.class, "sizeCtl");
     private static final long TRANSFERINDEX

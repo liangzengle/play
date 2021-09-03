@@ -2,6 +2,7 @@ package play.example.common.akka.scheduling
 
 import akka.event.LoggingAdapter
 import com.typesafe.config.Config
+import play.util.time.Time
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
 
@@ -13,6 +14,6 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
   akka.actor.LightArrayRevolverScheduler(config, log, threadFactory) {
 
   override fun clock(): Long {
-    return  TimeUnit.MILLISECONDS.toNanos(play.util.time.clock.millis())
+    return TimeUnit.MILLISECONDS.toNanos(Time.currentMillis())
   }
 }

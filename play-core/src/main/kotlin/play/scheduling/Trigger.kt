@@ -1,9 +1,9 @@
 package play.scheduling
 
+import play.util.time.Time.currentDateTime
+import play.util.time.Time.toDate
+import play.util.time.Time.toLocalDateTime
 import java.time.LocalDateTime
-import play.util.time.currentDateTime
-import play.util.time.toDate
-import play.util.time.toLocalDateTime
 
 interface Trigger {
   fun nextExecutionTime(triggerContext: TriggerContext): LocalDateTime?
@@ -36,10 +36,10 @@ class PeriodCronTrigger(
 ) : CronTrigger(sequenceGenerator) {
   override fun nextExecutionTime(triggerContext: TriggerContext): LocalDateTime? {
     val time = super.nextExecutionTime(triggerContext) ?: return null
-    if (startTime != null && time.isBefore(startTime)){
+    if (startTime != null && time.isBefore(startTime)) {
       return null
     }
-    if (stopTime != null && !time.isBefore(stopTime) ){
+    if (stopTime != null && !time.isBefore(stopTime)) {
       return null
     }
     return time

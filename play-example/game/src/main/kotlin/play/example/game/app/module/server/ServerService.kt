@@ -17,9 +17,9 @@ import play.inject.SpringPlayInjector
 import play.util.classOf
 import play.util.max
 import play.util.primitive.toIntSaturated
-import play.util.time.betweenDays
-import play.util.time.currentDate
-import play.util.time.currentDateTime
+import play.util.time.Time.betweenDays
+import play.util.time.Time.currentDate
+import play.util.time.Time.currentDateTime
 import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Named

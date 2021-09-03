@@ -14,31 +14,31 @@ import play.example.robot.module.PlayerModule
 class PlayerModuleImpl : PlayerModule() {
   companion object : KLogging()
 
-  override fun createResp(player: RobotPlayer, statusCode: Int, data: Boolean, req: CreateRequestParams?) {
-    if (statusCode == 0) {
-      loginReq(player)
-    }
+  override fun createResp(player: RobotPlayer, data: Boolean, req: CreateRequestParams?) {
+    loginReq(player)
   }
 
-  override fun loginResp(player: RobotPlayer, statusCode: Int, data: PlayerDTO, req: Any?) {
+  override fun loginResp(player: RobotPlayer, data: PlayerDTO, req: Any?) {
     player.id = data.Id
     player.name = data.name
     println("$player logged in")
     pingReq(player, "hello")
   }
 
-  override fun pingResp(player: RobotPlayer, statusCode: Int, data: String, req: PingRequestParams?) {
+  override fun pingResp(player: RobotPlayer, data: String, req: PingRequestParams?) {
     logger.info("$player >> pong: ${req?.msg} $data")
     pingReq(player, "hello")
   }
 
-  override fun gmResp(player: RobotPlayer, statusCode: Int, data: GmResult, req: GmRequestParams?) {
-    if (statusCode != 0) {
-      System.err.println("gm指令使用失败: ${req?.cmd} $statusCode")
-    }
+  override fun gmResp(player: RobotPlayer, data: GmResult, req: GmRequestParams?) {
+    println("gm指令使用成功: ${req?.cmd}")
   }
 
-  override fun StringMessageResp(player: RobotPlayer, statusCode: Int, data: String, req: Any?) {
+  override fun gmError(player: RobotPlayer, statusCode: Int, data: GmResult?, req: GmRequestParams?) {
+    System.err.println("gm指令使用失败: ${req?.cmd} $statusCode")
+  }
+
+  override fun StringMessageResp(player: RobotPlayer, data: String, req: Any?) {
     TODO("Not yet implemented")
   }
 }

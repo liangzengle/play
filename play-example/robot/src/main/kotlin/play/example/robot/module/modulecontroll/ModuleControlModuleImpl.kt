@@ -10,7 +10,7 @@ import play.example.robot.module.player.RobotPlayer
  */
 @Component
 class ModuleControlModuleImpl : ModuleControlModule() {
-  override fun moduleOpenResp(player: RobotPlayer, statusCode: Int, data: Int, req: Any?) {
+  override fun moduleOpenResp(player: RobotPlayer, data: Int, req: Any?) {
     TODO("Not yet implemented")
   }
 

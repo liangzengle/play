@@ -33,6 +33,7 @@ package play.util.collection;/*
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
+import io.github.karlatemp.unsafeaccessor.Unsafe;
 import org.jetbrains.annotations.NotNull;
 import play.util.function.LongObjToObjFunction;
 import play.util.function.LongToObjFunction;
@@ -3118,7 +3119,7 @@ public class ConcurrentLongObjectHashMap<V> implements ConcurrentLongObjectMap<V
     // -------------------------------------------------------
 
     // Unsafe mechanics
-    private static final UnsafeAccessor U = UnsafeAccessor.UNSAFE_ACCESSOR;
+    private static final Unsafe U = Unsafe.getUnsafe();
     private static final long SIZECTL
             = U.objectFieldOffset(ConcurrentLongObjectHashMap.class, "sizeCtl");
     private static final long TRANSFERINDEX

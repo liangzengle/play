@@ -5,7 +5,7 @@ import play.example.game.app.module.account.domain.DefaultAccountId
 import play.example.game.app.module.account.entity.Account
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.platform.domain.Platform
-import play.util.time.currentMillis
+import play.util.time.Time.currentMillis
 
 abstract class PlatformService {
 

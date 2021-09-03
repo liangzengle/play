@@ -15,8 +15,7 @@
  */
 package play.scheduling
 
-import play.util.time.dateTime
-import play.util.time.toMillis
+import play.util.time.Time.toMillis
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDateTime
@@ -73,9 +72,9 @@ internal class ReschedulingRunnable(
   }
 
   override fun run() {
-    val actualExecutionTime = triggerContext.clock.dateTime()
+    val actualExecutionTime = LocalDateTime.now(triggerContext.clock)
     super.run()
-    val completionTime = triggerContext.clock.dateTime()
+    val completionTime = LocalDateTime.now(triggerContext.clock)
     synchronized(triggerContextMonitor) {
       check(scheduledExecutionTime != null) { "No scheduled execution" }
       triggerContext.update(scheduledExecutionTime!!, actualExecutionTime, completionTime)

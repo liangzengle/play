@@ -5,7 +5,6 @@ import org.springframework.stereotype.Component
 import play.example.game.app.module.account.message.LoginParams
 import play.example.robot.module.AccountModule
 import play.example.robot.module.player.RobotPlayer
-import play.mvc.MessageCodec
 
 /**
  *
@@ -19,7 +18,7 @@ class DummyBehaviorTree {
 
   fun run(player: RobotPlayer) {
     val params = LoginParams("Dev", 1, player.account)
-    accountModule.loginReq(player, MessageCodec.encode(params))
+    accountModule.loginReq(player, params)
   }
 
 }

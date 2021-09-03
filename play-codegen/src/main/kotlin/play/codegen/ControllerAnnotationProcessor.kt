@@ -454,7 +454,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
             if (componentType.asElement().simpleName.contentEquals("String")) {
               "getStringArray()"
             } else {
-              throw UnsupportedOperationException("Unsupported parameter type: ${element.asType()}")
+              throw UnsupportedOperationException("Unsupported array type: ${element.asType()}")
             }
           }
           else -> throw UnsupportedOperationException("Unsupported parameter type: ${element.asType()}")
@@ -474,7 +474,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
             else -> throw UnsupportedOperationException("Unsupported parameter type: ${element.asType()}")
           }
         } else {
-          throw UnsupportedOperationException("Unsupported parameter type: ${element.asType()}")
+          "decodeBytesAs(${declaredType.toClassName().canonicalName}::class.java)"
         }
       }
       else -> throw UnsupportedOperationException("Unsupported parameter type: ${element.asType()}")

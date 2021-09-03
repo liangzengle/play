@@ -112,7 +112,7 @@ object Generator {
         paramsClassBuilder.addFunction(toRequestBody.addCode(toRequestBodyCodeBlock.build()).build())
         typeSpecList.add(paramsClassBuilder.build())
 
-        reqCodeBlock.add(", $paramsClassName(")
+        reqCodeBlock.add(", %L(", paramsClassName.simpleName)
         var first = true
         for (parameter in ctor.parameters) {
           if (!first) {
@@ -122,7 +122,7 @@ object Generator {
           first = false
         }
         reqCodeBlock.add(")")
-        requestParamsClassName = paramsClassName
+        requestParamsClassName = ClassName.bestGuess(paramsClassName.simpleName)
       } else {
         reqCodeBlock.add(", null")
         requestParamsClassName = ANY
@@ -132,6 +132,7 @@ object Generator {
 
       val returnType = getReturnType(method)
       val respFunName = "${method.name}Resp"
+      val respErrorFunName = "${method.name}Error"
       val respRaw = FunSpec.builder(respFunName)
         .addParameter("ctx", Types.ChannelHandlerContext)
         .addParameter("response", Types.Response)
@@ -142,20 +143,43 @@ object Generator {
             .addStatement("val requestId = response.header.sequenceNo")
             .addStatement("val req = player.getRequestParams(requestId)")
             .addStatement("val statusCode = response.statusCode")
-            .addStatement("val data = %T.decode(response.body, %T::class)", Types.MessageCodec, returnType)
-            .addStatement("%L(player, statusCode, data, req as? %L)", respFunName, requestParamsClassName)
+            .beginControlFlow("if (statusCode == 0)")
+            .apply {
+              if (returnType == ANY) addStatement("val data = %M", Types.EmptyByteArray)
+              else addStatement("val data = %T.decode(response.body, %T::class)", Types.MessageCodec, returnType)
+            }
+            .addStatement("%L(player, data, req as? %L)", respFunName, requestParamsClassName)
+            .nextControlFlow("else")
+            .apply {
+              if (returnType == ANY) addStatement("val data = %M", Types.EmptyByteArray)
+              else addStatement(
+                "val data = if(response.body.isEmpty()) null else %T.decode(response.body, %T::class)",
+                Types.MessageCodec,
+                returnType
+              )
+            }
+            .addStatement("%L(player, statusCode, data, req as? %L)", respErrorFunName, requestParamsClassName)
+            .endControlFlow()
             .endControlFlow()
             .build()
         )
+      val errorResp = FunSpec.builder(respErrorFunName)
+        .addModifiers(KModifier.OPEN)
+        .addParameter("player", Types.RobotPlayer)
+        .addParameter(ParameterSpec("statusCode", INT))
+        .addParameter("data", returnType.copy(true))
+        .addParameter(ParameterSpec("req", requestParamsClassName.copy(true)))
+        .addCode("""System.err.println("${'$'}statusCode")""")
+
       val resp = FunSpec.builder(respFunName).addModifiers(KModifier.ABSTRACT)
-//      resp.addAnnotation(cmdAnnotation)
-      resp.addParameter("player", Types.RobotPlayer)
-      resp.addParameter(ParameterSpec("statusCode", INT)).addParameter("data", returnType)
-      resp.addParameter(ParameterSpec("req", requestParamsClassName.copy(true)))
+        .addParameter("player", Types.RobotPlayer)
+        .addParameter("data", returnType)
+        .addParameter(ParameterSpec("req", requestParamsClassName.copy(true)))
 
       funSpecList.add(req.build())
       funSpecList.add(respRaw.build())
       funSpecList.add(resp.build())
+      funSpecList.add(errorResp.build())
 
       dispatcher.addStatement(
         "${MsgId(moduleId, cmd.value).toInt()} -> %L?.%L(ctx, response)",
@@ -180,9 +204,8 @@ object Generator {
             .beginControlFlow("player.execute")
             .addStatement("val requestId = response.header.sequenceNo")
             .addStatement("val req = player.getRequestParams(requestId)")
-            .addStatement("val statusCode = response.statusCode")
             .addStatement("val data = %T.decode(response.body, %T::class)", Types.MessageCodec, returnType)
-            .addStatement("%L(player, statusCode, data, req)", respFunName)
+            .addStatement("%L(player, data, req)", respFunName)
             .endControlFlow()
             .build()
         )
@@ -191,7 +214,6 @@ object Generator {
         .addModifiers(KModifier.ABSTRACT)
         .addAnnotation(AnnotationSpec.get(cmd))
         .addParameter("player", Types.RobotPlayer)
-        .addParameter(ParameterSpec("statusCode", INT))
         .addParameter("data", returnType)
         .addParameter(ParameterSpec("req", ANY.copy(true)))
         .build()
@@ -224,7 +246,11 @@ object Generator {
   private fun getReturnType(method: Method): TypeName {
     val genericReturnType = method.genericReturnType
     if (genericReturnType !is ParameterizedType) {
-      return UNIT
+      return ANY
+    }
+    val argType = genericReturnType.actualTypeArguments[0]
+    if (argType == Unit::class.java || argType == Void::class.java) {
+      return ANY
     }
     return genericReturnType.actualTypeArguments[0].javaToKotlinType()
   }

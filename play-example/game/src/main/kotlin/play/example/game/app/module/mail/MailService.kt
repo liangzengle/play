@@ -13,7 +13,7 @@ import play.example.game.app.module.reward.RawRewardConverter
 import play.example.game.app.module.reward.model.Reward
 import play.example.game.container.net.SessionWriter
 import play.spring.OrderedSmartInitializingSingleton
-import play.util.time.currentMillis
+import play.util.time.Time.currentMillis
 import java.util.function.Predicate
 import javax.inject.Inject
 import javax.inject.Named

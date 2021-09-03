@@ -1,7 +1,7 @@
 package play.example.game.app.module.mail.entity
 
 import play.example.game.app.module.reward.model.Reward
-import play.util.time.currentMillis
+import play.util.time.Time.currentMillis
 
 data class Mail(
   val title: String,

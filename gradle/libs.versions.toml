@@ -28,6 +28,7 @@ scala-java8-compact = "0.9.0"
 slf4j = "1.7.30"
 spring-boot = "2.5.2"
 typesafe-config = "1.4.1"
+unsafe-accessor = "1.6.1"
 
 [libraries]
 akka-typed-actor = { module = "com.typesafe.akka:akka-actor-typed_2.13", version.ref = "akka" }
@@ -73,6 +74,7 @@ scala-java8-compact = { module = "org.scala-lang.modules:scala-java8-compat_2.13
 slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter", version.ref = "spring-boot" }
 typesafe-config = { module = "com.typesafe:config", version.ref = "typesafe-config" }
+unsafe-accessor = { module = "io.github.karlatemp:unsafe-accessor", version.ref = "unsafe-accessor" }
 
 [bundles]
 jackson = ["jackson-module-kotlin", "jackson-datatype-jdk8", "jackson-datatype-guava", "jackson-datatype-eclipse-collections"]

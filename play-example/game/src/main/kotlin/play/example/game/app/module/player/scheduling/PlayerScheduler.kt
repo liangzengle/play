@@ -3,8 +3,8 @@ package play.example.game.app.module.player.scheduling
 import akka.actor.typed.ActorRef
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.event.PlayerEvent
-import play.util.time.currentMillis
-import play.util.time.toMillis
+import play.util.time.Time.currentMillis
+import play.util.time.Time.toMillis
 import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Named

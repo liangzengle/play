@@ -33,6 +33,8 @@ internal val RequestMessage = ClassName.bestGuess("play.mvc.RequestMessage")
 
 internal val MessageConverter = ClassName.bestGuess("play.mvc.MessageConverter")
 
+internal val MessageCodec = ClassName.bestGuess("play.mvc.MessageCodec")
+
 internal val DisableCodegen = ClassName.bestGuess("play.codegen.DisableCodegen")
 
 internal val Entity = ClassName.bestGuess("play.entity.Entity")

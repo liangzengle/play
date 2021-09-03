@@ -1,6 +1,7 @@
 package play.example.game.app.module.account.controller
 
 import play.example.game.app.module.ModuleId
+import play.example.game.app.module.account.message.LoginParams
 import play.mvc.AbstractController
 import play.mvc.Cmd
 import play.mvc.Controller
@@ -17,7 +18,7 @@ import javax.inject.Singleton
 class AccountController : AbstractController(ModuleId.Account) {
 
   @Cmd(1, true)
-  fun login(bytes: ByteArray): RequestResult<Boolean> {
+  fun login(loginParams: LoginParams): RequestResult<Boolean> {
     throw UnsupportedOperationException()
   }
 

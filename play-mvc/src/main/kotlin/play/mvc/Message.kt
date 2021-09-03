@@ -1,7 +1,10 @@
 package play.mvc
 
 import kotlinx.serialization.Serializable
-import play.util.*
+import play.util.EmptyByteArray
+import play.util.EmptyIntArray
+import play.util.EmptyLongArray
+import play.util.EmptyStringArray
 
 data class Request(@JvmField val header: Header, @JvmField val body: RequestBody) {
   fun msgId() = header.msgId.toInt()
@@ -180,6 +183,10 @@ class RequestBody(
     return bytes
   }
 
+  fun <T : Any> decodeBytesAs(clazz: Class<T>): T {
+    return MessageCodec.decode(bytes, clazz)
+  }
+
   override fun toString(): String {
     val b = StringBuilder(64)
     b.append("RequestBody(")
@@ -304,37 +311,31 @@ class RequestBodyBuilder {
   }
 
   fun write(array: IntArray): RequestBodyBuilder {
+    require(this.ints.isEmpty()) { "ints is assigned to ${this.ints.contentToString()}" }
     this.ints = array
     return this
   }
 
   fun write(array: LongArray): RequestBodyBuilder {
+    require(this.longs.isEmpty()) { "longs is assigned to ${this.longs.contentToString()}" }
     this.longs = array
     return this
   }
 
   fun write(array: Array<String>): RequestBodyBuilder {
+    require(this.strings.isEmpty()) { "strings is assigned to ${this.strings.contentToString()}" }
     this.strings = array
     return this
   }
 
   fun write(array: ByteArray): RequestBodyBuilder {
+    require(this.bytes.isEmpty()) { "bytes is assigned to ${this.bytes.contentToString()}" }
     this.bytes = array
     return this
   }
 
-  fun write(value: Any): RequestBodyBuilder {
-    when (value) {
-      is Boolean -> write(value)
-      is Int -> write(value)
-      is Long -> write(value)
-      is String -> write(value)
-      is IntArray -> write(value)
-      is LongArray -> write(value)
-      is ByteArray -> write(value)
-      (value is Array<*> && value.isArrayOf<String>()) -> write(value.unsafeCast<Array<String>>())
-      else -> throw IllegalArgumentException("Unsupported value type: ${value.javaClass}")
-    }
+  fun write(obj: Any): RequestBodyBuilder {
+    write(MessageCodec.encode(obj))
     return this
   }
 

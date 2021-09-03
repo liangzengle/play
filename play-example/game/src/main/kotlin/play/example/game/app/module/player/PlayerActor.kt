@@ -19,7 +19,7 @@ import play.example.game.container.net.write
 import play.mvc.PlayerRequest
 import play.mvc.Request
 import play.mvc.Response
-import play.util.time.currentMillis
+import play.util.time.Time.currentMillis
 import java.time.Duration
 
 class PlayerActor(

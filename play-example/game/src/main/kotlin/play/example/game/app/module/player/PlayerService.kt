@@ -12,10 +12,10 @@ import play.example.game.app.module.reward.model.CostResultSet
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.control.Result2
-import play.util.time.currentMillis
-import play.util.time.isCurrentMonth
-import play.util.time.isCurrentWeek
-import play.util.time.isToday
+import play.util.time.Time.currentMillis
+import play.util.time.Time.isCurrentMonth
+import play.util.time.Time.isCurrentWeek
+import play.util.time.Time.isToday
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton

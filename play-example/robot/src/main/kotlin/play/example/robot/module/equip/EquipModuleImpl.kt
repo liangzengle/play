@@ -9,8 +9,8 @@ import play.example.robot.module.player.RobotPlayer
  * @author LiangZengle
  */
 @Component
-class EquipModuleImpl : EquipModule(){
-  override fun putOnResp(player: RobotPlayer, statusCode: Int, data: Unit, req: PutOnRequestParams?) {
+class EquipModuleImpl : EquipModule() {
+  override fun putOnResp(player: RobotPlayer, data: Any, req: PutOnRequestParams?) {
     TODO("Not yet implemented")
   }
 }

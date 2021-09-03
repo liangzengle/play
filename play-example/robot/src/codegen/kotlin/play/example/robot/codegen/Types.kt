@@ -1,6 +1,7 @@
 package play.example.robot.codegen
 
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.MemberName
 
 /**
  *
@@ -22,5 +23,7 @@ internal object Types {
   val RobotPlayer = ClassName.bestGuess("play.example.robot.module.player.RobotPlayer")
 
   val ChannelHandlerContext = ClassName.bestGuess("io.netty.channel.ChannelHandlerContext")
+
+  val EmptyByteArray = MemberName("play.util", "EmptyByteArray")
 }
 
