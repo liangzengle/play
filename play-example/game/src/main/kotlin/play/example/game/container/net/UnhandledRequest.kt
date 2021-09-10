@@ -1,9 +1,8 @@
 package play.example.game.container.net
 
-import akka.actor.typed.ActorRef
 import play.mvc.Request
 
 /**
  * @author LiangZengle
  */
-class UnhandledRequest(val request: Request, val session: ActorRef<SessionActor.Command>)
+class UnhandledRequest(val request: Request, val session: Session)

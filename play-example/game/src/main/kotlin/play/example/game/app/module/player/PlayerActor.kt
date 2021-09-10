@@ -1,26 +1,19 @@
 package play.example.game.app.module.player
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import akka.actor.typed.javadsl.TimerScheduler
 import play.akka.AbstractTypedActor
-import play.akka.send
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.event.*
-import play.example.game.app.module.player.scheduling.PlayerRepeatedSchedule
-import play.example.game.app.module.player.scheduling.PlayerSchedule
-import play.example.game.app.module.player.scheduling.PlayerScheduleCancellation
 import play.example.game.app.module.task.TaskEventReceiver
+import play.example.game.container.net.Session
 import play.example.game.container.net.SessionActor
-import play.example.game.container.net.write
 import play.mvc.PlayerRequest
 import play.mvc.Request
 import play.mvc.Response
-import play.util.time.Time.currentMillis
-import java.time.Duration
 
 class PlayerActor(
   context: ActorContext<Command>,
@@ -34,41 +27,31 @@ class PlayerActor(
 
   private val me = Self(playerId)
 
-  private var session: ActorRef<SessionActor.Command>? = null
+  private var session: Session? = null
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
-      .accept(::onSchedule)
-      .accept(::onRepeatedSchedule)
-      .accept(::onScheduleCancel)
       .accept(::onEvent)
       .accept(::onNewDayStart)
       .accept(::onRequest)
       .accept(::onLogin)
+      .accept(::onSessionClosed)
       .build()
   }
 
-  private fun onScheduleCancel(cancellation: PlayerScheduleCancellation) {
-    timer.cancel(cancellation.triggerEvent)
-  }
-
-  private fun onRepeatedSchedule(schedule: PlayerRepeatedSchedule) {
-    if (schedule.triggerImmediately) {
-      onEvent(schedule.triggerEvent)
-    }
-    timer.startTimerWithFixedDelay(schedule.triggerEvent, schedule.interval)
-  }
-
-  private fun onSchedule(schedule: PlayerSchedule) {
-    timer.startSingleTimer(schedule.triggerEvent, Duration.ofMillis(schedule.triggerTimeMillis - currentMillis()))
+  private fun onSessionClosed(cmd: SessionClosed) {
+    // TODO
+    playerService.logout(me)
+    eventDispatcher.dispatch(me, PlayerLoginEvent(me.id))
   }
 
   private fun onLogin(cmd: Login) {
     val session = cmd.session
     this.session = session
+    context.watchWith(session.actorRef, SessionClosed)
     eventDispatcher.dispatch(me, PlayerPreLoginEvent(me.id))
     val playerInfo = playerService.login(me, cmd.loginParams)
-    session send SessionActor.Subscribe(context.messageAdapter(Request::class.java) { RequestCommand(it) })
+    session.tellActor(SessionActor.Subscribe(context.messageAdapter(Request::class.java) { RequestCommand(it) }))
     session.write(Response(cmd.request.header, 0, playerInfo))
   }
 
@@ -122,7 +105,9 @@ class PlayerActor(
 
   interface Command
 
-  class Login(val request: Request, val loginParams: LoginParams, val session: ActorRef<SessionActor.Command>) : Command
+  class Login(val request: Request, val loginParams: LoginParams, val session: Session) : Command
 
   class RequestCommand(val request: Request) : Command
+
+  private object SessionClosed : Command
 }

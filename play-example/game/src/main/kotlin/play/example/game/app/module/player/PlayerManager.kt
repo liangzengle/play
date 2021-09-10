@@ -16,8 +16,7 @@ import play.example.game.app.module.player.event.PlayerEvent
 import play.example.game.app.module.player.event.PlayerEventDispatcher
 import play.example.game.app.module.player.event.PromisedPlayerEvent
 import play.example.game.app.module.task.TaskEventReceiver
-import play.example.game.container.net.SessionActor
-import play.example.game.container.net.write
+import play.example.game.container.net.Session
 import play.mvc.Request
 import play.mvc.Response
 import play.scheduling.Scheduler
@@ -51,7 +50,7 @@ class PlayerManager(
     val playerId = cmd.id
     val session = cmd.session
     if (!playerService.isPlayerExists(playerId)) {
-      session write Response(cmd.request.header, PlayerErrorCode.PlayerNotExists.getErrorCode())
+      session.write(Response(cmd.request.header, PlayerErrorCode.PlayerNotExists.getErrorCode()))
       return
     }
     val player = getPlayer(playerId)!!
@@ -70,12 +69,12 @@ class PlayerManager(
     val playerId = cmd.id
     val playerName = cmd.request.body.readString()
     if (!playerIdNameCache.isPlayerNameAvailable(playerId, playerName)) {
-      cmd.session write Response(cmd.request.header, PlayerErrorCode.PlayerNameNotAvailable.getErrorCode())
+      cmd.session.write(Response(cmd.request.header, PlayerErrorCode.PlayerNameNotAvailable.getErrorCode()))
       return
     }
     playerService.createPlayer(playerId, playerName)
     playerIdNameCache.add(playerId, playerName)
-    cmd.session write Response(cmd.request.header, 0)
+    cmd.session.write(Response(cmd.request.header, 0))
   }
 
   private fun onEvent(event: PlayerEvent) {
@@ -139,14 +138,14 @@ class PlayerManager(
     val id: Long,
     val request: Request,
     val loginParams: LoginParams,
-    val session: ActorRef<SessionActor.Command>
+    val session: Session
   ) : Command
 
   class LoginPlayerRequest(
     val id: Long,
     val request: Request,
     val loginParams: LoginParams,
-    val session: ActorRef<SessionActor.Command>
+    val session: Session
   ) : Command
 
   object NewDayStart : Command, PlayerActor.Command

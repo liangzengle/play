@@ -8,7 +8,7 @@ import java.util.*
 import javax.validation.Validation
 
 internal class ConstraintsValidator(
-  private val resourceSets: Map<Class<AbstractResource>, AnyResourceSet>
+  private val resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>
 ) {
 
   private val validatorFactory = Validation.byDefaultProvider()
@@ -26,14 +26,14 @@ internal class ConstraintsValidator(
   fun validateAllThrows() {
     val errors = validate(resourceSets)
     if (errors.isNotEmpty()) {
-      throw InvalidConfigException(errors.joinToString("\n", "\n", ""))
+      throw InvalidResourceException(errors.joinToString("\n", "\n", ""))
     }
   }
 
   fun validateThrows(classes: Iterable<Class<*>>) {
     val errors = validate(resourceSets.filterKeys { classes.contains(it) })
     if (errors.isNotEmpty()) {
-      throw InvalidConfigException(errors.joinToString("\n", "\n", ""))
+      throw InvalidResourceException(errors.joinToString("\n", "\n", ""))
     }
   }
 
@@ -41,17 +41,17 @@ internal class ConstraintsValidator(
     return validate(resourceSets.filterKeys { classes.contains(it) })
   }
 
-  private fun validate(resourceSets: Map<Class<AbstractResource>, AnyResourceSet>): List<String> {
+  private fun validate(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>): List<String> {
     Log.info { "开始[配置验证]" }
     val errors = LinkedList<String>()
     resourceSets.asSequence().forEach { e ->
       val clazz = e.key
       val set = e.value
-      set.sequence().flatMap { bean ->
+      set.list().asSequence().flatMap { bean ->
         validator.validate(bean).asSequence().map { err ->
           val value = err.constraintDescriptor.attributes["value"]
-          val configClassName = if (value is Class<*>) value.simpleName else ""
-          "$configClassName${err.message}: ${err.rootBean.javaClass.simpleName}(${err.rootBean.id}).${err.propertyPath} = ${err.invalidValue}"
+          val resourceClassName = if (value is Class<*>) value.simpleName else ""
+          "$resourceClassName${err.message}: ${err.rootBean.javaClass.simpleName}(${err.rootBean.id}).${err.propertyPath} = ${err.invalidValue}"
         }
       }.forEach { errors.add(it) }
 
@@ -59,7 +59,7 @@ internal class ConstraintsValidator(
       fields.asSequence()
         .filter { it.isAnnotationPresent(Unique::class.java) }
         .flatMap { f ->
-          sequenceOf(set.sequence().map { Reflect.getFieldValue<Any>(f, it) }.filterDuplicated())
+          sequenceOf(set.list().asSequence().map { Reflect.getFieldValue<Any>(f, it) }.filterDuplicated())
             .filter { it.isNotEmpty() }
             .map { "${clazz.simpleName}.${f.name}的值不能重复: $it" }
         }.forEach { errors.add(it) }
@@ -70,7 +70,7 @@ internal class ConstraintsValidator(
           if (f.type != Byte::class.java || f.type != Short::class.java || f.type != Int::class.java || f.type != Long::class.java) {
             throw UnsupportedOperationException()
           }
-          val it = set.sequence().map { Reflect.getFieldValue<Number>(f, it)!!.toLong() }.iterator()
+          val it = set.list().asSequence().map { Reflect.getFieldValue<Number>(f, it)!!.toLong() }.iterator()
           val start = if (it.hasNext()) it.next() else 0L
           var next = start + 1
           while (it.hasNext()) {
@@ -89,12 +89,13 @@ internal class ConstraintsValidator(
         }.forEach { errors.add(it) }
     }
 
-    resourceSets.forEach { (clazz, configSet) ->
+    resourceSets.forEach { (clazz, resourceSet) ->
       clazz.getAnnotation(Extend::class.java)?.also { join ->
         val table = resourceSets[join.table.java]
-        val illegalIds = configSet.sequence().filterNot { table?.contains(it.id) ?: false }.map { it.id }.toList()
+        val illegalIds =
+          resourceSet.list().asSequence().filterNot { table?.contains(it.id) ?: false }.map { it.id }.toList()
         val missionIds =
-          table?.sequence()?.filterNot { configSet.contains(it.id) }?.map { it.id }?.toList() ?: emptyList()
+          table?.list()?.asSequence()?.filterNot { resourceSet.contains(it.id) }?.map { it.id }?.toList() ?: emptyList()
         if (illegalIds.isNotEmpty()) {
           errors += "[${clazz.simpleName}]表的数据在[${join.table.simpleName}]表中不存: ${clazz.simpleName}$illegalIds"
         }

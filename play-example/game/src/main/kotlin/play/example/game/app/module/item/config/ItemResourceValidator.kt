@@ -1,7 +1,7 @@
 package play.example.game.app.module.item.config
 
-import play.res.BasicResourceSet
 import play.res.GenericResourceValidator
+import play.res.ResourceSet
 import play.res.ResourceSetSupplier
 
 /**
@@ -10,11 +10,11 @@ import play.res.ResourceSetSupplier
  */
 class ItemResourceValidator : GenericResourceValidator<ItemResource>() {
   override fun validate(
-    configSet: BasicResourceSet<ItemResource>,
+    resourceSet: ResourceSet<ItemResource>,
     resourceSetSupplier: ResourceSetSupplier,
     errors: MutableCollection<String>
   ) {
-    if (configSet.size() < 2) {
+    if (resourceSet.size() < 2) {
       errors += "test config validator failure"
     }
   }

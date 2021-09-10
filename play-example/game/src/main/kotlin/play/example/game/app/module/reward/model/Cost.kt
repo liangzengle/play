@@ -1,9 +1,19 @@
 package play.example.game.app.module.reward.model
 
 import com.fasterxml.jackson.annotation.JsonValue
+import com.fasterxml.jackson.databind.JsonNode
+import play.util.json.Json
 import kotlin.math.ceil
 
 data class Cost(@field:JsonValue val reward: Reward) {
+  companion object {
+    @JvmStatic
+    private fun fromJson(jsonNode: JsonNode): Cost {
+      val reward = Json.convert(jsonNode, Reward::class.java)
+      return Cost(reward)
+    }
+  }
+
   operator fun plus(count: Int) = Cost(reward + count)
 
   operator fun minus(count: Int) = Cost(reward - count)
@@ -22,6 +32,10 @@ data class Cost(@field:JsonValue val reward: Reward) {
 
   override fun toString(): String {
     return reward.toString()
+  }
+
+  fun toCostList(): CostList {
+    return CostList(this)
   }
 }
 

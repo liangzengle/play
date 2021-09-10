@@ -28,7 +28,7 @@ object RewardHelper {
       1 -> if (rewards is List) rewards else listOf(rewards.first())
       else -> {
         val merged = ArrayList<Reward>(size)
-        rewards.forEach { r ->
+        for (r in rewards) {
           if (r.num > 0) {
             val i = merged.indexOfFirst { it.canMerge(r, isCost) }
             if (i == -1) merged += r

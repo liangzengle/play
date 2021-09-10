@@ -1,5 +1,6 @@
 package play.example.game.app.module.player.event
 
+import play.example.common.scheduling.ScheduledEvent
 import play.example.game.app.module.player.PlayerActor
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.reward.model.Cost
@@ -16,6 +17,8 @@ import play.util.control.Result2
 interface PlayerEvent : PlayerManager.Command, PlayerActor.Command {
   val playerId: Long
 }
+
+interface PlayerScheduledEvent : PlayerEvent, ScheduledEvent
 
 interface PromisedPlayerEvent<T> : PlayerEvent {
   val promise: Promise<T>

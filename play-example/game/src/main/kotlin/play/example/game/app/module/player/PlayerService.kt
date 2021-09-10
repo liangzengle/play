@@ -7,6 +7,7 @@ import play.example.game.app.module.player.entity.PlayerInfoEntity
 import play.example.game.app.module.player.entity.PlayerInfoEntityCache
 import play.example.game.app.module.player.event.*
 import play.example.game.app.module.player.message.PlayerDTO
+import play.example.game.app.module.player.scheduling.PlayerScheduler
 import play.example.game.app.module.reward.model.Cost
 import play.example.game.app.module.reward.model.CostResultSet
 import play.util.concurrent.PlayFuture
@@ -27,7 +28,8 @@ class PlayerService @Inject constructor(
   private val playerCache: PlayerEntityCache,
   private val playerInfoCache: PlayerInfoEntityCache,
   private val onlinePlayerService: OnlinePlayerService,
-  private val playerIdNameCache: PlayerIdNameCache
+  private val playerIdNameCache: PlayerIdNameCache,
+  private val playerScheduler: PlayerScheduler
 ) : PlayerEventListener {
 
   override fun playerEventReceive(): PlayerEventReceive {
@@ -63,6 +65,12 @@ class PlayerService @Inject constructor(
     onlinePlayerService.login(self, loginParams)
     println("player login: $self")
     return PlayerDTO(self.id, playerInfo.name)
+  }
+
+  fun logout(self: Self) {
+    playerScheduler.cancelAll(self)
+    onlinePlayerService.logout(self)
+    println("player logout: $self")
   }
 
   fun createPlayer(id: Long, name: String) {

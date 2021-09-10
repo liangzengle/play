@@ -22,8 +22,7 @@ import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.server.ServerService
 import play.example.game.container.login.LoginDispatcherActor
-import play.example.game.container.net.SessionActor
-import play.example.game.container.net.write
+import play.example.game.container.net.Session
 import play.mvc.Request
 import play.mvc.Response
 import play.util.control.Result2
@@ -69,18 +68,18 @@ class AccountManager(
       AccountModule.login -> login(request, session)
       AccountModule.ping -> {
         println("ping")
-        session write Response(request.header, 0, "hello")
+        session.write(Response(request.header, 0, "hello"))
       }
       else -> Log.warn { "unhandled request: $request" }
     }
   }
 
-  private fun login(request: Request, session: ActorRef<SessionActor.Command>) {
+  private fun login(request: Request, session: Session) {
     val requestBody = request.body
     val params = ProtoBuf.decodeFromByteArray<LoginParams>(requestBody.bytes)
     val result = getOrCreateAccount(params)
     if (result.isErr()) {
-      session write Response(request.header, result.getErrorCode())
+      session.write(Response(request.header, result.getErrorCode()))
       Log.error { "登录失败: errorCode=${result.getErrorCode()} params=$params" }
       return
     }
@@ -176,5 +175,5 @@ class AccountManager(
   }
 
   interface Command
-  private class RequestCommand(val request: Request, val session: ActorRef<SessionActor.Command>) : Command
+  private class RequestCommand(val request: Request, val session: Session) : Command
 }

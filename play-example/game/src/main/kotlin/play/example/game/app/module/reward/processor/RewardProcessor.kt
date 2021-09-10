@@ -6,12 +6,15 @@ import play.util.control.Result2
 
 abstract class RewardProcessor<T : Reward>(val rewardType: RewardType) {
 
-  open fun needTransform(self: Self, reward: T): Boolean {
-    return false
-  }
-
-  open fun transform(self: Self, reward: T): List<Reward> {
-    return listOf(reward)
+  /**
+   * 奖励转换
+   *
+   * @param self
+   * @param reward
+   * @return null-不需要转换, 其他-转换后的奖励
+   */
+  open fun transform(self: Self, reward: T): List<Reward>? {
+    return null
   }
 
   /**

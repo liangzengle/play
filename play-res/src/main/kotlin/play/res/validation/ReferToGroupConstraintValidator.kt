@@ -6,20 +6,20 @@ import javax.validation.ConstraintValidatorContext
 
 class ReferToGroupConstraintValidator : ConfigConstraintValidator<ReferToGroup, Any>() {
 
-  private lateinit var referToConfig: Class<out AbstractResource>
+  private lateinit var referToResource: Class<out AbstractResource>
 
   override fun initialize(referTo: ReferToGroup) {
-    referToConfig = referTo.value.java
+    referToResource = referTo.value.java
   }
 
   override fun isValid(value: Any?, context: ConstraintValidatorContext): Boolean {
     if (value == null || value == 0) return true
-    val configSet = getConfigSet(context, referToConfig)
-    if (configSet !is GroupedResourceSet<*, *>) {
+    val resourceSet = getResourceSet(context, referToResource)
+    if (resourceSet !is GroupedResourceSet<*, *>) {
       return false
     }
     @Suppress("UNCHECKED_CAST")
-    configSet as GroupedResourceSet<Any, *>
-    return configSet.containsGroup(value)
+    resourceSet as GroupedResourceSet<Any, *>
+    return resourceSet.containsGroup(value)
   }
 }

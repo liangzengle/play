@@ -10,7 +10,7 @@ import play.example.game.app.module.player.Self
 import play.example.game.app.module.player.condition.PlayerConditionService
 import play.example.game.app.module.player.condition.listenConditionEvents
 import play.example.game.app.module.player.event.*
-import play.example.game.container.net.SessionWriter
+import play.example.game.container.net.Session
 import javax.inject.Inject
 import javax.inject.Named
 import javax.inject.Singleton
@@ -50,7 +50,7 @@ class ModuleControlService @Inject constructor(
       }
       entity.setOpen(moduleId)
       eventBus.post(PlayerModuleOpenEvent(self.id, moduleId))
-      SessionWriter.write(self.id, ModuleControlModule.moduleOpenPush(moduleId))
+      Session.write(self.id, ModuleControlModule.moduleOpenPush(moduleId))
     }
   }
 }

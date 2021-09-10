@@ -11,7 +11,7 @@ import play.example.game.app.module.player.condition.PlayerConditionService
 import play.example.game.app.module.player.event.*
 import play.example.game.app.module.reward.RawRewardConverter
 import play.example.game.app.module.reward.model.Reward
-import play.example.game.container.net.SessionWriter
+import play.example.game.container.net.Session
 import play.spring.OrderedSmartInitializingSingleton
 import play.util.time.Time.currentMillis
 import java.util.function.Predicate
@@ -81,7 +81,7 @@ class MailService @Inject constructor(
     playerMailCache.create(mailEntity)
     playerMailIdEntity.add(mailId)
 
-    SessionWriter.write(self.id, MailModule.newMailPush(1))
+    Session.write(self.id, MailModule.newMailPush(1))
 
     forceDeleteTrashMails(self)
     // TODO
@@ -113,7 +113,7 @@ class MailService @Inject constructor(
     }
 
     if (deleteCount > 0) {
-      SessionWriter.write(self.id, MailModule.forceDeleteTrashMailsPush(deleteCount))
+      Session.write(self.id, MailModule.forceDeleteTrashMailsPush(deleteCount))
     }
   }
 

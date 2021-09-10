@@ -4,6 +4,7 @@ import play.example.common.StatusCode
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.reward.RewardService
 import play.example.game.app.module.reward.model.Reward
+import play.example.game.app.module.reward.model.RewardList
 import play.example.game.app.module.reward.model.RewardResultSet
 import play.example.game.app.module.task.config.AbstractTaskResource
 import play.example.game.app.module.task.domain.TaskErrorCode
@@ -137,7 +138,7 @@ abstract class AbstractTaskService<PlayerTask : AbstractTask, TaskConfig : Abstr
       return errorCode.TaskNotFinished
     }
     val rewards = getRewards(self, taskConfig)
-    val rewardResult = rewardService.tryAndExecReward(self, rewards, logSource.TaskReward)
+    val rewardResult = rewardService.tryAndExecReward(self, RewardList(rewards), logSource.TaskReward)
     if (rewardResult.isOk()) {
       playerTask.setRewarded()
       onTaskRewarded(self, playerTask, taskConfig)

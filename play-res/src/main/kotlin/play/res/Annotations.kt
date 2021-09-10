@@ -68,8 +68,15 @@ annotation class Incremental
 annotation class SingletonResource
 
 /**
- * 表示id与[[table]]表的id完全一致
+ * 表示id与[table]表的id完全一致
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 annotation class Extend(val table: KClass<out AbstractResource>)
+
+/**
+ * 提供[NavigableResourceSet]的api
+ */
+@Retention(AnnotationRetention.BINARY)
+@Target(AnnotationTarget.CLASS)
+annotation class ExposeNavigableApi

@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList
 import com.google.common.collect.Sets
 import play.Log
 import play.util.collection.ConcurrentHashSet
-import play.util.collection.filterDuplicated
 import play.util.collection.filterDuplicatedBy
 import play.util.collection.toImmutableMap
 import play.util.control.exists
@@ -16,11 +15,8 @@ import play.util.reflect.isAnnotationPresent
 import play.util.unsafeCast
 import java.io.File
 import java.nio.file.Paths
-import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import javax.annotation.concurrent.GuardedBy
-
-internal typealias AnyResourceSet = SuperResourceSet<Any, AbstractResource, Any, ResourceExtension<AbstractResource>>
 
 @Suppress("UNCHECKED_CAST")
 class ResourceManager(
@@ -52,16 +48,16 @@ class ResourceManager(
 
   private var reloadListeners = emptyList<ResourceReloadListener>()
 
-  private var resourceSets = emptyMap<Class<AbstractResource>, AnyResourceSet>()
+  private var resourceSets = emptyMap<Class<AbstractResource>, ResourceSet<AbstractResource>>()
 
-  var version = "Unspecified"
+  var version = "Unknown"
     private set
 
   private val cascadeResourceTypes = hashMapOf<Class<*>, MutableSet<Class<*>>>()
 
-  private fun isInitialized() = resourceSets !== emptyMap<Class<*>, AnyResourceSet>()
+  private fun isInitialized() = resourceSets !== emptyMap<Class<*>, ResourceSet<AbstractResource>>()
 
-  fun <T : AbstractResource, R : BasicResourceSet<T>> getConfigSet(clazz: Class<T>): R {
+  private fun <T : AbstractResource, R : ResourceSet<T>> getResourceSet(clazz: Class<T>): R {
     if (!isInitialized()) {
       throw IllegalStateException("${javaClass.simpleName}初始化未完成")
     }
@@ -70,12 +66,12 @@ class ResourceManager(
   }
 
   @Synchronized
-  fun load() {
-    if (isInitialized()) throw IllegalStateException("Cannot load twice.")
+  fun init() {
+    if (isInitialized()) throw IllegalStateException("has been initialized.")
     resourceClasses.filterDuplicatedBy { getReader(it).getURL(it).getOrThrow() }
       .also { if (it.isNotEmpty()) throw IllegalStateException("配置路径冲突: ${it.values}") }
     resourceSets = load(resourceClasses, true)
-    updateDelegatedConfigSets(resourceSets)
+    initDelegatedResourceSets(resourceSets)
     updateVersion()
     if (setting.autoReload) {
       setupAutoReload()
@@ -92,17 +88,17 @@ class ResourceManager(
 
   @Synchronized
   fun reload(classesToReload: Set<Class<out AbstractResource>>) {
-    val finalConfigsToLoad = classesToReload + classesToReload.asSequence()
+    val finalResourcesToLoad = classesToReload + classesToReload.asSequence()
       .flatMap { cascadeResourceTypes[it] ?: emptySet() }
       .map { it.unsafeCast<Class<out AbstractResource>>() }.toSet()
     val canNotReload = classesToReload.filterNot { isReloadable(it) }
     if (canNotReload.isNotEmpty()) {
       Log.warn { "以下配置类不允许重加载: $canNotReload" }
     }
-    val reloaded = load(finalConfigsToLoad, setting.validateOnReload)
+    val reloaded = load(finalResourcesToLoad, setting.validateOnReload)
     for ((k, v) in reloaded) {
-      val prev = DelegatedResourceSet.getOrNull(k)
-      if (prev != null && !k.isAnnotationPresent(AllowRemoveOnReload::class.java)) {
+      if (!k.isAnnotationPresent(AllowRemoveOnReload::class.java)) {
+        val prev = DelegatedResourceSet.getOrNull<AbstractResource>(k) ?: continue
         for (elem in prev.list()) {
           if (!v.contains(elem.id)) {
             Log.warn { "重加载时删除了配置: ${k.simpleName}(${elem.id})" }
@@ -110,7 +106,7 @@ class ResourceManager(
         }
       }
     }
-    updateDelegatedConfigSets(reloaded)
+    updateDelegatedResourceSets(reloaded)
 
     fun getFileName(cls: Class<*>): String {
       return getReader(cls).getURL(cls).map { url ->
@@ -124,12 +120,12 @@ class ResourceManager(
       Log.info { "配置重加载完成: ${cls.simpleName}(${getFileName(cls)})${if (isCascade) " (关联的更新)" else ""}" }
     }
     updateVersion()
-    notifyReloadListeners(finalConfigsToLoad)
+    notifyReloadListeners(finalResourcesToLoad)
   }
 
   @Suppress("UnstableApiUsage")
   @Synchronized
-  fun addReloadListener(listener: ResourceReloadListener) {
+  fun registerReloadListener(listener: ResourceReloadListener) {
     reloadListeners =
       ImmutableList.builderWithExpectedSize<ResourceReloadListener>(reloadListeners.size + 1)
         .addAll(reloadListeners)
@@ -139,7 +135,7 @@ class ResourceManager(
 
   @Suppress("UnstableApiUsage")
   @Synchronized
-  fun addReloadListeners(listeners: Collection<ResourceReloadListener>) {
+  fun registerReloadListeners(listeners: Collection<ResourceReloadListener>) {
     reloadListeners =
       ImmutableList.builderWithExpectedSize<ResourceReloadListener>(reloadListeners.size + listeners.size)
         .addAll(reloadListeners)
@@ -150,7 +146,7 @@ class ResourceManager(
   private fun notifyReloadListeners(reloaded: Set<Class<out AbstractResource>>) {
     for (listener in reloadListeners) {
       try {
-        listener.onConfigReloaded(reloaded)
+        listener.onResourceReloaded(reloaded)
       } catch (e: Exception) {
         Log.error(e) { e.message }
       }
@@ -161,21 +157,21 @@ class ResourceManager(
   private fun load(
     classes: Collection<Class<out AbstractResource>>,
     validate: Boolean
-  ): Map<Class<AbstractResource>, AnyResourceSet> {
-    val configClassToConfigSet = read(classes)
+  ): Map<Class<AbstractResource>, ResourceSet<AbstractResource>> {
+    val resourceClassToResourceSet = read(classes)
     val errors = ConcurrentLinkedQueue<String>()
-    val allConfigSets = this.resourceSets + configClassToConfigSet
-    val resourceSetSupplier = ResourceSetSupplier(allConfigSets)
+    val allResourceSets = this.resourceSets + resourceClassToResourceSet
+    val resourceSetSupplier = ResourceSetSupplier(allResourceSets)
     val dependentMap = hashMapOf<Class<*>, Set<Class<*>>>()
-    configClassToConfigSet.values.parallelStream().forEach {
-      val dependentConfigs = ConcurrentHashSet<Class<*>>()
-      resourceSetSupplier.dependentConfigs = dependentConfigs
+    resourceClassToResourceSet.values.parallelStream().forEach {
+      val dependentResources = ConcurrentHashSet<Class<*>>()
+      resourceSetSupplier.dependentResources = dependentResources
       it.list().parallelStream().forEach { e ->
-        e.postInitialize(resourceSetSupplier, errors)
+        e.initialize(resourceSetSupplier, errors)
       }
-      resourceSetSupplier.dependentConfigs = null
-      if (dependentConfigs.isNotEmpty()) {
-        dependentMap[it.firstOrThrow().javaClass] = dependentConfigs
+      resourceSetSupplier.dependentResources = null
+      if (dependentResources.isNotEmpty()) {
+        dependentMap[it.firstOrThrow().javaClass] = dependentResources
       }
     }
     for ((k, set) in dependentMap) {
@@ -184,25 +180,29 @@ class ResourceManager(
       }
     }
     if (errors.isNotEmpty()) {
-      throw InvalidConfigException(errors)
+      throw InvalidResourceException(errors)
     }
     if (validate) {
-      val validationErrors = ConstraintsValidator(allConfigSets).validate(classes)
+      val validationErrors = ConstraintsValidator(allResourceSets).validate(classes)
       errors += validationErrors
     }
     validators.forEach {
-      if (it !is GenericResourceValidator<*> || configClassToConfigSet.containsKey(it.configClass)) {
+      if (it !is GenericResourceValidator<*> || resourceClassToResourceSet.containsKey(it.resourceClass)) {
         it.validate(resourceSetSupplier, errors)
       }
     }
     if (errors.isNotEmpty()) {
-      throw InvalidConfigException(errors.joinToString("\n", "\n", ""))
+      throw InvalidResourceException(errors.joinToString("\n", "\n", ""))
     }
-    return configClassToConfigSet
+    return resourceClassToResourceSet
   }
 
-  private fun updateDelegatedConfigSets(configSets: Map<Class<AbstractResource>, AnyResourceSet>) {
-    configSets.forEach { (t, u) -> DelegatedResourceSet.createOrUpdate(t, u) }
+  private fun updateDelegatedResourceSets(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
+    DelegatedResourceSet.update(resourceSets)
+  }
+
+  private fun initDelegatedResourceSets(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
+    DelegatedResourceSet.init(resourceSets)
   }
 
   private fun setupAutoReload() {
@@ -262,12 +262,13 @@ class ResourceManager(
     return isLoadable(clazz) && !clazz.isAnnotationPresent(NotReloadable::class.java)
   }
 
-  private fun read(classes: Collection<Class<out AbstractResource>>): Map<Class<AbstractResource>, AnyResourceSet> {
+  private fun read(classes: Collection<Class<out AbstractResource>>): Map<Class<AbstractResource>, ResourceSet<AbstractResource>> {
     return classes.parallelStream()
       .map {
         val clazz = it as Class<AbstractResource>
         val result = getReader(clazz).read(clazz)
-        clazz to createResourceSet(clazz, result)
+        val resourceSet = ResourceHelper.createResourceSet(clazz, result)
+        clazz to resourceSet
       }.toImmutableMap()
   }
 
@@ -284,73 +285,6 @@ class ResourceManager(
     }
     maybeVersion.onFailure { e ->
       Log.warn { "读取配置版本号文件失败: ${e.javaClass.name}: ${e.message}" }
-    }
-  }
-
-  private fun createResourceSet(resourceClass: Class<AbstractResource>, elems: List<AbstractResource>): AnyResourceSet {
-    val simpleName = resourceClass.simpleName
-    try {
-      val errors = LinkedList<String>()
-
-      val isSingleton = ResourceHelper.isSingletonResource(resourceClass)
-      val notEmpty = isSingleton || resourceClass.isAnnotationPresent(NonEmpty::class.java)
-      if (notEmpty && elems.isEmpty()) {
-        errors.add("表不能为空: $simpleName")
-        throw InvalidConfigException(errors)
-      }
-
-      if (isSingleton && elems.size != 1) {
-        errors.add("只能有1条配置: $simpleName")
-      }
-
-      val minId = resourceClass.getAnnotation(MinID::class.java)?.value ?: 1
-      val invalidIdList = elems.asSequence().filter { it.id < minId }.map { it.id }.toList()
-      if (invalidIdList.isNotEmpty()) {
-        errors.add("ID必须大于[$minId]: $simpleName$invalidIdList")
-      }
-
-      val duplicatedIds = elems.asSequence().map { it.id }.filterDuplicated()
-      if (duplicatedIds.isNotEmpty()) {
-        errors.add("ID重复: $simpleName${duplicatedIds.values}")
-      }
-
-      val hasUniqueKey = UniqueKey::class.java.isAssignableFrom(resourceClass)
-      if (hasUniqueKey) {
-        val duplicatedKeys = elems.asSequence().map { (it as UniqueKey<Any>).key() }.filterDuplicated()
-        if (duplicatedKeys.isNotEmpty()) {
-          errors.add("Key重复: $simpleName${duplicatedKeys.values}")
-        }
-      }
-
-      if (errors.isNotEmpty()) {
-        throw InvalidConfigException(errors)
-      }
-
-      if (isSingleton) {
-        return SingletonResourceSetImpl(elems.first())
-      }
-
-      if (elems.isEmpty()) {
-        return ResourceSetImpl(resourceClass, ImmutableList.of())
-      }
-
-      val comparator = if (hasUniqueKey) {
-        val keyComparator = (elems.first() as UniqueKey<Any>).keyComparator()
-        Comparator<AbstractResource> { o1, o2 ->
-          o1 as UniqueKey<Any>
-          o2 as UniqueKey<Any>
-          keyComparator.compare(o1, o2)
-        }
-      } else {
-        Comparator.comparingInt { it.id }
-      }
-      val array = elems.toTypedArray()
-      Arrays.sort(array, comparator)
-      return ResourceSetImpl(resourceClass, array.asList())
-    } catch (e: InvalidConfigException) {
-      throw e
-    } catch (e: Exception) {
-      throw IllegalStateException("ConfigSet[$simpleName]创建失败", e)
     }
   }
 }

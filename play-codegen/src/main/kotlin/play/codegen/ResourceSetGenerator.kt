@@ -19,7 +19,7 @@ import kotlin.reflect.KFunction
 class ResourceSetGenerator : PlayAnnotationProcessor() {
 
   override fun getSupportedAnnotationTypes(): Set<String> {
-    return setOf("javax.inject.Singleton", "com.google.inject.Singleton")
+    return setOf("play.res.ResourcePath")
   }
 
   override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
@@ -43,18 +43,17 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
       if (isSingleton) {
         implementSingleton(elem, objectBuilder)
       } else {
-        implementBasics(elem, objectBuilder)
+        implementResourceSet(elem, objectBuilder)
         val uniqueKeyType = findUniqueKeyType(elem)
         val hasUniqueKey = uniqueKeyType != null
         if (hasUniqueKey) {
           implementUniqueKey(elem, uniqueKeyType, objectBuilder)
         }
-        if (groupedType.isAssignableFrom(elem.asType())) {
+        val isGrouped = groupedType.isAssignableFrom(elem.asType())
+        if (isGrouped) {
           val groupIdType = findGroupIdType(elem)
-          implementGrouped(elem, groupIdType, objectBuilder)
-          if (groupIdType != null && uniqueKeyType != null) {
-            implementGetByKeyFromGroup(elem, groupIdType, uniqueKeyType, objectBuilder)
-          }
+          val groupUniqueKeyType = findGroupUniqueKeyType(elem)
+          implementGrouped(elem, groupIdType, groupUniqueKeyType, objectBuilder)
         }
         if (extensionKeyType.isAssignableFrom(elem.asType())) {
           implementExtension(elem, objectBuilder)
@@ -71,27 +70,33 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
     return false
   }
 
-  private fun implementBasics(
+  private fun implementResourceSet(
     elem: TypeElement,
     classBuilder: TypeSpec.Builder
   ) {
-    val genericBasicConfigSet = BasicResourceSet.parameterizedBy(elem.asClassName())
+    val genericResourceSet = ResourceSet.parameterizedBy(elem.asClassName())
+    val genericDelegatedResourceSet = DelegatedResourceSet.parameterizedBy(elem.asClassName())
     classBuilder.addProperty(
       PropertySpec
-        .builder("underlying", genericBasicConfigSet, KModifier.PRIVATE)
+        .builder("underlying", genericDelegatedResourceSet, KModifier.PRIVATE)
         .addAnnotation(JvmStatic::class)
-        .initializer("%T.get(%T::class.java) as %T", DelegatedResourceSet, elem.asType(), genericBasicConfigSet)
+        .initializer(
+          "%T.getOrThrow(%T::class.java)",
+          DelegatedResourceSet,
+          elem.asType()
+        )
         .build()
     )
 
-    val asBasicConfigSet = FunSpec.builder("unwrap")
+    val unwrap = FunSpec.builder("unwrap")
+      .returns(genericResourceSet)
       .addStatement("return underlying")
       .addAnnotation(JvmStatic::class)
       .build()
-    classBuilder.addFunction(asBasicConfigSet)
+    classBuilder.addFunction(unwrap)
 
-    val basicConfigSetKmClass = BasicResourceSet.asTypeElement().toImmutableKmClass()
-    basicConfigSetKmClass.functions.forEach { func ->
+    val resourceSetKmClass = ResourceSet.asTypeElement().toImmutableKmClass()
+    resourceSetKmClass.functions.forEach { func ->
       val funBuilder = FunSpec.builder(func.name)
       func.valueParameters.forEach { p ->
         funBuilder.addParameter(p.name, p.typeName() ?: elem.asClassName())
@@ -122,20 +127,21 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
       error("keyType is null")
       return
     }
+    val keyTypeName = keyType.javaToKotlinType()
     val uniqueKeyConfigSetKmClass = UniqueKeyResourceSet.asTypeElement().toImmutableKmClass()
     uniqueKeyConfigSetKmClass.functions
       .forEach { func ->
         val funBuilder = FunSpec.builder(func.name)
         func.valueParameters.forEach { p ->
-          val parameterType = p.typeName() ?: keyType.asTypeName()
+          val parameterType = p.typeName() ?: keyTypeName
           funBuilder.addParameter(p.name, parameterType)
         }
         val params = func.valueParameters.asSequence().map { it.name }.joinToString(", ")
         funBuilder.addModifiers(getModifiers(func))
           .addStatement(
-            "return (underlying as %T<%T, %T>).%L(%L)",
+            "return (underlying.getDelegatee() as %T<%T, %T>).%L(%L)",
             UniqueKeyResourceSet,
-            keyType.javaToKotlinType(),
+            keyTypeName,
             elem,
             func.name,
             params
@@ -143,68 +149,104 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
           .addAnnotation(JvmStatic::class)
         classBuilder.addFunction(funBuilder.build())
       }
+  }
+
+  private fun findGroupUniqueKeyType(elem: TypeElement): DeclaredType? {
+    return elem.interfaces.asSequence()
+      .map { it as DeclaredType }
+      .find {
+        it.asElement().toString() == GroupedUniqueKey.canonicalName
+      }?.let { it.typeArguments[1] } as? DeclaredType
   }
 
   private fun findGroupIdType(elem: TypeElement): DeclaredType? {
     return elem.interfaces.asSequence()
       .map { it as DeclaredType }
       .find {
-        it.asElement().toString() == Grouped.canonicalName
+        val typeName = it.asElement().toString()
+        typeName == Grouped.canonicalName || typeName == GroupedUniqueKey.canonicalName
       }?.let { it.typeArguments[0] } as? DeclaredType
   }
 
   private fun implementGrouped(
     elem: TypeElement,
     groupIdType: DeclaredType?,
+    groupUniqueKeyType: DeclaredType?,
     classBuilder: TypeSpec.Builder
   ) {
     if (groupIdType == null) {
       error("groupIdType is null.")
       return
     }
-    val immutableKmClass = GroupedResourceSet.asTypeElement().toImmutableKmClass()
-    immutableKmClass.functions.asSequence()
-      .forEach { func ->
-        val funBuilder = FunSpec.builder(func.name)
-        func.valueParameters.forEach { p ->
-          val parameterType = p.typeName() ?: groupIdType.asTypeName()
-          funBuilder.addParameter(p.name, parameterType)
-        }
-        val params = func.valueParameters.asSequence().map { it.name }.joinToString(", ")
-        funBuilder.addModifiers(getModifiers(func))
-          .addStatement(
-            "return (underlying as %T<%T, %T>).%L(%L)",
-            GroupedResourceSet,
-            groupIdType.javaToKotlinType(),
-            elem,
+    val isGroupedUniqueKey = GroupedUniqueKey.asTypeElement().asType().isAssignableFrom(elem.asType())
+    val groupIdTypeName = groupIdType.javaToKotlinType()
+
+    val genericGroupedResourceSet = GroupedResourceSet.parameterizedBy(groupIdTypeName, elem.asType().asTypeName())
+    if (isGroupedUniqueKey) {
+      val returnType =
+        GroupUniqueKeyResourceSet.parameterizedBy(elem.asType().asTypeName(), groupUniqueKeyType!!.javaToKotlinType())
+      val getGroupOrNull = FunSpec.builder("getGroupOrNull")
+        .addAnnotation(JvmStatic::class)
+        .addParameter("groupId", groupIdTypeName)
+        .returns(returnType.copy(true))
+        .addStatement(
+          "return (underlying.getDelegatee() as %T).getGroupOrNull(groupId) as? %T",
+          genericGroupedResourceSet,
+          returnType
+        ).build()
+      val getGroup = FunSpec.builder("getGroup")
+        .addAnnotation(JvmStatic::class)
+        .addParameter("groupId", groupIdTypeName)
+        .addStatement("return %T.ofNullable(getGroupOrNull(groupId))", Optional::class)
+        .build()
+      val getGroupOrThrow = FunSpec.builder("getGroupOrThrow")
+        .addAnnotation(JvmStatic::class)
+        .addParameter("groupId", groupIdTypeName)
+        .addStatement("""return getGroupOrNull(groupId) ?: throw NoSuchElementException("group: ${'$'}groupId")""")
+        .build()
+      val groupMap = FunSpec.builder("groupMap")
+        .addAnnotation(JvmStatic::class)
+        .addStatement(
+          "return (underlying.getDelegatee() as %T).groupMap() as %T",
+          genericGroupedResourceSet,
+          Map::class.asClassName().parameterizedBy(groupIdTypeName, returnType)
+        )
+        .build()
+      val containsGroup = FunSpec.builder("containsGroup")
+        .addAnnotation(JvmStatic::class)
+        .addParameter("groupId", groupIdTypeName)
+        .addStatement(
+          "return (underlying.getDelegatee() as %T).containsGroup(groupId)",
+          genericGroupedResourceSet
+        )
+        .build()
+      classBuilder
+        .addFunction(getGroup)
+        .addFunction(getGroupOrThrow)
+        .addFunction(getGroupOrNull)
+        .addFunction(groupMap)
+        .addFunction(containsGroup)
+    } else {
+      val immutableKmClass = GroupedResourceSet.asTypeElement().toImmutableKmClass()
+      immutableKmClass.functions.asSequence()
+        .forEach { func ->
+          val funBuilder = FunSpec.builder(func.name)
+          func.valueParameters.forEach { p ->
+            val parameterType = p.typeName() ?: groupIdTypeName
+            funBuilder.addParameter(p.name, parameterType)
+          }
+          val params = func.valueParameters.asSequence().map { it.name }.joinToString(", ")
+          funBuilder.addStatement(
+            "return (underlying.getDelegatee() as %T).%L(%L)",
+            genericGroupedResourceSet,
             func.name,
             params
           )
-          .addAnnotation(JvmStatic::class)
-        classBuilder.addFunction(funBuilder.build())
-      }
-  }
-
-  private fun implementGetByKeyFromGroup(
-    elem: TypeElement,
-    groupIdType: DeclaredType,
-    uniqueKeyType: DeclaredType,
-    classBuilder: TypeSpec.Builder
-  ) {
-    val groupIdTypeName = groupIdType.asTypeName()
-    val uniqueKeyTypeName = uniqueKeyType.asTypeName()
-    val getByKeyFromGroup = FunSpec.builder("getByKeyFromGroup")
-      .addParameter("groupId", groupIdTypeName)
-      .addParameter("key", uniqueKeyTypeName)
-      .addStatement(
-        "return (underlying as %T<%T, %T, %T>).getGroup(groupId).flatMap{ it.getByKey(key) }",
-        GroupedResourceSet,
-        groupIdTypeName,
-        uniqueKeyTypeName,
-        elem
-      )
-      .addAnnotation(JvmStatic::class)
-    classBuilder.addFunction(getByKeyFromGroup.build())
+          funBuilder.addModifiers(getModifiers(func))
+            .addAnnotation(JvmStatic::class)
+          classBuilder.addFunction(funBuilder.build())
+        }
+    }
   }
 
   private fun implementExtension(elem: TypeElement, classBuilder: TypeSpec.Builder) {
@@ -222,7 +264,7 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
         .addModifiers(KModifier.PUBLIC)
         .returns(extensionType.asTypeName())
         .addStatement(
-          "return (underlying as %T<%T, %T>).extension()",
+          "return (underlying.getDelegatee() as %T<%T, %T>).extension()",
           ExtensionResourceSet,
           extensionType,
           elem
@@ -233,11 +275,17 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
   }
 
   private fun implementSingleton(type: TypeElement, classBuilder: TypeSpec.Builder) {
-    val genericSingletonConfigSet = SingletonResourceSet.parameterizedBy(type.asClassName())
+    val resourceTypeName = type.asClassName()
+    val genericSingletonResourceSet = SingletonResourceSet.parameterizedBy(resourceTypeName)
+    val genericDelegatedResourceSet = DelegatedResourceSet.parameterizedBy(resourceTypeName)
     classBuilder.addProperty(
       PropertySpec
-        .builder("underlying", genericSingletonConfigSet, KModifier.PRIVATE)
-        .initializer("%T.get(%T::class.java) as %T", DelegatedResourceSet, type.asType(), genericSingletonConfigSet)
+        .builder("underlying", genericDelegatedResourceSet, KModifier.PRIVATE)
+        .initializer(
+          "%T.getOrThrow(%T::class.java)",
+          DelegatedResourceSet,
+          type.asType()
+        )
         .build()
     )
 
@@ -246,7 +294,10 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
         FunSpec.builder("get")
           .addModifiers(KModifier.PUBLIC)
           .returns(type.asClassName())
-          .addStatement("return underlying.get()")
+          .addStatement(
+            "return (underlying.getDelegatee() as %T).get()",
+            genericSingletonResourceSet
+          )
           .build()
       )
     val getters = ElementFilter.fieldsIn(type.enclosedElements).asSequence().map {
@@ -263,7 +314,7 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
         if (getters.contains(funName)) {
           val p = getters[funName] ?: throw IllegalStateException("should not happen.")
           val getter = FunSpec.builder("get()")
-            .addStatement("return underlying.get().%L", p.simpleName.toString())
+            .addStatement("return get().%L", p.simpleName.toString())
             .build()
           val property =
             PropertySpec.builder(p.simpleName.toString(), p.asType().javaToKotlinType()).getter(getter)
@@ -281,7 +332,7 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
             )
           }
           val params = elem.parameters.asSequence().map { p -> p.simpleName.toString() }.joinToString(", ")
-          funcBuilder.addStatement("return underlying.get().%L(%L)", funName, params)
+          funcBuilder.addStatement("return get().%L(%L)", funName, params)
           classBuilder.addFunction(funcBuilder.build())
         }
       }

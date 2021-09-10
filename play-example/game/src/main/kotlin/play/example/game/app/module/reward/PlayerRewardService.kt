@@ -5,6 +5,7 @@ import play.example.game.app.module.player.event.PlayerEventListener
 import play.example.game.app.module.player.event.PlayerEventReceive
 import play.example.game.app.module.player.event.PlayerEventReceiveBuilder
 import play.example.game.app.module.player.event.PlayerExecCost
+import play.example.game.app.module.reward.model.CostList
 import play.util.control.peek
 import javax.inject.Inject
 import javax.inject.Named
@@ -27,7 +28,7 @@ class PlayerRewardService @Inject constructor(
 
   private fun execCost(self: Self, event: PlayerExecCost) {
     event.promise.catchingComplete {
-      rewardService.tryAndExecCost(self, event.costs, event.logSource)
+      rewardService.tryAndExecCost(self, CostList(event.costs), event.logSource)
         .peek {
           // TODO
 //          SessionWriter.write(self.id, it)

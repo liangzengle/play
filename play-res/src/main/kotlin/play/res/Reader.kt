@@ -33,7 +33,7 @@ interface Reader {
     }
 
     @JvmStatic
-    fun <T> jsonToObject(src: String, type: Class<T>): T {
+    fun <T> readObject(src: String, type: Class<T>): T {
       return objectMapper.readValue(src, type)
     }
   }
@@ -62,7 +62,7 @@ class ConfigReader : Reader {
         ConfigFactory.parseURL(url, ConfigParseOptions.defaults().setSyntax(configSyntax))
           .withFallback(ConfigFactory.parseString("{ id = 1 }"))
       val bean =
-        Reader.jsonToObject(config.root().render(ConfigRenderOptions.concise()), clazz)
+        Reader.readObject(config.root().render(ConfigRenderOptions.concise()), clazz)
       Collections.singletonList(bean)
     } catch (e: ResourceNotFoundException) {
       Log.error(e) { e.message }

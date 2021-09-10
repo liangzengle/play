@@ -123,7 +123,7 @@ class GameServerActor(
     applicationContext = springApplication.run()
     val resourceManager = applicationContext.getBean(ResourceManager::class.java)
     val resourceReloadListeners = applicationContext.getBeansOfType(ResourceReloadListener::class.java).values
-    resourceManager.addReloadListeners(resourceReloadListeners)
+    resourceManager.registerReloadListeners(resourceReloadListeners)
   }
 
   private fun stop(cmd: Stop): Behavior<Command> {

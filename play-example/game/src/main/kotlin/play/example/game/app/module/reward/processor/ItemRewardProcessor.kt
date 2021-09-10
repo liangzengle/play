@@ -18,15 +18,7 @@ import javax.inject.Singleton
 @Named
 class ItemRewardProcessor : RewardProcessor<ItemReward>(RewardType.Item) {
 
-  override fun needTransform(self: Self, reward: ItemReward): Boolean {
-    val itemCfg = ItemResourceSet.getOrNull(reward.cfgId) ?: return false
-    if (itemCfg.type == ItemType.Currency) {
-      return true
-    }
-    return super.needTransform(self, reward)
-  }
-
-  override fun transform(self: Self, reward: ItemReward): List<Reward> {
+  override fun transform(self: Self, reward: ItemReward): List<Reward>? {
     val itemCfg = ItemResourceSet.getOrThrow(reward.cfgId)
     if (itemCfg.type == ItemType.Currency) {
       return listOf(CurrencyReward(RewardType.getOrThrow(itemCfg.subtype), reward.num))

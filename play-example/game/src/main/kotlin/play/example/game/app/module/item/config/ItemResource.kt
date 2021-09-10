@@ -13,7 +13,8 @@ import javax.validation.Valid
  * @author LiangZengle
  */
 @ResourcePath("Item")
-class ItemResource : AbstractResource(), ItemLikeResource, ExtensionKey<ItemResourceExtension>, Grouped<ItemType> {
+class ItemResource : AbstractResource(), ItemLikeResource, ExtensionKey<ItemResourceExtension>,
+  GroupedUniqueKey<ItemType, Int> {
   override val name: String = ""
 
   private val desc = ""
@@ -32,9 +33,11 @@ class ItemResource : AbstractResource(), ItemLikeResource, ExtensionKey<ItemReso
   var bagFullMailId = 0
     private set
 
-  override fun groupId(): ItemType = type
+  override fun groupBy(): ItemType = type
 
-  override fun postInitialize(resourceSetSupplier: ResourceSetSupplier, errors: MutableCollection<String>) {
+  override fun keyInGroup(): Int = id
+
+  override fun initialize(resourceSetSupplier: ResourceSetSupplier, errors: MutableCollection<String>) {
     println("ItemConfig postInitialize: $this")
     val commonSetting = resourceSetSupplier.getSingleton(CommonSetting::class.java)
     bagFullMailId = commonSetting.get().bagFullMailId

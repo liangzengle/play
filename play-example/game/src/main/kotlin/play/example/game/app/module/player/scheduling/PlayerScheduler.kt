@@ -1,17 +1,20 @@
 package play.example.game.app.module.player.scheduling
 
-import akka.actor.typed.ActorRef
-import play.example.game.app.module.player.PlayerManager
+import org.jctools.maps.NonBlockingHashMapLong
+import play.example.game.app.module.player.Self
 import play.example.game.app.module.player.event.PlayerEvent
+import play.example.game.app.module.player.event.PlayerEventBus
+import play.scheduling.Cancellable
+import play.scheduling.Scheduler
+import play.util.time.Time
 import play.util.time.Time.currentMillis
 import play.util.time.Time.toMillis
+import java.time.Duration
 import java.time.LocalDateTime
+import java.util.*
 import javax.inject.Inject
 import javax.inject.Named
-import javax.inject.Provider
 import javax.inject.Singleton
-import kotlin.time.Duration
-import kotlin.time.toJavaDuration
 
 /**
  * 玩家定时器
@@ -19,72 +22,131 @@ import kotlin.time.toJavaDuration
  */
 @Singleton
 @Named
-class PlayerScheduler @Inject constructor(private val playerManager: Provider<ActorRef<PlayerManager.Command>>) {
+class PlayerScheduler @Inject constructor(
+  private val scheduler: Scheduler,
+  private val playerEventBus: PlayerEventBus
+) {
 
-  fun schedule(schedule: PlayerSchedule) {
-    playerManager.get().tell(schedule)
+  private val scheduleMap = NonBlockingHashMapLong<WeakHashMap<PlayerEvent, Cancellable>>()
+
+  private fun getPlayerSchedules(self: Self): MutableMap<PlayerEvent, Cancellable> {
+    var map = scheduleMap.get(self.id)
+    if (map == null) {
+      map = scheduleMap.computeIfAbsent(self.id) { WeakHashMap() }
+    }
+    return map
   }
 
   /**
-   * 玩家定时计划
-   * @param playerId 玩家id
+   * 玩家定时计划，在某个事件点触发
+   *
+   * @param self
    * @param triggerEvent 定时触发的事件
    * @param triggerTimeMillis 触发时间(毫秒)
    */
   fun scheduleAt(
-    playerId: Long,
+    self: Self,
     triggerEvent: PlayerEvent,
     triggerTimeMillis: Long
   ) {
-    playerManager.get().tell(PlayerSchedule(playerId, triggerEvent, triggerTimeMillis))
+    val cancellable = scheduler.scheduleAt(Time.toLocalDateTime(triggerTimeMillis)) {
+      playerEventBus.post(triggerEvent)
+    }
+    val playerSchedules = getPlayerSchedules(self)
+    playerSchedules[triggerEvent] = cancellable
   }
 
   /**
-   * 玩家定时计划
-   * @param playerId 玩家id
+   * 玩家定时计划，在某个事件点触发
+   *
+   * @param self
    * @param triggerEvent 定时触发的事件
    * @param triggerTime 触发时间
    */
   fun scheduleAt(
-    playerId: Long,
+    self: Self,
     triggerEvent: PlayerEvent,
     triggerTime: LocalDateTime
-  ) = scheduleAt(playerId, triggerEvent, triggerTime.toMillis())
+  ) = scheduleAt(self, triggerEvent, triggerTime.toMillis())
 
   /**
-   * 玩家定时计划
-   * @param playerId 玩家id
+   * 玩家定时计划，在一定延迟后触发
+   *
+   * @param self
    * @param triggerEvent 定时触发的事件
    * @param delay 触发延迟
    */
   fun schedule(
-    playerId: Long,
+    self: Self,
     triggerEvent: PlayerEvent,
     delay: Duration
-  ) = scheduleAt(playerId, triggerEvent, currentMillis() + delay.inWholeMilliseconds)
+  ) = scheduleAt(self, triggerEvent, currentMillis() + delay.toMillis())
 
   /**
    * 玩家的循环定时计划
-   * @param playerId 玩家id
+   *
+   * @param self
    * @param triggerEvent 定时触发的事件
    * @param interval 触发间隔
-   * @param triggerImmediately 是否立即触发1次
    */
   fun scheduleRepeatedly(
-    playerId: Long,
+    self: Self,
     triggerEvent: PlayerEvent,
     interval: Duration,
-    triggerImmediately: Boolean = false
   ) {
-    val schedule = PlayerRepeatedSchedule(playerId, triggerEvent, interval.toJavaDuration(), triggerImmediately)
-    playerManager.get().tell(schedule)
+    scheduleRepeatedly(self, triggerEvent, interval, interval)
+  }
+
+  /**
+   * 玩家的循环定时计划
+   *
+   * @param self
+   * @param triggerEvent 定时触发的事件
+   * @param initialDelay 首次触发延迟
+   * @param interval 触发间隔
+   */
+  fun scheduleRepeatedly(
+    self: Self,
+    triggerEvent: PlayerEvent,
+    initialDelay: Duration,
+    interval: Duration
+  ) {
+    val cancellable = scheduler.scheduleWithFixedDelay(initialDelay, interval) {
+      playerEventBus.post(triggerEvent)
+    }
+    val playerSchedules = getPlayerSchedules(self)
+    playerSchedules[triggerEvent] = cancellable
   }
 
   /**
    * 取消定时计划
+   *
+   * @param self
    * @param triggerEvent 定时计划触发的事件
    */
-  fun cancel(triggerEvent: PlayerEvent) {
-    playerManager.get().tell(PlayerScheduleCancellation(triggerEvent.playerId, triggerEvent))
+  fun cancel(self: Self, triggerEvent: PlayerEvent) {
+    val map = scheduleMap.get(self.id) ?: return
+    map.remove(triggerEvent)?.cancel()
+  }
+
+  /**
+   * 取消玩家某个类型的定时计划
+   *
+   * @param self
+   * @param eventType
+   */
+  fun cancelAll(self: Self, eventType: Class<*>) {
+    val map = scheduleMap.get(self.id) ?: return
+    map.entries.removeIf { eventType.isAssignableFrom(it.key.javaClass) }
+  }
+
+  /**
+   * 取消玩家的所有定时计划
+   *
+   * @param self
+   */
+  fun cancelAll(self: Self) {
+    val map = scheduleMap.remove(self.id) ?: return
+    map.values.forEach { it.cancel() }
   }
 }

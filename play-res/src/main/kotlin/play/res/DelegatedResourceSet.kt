@@ -1,40 +1,44 @@
 package play.res
 
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
+import play.Log
+import play.util.unsafeCastOrNull
 
-private typealias AnyDelegatedConfigSet = DelegatedResourceSet<Any, AbstractResource, Any, ResourceExtension<AbstractResource>>
-
-open class DelegatedResourceSet<K, T, G, E> internal constructor() :
-  SuperResourceSet<K, T, G, E> where T : AbstractResource, E : ResourceExtension<T> {
+open class DelegatedResourceSet<T : AbstractResource> internal constructor(private var delegatee: ResourceSet<T>) :
+  ResourceSet<T> {
 
   companion object {
-    private val instances = ConcurrentHashMap<Class<*>, AnyDelegatedConfigSet>()
-    fun get(clazz: Class<*>) =
-      instances[clazz] ?: throw IllegalStateException("ResourceSet for [${clazz.simpleName}] is not initialized.")
+    private var instances = emptyMap<Class<*>, DelegatedResourceSet<AbstractResource>>()
 
-    internal fun getOrNull(clazz: Class<*>): AnyResourceSet? {
-      return instances[clazz]
+    fun <T : AbstractResource> getOrThrow(clazz: Class<*>): DelegatedResourceSet<T> {
+      return getOrNull(clazz)
+        ?: throw IllegalStateException("DelegatedResourceSet for [${clazz.simpleName}] is not initialized.")
     }
 
-    internal fun createOrUpdate(clazz: Class<*>, configSet: AnyResourceSet) {
-      instances.computeIfAbsent(clazz) {
-        if (ResourceHelper.isSingletonResource(it)) {
-          SingletonDelegatedResourceSet()
+    fun <T : AbstractResource> getOrNull(clazz: Class<*>): DelegatedResourceSet<T>? {
+      return instances[clazz].unsafeCastOrNull<DelegatedResourceSet<T>>()
+    }
+
+    internal fun update(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
+      for ((k, v) in resourceSets.entries) {
+        val delegated = instances[k]
+        if (delegated != null) {
+          delegated.updateDelegatee(v)
         } else {
-          AnyDelegatedConfigSet()
+          Log.error { "DelegatedResourceSet not exists, update failed: ${k.simpleName}" }
         }
-      }.updateDelegatee(configSet)
+      }
+    }
+
+    internal fun init(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
+      instances = resourceSets.mapValues { DelegatedResourceSet(it.value) }
     }
   }
 
-  private lateinit var delegatee: SuperResourceSet<K, T, G, E>
-
-  internal fun delegatee() = delegatee
-
-  internal fun updateDelegatee(delegatee: SuperResourceSet<K, T, G, E>) {
+  internal fun updateDelegatee(delegatee: ResourceSet<T>) {
     this.delegatee = delegatee
   }
+
+  fun getDelegatee() = delegatee
 
   override fun indexOf(elem: T): Int = delegatee.indexOf(elem)
 
@@ -42,55 +46,7 @@ open class DelegatedResourceSet<K, T, G, E> internal constructor() :
 
   override fun contains(id: Int): Boolean = delegatee.contains(id)
 
-  override fun get(id: Int): Optional<T> = delegatee.get(id)
-
-  override fun getOrThrow(id: Int): T = delegatee.getOrThrow(id)
-
   override fun getOrNull(id: Int): T? = delegatee.getOrNull(id)
 
   override fun list(): List<T> = delegatee.list()
-
-  override fun containsKey(key: K): Boolean = delegatee.containsKey(key)
-
-  override fun getByKey(key: K): Optional<T> = delegatee.getByKey(key)
-
-  override fun getByKeyOrNull(key: K): T? = delegatee.getByKeyOrNull(key)
-
-  override fun getByKeyOrThrow(key: K): T = delegatee.getByKeyOrThrow(key)
-
-  override fun nextOrThrow(key: K): T = delegatee.nextOrThrow(key)
-
-  override fun next(key: K): Optional<T> = delegatee.next(key)
-
-  override fun prevOrThrow(key: K): T = delegatee.nextOrThrow(key)
-
-  override fun prev(key: K): Optional<T> = delegatee.prev(key)
-
-  override fun prevOrEqualsOption(key: K): Optional<T> = delegatee.prevOrEqualsOption(key)
-
-  override fun nextOrEqualsOption(key: K): Optional<T> = delegatee.nextOrEqualsOption(key)
-
-  override fun slice(from: K, fromIncluded: Boolean, to: K, toIncluded: Boolean): Iterable<T> {
-    return delegatee.slice(from, fromIncluded, to, toIncluded)
-  }
-
-  override fun extension(): E {
-    return delegatee.extension()
-  }
-
-  override fun getGroup(groupId: G): Optional<BasicResourceSet<T>> = delegatee.getGroup(groupId)
-
-  override fun getGroupOrNull(groupId: G): BasicResourceSet<T>? = delegatee.getGroupOrNull(groupId)
-
-  override fun getGroupOrThrow(groupId: G): BasicResourceSet<T> = delegatee.getGroupOrThrow(groupId)
-
-  override fun groupMap(): Map<G, BasicResourceSet<T>> = delegatee.groupMap()
-
-  override fun containsGroup(groupId: G): Boolean = delegatee.containsGroup(groupId)
-}
-
-internal class SingletonDelegatedResourceSet<T : AbstractResource> :
-  DelegatedResourceSet<Any, T, Any, ResourceExtension<T>>(), SingletonResourceSet<T> {
-  @Suppress("UNCHECKED_CAST")
-  override fun get(): T = (delegatee() as SingletonResourceSet<T>).get()
 }

@@ -44,7 +44,7 @@ object App {
 
     try {
       val resourceManager = ResourceManager(config.getString("play.res.path"), classScanner)
-      resourceManager.load()
+      resourceManager.init()
 
       val springApplication = SpringApplicationBuilder()
         .bannerMode(Banner.Mode.OFF)
@@ -60,7 +60,7 @@ object App {
       val applicationContext = springApplication.run()
 
       val resourceReloadListeners = applicationContext.getBeansOfType(ResourceReloadListener::class.java).values
-      resourceManager.addReloadListeners(resourceReloadListeners)
+      resourceManager.registerReloadListeners(resourceReloadListeners)
 
       applicationContext.getBean("gameServerManager").unsafeCast<ActorRef<GameServerManager.Command>>()
         .tell(GameServerManager.Init)

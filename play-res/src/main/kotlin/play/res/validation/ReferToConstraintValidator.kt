@@ -5,14 +5,14 @@ import javax.validation.ConstraintValidatorContext
 
 class ReferToConstraintValidator : ConfigConstraintValidator<ReferTo, Int>() {
 
-  private lateinit var referToConfig: Class<out AbstractResource>
+  private lateinit var referToResource: Class<out AbstractResource>
 
   override fun initialize(referTo: ReferTo) {
-    referToConfig = referTo.value.java
+    referToResource = referTo.value.java
   }
 
   override fun isValid(value: Int?, context: ConstraintValidatorContext): Boolean {
     if (value == null || value == 0) return true
-    return getConfigSet(context, referToConfig)?.contains(value) ?: false
+    return getResourceSet(context, referToResource)?.contains(value) ?: false
   }
 }

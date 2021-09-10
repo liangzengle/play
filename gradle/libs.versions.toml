@@ -13,6 +13,7 @@ javax-inject = "1"
 jackson = "2.12.2"
 javax-el = "3.0.0"
 jctools = "3.3.0"
+junit = "5.7.0"
 kotlin-lang = "1.5.21"
 kotlin-logging = "2.0.6"
 kotlinpoet = "1.8.0"
@@ -52,6 +53,9 @@ jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datat
 jackson-datatype-guava = { module = "com.fasterxml.jackson.datatype:jackson-datatype-guava", version.ref = "jackson" }
 jackson-datatype-eclipse-collections = { module = "com.fasterxml.jackson.datatype:jackson-datatype-eclipse-collections", version.ref = "jackson" }
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
+junit-jupiter-impl = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin-lang" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin-lang" }
 kotlin-logging = { module = "io.github.microutils:kotlin-logging", version.ref = "kotlin-logging" }
@@ -86,3 +90,4 @@ netty = ["netty-all", "netty-epoll"]
 kotlin = ["kotlin-jvm", "kotlin-reflect"]
 akka = ["akka-typed-actor", "akka-typed-cluster", "akka-typed-serialization-jackson"]
 scala = ["scala-library", "scala-java8-compact"]
+junit = ["junit-jupiter-engine", "junit-jupiter-api", "junit-jupiter-impl"]

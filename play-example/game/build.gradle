@@ -3,6 +3,17 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.serialization' version "1.5.21"
 }
 
+repositories {
+    mavenLocal()
+    maven {
+        url 'https://maven.aliyun.com/repository/public/'
+    }
+    mavenCentral()
+    maven {
+        url "file://$rootDir/repository"
+    }
+}
+
 dependencies {
     api project(':play-example-common')
     api project(':play-net')

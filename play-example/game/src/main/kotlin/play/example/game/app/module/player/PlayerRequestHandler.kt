@@ -3,7 +3,7 @@ package play.example.game.app.module.player
 import akka.actor.typed.ActorRef
 import play.example.common.StatusCode
 import play.example.game.app.ControllerInvokerManager
-import play.example.game.container.net.SessionActor
+import play.example.game.container.net.Session
 import play.mvc.*
 import play.util.control.getCause
 import play.util.exception.isFatal
@@ -99,6 +99,6 @@ class PlayerRequestHandler @Inject constructor(private val controllerInvokerMana
 
   @Suppress("NOTHING_TO_INLINE")
   private inline fun write(playerId: Long, response: Response) {
-    SessionActor.write(playerId, response)
+    Session.write(playerId, response)
   }
 }

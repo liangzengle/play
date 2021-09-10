@@ -1,10 +1,11 @@
 package play.res
 
+import play.util.toOptional
+import play.util.unsafeCast
 import java.util.*
-import java.util.stream.Stream
 import javax.annotation.Nullable
 
-interface BasicResourceSet<T : Any> {
+interface ResourceSet<T : AbstractResource> {
   fun indexOf(elem: T): Int
 
   fun getByIndexOrNull(idx: Int): T?
@@ -21,16 +22,17 @@ interface BasicResourceSet<T : Any> {
 
   fun size(): Int = list().size
 
-  fun get(id: Int): Optional<T>
+  fun get(id: Int): Optional<T> = getOrNull(id).toOptional()
 
-  fun getOrThrow(id: Int): T
+  fun getOrThrow(id: Int): T = getOrNull(id) ?: throw NoSuchElementException("$id")
 
-  @Nullable
   fun getOrNull(id: Int): T?
 
   operator fun invoke(id: Int): T = getOrThrow(id)
 
   fun list(): List<T>
+
+  fun reversedList(): List<T> = list().asReversed()
 
   fun firstOrThrow(): T = list().first()
 
@@ -43,88 +45,59 @@ interface BasicResourceSet<T : Any> {
   fun first(): Optional<T> = Optional.ofNullable(firstOrNull())
 
   fun last(): Optional<T> = Optional.ofNullable(lastOrNull())
-
-  fun sequence(): Sequence<T> = list().asSequence()
-
-  fun reversedSequence(): Sequence<T> = list().asReversed().asSequence()
-
-  fun reversedList(): List<T> = list().asReversed()
-
-  fun stream(): Stream<T> = list().stream()
-
-  fun reversedStream(): Stream<T> = list().asReversed().stream()
-
-  fun iterator(): Iterator<T> = list().iterator()
 }
+
+internal class EmptyResourceSet<T : AbstractResource> : ResourceSet<T> {
+  companion object {
+    private val Empty = EmptyResourceSet<AbstractResource>()
+    fun <T : AbstractResource> of(): ResourceSet<T> = Empty.unsafeCast()
+  }
+
+  override fun indexOf(elem: T): Int = -1
+  override fun getByIndexOrNull(idx: Int): T? = null
+  override fun contains(id: Int): Boolean = false
+  override fun getOrNull(id: Int): T? = null
+  override fun list(): List<T> = emptyList()
+}
+
 
 interface UniqueKeyResourceSet<K, T> {
   fun containsKey(key: K): Boolean
 
-  fun getByKey(key: K): Optional<T>
+  fun getByKey(key: K): Optional<T> = getByKeyOrNull(key).toOptional()
 
-  @Nullable
   fun getByKeyOrNull(key: K): T?
 
-  fun getByKeyOrThrow(key: K): T
-
-  fun firstOrThrow(): T
-
-  fun lastOrThrow(): T
-
-  fun first(): Optional<T>
-
-  fun last(): Optional<T>
-
-  fun nextOrThrow(key: K): T
-
-  fun next(key: K): Optional<T>
-
-  fun prevOrThrow(key: K): T
-
-  fun prev(key: K): Optional<T>
-
-  fun prevOrEqualsOption(key: K): Optional<T>
-
-  fun nextOrEqualsOption(key: K): Optional<T>
-
-  fun slice(fromInclusive: K, toInclusive: K): Iterable<T> {
-    return slice(fromInclusive, true, toInclusive, true)
-  }
-
-  fun slice(from: K, fromIncluded: Boolean, to: K, toIncluded: Boolean): Iterable<T>
+  fun getByKeyOrThrow(key: K): T = getByKeyOrNull(key) ?: throw NoSuchElementException("$key")
 }
 
-interface ResourceSet<K, T : Any> : BasicResourceSet<T>, UniqueKeyResourceSet<K, T> {
-  override fun firstOrThrow(): T {
-    return super.firstOrThrow()
-  }
-
-  override fun lastOrThrow(): T {
-    return super.lastOrThrow()
-  }
-
-  override fun first(): Optional<T> {
-    return super.first()
-  }
-
-  override fun last(): Optional<T> {
-    return super.last()
-  }
+interface NavigableResourceSet<K, T : AbstractResource> {
+  fun asNavigable(): ResourceSetNavigator<K, T>
 }
 
 interface ExtensionResourceSet<E : ResourceExtension<T>, T : AbstractResource> {
   fun extension(): E
 }
 
-interface GroupedResourceSet<G, T : Any> {
-  fun getGroup(groupId: G): Optional<BasicResourceSet<T>>
+interface GroupedResourceSet<G, T : AbstractResource> {
+  fun getGroup(groupId: G): Optional<out GroupResourceSet<T>> = getGroupOrNull(groupId).toOptional()
 
   @Nullable
-  fun getGroupOrNull(groupId: G): BasicResourceSet<T>?
+  fun getGroupOrNull(groupId: G): GroupResourceSet<T>?
 
-  fun getGroupOrThrow(groupId: G): BasicResourceSet<T>
+  fun getGroupOrThrow(groupId: G): GroupResourceSet<T> =
+    getGroupOrNull(groupId) ?: throw NoSuchElementException("group: $groupId")
 
-  fun groupMap(): Map<G, BasicResourceSet<T>>
+  fun groupMap(): Map<G, GroupResourceSet<T>>
 
   fun containsGroup(groupId: G): Boolean
+}
+
+interface GroupUniqueKeyResourceSet<T : AbstractResource, K : Comparable<K>>
+  : GroupResourceSet<T>, UniqueKeyResourceSet<K, T>, NavigableResourceSet<K, T>
+
+interface GroupResourceSet<T : AbstractResource> {
+  fun list(): List<T>
+
+  fun reversedList(): List<T> = list().asReversed()
 }

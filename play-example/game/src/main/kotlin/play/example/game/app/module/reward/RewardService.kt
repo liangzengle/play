@@ -1,5 +1,6 @@
 package play.example.game.app.module.reward
 
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
 import play.example.common.StatusCode
 import play.example.game.app.module.mail.MailService
 import play.example.game.app.module.player.Self
@@ -33,18 +34,17 @@ class RewardService @Inject constructor(
     bagFullStrategy: BagFullStrategy = BagFullStrategy.Mail,
     checkFcm: Boolean = true
   ): Result2<TryRewardResultSet> {
-    return tryReward(self, listOf(reward), logSource, bagFullStrategy, checkFcm)
+    return tryReward(self, reward.toRewardList(), logSource, bagFullStrategy, checkFcm)
   }
 
   fun tryReward(
     self: Self,
-    rewards: Collection<Reward>,
+    rewards: RewardList,
     logSource: Int,
     bagFullStrategy: BagFullStrategy = BagFullStrategy.Mail,
     checkFcm: Boolean = true
   ): Result2<TryRewardResultSet> {
-    val merged = RewardHelper.mergeReward(rewards)
-    val rewardList = transform(self, merged)
+    val rewardList = transform(self, rewards.asList())
     var errorCode = 0
     var usedBagSize = 0
     val resultList = ArrayList<TryRewardResult>(rewardList.size)
@@ -103,7 +103,7 @@ class RewardService @Inject constructor(
 
   fun tryAndExecReward(
     self: Self,
-    rewards: Collection<Reward>,
+    rewards: RewardList,
     logSource: Int,
     bagFullStrategy: BagFullStrategy = BagFullStrategy.Mail,
     checkFcm: Boolean = true
@@ -112,11 +112,11 @@ class RewardService @Inject constructor(
   }
 
   fun tryCost(self: Self, cost: Cost, logSource: Int): Result2<TryCostResultSet> {
-    return tryCost(self, listOf(cost), logSource)
+    return tryCost(self, cost.toCostList(), logSource)
   }
 
-  fun tryCost(self: Self, costs: Collection<Cost>, logSource: Int): Result2<TryCostResultSet> {
-    val costList = RewardHelper.mergeCost(costs)
+  fun tryCost(self: Self, costs: CostList, logSource: Int): Result2<TryCostResultSet> {
+    val costList = costs.asList()
     val resultList = ArrayList<TryCostResult>(costList.size)
     var errorCode = 0
     for (i in costList.indices) {
@@ -151,33 +151,29 @@ class RewardService @Inject constructor(
     return CostResultSet(results)
   }
 
-  fun tryAndExecCost(self: Self, costs: Collection<Cost>, logSource: Int): Result2<CostResultSet> {
+  fun tryAndExecCost(self: Self, costs: CostList, logSource: Int): Result2<CostResultSet> {
     if (costs.isEmpty()) return ok(CostResultSet(emptyList()))
     return tryCost(self, costs, logSource).map { execCost(self, it) }
   }
 
   private fun transform(self: Self, merged: List<Reward>): List<Reward> {
-    // TODO optimize
-    var needTransform = false
+    val indexToTransformed = IntObjectMaps.mutable.empty<List<Reward>>()
     for (i in merged.indices) {
       val reward = merged[i]
       val processor = processors[reward.type] ?: continue
-      if (processor.needTransform(self, reward)) {
-        needTransform = true
-        break
-      }
+      val transformed = processor.transform(self, reward) ?: continue
+      indexToTransformed.put(i, transformed)
     }
-    if (!needTransform) {
+    if (indexToTransformed.isEmpty) {
       return merged
     }
-    val result = ArrayList<Reward>((merged.size * 1.5).toInt())
+    val result = ArrayList<Reward>(merged.size + indexToTransformed.size())
     for (i in merged.indices) {
-      val reward = merged[i]
-      val processor = processors[reward.type]
-      if (processor == null) {
-        result.add(reward)
-      } else {
-        processor.transform(self, reward).forEach(result::add)
+      val transformed = indexToTransformed.get(i)
+      if (transformed == null) {
+        result.add(merged[i])
+      } else if (transformed.isNotEmpty()) {
+        result.addAll(transformed)
       }
     }
     return result

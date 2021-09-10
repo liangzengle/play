@@ -145,7 +145,7 @@ class ImmutableMapGenerator {
           .addModifiers(KModifier.OVERRIDE)
           .addParameter("key", keyType)
           .returns(valueType.copy(true))
-          .addStatement("return underlying.get(key)")
+          .addStatement("return if(underlying.containsKey(key)) underlying.get(key) else null")
           .build()
       )
       .addFunction(

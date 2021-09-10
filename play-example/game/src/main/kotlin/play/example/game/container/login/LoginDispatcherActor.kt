@@ -9,7 +9,7 @@ import org.eclipse.collections.api.set.primitive.IntSet
 import play.akka.AbstractTypedActor
 import play.example.game.app.module.account.controller.AccountModule
 import play.example.game.app.module.account.message.LoginParams
-import play.example.game.container.net.SessionActor
+import play.example.game.container.net.Session
 import play.example.game.container.net.SessionManager
 import play.example.game.container.net.UnhandledRequest
 import play.mvc.Request
@@ -21,7 +21,7 @@ import play.mvc.Request
 class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<SessionManager.Command>) :
   AbstractTypedActor<LoginDispatcherActor.Command>(ctx) {
   interface Command
-  class UnhandledLoginRequest(val request: Request, val session: ActorRef<SessionActor.Command>) : Command
+  class UnhandledLoginRequest(val request: Request, val session: Session) : Command
   class RegisterLoginReceiver(val serverIds: IntSet, val receiver: ActorRef<UnhandledLoginRequest>) : Command
 
   private val receivers = ArrayList<RegisterLoginReceiver>(1)

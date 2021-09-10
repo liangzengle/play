@@ -6,36 +6,67 @@ import java.util.stream.IntStream
 /**
  * Created by LiangZengle on 2020/2/23.
  */
-interface IntTuple {
+abstract class IntTuple {
   companion object {
+    @JvmName("of")
     @JvmStatic
-    fun of(_1: Int): IntTuple1 = IntTuple1(_1)
+    operator fun invoke(_1: Int): IntTuple1 = IntTuple1(_1)
+
+    @JvmName("of")
+    @JvmStatic
+    operator fun invoke(_1: Int, _2: Int): IntTuple2 = IntTuple2(_1, _2)
+
+    @JvmName("of")
+    @JvmStatic
+    operator fun invoke(_1: Int, _2: Int, _3: Int): IntTuple3 = IntTuple3(_1, _2, _3)
+
+    @JvmName("of")
+    @JvmStatic
+    operator fun invoke(_1: Int, _2: Int, _3: Int, _4: Int): IntTuple4 = IntTuple4(_1, _2, _3, _4)
+
+    @JvmName("of")
+    @JvmStatic
+    operator fun invoke(_1: Int, _2: Int, _3: Int, _4: Int, _5: Int): IntTuple5 = IntTuple5(_1, _2, _3, _4, _5)
 
     @JvmStatic
-    fun of(_1: Int, _2: Int): IntTuple2 = IntTuple2(_1, _2)
+    operator fun invoke(vararg elems: Int): IntTuple {
+      return when (elems.size) {
+        1 -> IntTuple(elems[0])
+        2 -> IntTuple(elems[0], elems[1])
+        3 -> IntTuple(elems[0], elems[1], elems[2])
+        4 -> IntTuple(elems[0], elems[1], elems[2], elems[3])
+        5 -> IntTuple(elems[0], elems[1], elems[2], elems[3], elems[4])
+        else -> IntTupleN(elems)
+      }
+    }
 
-    @JvmStatic
-    fun of(_1: Int, _2: Int, _3: Int): IntTuple3 = IntTuple3(_1, _2, _3)
-
-    @JvmStatic
-    fun of(_1: Int, _2: Int, _3: Int, _4: Int): IntTuple4 = IntTuple4(_1, _2, _3, _4)
-
-    @JvmStatic
-    fun of(_1: Int, _2: Int, _3: Int, _4: Int, _5: Int): IntTuple5 = IntTuple5(_1, _2, _3, _4, _5)
-
-    @JvmStatic
-    fun of(vararg elems: Int): IntTupleN = IntTupleN(elems)
+    private fun toString(tuple: IntTuple): String {
+      val b = StringBuilder(tuple.size() * 2 + 2)
+      b.append('(')
+      for (i in tuple.indies) {
+        if (i != 0) {
+          b.append(',')
+        }
+        b.append(i)
+      }
+      b.append(')')
+      return b.toString()
+    }
   }
 
-  fun size(): Int
+  abstract fun size(): Int
 
-  fun toArray(): IntArray
+  abstract fun toArray(): IntArray
 
-  fun toStream(): IntStream
+  abstract fun toStream(): IntStream
 
   val indies get() = 0 until size()
 
-  fun get(index: Int): Int
+  abstract fun get(index: Int): Int
+
+  override fun toString(): String {
+    return Companion.toString(this)
+  }
 }
 
 inline fun IntTuple.foreach(op: (Int) -> Unit) {
@@ -44,7 +75,7 @@ inline fun IntTuple.foreach(op: (Int) -> Unit) {
   }
 }
 
-data class IntTuple1(val _1: Int) : IntTuple, Comparable<IntTuple1> {
+data class IntTuple1(val _1: Int) : IntTuple(), Comparable<IntTuple1> {
   override fun size(): Int = 1
 
   override fun toArray(): IntArray = intArrayOf(_1)
@@ -60,7 +91,7 @@ data class IntTuple1(val _1: Int) : IntTuple, Comparable<IntTuple1> {
   }
 }
 
-data class IntTuple2(val _1: Int, val _2: Int) : IntTuple, Comparable<IntTuple2> {
+data class IntTuple2(val _1: Int, val _2: Int) : IntTuple(), Comparable<IntTuple2> {
   override fun compareTo(other: IntTuple2): Int {
     return ComparisonChain.start().compare(_1, other._1).compare(_2, other._2).result()
   }
@@ -82,7 +113,7 @@ data class IntTuple2(val _1: Int, val _2: Int) : IntTuple, Comparable<IntTuple2>
   fun swap(): IntTuple2 = IntTuple2(_2, _1)
 }
 
-data class IntTuple3(val _1: Int, val _2: Int, val _3: Int) : IntTuple, Comparable<IntTuple3> {
+data class IntTuple3(val _1: Int, val _2: Int, val _3: Int) : IntTuple(), Comparable<IntTuple3> {
   override fun compareTo(other: IntTuple3): Int {
     return ComparisonChain.start()
       .compare(_1, other._1)
@@ -107,7 +138,7 @@ data class IntTuple3(val _1: Int, val _2: Int, val _3: Int) : IntTuple, Comparab
   }
 }
 
-data class IntTuple4(val _1: Int, val _2: Int, val _3: Int, val _4: Int) : IntTuple, Comparable<IntTuple4> {
+data class IntTuple4(val _1: Int, val _2: Int, val _3: Int, val _4: Int) : IntTuple(), Comparable<IntTuple4> {
   override fun compareTo(other: IntTuple4): Int {
     return ComparisonChain.start()
       .compare(_1, other._1)
@@ -135,7 +166,7 @@ data class IntTuple4(val _1: Int, val _2: Int, val _3: Int, val _4: Int) : IntTu
 }
 
 data class IntTuple5(val _1: Int, val _2: Int, val _3: Int, val _4: Int, val _5: Int) :
-  IntTuple, Comparable<IntTuple5> {
+  IntTuple(), Comparable<IntTuple5> {
   override fun compareTo(other: IntTuple5): Int {
     return ComparisonChain.start()
       .compare(_1, other._1)
@@ -164,7 +195,7 @@ data class IntTuple5(val _1: Int, val _2: Int, val _3: Int, val _4: Int, val _5:
   }
 }
 
-class IntTupleN constructor(private val elems: IntArray) : IntTuple, Comparable<IntTupleN> {
+class IntTupleN constructor(private val elems: IntArray) : IntTuple(), Comparable<IntTupleN> {
   @Transient
   private var hashCode = 0
 
@@ -200,9 +231,5 @@ class IntTupleN constructor(private val elems: IntArray) : IntTuple, Comparable<
     if (hashCode != 0) return hashCode
     hashCode = elems.contentHashCode()
     return hashCode
-  }
-
-  override fun toString(): String {
-    return elems.contentToString()
   }
 }

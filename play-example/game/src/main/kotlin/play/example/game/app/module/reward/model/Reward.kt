@@ -13,6 +13,8 @@ abstract class Reward(type: RewardType, num: Int) {
     require(javaClass == type.rewardClass) { "奖励类型不匹配${javaClass.simpleName}$type" }
   }
 
+  fun toRewardList(): RewardList = RewardList(this)
+
   abstract val type: RewardType
 
   abstract val num: Int

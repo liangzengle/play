@@ -8,5 +8,4 @@ out
 
 logs/*
 
-db-cache-dump
-/play-plugins/play-modular-code/build/
+/play-example/robot/logs/

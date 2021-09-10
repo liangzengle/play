@@ -1,3 +1,6 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
 buildscript {
     repositories {
         mavenLocal()
@@ -49,6 +52,19 @@ configure(subprojects) {
 
         api libs.auto.service
         kapt libs.auto.service
+
+        testImplementation libs.bundles.junit
+    }
+
+    test {
+        useJUnitPlatform()
+        testLogging {
+            exceptionFormat = TestExceptionFormat.FULL
+            events(TestLogEvent.SKIPPED, TestLogEvent.FAILED)
+            showExceptions = true
+            showCauses = true
+            showStackTraces = true
+        }
     }
 
     sourceCompatibility = JavaVersion.VERSION_11

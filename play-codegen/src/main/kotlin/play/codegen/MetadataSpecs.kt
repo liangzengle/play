@@ -4,11 +4,8 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.TypeVariableName
-import com.squareup.kotlinpoet.metadata.ImmutableKmClass
 import com.squareup.kotlinpoet.metadata.ImmutableKmType
 import com.squareup.kotlinpoet.metadata.ImmutableKmValueParameter
-import javax.lang.model.element.Name
 import kotlinx.metadata.KmClassifier
 
 fun ImmutableKmType?.toTypeName(): TypeName {
@@ -24,6 +21,24 @@ fun ImmutableKmType?.toTypeName(): TypeName {
     return typeName
   }
   return typeName.parameterizedBy(arguments.map { it.type.toTypeName() })
+}
+
+fun ImmutableKmType?.toTypeName(theType: TypeName): TypeName {
+  if (this == null) {
+    return STAR
+  }
+  val typeName = when (val classifier = this.classifier) {
+    is KmClassifier.Class -> ClassName.bestGuess(classifier.name.replace('/', '.'))
+    is KmClassifier.TypeAlias -> ClassName.bestGuess(classifier.name.replace('/', '.'))
+    is KmClassifier.TypeParameter -> theType
+  }
+  if (typeName !is ClassName) {
+    return typeName
+  }
+  if (arguments.isEmpty()) {
+    return typeName
+  }
+  return typeName.parameterizedBy(arguments.map { it.type.toTypeName(theType) })
 }
 
 fun ImmutableKmValueParameter.typeName(): TypeName? {

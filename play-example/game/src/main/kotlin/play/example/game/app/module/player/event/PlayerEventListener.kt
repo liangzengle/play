@@ -5,6 +5,8 @@ import play.example.game.app.module.player.Self
 interface PlayerEventListener {
 
   fun playerEventReceive(): PlayerEventReceive
+
+  fun newPlayerEventReceiveBuilder(): PlayerEventReceiveBuilder = PlayerEventReceiveBuilder()
 }
 
 data class PlayerEventReceive(val receive: Map<Class<PlayerEvent>, (Self, PlayerEvent) -> Unit>)

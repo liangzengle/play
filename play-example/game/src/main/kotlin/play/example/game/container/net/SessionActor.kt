@@ -11,16 +11,12 @@ import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.handler.timeout.IdleState
 import io.netty.handler.timeout.IdleStateEvent
-import org.jctools.maps.NonBlockingHashMapLong
 import play.akka.AbstractTypedActor
 import play.akka.sameBehavior
 import play.akka.stoppedBehavior
 import play.mvc.Request
 import play.mvc.Response
-import play.util.collection.LongIterable
 import play.util.logging.getLogger
-import java.util.*
-import java.util.stream.LongStream
 
 class SessionActor(
   context: ActorContext<Command>,
@@ -29,7 +25,7 @@ class SessionActor(
   flushIntervalMillis: Int
 ) : AbstractTypedActor<SessionActor.Command>(context) {
 
-  private val writer: SessionWriter
+  private val session: Session
 
   private var id = 0L
 
@@ -41,17 +37,13 @@ class SessionActor(
   init {
     ch.pipeline().addLast("session", ChannelHandler())
     ch.config().isAutoRead = true
-    writer = if (flushIntervalMillis > 0) {
-      SessionWriter.WriteNoFlush(ch)
-    } else {
-      SessionWriter.WriteFlush(ch)
-    }
+    session = Session(ch, context.self, flushIntervalMillis)
   }
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
       .accept(::close)
-      .accept(::identify)
+      .accept(::bind)
       .accept(::subscribe)
       .accept(::write)
       .acceptSignal<PostStop>(::postStop)
@@ -59,7 +51,7 @@ class SessionActor(
   }
 
   private fun postStop() {
-    sessions -= id
+    Session.unbind(id, session)
     if (ch.isActive) {
       ch.close()
     }
@@ -69,7 +61,7 @@ class SessionActor(
     if (!ch.isActive) {
       return stoppedBehavior()
     }
-    writer.write(cmd.msg)
+    session.write(cmd.msg)
     return sameBehavior()
   }
 
@@ -91,16 +83,14 @@ class SessionActor(
     }
   }
 
-  private fun identify(cmd: Identify) {
+  private fun bind(cmd: BindId) {
     if (this.id != 0L) {
-      logger.error { "Session already identified as $id" }
+      logger.error { "Session already bound to id: $id" }
       return
     }
     this.id = cmd.id
-    val prev = sessions.putIfAbsent(cmd.id, writer)
-    if (prev != null) {
-      throw IllegalStateException("[${cmd.id}]已经绑定了Session[$ch]")
-    }
+    val prev = Session.bind(cmd.id, session)
+    prev?.tellActor(Close("Session replaced: id=$id, prev=$prev, current=$session"))
   }
 
   private fun subscribe(cmd: Subscribe) {
@@ -118,13 +108,13 @@ class SessionActor(
         return
       }
       val receiver = subscriber
-      if (receiver == null) {
-        val unhandledRequest = UnhandledRequest(msg, context.self)
+      if (receiver != null) {
+        receiver.tell(msg)
+      } else {
+        val unhandledRequest = UnhandledRequest(msg, session)
         for (index in unhandledRequestReceivers.indices) {
           unhandledRequestReceivers[index].tell(unhandledRequest)
         }
-      } else {
-        receiver.tell(msg)
       }
     }
 
@@ -156,47 +146,15 @@ class SessionActor(
   companion object {
     private val logger = getLogger()
 
-    private val sessions = NonBlockingHashMapLong<SessionWriter>()
-
     fun create(ch: Channel, unhandledRequestReceivers: List<ActorRef<UnhandledRequest>>): Behavior<Command> =
       Behaviors.setup { ctx ->
         SessionActor(ctx, ch, unhandledRequestReceivers, 0)
       }
-
-    fun write(id: Long, msg: Any) {
-      sessions[id]?.write(msg)
-    }
-
-    fun writeAll(ids: Iterable<Long>, msg: Any) {
-      for (id in ids) {
-        sessions[id]?.write(msg)
-      }
-    }
-
-    fun writeAll(ids: LongIterable, msg: Any) {
-      for (id in ids) {
-        sessions[id]?.write(msg)
-      }
-    }
-
-    fun writeAll(ids: PrimitiveIterator.OfLong, msg: Any) {
-      while (ids.hasNext()) {
-        sessions[ids.nextLong()]?.write(msg)
-      }
-    }
-
-    fun writeAll(ids: LongStream, msg: Any) {
-      writeAll(ids.iterator(), msg)
-    }
-
-    fun count(): Int = sessions.size
   }
 
   interface Command
   data class Close(val reason: String, val cause: Throwable? = null) : Command
-  data class Identify(val id: Long) : Command
+  data class BindId(val id: Long) : Command
   data class Subscribe(val subscriber: ActorRef<Request>) : Command
-  data class Write(val msg: Any) : Command
+  data class Write(val msg: Response) : Command
 }
-
-infix fun ActorRef<SessionActor.Command>.write(response: Response) = tell(SessionActor.Write(response))

@@ -393,7 +393,7 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
         resourceFile
       )
       val out = fileObject.openOutputStream()
-      out.bufferedWriter().use {write ->
+      out.bufferedWriter().use { write ->
         allServices.forEach {
           write.write(it)
           write.newLine()

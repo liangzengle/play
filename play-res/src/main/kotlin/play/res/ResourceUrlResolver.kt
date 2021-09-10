@@ -27,6 +27,6 @@ open class ResourceUrlResolver(val rootPath: URI) {
   }
 
   override fun toString(): String {
-    return "ConfigResolver($rootPath)"
+    return "ResourceUrlResolver($rootPath)"
   }
 }

@@ -14,8 +14,8 @@ import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.player.controller.PlayerModule
+import play.example.game.container.net.Session
 import play.example.game.container.net.SessionActor
-import play.example.game.container.net.write
 import play.mvc.Request
 import play.mvc.Response
 
@@ -31,7 +31,7 @@ class AccountActor(
 ) : AbstractTypedActor<AccountActor.Command>(context) {
 
   private lateinit var loginParams: LoginParams
-  private lateinit var session: ActorRef<SessionActor.Command>
+  private lateinit var session: Session
 
   private val requestAdapter = context.messageAdapter(Request::class.java) {
     RequestCommand(it)
@@ -76,9 +76,9 @@ class AccountActor(
   private fun onLogin(cmd: Login): Behavior<Command> {
     loginParams = cmd.params
     this.session = cmd.session
-    context.watch(session)
-    session send SessionActor.Identify(id)
-    session send SessionActor.Subscribe(requestAdapter)
+    context.watch(session.actorRef)
+    session.tellActor(SessionActor.BindId(id))
+    session.tellActor(SessionActor.Subscribe(requestAdapter))
     val hasPlayer = playerService.isPlayerExists(id)
     session.write(Response(cmd.request.header, 0, hasPlayer))
     return waitingPlayerCreate
@@ -101,7 +101,7 @@ class AccountActor(
 
   interface Command
 
-  class Login(val request: Request, val params: LoginParams, val session: ActorRef<SessionActor.Command>) : Command
+  class Login(val request: Request, val params: LoginParams, val session: Session) : Command
 
   private class RequestCommand(val request: Request) : Command
 }

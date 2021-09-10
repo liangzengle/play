@@ -4,11 +4,11 @@ import play.util.exception.NoStackTraceException
 
 class ResourceNotFoundException(path: String) : NoStackTraceException(path)
 
-class InvalidConfigException(msg: String) : NoStackTraceException(msg) {
+class InvalidResourceException(msg: String) : NoStackTraceException(msg) {
 
   constructor(messages: Iterable<String>) : this(messages.joinToString("\n", "\n", ""))
 
-  constructor(configClass: Class<*>, message: String) : this("[${configClass.simpleName}]$message")
+  constructor(resourceClass: Class<*>, message: String) : this("[${resourceClass.simpleName}]$message")
 }
 
 class IllegalConcreteTypeException(type: Class<*>) :
