@@ -239,6 +239,8 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
 
   protected fun Element.isPublic() = this.modifiers.contains(Modifier.PUBLIC)
 
+  protected fun Element.isStatic() = this.modifiers.contains(Modifier.STATIC)
+
   protected fun ExecutableElement.isObjectMethod(): Boolean {
     if (this.kind != ElementKind.METHOD) {
       return false

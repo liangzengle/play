@@ -4,12 +4,15 @@ import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.metadata.ImmutableKmFunction
+import com.squareup.kotlinpoet.metadata.isData
 import com.squareup.kotlinpoet.metadata.toImmutableKmClass
 import kotlinx.metadata.Flag
 import java.io.File
 import java.util.*
 import javax.annotation.processing.Processor
 import javax.annotation.processing.RoundEnvironment
+import javax.lang.model.element.ExecutableElement
+import javax.lang.model.element.Modifier
 import javax.lang.model.element.TypeElement
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.util.ElementFilter
@@ -305,9 +308,13 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
       val prefix = if (it.javaToKotlinType().toString() == "Boolean") "is" else "get"
       (prefix + name.capitalize()) to it
     }.toMap()
+    val kmClass = type.toImmutableKmClass()
+    val isDataClass = kmClass.isData
     ElementFilter.methodsIn(type.enclosedElements).asSequence()
       .filter {
-        it.isPublic() && !it.isObjectMethod() && !it.simpleName.contentEquals("postInitialize")
+        it.isPublic() && !it.isStatic() && !it.isObjectMethod() && !isInitializeFunction(it) && !(isDataClass && isDataClassFunction(
+          it
+        ))
       }
       .forEach { elem ->
         val funName = elem.simpleName.toString()
@@ -395,5 +402,22 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
       mods.add(KModifier.SUSPEND)
     }
     return mods
+  }
+
+  private fun isInitializeFunction(elem: ExecutableElement): Boolean {
+    val name = elem.simpleName.toString()
+    if (name != "initialize") {
+      return false
+    }
+    val parameters = elem.parameters
+    return parameters.size == 2
+  }
+
+  private fun isDataClassFunction(elem: ExecutableElement): Boolean {
+    return (elem.modifiers.contains(Modifier.FINAL)
+      && elem.simpleName.startsWith("component")
+      && elem.simpleName.substring("component".length).toIntOrNull() != null
+      )
+      || (elem.simpleName.contentEquals("copy") && elem.returnType == elem.enclosingElement.asType())
   }
 }

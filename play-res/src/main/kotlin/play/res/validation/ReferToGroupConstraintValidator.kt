@@ -13,7 +13,7 @@ class ReferToGroupConstraintValidator : ConfigConstraintValidator<ReferToGroup, 
   }
 
   override fun isValid(value: Any?, context: ConstraintValidatorContext): Boolean {
-    if (value == null || value == 0) return true
+    if (value == null || (value is Number && value.toLong() == 0L)) return true
     val resourceSet = getResourceSet(context, referToResource)
     if (resourceSet !is GroupedResourceSet<*, *>) {
       return false

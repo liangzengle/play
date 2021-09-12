@@ -3,6 +3,9 @@ package play.res
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Sets
 import play.Log
+import play.res.reader.ConfigReader
+import play.res.reader.JsonResourceReader
+import play.res.reader.Reader
 import play.util.collection.ConcurrentHashSet
 import play.util.collection.filterDuplicatedBy
 import play.util.collection.toImmutableMap
@@ -126,11 +129,7 @@ class ResourceManager(
   @Suppress("UnstableApiUsage")
   @Synchronized
   fun registerReloadListener(listener: ResourceReloadListener) {
-    reloadListeners =
-      ImmutableList.builderWithExpectedSize<ResourceReloadListener>(reloadListeners.size + 1)
-        .addAll(reloadListeners)
-        .add(listener)
-        .build()
+    registerReloadListeners(listOf(listener))
   }
 
   @Suppress("UnstableApiUsage")
@@ -163,15 +162,15 @@ class ResourceManager(
     val allResourceSets = this.resourceSets + resourceClassToResourceSet
     val resourceSetSupplier = ResourceSetSupplier(allResourceSets)
     val dependentMap = hashMapOf<Class<*>, Set<Class<*>>>()
-    resourceClassToResourceSet.values.parallelStream().forEach {
+    for ((k, v) in resourceClassToResourceSet) {
       val dependentResources = ConcurrentHashSet<Class<*>>()
       resourceSetSupplier.dependentResources = dependentResources
-      it.list().parallelStream().forEach { e ->
+      v.list().parallelStream().forEach { e ->
         e.initialize(resourceSetSupplier, errors)
       }
       resourceSetSupplier.dependentResources = null
       if (dependentResources.isNotEmpty()) {
-        dependentMap[it.firstOrThrow().javaClass] = dependentResources
+        dependentMap[k] = dependentResources
       }
     }
     for ((k, set) in dependentMap) {
@@ -192,7 +191,7 @@ class ResourceManager(
       }
     }
     if (errors.isNotEmpty()) {
-      throw InvalidResourceException(errors.joinToString("\n", "\n", ""))
+      throw InvalidResourceException(errors)
     }
     return resourceClassToResourceSet
   }
@@ -225,29 +224,44 @@ class ResourceManager(
         .start()
     }
 
-    // 监听classpath中的配置文件
-    val resourceDirs = resourceClasses.asSequence()
+    val resourceDirs = getTopLevelResourceDirs(resourceClasses)
+    for (resourceDir in resourceDirs) {
+      watch(resourceDir)
+      Log.info { "监听配置文件变化: ${resourceDir.absolutePath}" }
+    }
+  }
+
+  private fun getTopLevelResourceDirs(resourceClasses: Iterable<Class<*>>): Set<File> {
+    val dirPaths = resourceClasses
+      .asSequence()
       .filter { ResourceHelper.isConfig(it) }
       .map { clazz ->
-        val url = resourceReader.getURL(clazz).getOrThrow()
+        val url = configReader.getURL(clazz).getOrThrow()
         Paths.get(url.toURI()).parent
       }
-      .toList()
-    val topResourceDir = resourceDirs.minByOrNull { it.nameCount }
-    if (topResourceDir != null) {
-      for (resourceDir in resourceDirs) {
-        check(resourceDir.startsWith(topResourceDir)) { "目录不一致: $topResourceDir $resourceDir" }
-      }
-      watch(topResourceDir.toFile())
-    }
+      .plusElement(Paths.get(resolver.rootPath))
+      .toMutableSet()
 
-    // 监听配置文件变化
-    try {
-      val dir = Paths.get(resolver.rootPath).toFile()
-      watch(dir)
-    } catch (e: UnsupportedOperationException) {
-      Log.info { "启用配置自动重加载失败, 配置文件的路径不是文件路径: ${resolver.rootPath}" }
+    // 移除子目录
+    while (true) {
+      val prevSize = dirPaths.size
+      val it = dirPaths.iterator()
+      while (it.hasNext()) {
+        val path = it.next()
+        for (dirPath in dirPaths) {
+          if (path.parent == dirPath) {
+            it.remove()
+            break
+          }
+        }
+      }
+      if (prevSize == dirPaths.size) {
+        break
+      }
     }
+    return dirPaths
+      .mapNotNull { path -> Result.runCatching { path.toFile() }.getOrNull() }
+      .toSet()
   }
 
   private fun getReader(clazz: Class<*>): Reader {
