@@ -30,7 +30,7 @@ object Generator {
       .addParameter("response", Types.Response)
     val dispatchCodeBlock = CodeBlock.builder()
     dispatchCodeBlock.beginControlFlow("when(response.header.msgId.toInt())")
-    val autowiredNotRequired = AnnotationSpec.builder(Autowired::class.java).addMember("%L", "required = false").build()
+    val autowiredNotRequired = AnnotationSpec.builder(Autowired::class).addMember("%L", "required = false").build()
     ClassScanner(CommonPool, emptyList(), listOf("play.example")).scanResult.use {
       it.getClassesWithAnnotation(Controller::class.java.name)
         .forEach { classInfo ->

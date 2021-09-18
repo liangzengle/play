@@ -1,6 +1,6 @@
 package play.res
 
-import com.google.common.collect.ImmutableList
+import com.google.common.collect.Collections2
 import com.google.common.collect.Sets
 import play.Log
 import play.res.reader.ConfigReader
@@ -18,7 +18,9 @@ import play.util.reflect.isAnnotationPresent
 import play.util.unsafeCast
 import java.io.File
 import java.nio.file.Paths
+import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.function.Consumer
 import javax.annotation.concurrent.GuardedBy
 
 @Suppress("UNCHECKED_CAST")
@@ -49,7 +51,7 @@ class ResourceManager(
     }
   }
 
-  private var reloadListeners = emptyList<ResourceReloadListener>()
+  private var reloadListeners = Collections.synchronizedMap(WeakHashMap<ResourceReloadListener, Boolean>())
 
   private var resourceSets = emptyMap<Class<AbstractResource>, ResourceSet<AbstractResource>>()
 
@@ -127,29 +129,23 @@ class ResourceManager(
   }
 
   @Suppress("UnstableApiUsage")
-  @Synchronized
   fun registerReloadListener(listener: ResourceReloadListener) {
-    registerReloadListeners(listOf(listener))
+    reloadListeners[listener] = true
   }
 
   @Suppress("UnstableApiUsage")
-  @Synchronized
   fun registerReloadListeners(listeners: Collection<ResourceReloadListener>) {
-    reloadListeners =
-      ImmutableList.builderWithExpectedSize<ResourceReloadListener>(reloadListeners.size + listeners.size)
-        .addAll(reloadListeners)
-        .addAll(listeners)
-        .build()
+    reloadListeners.putAll(Collections2.transform(listeners) { it to true })
   }
 
   private fun notifyReloadListeners(reloaded: Set<Class<out AbstractResource>>) {
-    for (listener in reloadListeners) {
+    reloadListeners.keys.forEach(Consumer { listener ->
       try {
         listener.onResourceReloaded(reloaded)
       } catch (e: Exception) {
         Log.error(e) { e.message }
       }
-    }
+    })
   }
 
   @GuardedBy("this")

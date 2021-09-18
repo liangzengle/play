@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
+import java.util.*
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.Processor
 import javax.annotation.processing.RoundEnvironment
@@ -18,13 +19,14 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
   private lateinit var userClass: ClassName
   private lateinit var managerPackage: String
 
+  private val controllerTypeElements = LinkedList<ControllerTypeElement>()
+
   companion object {
     private const val ControllerUserClass = "controller.user-class"
     private const val ControllerManagerPackage = "controller.manager.package"
   }
 
-  override fun init(processingEnv: ProcessingEnvironment) {
-    super.init(processingEnv)
+  override fun init0(processingEnv: ProcessingEnvironment) {
     userClass = processingEnv.options[ControllerUserClass]?.let {
       ClassName.bestGuess(it)
     } ?: LONG
@@ -36,32 +38,33 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
   }
 
   override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
-    if (annotations.isEmpty()) {
-      return false
+    if (roundEnv.processingOver()) {
+      genInvokerManager()
+    } else {
+      roundEnv
+        .getElementsAnnotatedWith(Controller.asTypeElement())
+        .asSequence()
+        .map { it as TypeElement }
+        .filterNot { it.isAnnotationPresent(DisableCodegen) }
+        .map(::toControllerTypeElement)
+        .forEach {
+          generateInvoker(it)
+          controllerTypeElements.add(it)
+        }
     }
-    val controllerAnnotation = annotations.first()
-    val controllers = roundEnv
-      .getElementsAnnotatedWith(controllerAnnotation)
-      .asSequence()
-      .map { it as TypeElement }
-      .filterNot { it.isAnnotationPresent(DisableCodegen) }
-      .map(::toControllerTypeElement)
-      .sortedBy { it.moduleId }
-      .toList()
-    controllers.forEach(::generate)
-    genInvokerManager(controllers)
     return true
   }
 
-  private fun genInvokerManager(controllers: List<ControllerTypeElement>) {
-    val ctor = FunSpec.constructorBuilder().addAnnotation(Inject)
+  private fun genInvokerManager() {
+    val controllers = controllerTypeElements.toTypedArray()
+    controllers.sortBy { it.moduleId }
+    val ctor = FunSpec.constructorBuilder().addAnnotation(iocInjectAnnotation())
     for (c in controllers) {
       ctor.addParameter(c.invokerVarName, c.invokerClassName)
     }
     val className = "ControllerInvokerManager"
     val classBuilder = TypeSpec.classBuilder(className)
-      .addAnnotation(Singleton)
-      .addAnnotation(Named)
+      .addAnnotations(iocSingletonAnnotations())
       .primaryConstructor(ctor.build())
     for (c in controllers) {
       classBuilder.addProperty(
@@ -75,7 +78,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
     val selfInvoker = FunSpec.builder("invoke")
       .addParameter("self", self)
       .addParameter("request", Request)
-    selfInvoker.beginControlFlow("return when(request.header.msgId.moduleId.toInt()) {")
+    selfInvoker.beginControlFlow("return when(request.header.msgId.moduleId.toInt())")
     for (c in controllers) {
       selfInvoker.addStatement("%L -> %L.invoke(self, request)", c.moduleId, c.invokerVarName)
     }
@@ -87,7 +90,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
       val playerIdInvoker = FunSpec.builder("invoke")
         .addParameter("playerId", Long::class)
         .addParameter("request", Request)
-      playerIdInvoker.beginControlFlow("return when(request.header.msgId.moduleId.toInt()) {")
+      playerIdInvoker.beginControlFlow("return when(request.header.msgId.moduleId.toInt())")
       for (c in controllers) {
         if (c.cmdMethods.any { !parameterHasUser(it) }) {
           playerIdInvoker.addStatement(
@@ -105,7 +108,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
     val format = FunSpec.builder("formatToString")
       .addParameter("request", Request)
     val formatCode = CodeBlock.builder()
-    formatCode.beginControlFlow("return when(request.header.msgId.moduleId.toInt()) {")
+    formatCode.beginControlFlow("return when(request.header.msgId.moduleId.toInt())")
     controllers.forEach { c ->
       formatCode.addStatement("%L -> %L.formatToString(request)", c.moduleId, c.invokerVarName)
     }
@@ -127,20 +130,20 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
     return ClassName.bestGuess(controllerName.removeSuffix("Controller") + "Module")
   }
 
-  private fun generate(typeElement: ControllerTypeElement) {
+  private fun generateInvoker(typeElement: ControllerTypeElement) {
     val pkg = typeElement.typeElement.getPackage()
-    val className = typeElement.invokerClassName
-    val classBuilder = TypeSpec.classBuilder(className)
-      .addAnnotation(Singleton)
-      .addAnnotation(Named)
+    val controllerClassName = typeElement.typeElement.asClassName()
+    val invokerClassName = typeElement.invokerClassName
+    val classBuilder = TypeSpec.classBuilder(invokerClassName)
+      .addAnnotations(iocSingletonAnnotations())
       .primaryConstructor(
         FunSpec.constructorBuilder()
-          .addAnnotation(Inject)
-          .addParameter("controller", typeElement.typeElement.asClassName())
+          .addAnnotation(iocInjectAnnotation())
+          .addParameter("controller", controllerClassName)
           .build()
       )
       .addProperty(
-        PropertySpec.builder("controller", typeElement.typeElement.asClassName(), KModifier.PRIVATE)
+        PropertySpec.builder("controller", controllerClassName, KModifier.PRIVATE)
           .initializer("controller")
           .build()
       )
@@ -164,7 +167,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
     classBuilder.addType(genCompanionObject(typeElement))
 
     val file = File(generatedSourcesRoot)
-    FileSpec.builder(pkg, className.simpleName)
+    FileSpec.builder(pkg, invokerClassName.simpleName)
       .addType(classBuilder.build())
       .build()
       .writeTo(file)
@@ -236,7 +239,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
               .initializer(parameter.simpleName.toString())
               .build()
           )
-          paramList.append(',').append(" ").append(parameter.simpleName)
+          paramList.append(',').append(' ').append(parameter.simpleName)
         }
       }
       messageBuilder.primaryConstructor(messageCtorBuilder.build())
@@ -333,9 +336,8 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
         }
       }
       tpl.append(')')
-      code.add("%P", tpl.toString())
+      code.addStatement("%P", tpl.toString())
       code.unindent()
-      code.add("\n")
     }
     code.addStatement("else -> request.toString()")
     code.endControlFlow()
@@ -419,7 +421,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
 
   private fun isPlayerId(parameter: VariableElement): Boolean {
     return parameter.simpleName.contentEquals("playerId") &&
-      parameter.asType().asTypeName() == Long::class.asTypeName()
+      parameter.asType().javaToKotlinType() == Long::class.asTypeName()
   }
 
   private fun isRequest(parameter: VariableElement): Boolean {
@@ -451,7 +453,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
           TypeKind.DOUBLE -> "getDoubleArray()"
           TypeKind.DECLARED -> {
             componentType as DeclaredType
-            if (componentType.asElement().simpleName.contentEquals("String")) {
+            if (componentType.asTypeName() == STRING) {
               "getStringArray()"
             } else {
               throw UnsupportedOperationException("Unsupported array type: ${element.asType()}")
@@ -464,7 +466,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
         val declaredType = element.asType() as DeclaredType
         if (typeUtils.isSameType(declaredType, elementUtils.getTypeElement(String::class.java.name).asType())) {
           "readString()"
-        } else if (isList(declaredType)) {
+        } else if (declaredType.asElement().javaToKotlinType() == List::class.asTypeName()) {
           val typeMirror = declaredType.typeArguments[0]
           when (typeMirror.kind) {
             TypeKind.BYTE -> "getByteList()"
@@ -514,7 +516,7 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
     val cmdVariables: List<CmdVariableElement>,
     val invokerClassName: ClassName
   ) {
-    val invokerVarName = invokerClassName.simpleName.decapitalize()
+    val invokerVarName = invokerClassName.simpleName.uncapitalize()
     val simpleName: Name get() = typeElement.simpleName
     fun cmdElements(): Sequence<CmdElement> = cmdMethods.asSequence() + cmdVariables.asSequence()
   }

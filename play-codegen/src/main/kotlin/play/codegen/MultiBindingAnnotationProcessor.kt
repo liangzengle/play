@@ -1,13 +1,16 @@
 package play.codegen
 
 import com.google.auto.service.AutoService
+import com.google.common.collect.Sets
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
+import java.io.IOException
 import java.util.*
 import javax.annotation.processing.Processor
 import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.element.TypeElement
+import javax.tools.StandardLocation
 
 /**
  *
@@ -92,5 +95,57 @@ class MultiBindingAnnotationProcessor : PlayAnnotationProcessor() {
 
   private fun writeConfigFile() {
     appendServices(GeneratedMultiBindModule.canonicalName, guiceModules)
+  }
+
+  protected fun appendServices(providerInterface: String, services: Collection<String>) {
+    val resourceFile = "META-INF/services/$providerInterface"
+    info("Working on resource file: $resourceFile")
+    try {
+      val allServices: SortedSet<String> = Sets.newTreeSet()
+      try {
+        // would like to be able to print the full path
+        // before we attempt to get the resource in case the behavior
+        // of filer.getResource does change to match the spec, but there's
+        // no good way to resolve CLASS_OUTPUT without first getting a resource.
+        val existingFile = filer.getResource(
+          StandardLocation.CLASS_OUTPUT, "",
+          resourceFile
+        )
+        info("Looking for existing resource file at " + existingFile.toUri())
+        val oldServices = existingFile.openInputStream().bufferedReader()
+          .lineSequence().toCollection(linkedSetOf())
+        info("Existing service entries: $oldServices")
+        allServices.addAll(oldServices)
+      } catch (e: IOException) {
+        // According to the javadoc, Filer.getResource throws an exception
+        // if the file doesn't already exist.  In practice this doesn't
+        // appear to be the case.  Filer.getResource will happily return a
+        // FileObject that refers to a non-existent file but will throw
+        // IOException if you try to open an input stream for it.
+        info("Resource file did not already exist.")
+      }
+      val newServices = HashSet(services)
+      if (allServices.containsAll(newServices)) {
+        info("No new service entries being added.")
+        return
+      }
+      allServices.addAll(newServices)
+      info("New service file contents: $allServices")
+      val fileObject = filer.createResource(
+        StandardLocation.CLASS_OUTPUT, "",
+        resourceFile
+      )
+      val out = fileObject.openOutputStream()
+      out.bufferedWriter().use { write ->
+        allServices.forEach {
+          write.write(it)
+          write.newLine()
+        }
+      }
+      info("Wrote to: " + fileObject.toUri())
+    } catch (e: IOException) {
+      error("Unable to create $resourceFile, $e")
+      return
+    }
   }
 }

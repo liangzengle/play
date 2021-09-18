@@ -22,8 +22,7 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
     private const val ENTITY_CACHE_SPECIALIZED_OPTION_NAME = "entityCache.specialized"
   }
 
-  override fun init(processingEnv: ProcessingEnvironment) {
-    super.init(processingEnv)
+  override fun init0(processingEnv: ProcessingEnvironment) {
     enableSpecializedEntityCache = processingEnv.options[ENTITY_CACHE_SPECIALIZED_OPTION_NAME] == "true"
   }
 
@@ -71,11 +70,10 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
     }
     val className = getCacheClassName(elem)
     val classBuilder = TypeSpec.classBuilder(className)
-      .addAnnotation(Singleton)
-      .addAnnotation(Named)
+      .addAnnotations(iocSingletonAnnotations())
       .primaryConstructor(
         FunSpec.constructorBuilder()
-          .addAnnotation(Inject)
+          .addAnnotation(iocInjectAnnotation())
           .addParameter("cacheManager", EntityCacheManager)
           .build()
       )

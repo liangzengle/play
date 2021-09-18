@@ -7,10 +7,10 @@ import play.util.reflect.Reflect
 import play.util.unsafeCast
 import kotlin.reflect.KClass
 
-class GroupResourceSetImpl<T : AbstractResource, K : Comparable<K>>(
+class ResourceGroupImpl<T : AbstractResource, K : Comparable<K>>(
   resourceClass: Class<T>,
   private val list: List<T>
-) : GroupResourceSet<T>, UniqueKeyResourceSet<K, T>, NavigableResourceSet<K, T> {
+) : ResourceGroup<T>, UniqueKeyResourceSet<K, T>, NavigableResourceSet<K, T> {
 
   private val navigator: ResourceSetNavigator<K, T>?
 
@@ -63,7 +63,7 @@ class GroupResourceSetImpl<T : AbstractResource, K : Comparable<K>>(
     return if (idx == -1) null else list[idx]
   }
 
-  override fun asNavigable(): ResourceSetNavigator<K, T> {
+  override fun navigator(): ResourceSetNavigator<K, T> {
     return navigator ?: throw UnsupportedOperationException()
   }
 

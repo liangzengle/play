@@ -71,7 +71,7 @@ class GameServerManager(
 
     val name = serverId.toString()
     if (context.getChild(name).isPresent) {
-      cmd.promise.failure(IllegalStateException("GameServer($serverId) is started."))
+      promise.failure(IllegalStateException("GameServer($serverId) is started."))
       return
     }
 

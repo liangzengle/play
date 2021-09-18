@@ -21,6 +21,7 @@ import play.example.game.app.module.player.PlayerEntityCacheInitializer
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.server.ServerService
+import play.example.game.container.gs.logging.ActorMdc
 import play.example.game.container.login.LoginDispatcherActor
 import play.example.game.container.net.Session
 import play.mvc.Request
@@ -40,7 +41,8 @@ class AccountManager(
   private val accountCache: AccountEntityCache,
   private val playerManager: ActorRef<PlayerManager.Command>,
   private val playerEntityCacheInitializer: PlayerEntityCacheInitializer,
-  private val playerService: PlayerService
+  private val playerService: PlayerService,
+  private val actorMdc: ActorMdc
 ) : AbstractTypedActor<AccountManager.Command>(context) {
 
   init {
@@ -89,7 +91,13 @@ class AccountManager(
     val accountActor = if (maybeAccountActor.isPresent) {
       maybeAccountActor.unsafeCast()
     } else {
-      context.spawn(AccountActor.create(accountId, accountCache, playerManager, playerService), accountActorName)
+      val behavior = Behaviors.withMdc(
+        AccountActor.Command::class.java,
+        actorMdc.staticMdc,
+        actorMdc.mdcPerMessage(),
+        AccountActor.create(accountId, accountCache, playerManager, playerService)
+      )
+      context.spawn(behavior, accountActorName)
     }
     accountActor send AccountActor.Login(request, params, session)
   }
@@ -156,7 +164,8 @@ class AccountManager(
       accountCache: AccountEntityCache,
       playerManager: ActorRef<PlayerManager.Command>,
       playerEntityCacheInitializer: PlayerEntityCacheInitializer,
-      playerService: PlayerService
+      playerService: PlayerService,
+      actorMdc: ActorMdc
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
         AccountManager(
@@ -168,7 +177,8 @@ class AccountManager(
           accountCache,
           playerManager,
           playerEntityCacheInitializer,
-          playerService
+          playerService,
+          actorMdc
         )
       }
     }

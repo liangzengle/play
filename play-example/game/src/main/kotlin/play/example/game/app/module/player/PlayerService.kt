@@ -1,5 +1,6 @@
 package play.example.game.app.module.player
 
+import mu.KLogging
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.entity.PlayerEntity
 import play.example.game.app.module.player.entity.PlayerEntityCache
@@ -32,6 +33,8 @@ class PlayerService @Inject constructor(
   private val playerScheduler: PlayerScheduler
 ) : PlayerEventListener {
 
+  companion object : KLogging()
+
   override fun playerEventReceive(): PlayerEventReceive {
     return PlayerEventReceiveBuilder()
       .match<PlayerPreLoginEvent>(::preLogin)
@@ -63,18 +66,18 @@ class PlayerService @Inject constructor(
     val player = playerCache.getOrThrow(self.id)
     val playerInfo = playerInfoCache.getOrThrow(self.id)
     onlinePlayerService.login(self, loginParams)
-    println("player login: $self")
+    logger.info("player login: {}", self)
     return PlayerDTO(self.id, playerInfo.name)
   }
 
   fun logout(self: Self) {
     playerScheduler.cancelAll(self)
     onlinePlayerService.logout(self)
-    println("player logout: $self")
+    logger.info("player logout: {}", self)
   }
 
   fun createPlayer(id: Long, name: String) {
-    println("create player: $name")
+    logger.info("create player: {}", name)
     val now = currentMillis()
     val player = PlayerEntity(id, now)
     val playerInfo = PlayerInfoEntity(id, name)

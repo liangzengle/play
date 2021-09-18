@@ -12,9 +12,8 @@ abstract class ResourceValidator {
 
 abstract class GenericResourceValidator<T : AbstractResource> : ResourceValidator() {
 
-  internal val resourceClass: Class<T> = Reflect.getRawClass(
-    Reflect.getTypeArg(javaClass, GenericResourceValidator::class.java, 0)
-  )
+  internal val resourceClass: Class<T> =
+    Reflect.getRawClassOfTypeArg(javaClass, GenericResourceValidator::class.java, 0)
 
   final override fun validate(resourceSetSupplier: ResourceSetSupplier, errors: MutableCollection<String>) {
     validate(resourceSetSupplier.get(resourceClass), resourceSetSupplier, errors)

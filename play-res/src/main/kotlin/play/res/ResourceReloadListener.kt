@@ -13,7 +13,7 @@ fun interface ResourceReloadListener {
 abstract class GenericResourceReloadListener<T : AbstractResource> : ResourceReloadListener {
 
   private val resourceClass: Class<T> =
-    Reflect.getRawClass(Reflect.getTypeArg(javaClass, GenericResourceReloadListener::class.java, 0))
+    Reflect.getRawClassOfTypeArg(javaClass, GenericResourceReloadListener::class.java, 0)
 
   override fun onResourceReloaded(reloadedResources: Set<Class<out AbstractResource>>) {
     if (reloadedResources.contains(resourceClass)) {
@@ -26,7 +26,7 @@ abstract class GenericResourceReloadListener<T : AbstractResource> : ResourceRel
 
 abstract class SubtypeResourceReloadListener<SuperType> : ResourceReloadListener {
   private val superType: Class<SuperType> =
-    Reflect.getRawClass(Reflect.getTypeArg(javaClass, SubtypeResourceReloadListener::class.java, 0))
+    Reflect.getRawClassOfTypeArg(javaClass, SubtypeResourceReloadListener::class.java, 0)
 
   override fun onResourceReloaded(reloadedResources: Set<Class<out AbstractResource>>) {
     if (reloadedResources.any { superType.isAssignableFrom(it) }) {

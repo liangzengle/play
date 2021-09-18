@@ -30,6 +30,9 @@ object PrimitiveMutableCollectionDeserializers {
     if (SortedSet::class.java == collectionType) {
       return forSortedSet(primitiveContentType)
     }
+    if (Collection::class.java == collectionType) {
+      return forList(primitiveContentType)
+    }
     return null
   }
 

@@ -1,17 +1,17 @@
 package play.res.deser
 
-import com.fasterxml.jackson.databind.BeanDescription
-import com.fasterxml.jackson.databind.DeserializationConfig
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.KeyDeserializer
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.*
+import com.fasterxml.jackson.databind.deser.ContextualDeserializer
 import com.fasterxml.jackson.databind.deser.Deserializers
+import com.fasterxml.jackson.databind.deser.impl.FieldProperty
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.type.CollectionType
 import com.fasterxml.jackson.databind.type.MapType
 import com.fasterxml.jackson.datatype.guava.deser.*
-import play.res.IllegalConcreteTypeException
-import play.util.isAbstract
+import play.res.IllegalResourceFieldTypeException
 import play.util.json.PrimitiveImmutableCollectionDeserializers
 import java.util.*
 
@@ -32,11 +32,8 @@ internal class ImmutableCollectionDeserializers : Deserializers.Base() {
     keyDeserializer: KeyDeserializer?,
     elementTypeDeserializer: TypeDeserializer?,
     elementDeserializer: JsonDeserializer<*>?
-  ): JsonDeserializer<*>? {
+  ): JsonDeserializer<*> {
     val rawClass = type.rawClass
-    if (!rawClass.isAbstract()) {
-      throw IllegalConcreteTypeException(rawClass)
-    }
     val primitiveMapDeserializer = PrimitiveImmutableCollectionDeserializers.forMapType(type)
     if (primitiveMapDeserializer != null) {
       return primitiveMapDeserializer
@@ -47,7 +44,7 @@ internal class ImmutableCollectionDeserializers : Deserializers.Base() {
     if (Map::class.java == rawClass) {
       return ImmutableMapDeserializer(type, keyDeserializer, elementDeserializer, elementTypeDeserializer, null)
     }
-    return null
+    return ImpossibleDeserializer(type)
   }
 
   override fun findCollectionDeserializer(
@@ -56,11 +53,8 @@ internal class ImmutableCollectionDeserializers : Deserializers.Base() {
     beanDesc: BeanDescription?,
     elementTypeDeserializer: TypeDeserializer?,
     elementDeserializer: JsonDeserializer<*>?
-  ): JsonDeserializer<*>? {
+  ): JsonDeserializer<*> {
     val rawClass = type.rawClass
-    if (!rawClass.isAbstract()) {
-      throw IllegalConcreteTypeException(rawClass)
-    }
     val primitiveMapDeserializer = PrimitiveImmutableCollectionDeserializers.forCollectionType(type)
     if (primitiveMapDeserializer != null) {
       return primitiveMapDeserializer
@@ -74,6 +68,20 @@ internal class ImmutableCollectionDeserializers : Deserializers.Base() {
     if (List::class.java == rawClass) {
       return ImmutableListDeserializer(type, elementDeserializer, elementTypeDeserializer, null, null)
     }
-    return null
+    return ImpossibleDeserializer(type)
+  }
+}
+
+private class ImpossibleDeserializer(javaType: JavaType) : StdDeserializer<Any>(javaType), ContextualDeserializer {
+  override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Any {
+    throw IllegalStateException()
+  }
+
+  override fun createContextual(ctxt: DeserializationContext, property: BeanProperty): JsonDeserializer<*> {
+    if (property !is FieldProperty) {
+      throw IllegalStateException("")
+    }
+    val member = property.member.member
+    throw IllegalResourceFieldTypeException("集合字段类型应声明为接口类型: ${member.declaringClass.name}.${member.name}")
   }
 }

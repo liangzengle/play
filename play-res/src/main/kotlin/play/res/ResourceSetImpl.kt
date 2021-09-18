@@ -66,10 +66,10 @@ internal class ResourceSetImpl<K, T, G, E>(
     indexMap = map.toImmutable()
   }
 
-  private val groupMap: Map<G, GroupResourceSet<T>> by unsafeLazy {
+  private val groupMap: Map<G, ResourceGroup<T>> by unsafeLazy {
     val map = list
       .groupBy { (it as Grouped<G>).groupBy() }
-      .mapValues { GroupResourceSetImpl<T, Comparable<*>>(resourceClass, it.value) }
+      .mapValues { ResourceGroupImpl<T, Comparable<*>>(resourceClass, it.value) }
     ImmutableMap.copyOf(map)
   }
 
@@ -117,17 +117,17 @@ internal class ResourceSetImpl<K, T, G, E>(
     return extension ?: throw NoSuchElementException("${resourceClass.simpleName}.extension")
   }
 
-  override fun asNavigable(): ResourceSetNavigator<K, T> {
+  override fun navigator(): ResourceSetNavigator<K, T> {
     return navigator
   }
 
   @Nullable
-  override fun getGroupOrNull(groupId: G): GroupResourceSet<T>? {
+  override fun getGroupOrNull(groupId: G): ResourceGroup<T>? {
     if (!isGrouped) throw UnsupportedOperationException()
     return groupMap[groupId]
   }
 
-  override fun groupMap(): Map<G, GroupResourceSet<T>> {
+  override fun groupMap(): Map<G, ResourceGroup<T>> {
     if (!isGrouped) throw UnsupportedOperationException()
     return groupMap
   }

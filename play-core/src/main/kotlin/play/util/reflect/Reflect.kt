@@ -15,10 +15,12 @@ object Reflect {
 
   val stackWalker = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
 
+  @JvmStatic
   fun <T> getTypeArg(type: Class<out T>, superType: Class<T>, index: Int): Type {
     return getTypeArgs(type, superType)[index]
   }
 
+  @JvmStatic
   @Suppress("UnstableApiUsage")
   fun <T> getTypeArgs(type: Class<out T>, superType: Class<T>): Array<Type> {
     if (type.superclass == superType) {
@@ -35,6 +37,7 @@ object Reflect {
     return runtimeType.unsafeCast<ParameterizedType>().actualTypeArguments
   }
 
+  @JvmStatic
   tailrec fun <T> getRawClass(type: Type): Class<T> {
     return when (type) {
       is ParameterizedType -> getRawClass(type.rawType)
@@ -45,16 +48,25 @@ object Reflect {
     }
   }
 
+  @JvmStatic
+  fun <T, R> getRawClassOfTypeArg(type: Class<out T>, superType: Class<T>, index: Int): Class<R> {
+    return getRawClass(getTypeArg(type, superType, index))
+  }
+
+  @JvmStatic
   fun <T : Any> getKotlinObjectOrNull(clazz: Class<T>): T? {
     return clazz.kotlin.objectInstance
   }
 
+  @JvmStatic
   fun <T : Any> getKotlinObjectOrThrow(clazz: Class<T>): T {
     return clazz.kotlin.objectInstance ?: throw IllegalStateException("$clazz is not declared as `object`")
   }
 
+  @JvmStatic
   fun <T> createInstance(clazz: Class<out T>): T = clazz.getDeclaredConstructor().newInstance(*EmptyObjectArray)
 
+  @JvmStatic
   fun <T> createInstanceWithArgs(clazz: Class<out T>, vararg args: Any?): T {
     outer@
     for (ctor in clazz.declaredConstructors) {
@@ -74,11 +86,12 @@ object Reflect {
     throw NoSuchMethodException()
   }
 
-
+  @JvmStatic
   fun <T> createInstance(requiredType: Class<T>, fqcn: String): T {
     return createInstanceWithArgs(requiredType, fqcn, *EmptyObjectArray)
   }
 
+  @JvmStatic
   fun <T> createInstanceWithArgs(requiredType: Class<T>, fqcn: String, vararg args: Any?): T {
     val clazz = Class.forName(fqcn)
     if (!requiredType.isAssignableFrom(clazz)) {
@@ -95,28 +108,34 @@ object Reflect {
     return createInstanceWithArgs(T::class.java, fqcn, *args)
   }
 
+  @JvmStatic
   fun getCallerClass(): Class<*> {
     return stackWalker.walk { it.map { f -> f.declaringClass }.skip(2).findFirst().orElseThrow() }
   }
 
+  @JvmStatic
   fun <T : Any> getFieldValue(field: Field, target: Any?): T? {
     field.trySetAccessible()
     return field.get(target) as T?
   }
 
+  @JvmStatic
   fun <T : Any> invokeMethod(method: Method, target: Any?, vararg parameters: Any?): T? {
     method.trySetAccessible()
     return method.invoke(target, parameters) as T?
   }
 
+  @JvmStatic
   fun <T : Any> invokeStaticMethodNoArgs(clazz: Class<*>, methodName: String): T? {
     return invokeMethodNoArgs(null, clazz, methodName)
   }
 
+  @JvmStatic
   fun <T : Any> invokeMethodNoArgs(target: Any, methodName: String): T? {
     return invokeMethodNoArgs(target, target.javaClass, methodName)
   }
 
+  @JvmStatic
   private fun <T : Any> invokeMethodNoArgs(target: Any?, targetClass: Class<*>, methodName: String): T? {
     var method: Method? = null
     var ex: NoSuchElementException? = null
@@ -136,6 +155,7 @@ object Reflect {
     return method.invoke(target, *EmptyObjectArray) as T?
   }
 
+  @JvmStatic
   fun getAllFields(clazz: Class<*>): Iterable<Field> {
     var iterable = clazz.declaredFields.asIterable()
     var superType = clazz.superclass
@@ -146,6 +166,7 @@ object Reflect {
     return iterable
   }
 
+  @JvmStatic
   fun getAllMethods(clazz: Class<*>): Iterable<Method> {
     var iterable = clazz.declaredMethods.asIterable()
     var superType = clazz.superclass

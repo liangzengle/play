@@ -10,19 +10,23 @@ import java.lang.reflect.Type
  * @author LiangZengle
  */
 object ClassUtil {
+  @JvmStatic
   fun isPrimitiveOrWrapper(type: Class<*>): Boolean {
     return getPrimitiveType(type) != null
   }
 
+  @JvmStatic
   fun getPrimitiveType(type: Class<*>): Class<*>? {
     val primitiveType = type.kotlin.javaPrimitiveType
     return if (primitiveType == Void.TYPE) null else primitiveType
   }
 
+  @JvmStatic
   fun getPrimitiveWrapperType(type: Class<*>): Class<*> {
     return type.kotlin.javaObjectType
   }
 
+  @JvmStatic
   fun getPrimitiveDefaultValue(type: Class<*>): Any {
     val primitiveType = getPrimitiveType(type) ?: throw IllegalArgumentException("$type is not Primitive Type")
     return when (primitiveType.name) {
@@ -38,30 +42,37 @@ object ClassUtil {
     }
   }
 
+  @JvmStatic
   fun <T> loadClass(fqcn: String): Class<out T> {
     return Class.forName(fqcn, true, null).unsafeCast()
   }
 
+  @JvmStatic
   fun <T> loadClass(fqcn: String, classLoader: ClassLoader): Class<out T> {
     return Class.forName(fqcn, true, classLoader).unsafeCast()
   }
 
+  @JvmStatic
   fun <T> loadClass(fqcn: String, initialize: Boolean): Class<out T> {
     return Class.forName(fqcn, initialize, null).unsafeCast()
   }
 
+  @JvmStatic
   fun <T> loadClass(fqcn: String, initialize: Boolean, classLoader: ClassLoader): Class<out T> {
     return Class.forName(fqcn, initialize, classLoader).unsafeCast()
   }
 
+  @JvmStatic
   fun isTopLevelConcreteClass(clazz: Class<*>): Boolean {
     return !clazz.isMemberClass &&
       !clazz.isLocalClass &&
       !clazz.isAnonymousClass &&
       clazz.declaringClass === null &&
-      !clazz.isInterface && !clazz.isAbstract()
+      !clazz.isInterface &&
+      !clazz.isAbstract()
   }
 
+  @JvmStatic
   fun <T> newInstance(fqcn: String): T {
     return loadClass<T>(fqcn).createInstance()
   }

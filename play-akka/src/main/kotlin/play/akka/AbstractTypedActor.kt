@@ -161,6 +161,6 @@ inline fun <T> AbstractTypedActor<T>.behaviorBuilder(): BehaviorBuilder<T> = Beh
 
 inline infix fun <T> ActorRef<T>.send(msg: T) = tell(msg)
 
-fun <T> resumeSupervisor(b: Behavior<T>): Behavior<T> {
+fun <T> withResumeSupervisor(b: Behavior<T>): Behavior<T> {
   return Behaviors.supervise(b).onFailure(SupervisorStrategy.resume())
 }

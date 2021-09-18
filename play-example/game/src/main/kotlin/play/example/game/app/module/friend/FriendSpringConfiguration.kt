@@ -11,6 +11,6 @@ class FriendSpringConfiguration : GameServerScopeConfiguration() {
 
   @Bean
   fun guildManager(playerRequestHandler: PlayerRequestHandler): ActorRef<FriendManager.Command> {
-    return spawn(FriendManager.create(playerRequestHandler), "FriendManager")
+    return spawn("FriendManager") { FriendManager.create(playerRequestHandler) }
   }
 }

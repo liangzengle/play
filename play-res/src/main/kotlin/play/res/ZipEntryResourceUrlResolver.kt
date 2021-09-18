@@ -11,7 +11,7 @@ import java.nio.file.Path
  */
 class ZipEntryResourceUrlResolver(zipFilePath: Path) : ResourceUrlResolver(zipFilePath.toUri()) {
 
-  private val fileSystem = FileSystems.newFileSystem(zipFilePath, null)
+  private val fileSystem = FileSystems.newFileSystem(zipFilePath, null as ClassLoader?)
 
   override fun resolve(relativePath: String): Result<URL> {
     return runCatching { fileSystem.getPath("/$relativePath").toUri().toURL() }

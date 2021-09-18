@@ -4,7 +4,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.ActorContext
-import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import com.google.common.primitives.Bytes
 import com.typesafe.config.Config
@@ -20,6 +19,7 @@ import play.example.game.app.GameApp
 import play.example.game.app.module.platform.domain.Platform
 import play.example.game.app.module.server.config.ServerConfig
 import play.example.game.container.gs.domain.GameServerId
+import play.example.game.container.gs.logging.ActorMdc
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
 import play.spring.PlayNonWebApplicationContextFactory
@@ -43,12 +43,16 @@ class GameServerActor(
 ) : AbstractTypedActor<GameServerActor.Command>(ctx) {
 
   interface Command
-  data class Spawn<T>(val behavior: Behavior<T>, val name: String, val promise: PlayPromise<ActorRef<T>>) : Command
+  data class Spawn<T>(
+    val behaviorFactory: (ActorMdc) -> Behavior<T>,
+    val name: String,
+    val promise: PlayPromise<ActorRef<T>>
+  ) : Command
+
   class Start(val promise: Promise<Unit>) : Command
   object Stop : Command
 
-  private val staticMdc = mapOf("serverId" to serverId.toString())
-  private val noMdcPerMessage = akka.japi.function.Function<Any, Map<String, String>> { emptyMap() }
+  private val actorMdc = ActorMdc(mapOf("serverId" to serverId.toString()))
 
   private lateinit var applicationContext: ConfigurableApplicationContext
 
@@ -74,14 +78,14 @@ class GameServerActor(
   }
 
   private fun spawn(cmd: Spawn<Any>) {
-    val behavior = Behaviors.withMdc(Any::class.java, staticMdc, noMdcPerMessage, cmd.behavior)
+    val behavior = cmd.behaviorFactory(actorMdc)
     val ref = context.spawn(behavior, cmd.name)
     cmd.promise.success(ref)
   }
 
   private fun start(cmd: Start): Behavior<Command> {
     val future = future {
-      withMDC(staticMdc, ::doStart)
+      withMDC(actorMdc.staticMdc, ::doStart)
     }
     cmd.promise.completeWith(future)
     future.onComplete {
@@ -115,6 +119,7 @@ class GameServerActor(
       ApplicationContextInitializer<ConfigurableApplicationContext> {
         it.unsafeCast<BeanDefinitionRegistry>()
           .registerBeanDefinition("gameServerActor", rootBeanDefinition(typeOf<ActorRef<Command>>(), self))
+        it.beanFactory.registerSingleton("appActorMdc", actorMdc)
         it.beanFactory.registerSingleton("gameServerId", GameServerId(serverId))
         it.beanFactory.registerSingleton("serverConfig", serverConfig)
         it.beanFactory.registerSingleton("dbNameProvider", DatabaseNameProvider { dbName })

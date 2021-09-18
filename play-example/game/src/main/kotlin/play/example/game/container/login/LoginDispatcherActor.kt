@@ -3,8 +3,6 @@ package play.example.game.container.login
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Receive
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.protobuf.ProtoBuf
 import org.eclipse.collections.api.set.primitive.IntSet
 import play.akka.AbstractTypedActor
 import play.example.game.app.module.account.controller.AccountModule
@@ -12,6 +10,7 @@ import play.example.game.app.module.account.message.LoginParams
 import play.example.game.container.net.Session
 import play.example.game.container.net.SessionManager
 import play.example.game.container.net.UnhandledRequest
+import play.mvc.MessageCodec
 import play.mvc.Request
 
 /**
@@ -46,14 +45,13 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
   private fun handle(req: UnhandledLoginRequest) {
     when (req.request.msgId()) {
       AccountModule.login -> dispatch(req)
-      else -> {
-      }
+      else -> context.log.warn("Unhandled request: {}", req.request)
     }
   }
 
   private fun dispatch(req: UnhandledLoginRequest) {
     val requestBody = req.request.body
-    val params = ProtoBuf.decodeFromByteArray<LoginParams>(requestBody.bytes)
+    val params = MessageCodec.decode<LoginParams>(requestBody.bytes)
     val serverId = params.serverId
     for (i in receivers.indices) {
       val cmd = receivers[i]

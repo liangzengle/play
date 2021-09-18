@@ -20,16 +20,16 @@ class PlayerSpringConfiguration : GameServerScopeConfiguration() {
     scheduler: Scheduler,
     taskEventReceiver: TaskEventReceiver
   ): ActorRef<PlayerManager.Command> {
-    return spawn(
+    return spawn("PlayerManager") { mdc ->
       PlayerManager.create(
         eventDispatcher,
         playerIdNameCache,
         playerService,
         requestHandler,
         scheduler,
-        taskEventReceiver
-      ),
-      "PlayerManager"
-    )
+        taskEventReceiver,
+        mdc
+      )
+    }
   }
 }

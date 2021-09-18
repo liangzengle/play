@@ -59,12 +59,10 @@ internal object ResourceHelper {
         if (duplicatedKeys.isNotEmpty()) {
           errors.add("Key重复: $simpleName${duplicatedKeys.values}")
         }
-        val uniqueKeyType = Reflect.getRawClass<Any>(
-          Reflect.getTypeArg(
-            resourceClass.asSubclass(UniqueKey::class.java),
-            UniqueKey::class.java,
-            0
-          )
+        val uniqueKeyType: Class<Any> = Reflect.getRawClassOfTypeArg(
+          resourceClass.asSubclass(UniqueKey::class.java),
+          UniqueKey::class.java,
+          0
         )
         if (ClassUtil.getPrimitiveType(uniqueKeyType) == Int::class.java) {
           errors.add("UniqueKey的类型不能为Int: $simpleName")

@@ -3,6 +3,9 @@ package play.codegen
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.MemberName
 
+internal val Component = ClassName.bestGuess("org.springframework.stereotype.Component")
+internal val Autowired = ClassName.bestGuess("org.springframework.beans.factory.annotation.Autowired")
+
 internal val Inject = ClassName.bestGuess("javax.inject.Inject")
 internal val Singleton = ClassName.bestGuess("javax.inject.Singleton")
 internal val Named = ClassName.bestGuess("javax.inject.Named")
@@ -28,6 +31,8 @@ internal val GeneratePlayerRequestMessage = ClassName.bestGuess("play.mvc.Genera
 
 // internal val NotPlayerThread = ClassName.bestGuess("play.mvc.NotPlayerThread")
 internal val Cmd = ClassName.bestGuess("play.mvc.Cmd")
+
+internal val MsgId = ClassName.bestGuess("play.mvc.MsgId")
 
 internal val RequestMessage = ClassName.bestGuess("play.mvc.RequestMessage")
 
@@ -59,8 +64,8 @@ internal val DelegatedResourceSet = ClassName.bestGuess("play.res.DelegatedResou
 internal val ResourceSet = ClassName.bestGuess("play.res.ResourceSet")
 internal val UniqueKeyResourceSet = ClassName.bestGuess("play.res.UniqueKeyResourceSet")
 internal val GroupedResourceSet = ClassName.bestGuess("play.res.GroupedResourceSet")
-internal val GroupResourceSet = ClassName.bestGuess("play.res.GroupResourceSet")
-internal val GroupUniqueKeyResourceSet = ClassName.bestGuess("play.res.GroupUniqueKeyResourceSet")
+internal val ResourceGroup = ClassName.bestGuess("play.res.ResourceGroup")
+internal val UniqueKeyResourceGroup = ClassName.bestGuess("play.res.UniqueKeyResourceGroup")
 internal val ExtensionResourceSet = ClassName.bestGuess("play.res.ExtensionResourceSet")
 internal val SingletonResourceSet = ClassName.bestGuess("play.res.SingletonResourceSet")
 internal val SingletonResource = ClassName.bestGuess("play.res.SingletonResource")

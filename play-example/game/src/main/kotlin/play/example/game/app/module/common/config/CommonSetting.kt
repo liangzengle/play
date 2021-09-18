@@ -1,8 +1,6 @@
 package play.example.game.app.module.common.config
 
-import org.eclipse.collections.api.list.primitive.IntList
 import org.eclipse.collections.api.map.primitive.LongLongMap
-import org.eclipse.collections.impl.factory.primitive.IntLists
 import org.eclipse.collections.impl.factory.primitive.LongLongMaps
 import play.example.game.app.module.mail.config.MailResource
 import play.res.AbstractResource
@@ -20,7 +18,7 @@ class CommonSetting : AbstractResource() {
   @ReferTo(MailResource::class)
   val bagFullMailId = 1
 
-  val array: IntList = IntLists.mutable.empty()
+  val array: List<Int> = emptyList()
 
   val intIntMap = emptyMap<Int, Int>()
   val intLongMap = emptyMap<Int, Long>()

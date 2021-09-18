@@ -6,8 +6,8 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import play.akka.AbstractTypedActor
-import play.akka.resumeSupervisor
 import play.akka.send
+import play.akka.withResumeSupervisor
 import play.example.common.akka.scheduling.ActorCronScheduler
 import play.example.common.scheduling.Cron
 import play.example.game.app.module.account.message.LoginParams
@@ -16,6 +16,7 @@ import play.example.game.app.module.player.event.PlayerEvent
 import play.example.game.app.module.player.event.PlayerEventDispatcher
 import play.example.game.app.module.player.event.PromisedPlayerEvent
 import play.example.game.app.module.task.TaskEventReceiver
+import play.example.game.container.gs.logging.ActorMdc
 import play.example.game.container.net.Session
 import play.mvc.Request
 import play.mvc.Response
@@ -30,7 +31,8 @@ class PlayerManager(
   private val playerService: PlayerService,
   private val requestHandler: PlayerRequestHandler,
   cronScheduler: ActorCronScheduler<Command>,
-  private val taskEventReceiver: TaskEventReceiver
+  private val taskEventReceiver: TaskEventReceiver,
+  private val actorMdc: ActorMdc
 ) : AbstractTypedActor<PlayerManager.Command>(context) {
 
   init {
@@ -99,9 +101,15 @@ class PlayerManager(
     if (opt.isPresent) {
       return opt.get().unsafeCast()
     }
+
     return context.spawn(
-      resumeSupervisor(
-        PlayerActor.create(id, eventDispatcher, playerService, requestHandler, taskEventReceiver)
+      withResumeSupervisor(
+        Behaviors.withMdc(
+          PlayerActor.Command::class.java,
+          actorMdc.staticMdc,
+          actorMdc.mdcPerMessage(),
+          PlayerActor.create(id, eventDispatcher, playerService, requestHandler, taskEventReceiver)
+        )
       ),
       actorName
     )
@@ -114,7 +122,8 @@ class PlayerManager(
       playerService: PlayerService,
       requestHandler: PlayerRequestHandler,
       scheduler: Scheduler,
-      taskEventReceiver: TaskEventReceiver
+      taskEventReceiver: TaskEventReceiver,
+      actorMdc: ActorMdc
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
         PlayerManager(
@@ -124,7 +133,8 @@ class PlayerManager(
           playerService,
           requestHandler,
           ActorCronScheduler(scheduler, ctx),
-          taskEventReceiver
+          taskEventReceiver,
+          actorMdc
         )
       }
     }

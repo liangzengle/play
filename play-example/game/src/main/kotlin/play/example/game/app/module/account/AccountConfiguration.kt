@@ -30,7 +30,7 @@ class AccountConfiguration : GameServerScopeConfiguration() {
     playerEntityCacheInitializer: PlayerEntityCacheInitializer,
     playerService: PlayerService
   ): ActorRef<AccountManager.Command> {
-    return spawn(
+    return spawn("AccountManager") { mdc ->
       AccountManager.create(
         platformServiceProvider,
         accountIdCache,
@@ -39,8 +39,9 @@ class AccountConfiguration : GameServerScopeConfiguration() {
         accountCache,
         playerManager,
         playerEntityCacheInitializer,
-        playerService
-      ), "AccountManager"
-    )
+        playerService,
+        mdc
+      )
+    }
   }
 }

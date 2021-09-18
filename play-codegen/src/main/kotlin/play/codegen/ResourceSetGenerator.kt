@@ -187,7 +187,7 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
     val genericGroupedResourceSet = GroupedResourceSet.parameterizedBy(groupIdTypeName, elem.asType().asTypeName())
     if (isGroupedUniqueKey) {
       val returnType =
-        GroupUniqueKeyResourceSet.parameterizedBy(elem.asType().asTypeName(), groupUniqueKeyType!!.javaToKotlinType())
+        UniqueKeyResourceGroup.parameterizedBy(elem.asType().asTypeName(), groupUniqueKeyType!!.javaToKotlinType())
       val getGroupOrNull = FunSpec.builder("getGroupOrNull")
         .addAnnotation(JvmStatic::class)
         .addParameter("groupId", groupIdTypeName)

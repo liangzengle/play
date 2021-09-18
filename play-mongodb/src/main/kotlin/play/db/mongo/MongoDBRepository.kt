@@ -207,7 +207,7 @@ class MongoDBRepository constructor(
     if (isAssignableFrom<IntIdEntity>(entityClass)) {
       return Int::class.java.unsafeCast()
     }
-    return Reflect.getRawClass<Any>(Reflect.getTypeArg(entityClass, Entity::class.java, 0)).unsafeCast()
+    return Reflect.getRawClassOfTypeArg(entityClass, Entity::class.java, 0)
   }
 
   private fun <ID> convertToID(obj: Any, idType: Class<ID>): ID {

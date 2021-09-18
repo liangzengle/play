@@ -146,6 +146,8 @@ fun <T> Iterable<T>.mkString(
     if (transform == null) b.append(e) else b.append(transform(e))
     first = false
   }
-  b.append(postfix)
+  if (postfix != 0.toChar()) {
+    b.append(postfix)
+  }
   return b.toString()
 }

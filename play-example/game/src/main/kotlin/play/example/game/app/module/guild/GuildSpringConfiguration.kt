@@ -18,9 +18,13 @@ class GuildSpringConfiguration : GameServerScopeConfiguration() {
     playerService: PlayerService,
     guildCache: GuildCache
   ): ActorRef<GuildManager.Command> {
-    return spawn(
-      GuildManager.create(playerRequestHandler, guildEntityCache, playerService, guildCache),
-      "GuildManager"
-    )
+    return spawn("GuildManager") {
+      GuildManager.create(
+        playerRequestHandler,
+        guildEntityCache,
+        playerService,
+        guildCache
+      )
+    }
   }
 }

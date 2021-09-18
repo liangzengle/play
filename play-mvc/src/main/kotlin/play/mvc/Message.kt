@@ -36,11 +36,22 @@ class Response(
 
 @JvmInline
 value class MsgId(val value: Int) {
-  constructor(moduleId: Short, cmd: Byte) : this(moduleId.toInt() shl 8 or cmd.toInt())
+  companion object {
+    @JvmStatic
+    fun toInt(moduleId: Short, cmd: Byte): Int = moduleId.toInt() shl 8 or cmd.toInt()
 
-  val moduleId: Short get() = (value shr 8 and 0x7fff).toShort()
+    @JvmStatic
+    fun getModuleId(msgId: Int): Short = (msgId shr 8 and 0x7fff).toShort()
 
-  val cmd: Byte get() = (value and 0xff).toByte()
+    @JvmStatic
+    fun getCmd(msgId: Int): Byte = (msgId and 0xff).toByte()
+  }
+
+  constructor(moduleId: Short, cmd: Byte) : this(toInt(moduleId, cmd))
+
+  val moduleId: Short get() = getModuleId(value)
+
+  val cmd: Byte get() = getCmd(value)
 
   fun toInt(): Int = value
 

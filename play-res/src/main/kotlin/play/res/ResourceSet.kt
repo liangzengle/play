@@ -72,7 +72,7 @@ interface UniqueKeyResourceSet<K, T> {
 }
 
 interface NavigableResourceSet<K, T : AbstractResource> {
-  fun asNavigable(): ResourceSetNavigator<K, T>
+  fun navigator(): ResourceSetNavigator<K, T>
 }
 
 interface ExtensionResourceSet<E : ResourceExtension<T>, T : AbstractResource> {
@@ -80,23 +80,23 @@ interface ExtensionResourceSet<E : ResourceExtension<T>, T : AbstractResource> {
 }
 
 interface GroupedResourceSet<G, T : AbstractResource> {
-  fun getGroup(groupId: G): Optional<out GroupResourceSet<T>> = getGroupOrNull(groupId).toOptional()
+  fun getGroup(groupId: G): Optional<out ResourceGroup<T>> = getGroupOrNull(groupId).toOptional()
 
   @Nullable
-  fun getGroupOrNull(groupId: G): GroupResourceSet<T>?
+  fun getGroupOrNull(groupId: G): ResourceGroup<T>?
 
-  fun getGroupOrThrow(groupId: G): GroupResourceSet<T> =
+  fun getGroupOrThrow(groupId: G): ResourceGroup<T> =
     getGroupOrNull(groupId) ?: throw NoSuchElementException("group: $groupId")
 
-  fun groupMap(): Map<G, GroupResourceSet<T>>
+  fun groupMap(): Map<G, ResourceGroup<T>>
 
   fun containsGroup(groupId: G): Boolean
 }
 
-interface GroupUniqueKeyResourceSet<T : AbstractResource, K : Comparable<K>>
-  : GroupResourceSet<T>, UniqueKeyResourceSet<K, T>, NavigableResourceSet<K, T>
+interface UniqueKeyResourceGroup<T : AbstractResource, K : Comparable<K>>
+  : ResourceGroup<T>, UniqueKeyResourceSet<K, T>, NavigableResourceSet<K, T>
 
-interface GroupResourceSet<T : AbstractResource> {
+interface ResourceGroup<T : AbstractResource> {
   fun list(): List<T>
 
   fun reversedList(): List<T> = list().asReversed()
