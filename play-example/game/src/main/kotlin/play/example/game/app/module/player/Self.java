@@ -1,7 +1,6 @@
 package play.example.game.app.module.player;
 
 /**
- * <h1>禁止修改和创建实例</h1>
  * 表示玩家自己
  */
 // kotlin不知支持package-private, 所以用java

@@ -19,7 +19,7 @@ interface ShutdownCoordinator {
    * @param priority 优先级(越小越高): [PRIORITY_HIGHEST]、[PRIORITY_NORMAL]、[PRIORITY_LOWEST]
    * @param task 要执行的任务
    */
-  fun addShutdownTask(name: String, priority: Int = Order.Normal, task: () -> Unit)
+  fun addShutdownTask(name: String, priority: Int = Orders.Normal, task: () -> Unit)
 
   fun shutdown()
 

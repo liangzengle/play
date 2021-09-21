@@ -1,5 +1,5 @@
 dependencies {
     api libs.bundles.akka
     api project(':play-scala-compact')
-    api project(':play-core')
+    compileOnly project(':play-core')
 }

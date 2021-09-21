@@ -288,13 +288,14 @@ class ResourceManager(
       Log.debug { "无配置版本号" }
       return
     }
-    val maybeVersion = resolver.resolve(versionFile).mapCatching { it.readText() }
-    maybeVersion.onSuccess {
-      version = it
-      Log.info { "配置版本号: $version" }
-    }
-    maybeVersion.onFailure { e ->
-      Log.warn { "读取配置版本号文件失败: ${e.javaClass.name}: ${e.message}" }
-    }
+    resolver.resolve(versionFile)
+      .mapCatching { it.readText() }
+      .onSuccess {
+        version = it
+        Log.info { "配置版本号: $version" }
+      }
+      .onFailure { e ->
+        Log.warn { "读取配置版本号文件失败: ${e.javaClass.name}: ${e.message}" }
+      }
   }
 }

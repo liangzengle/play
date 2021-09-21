@@ -54,6 +54,12 @@ object Reflect {
   }
 
   @JvmStatic
+  fun <T> checkTypeArgEquals(type: Class<out T>, superType: Class<T>, index: Int, expectedType: Class<*>) {
+    val actualType = getRawClassOfTypeArg<T, Any>(type, superType, index)
+    check(actualType == expectedType) { "Unexpected type arg: $actualType" }
+  }
+
+  @JvmStatic
   fun <T : Any> getKotlinObjectOrNull(clazz: Class<T>): T? {
     return clazz.kotlin.objectInstance
   }

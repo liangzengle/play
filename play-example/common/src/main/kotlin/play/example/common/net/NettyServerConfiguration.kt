@@ -6,7 +6,7 @@ import io.netty.channel.WriteBufferWaterMark
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import play.Order
+import play.Orders
 import play.ShutdownCoordinator
 import play.net.netty.NettyServerBuilder
 import play.net.netty.createEventLoopGroup
@@ -21,7 +21,7 @@ class NettyServerConfiguration {
   @Bean("bossEventLoopGroup")
   fun bossEventLoopGroup(shutdownCoordinator: ShutdownCoordinator): EventLoopGroup {
     val executor = createEventLoopGroup("netty-boss", 1)
-    shutdownCoordinator.addShutdownTask("Shutdown bossEventLoopGroup", Order.Highest) {
+    shutdownCoordinator.addShutdownTask("Shutdown bossEventLoopGroup", Orders.Highest) {
       executor.shutdownGracefully().await()
     }
     return executor
@@ -30,7 +30,7 @@ class NettyServerConfiguration {
   @Bean("workerEventLoopGroup")
   fun workerEventLoopGroup(shutdownCoordinator: ShutdownCoordinator): EventLoopGroup {
     val executor = createEventLoopGroup("netty-worker", 0)
-    shutdownCoordinator.addShutdownTask("Shutdown workerEventLoopGroup", Order.Highest + 1) {
+    shutdownCoordinator.addShutdownTask("Shutdown workerEventLoopGroup", Orders.lowerThan(Orders.Highest)) {
       executor.shutdownGracefully().await()
     }
     return executor

@@ -4,6 +4,7 @@ import org.springframework.beans.BeansException
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.support.DefaultListableBeanFactory
 import org.springframework.core.annotation.Order
+import play.Orders
 import javax.annotation.Priority
 
 /**
@@ -41,6 +42,6 @@ class PlayListableBeanFactory() : DefaultListableBeanFactory() {
     if (priority != null) {
       return priority.value
     }
-    return play.Order.getOrder(bean.javaClass)
+    return Orders.getOrder(bean.javaClass)
   }
 }

@@ -42,7 +42,7 @@ class PlayerActor(
   private fun onSessionClosed(cmd: SessionClosed) {
     // TODO
     playerService.logout(me)
-    eventDispatcher.dispatch(me, PlayerLoginEvent(me.id))
+    eventDispatcher.dispatch(me, PlayerLogoutEvent(me.id))
   }
 
   private fun onLogin(cmd: Login) {
