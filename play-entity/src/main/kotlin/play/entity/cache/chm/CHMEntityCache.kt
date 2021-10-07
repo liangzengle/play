@@ -4,7 +4,6 @@ import mu.KLogging
 import play.entity.Entity
 import play.entity.ImmutableEntity
 import play.entity.cache.*
-import play.entity.cache.caffeine.CaffeineEntityCache
 import play.inject.PlayInjector
 import play.scheduling.Scheduler
 import play.util.concurrent.Future
@@ -33,10 +32,9 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
 ) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID> {
   companion object : KLogging()
 
-  @Volatile
   private var initialized = false
 
-  private lateinit var _cache: ConcurrentMap<ID, CacheObj<ID, E>>
+  private var _cache: ConcurrentMap<ID, CacheObj<ID, E>>? = null
 
   private lateinit var initializer: EntityInitializer<E>
 
@@ -47,8 +45,12 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   private val isImmutable = entityClass.isAnnotationPresent(ImmutableEntity::class.java)
 
   private fun getCache(): ConcurrentMap<ID, CacheObj<ID, E>> {
+    val cache = _cache
+    if (cache != null) {
+      return cache
+    }
     ensureInitialized()
-    return _cache
+    return _cache!!
   }
 
   private fun ensureInitialized() {
@@ -71,13 +73,13 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
       val cache = ConcurrentHashMap<ID, CacheObj<ID, E>>()
       val isLoadAllOnInit = cacheSpec?.loadAllOnInit ?: false
       if (isLoadAllOnInit) {
-        CaffeineEntityCache.logger.info { "Loading all [${entityClass.simpleName}]" }
+        logger.debug { "Loading all [${entityClass.simpleName}]" }
         entityCacheLoader.loadAll(entityClass, cache) { c, e ->
           initializer.initialize(e)
           c[e.id()] = CacheObj(e)
           c
         }.await(Duration.ofSeconds(5))
-        logger.info { "Loaded ${cache.size} [${entityClass.simpleName}] into cache." }
+        logger.debug { "Loaded ${cache.size} [${entityClass.simpleName}] into cache." }
       }
       this._cache = cache
 
@@ -160,7 +162,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
           val pending = persistingEntities.remove(k)
           if (pending == null || pending.isDeleted()) v else v ?: CacheObj(pending)
         }
-        logger.error(result.getCause()) { "持久化失败: ${entityClass.simpleName}($id)" }
+        logger.error(result.getCause()) { "持久化失败, 重新返回缓存: ${entityClass.simpleName}($id)" }
       }
     }
   }

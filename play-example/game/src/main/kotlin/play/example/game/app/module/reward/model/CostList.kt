@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.JsonNode
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Lists
+import jakarta.validation.Valid
 import play.example.game.app.module.reward.RewardHelper
 import play.util.json.Json
-import javax.validation.Valid
 
 class CostList private constructor(
   @field:Valid
@@ -21,6 +21,9 @@ class CostList private constructor(
     @JvmStatic
     @JsonCreator
     private fun fromJson(jsonNode: JsonNode): CostList {
+      if (jsonNode.isEmpty) {
+        return Empty
+      }
       val type = Json.mapper.typeFactory.constructCollectionType(ImmutableList::class.java, Cost::class.java)
       val costs = Json.mapper.convertValue<ImmutableList<Cost>>(jsonNode, type)
       return CostList(costs)

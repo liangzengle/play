@@ -51,6 +51,7 @@ class GameServerActor(
 
   class Start(val promise: Promise<Unit>) : Command
   object Stop : Command
+  private class StartResult(val ex: Throwable?) : Command
 
   private val actorMdc = ActorMdc(mapOf("serverId" to serverId.toString()))
 
@@ -71,10 +72,27 @@ class GameServerActor(
 
   private fun starting(): Receive<Command> {
     return newReceiveBuilder()
+      .accept(::onStartResult)
+      .accept(::spawn)
+      .build()
+  }
+
+  private fun started(): Receive<Command> {
+    return newReceiveBuilder()
       .accept(::spawn)
       .accept(::stop)
       .acceptSignal(::postStop)
       .build()
+  }
+
+  private fun onStartResult(result: StartResult): Behavior<Command> {
+    val exception = result.ex
+    if (exception != null) {
+      log.error("Game Server [$serverId] starts FAILED!!!", exception)
+      return stoppedBehavior()
+    }
+    log.info("Game Server [{}] starts successfully", serverId)
+    return started()
   }
 
   private fun spawn(cmd: Spawn<Any>) {
@@ -85,18 +103,14 @@ class GameServerActor(
 
   private fun start(cmd: Start): Behavior<Command> {
     val future = future {
-      withMDC(actorMdc.staticMdc, ::doStart)
+      withMDC(actorMdc.staticMdc, ::startApplicationContext)
     }
     cmd.promise.completeWith(future)
-    future.onComplete {
-      if (it.isFailure) {
-        self.tell(Stop)
-      }
-    }
+    future.pipToSelf { StartResult(it.exceptionOrNull()) }
     return starting()
   }
 
-  private fun doStart() {
+  private fun startApplicationContext() {
     val springApplication = SpringApplicationBuilder()
       .bannerMode(Banner.Mode.OFF)
       .parent(parentApplicationContext)
@@ -132,7 +146,7 @@ class GameServerActor(
   }
 
   private fun stop(cmd: Stop): Behavior<Command> {
-    context.log.info("Stop game server: $serverId")
+    log.info("Stop game server: {}", serverId)
     return stoppedBehavior()
   }
 
@@ -140,5 +154,6 @@ class GameServerActor(
     if (this::applicationContext.isInitialized) {
       applicationContext.stop()
     }
+    log.info("Game server [{}] stopped.", serverId)
   }
 }

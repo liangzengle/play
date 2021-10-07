@@ -1,8 +1,8 @@
 package play.res.validation
 
+import jakarta.validation.ConstraintValidatorContext
 import play.res.AbstractResource
 import play.res.GroupedResourceSet
-import javax.validation.ConstraintValidatorContext
 
 class ReferToGroupConstraintValidator : ConfigConstraintValidator<ReferToGroup, Any>() {
 

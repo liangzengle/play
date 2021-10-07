@@ -1,10 +1,10 @@
 package play.example.game.app.module.task.target
 
 import com.fasterxml.jackson.annotation.JsonFormat
+import jakarta.validation.constraints.Min
 import play.example.game.app.module.task.domain.TaskTargetType
 import play.example.game.app.module.task.target.json.TaskTargetTypesResolver
 import play.util.json.JsonAbstractType
-import javax.validation.constraints.Min
 
 /**
  * 任务目标基类

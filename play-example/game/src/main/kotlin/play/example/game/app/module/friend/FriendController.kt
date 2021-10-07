@@ -23,14 +23,10 @@ class FriendController @Inject constructor(
 ) : AbstractController(ModuleId.Friend) {
 
   @Cmd(1)
-  fun getInfo(playerId: Long) = RequestResult {
-    friendService.getInfo(playerId)
-  }
+  fun getInfo(playerId: Long) = friendService.getInfo(playerId)
 
   @Cmd(2)
-  fun getInfo2(playerId: Long) = RequestResult {
-    friendService.getInfo2(playerId)
-  }
+  fun getInfo2(playerId: Long) = friendService.getInfo2(playerId)
 
   @Cmd(3)
   fun getInfo3(playerId: Long) = RequestResult.async {

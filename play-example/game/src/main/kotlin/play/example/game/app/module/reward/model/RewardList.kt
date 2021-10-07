@@ -3,10 +3,11 @@ package play.example.game.app.module.reward.model
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.ArrayNode
 import com.google.common.collect.ImmutableList
+import jakarta.validation.Valid
 import play.example.game.app.module.reward.RewardHelper
 import play.util.json.Json
-import javax.validation.Valid
 
 class RewardList private constructor(
   @field:Valid
@@ -21,6 +22,9 @@ class RewardList private constructor(
     @JvmStatic
     @JsonCreator
     private fun fromJson(jsonNode: JsonNode): RewardList {
+      if (jsonNode.isEmpty) {
+        return Empty
+      }
       val type = Json.mapper.typeFactory.constructCollectionType(List::class.java, Reward::class.java)
       val rewards = Json.mapper.convertValue<List<Reward>>(jsonNode, type)
       return RewardList(rewards)

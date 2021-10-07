@@ -7,7 +7,10 @@ import java.io.StringWriter
 import javax.annotation.processing.*
 import javax.lang.model.AnnotatedConstruct
 import javax.lang.model.SourceVersion
-import javax.lang.model.element.*
+import javax.lang.model.element.Element
+import javax.lang.model.element.ElementKind
+import javax.lang.model.element.Modifier
+import javax.lang.model.element.TypeElement
 import javax.lang.model.type.DeclaredType
 import javax.lang.model.type.TypeMirror
 import javax.lang.model.util.Elements
@@ -117,16 +120,6 @@ abstract class PlayAnnotationProcessor : AbstractProcessor() {
   private fun ClassName.javaToKotlinType(): ClassName {
     return JavaToKotlinClassMap.INSTANCE.mapJavaToKotlin(FqName(this.toString()))?.asSingleFqName()
       ?.asString()?.let { ClassName.bestGuess(it) } ?: this
-  }
-
-  protected fun ExecutableElement.isObjectMethod(): Boolean {
-    if (this.kind != ElementKind.METHOD) {
-      return false
-    }
-    return when (this.simpleName.toString()) {
-      "hashCode", "equals", "toString", "clone", "wait", "notify", "notifyAll", "finalize" -> true
-      else -> false
-    }
   }
 
   protected fun TypeElement.getPackage(): String = elementUtils.getPackageOf(this).qualifiedName.toString()

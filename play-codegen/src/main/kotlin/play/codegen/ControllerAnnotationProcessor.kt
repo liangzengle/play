@@ -370,11 +370,18 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
         }
         code.addStatement("val %L =  %L", parameter.simpleName, readStmt(parameter))
       }
+      val returnsResult = typeUtils.erasure(method.returnType).asTypeName() == Result2
+      if (returnsResult) {
+        code.add("val result = ")
+      }
       code.addStatement(
         "controller.%L(%L)",
         method.simpleName,
-        method.parameters.joinToString(", ") { it.simpleName }
+        toParamStr(method.parameters)
       )
+      if (returnsResult) {
+        code.addStatement("%T(result)", RequestResult)
+      }
       code.endControlFlow()
     }
     code.addStatement("else -> null")
@@ -407,11 +414,19 @@ class ControllerAnnotationProcessor : PlayAnnotationProcessor() {
         }
         code.addStatement("val %L =  %L", parameter.simpleName, readStmt(parameter))
       }
+
+      val returnsResult = typeUtils.erasure(method.returnType).asTypeName() == Result2
+      if (returnsResult) {
+        code.add("val result = ")
+      }
       code.addStatement(
         "controller.%L(%L)",
         method.simpleName,
-        method.parameters.joinToString(", ") { it.simpleName }
+        toParamStr(method.parameters)
       )
+      if (returnsResult) {
+        code.addStatement("%T(result)", RequestResult)
+      }
       code.endControlFlow()
     }
     code.addStatement("else -> null")

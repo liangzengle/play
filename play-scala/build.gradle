@@ -1,8 +1,5 @@
-apply plugin: 'scala'
-
-repositories {
-    mavenLocal()
-    mavenCentral()
+plugins {
+    id "scala"
 }
 
 dependencies {

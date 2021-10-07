@@ -79,4 +79,4 @@ interface ExtensionKey<E : ResourceExtension<out AbstractResource>>
  * @param elems 配置对象列表
  */
 @Suppress("UNUSED_PARAMETER")
-abstract class ResourceExtension<T : AbstractResource>(elems: List<T>)
+abstract class ResourceExtension<T : AbstractResource>(protected val elements: List<T>)

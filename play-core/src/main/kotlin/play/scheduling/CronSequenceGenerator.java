@@ -17,8 +17,10 @@
 
 package play.scheduling;
 
+import org.jetbrains.annotations.NotNull;
 import play.util.time.Time;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -47,7 +49,7 @@ import java.util.*;
  * @author Juergen Hoeller
  * @since 3.0
  */
-public class CronSequenceGenerator {
+class CronSequenceGenerator implements CronExpression {
 
     private final String expression;
 
@@ -473,12 +475,15 @@ public class CronSequenceGenerator {
         return prevFireTime;
     }
 
-    public Optional<LocalDateTime> prevFireTime(LocalDateTime from) {
+    @Nullable
+    public LocalDateTime prevFireTime(@NotNull LocalDateTime from) {
         Date prevDate = prev(Time.toDate(from));
-        return prevDate == null ? Optional.empty() : Optional.of(Time.toLocalDateTime(prevDate));
+        return prevDate == null ? null : Time.toLocalDateTime(prevDate);
     }
 
-    public LocalDateTime nextFireTime(LocalDateTime from) {
+    @NotNull
+    @Nonnull
+    public LocalDateTime nextFireTime(@NotNull LocalDateTime from) {
         Date nextDate = next(Time.toDate(from));
         return Time.toLocalDateTime(nextDate);
     }

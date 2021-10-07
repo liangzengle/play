@@ -2,11 +2,11 @@ package play.example.game.app.module.item.config
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.NullNode
+import jakarta.validation.Valid
 import play.example.game.app.module.common.config.CommonSetting
 import play.example.game.app.module.item.domain.ItemType
 import play.example.game.app.module.reward.config.RawReward
 import play.res.*
-import javax.validation.Valid
 
 /**
  * 物品配置
@@ -38,14 +38,14 @@ class ItemResource : AbstractResource(), ItemLikeResource, ExtensionKey<ItemReso
   override fun keyInGroup(): Int = id
 
   override fun initialize(resourceSetSupplier: ResourceSetSupplier, errors: MutableCollection<String>) {
-    println("ItemConfig postInitialize: $this")
+    println("ItemResource postInitialize: $this")
     val commonSetting = resourceSetSupplier.getSingleton(CommonSetting::class.java)
     bagFullMailId = commonSetting.get().bagFullMailId
   }
 
   override fun toString(): String {
-    return "ItemConfig($id, $name, $desc, $numberValue, $jsonValue, $rewards)"
+    return "ItemResource($id, $name, $desc, $numberValue, $jsonValue, $rewards)"
   }
 }
 
-class ItemResourceExtension(elems: List<ItemResource>) : ResourceExtension<ItemResource>(elems)
+class ItemResourceExtension(list: List<ItemResource>) : ResourceExtension<ItemResource>(list)

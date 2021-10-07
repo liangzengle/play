@@ -6,13 +6,14 @@ import play.util.classOf
 import play.util.collection.toImmutableMap
 import play.util.reflect.Reflect
 import play.util.unsafeCast
+import play.util.unsafeLazy
 
 /**
  *
  * @author LiangZengle
  */
 class EntityInitializerProvider(private val injector: PlayInjector) {
-  private val entityInitializers by lazy {
+  private val entityInitializers by unsafeLazy {
     injector.getInstancesOfType(classOf<EntityInitializer<Entity<Any>>>())
       .asSequence()
       .map { p -> Reflect.getTypeArg(p.javaClass, EntityInitializer::class.java, 0) to p }

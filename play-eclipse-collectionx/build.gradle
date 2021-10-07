@@ -18,7 +18,7 @@ dependencies {
     implementation libs.eclipse.collections
 }
 
-task generateCaches(type: JavaExec) {
+task generateCode(type: JavaExec) {
     main = 'play.eclipse.collectionx.codegen.MainKt'
     classpath = sourceSets.codegen.runtimeClasspath
     args "${buildDir}/generated-sources/"
@@ -27,9 +27,5 @@ task generateCaches(type: JavaExec) {
     outputs.dir "${buildDir}/generated-sources/"
     outputs.cacheIf { true }
 }
-compileJava.dependsOn(generateCaches)
-compileKotlin.dependsOn(generateCaches)
-
-compileCodegenKotlin {
-    kotlinOptions.jvmTarget = "11"
-}
+compileJava.dependsOn(generateCode)
+compileKotlin.dependsOn(generateCode)

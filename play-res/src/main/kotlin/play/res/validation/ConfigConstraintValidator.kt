@@ -1,10 +1,10 @@
 package play.res.validation
 
+import jakarta.validation.ConstraintValidator
+import jakarta.validation.ConstraintValidatorContext
 import org.hibernate.validator.constraintvalidation.HibernateConstraintValidatorContext
 import play.res.AbstractResource
 import play.res.ResourceSet
-import javax.validation.ConstraintValidator
-import javax.validation.ConstraintValidatorContext
 
 abstract class ConfigConstraintValidator<A : Annotation, T> : ConstraintValidator<A, T> {
 

@@ -81,14 +81,6 @@ class MongoDBRepository constructor(
     return promise.future
   }
 
-  override fun <ID, E : Entity<ID>> deleteIfDeleted(id: ID, entityClass: Class<E>): Future<out Any> {
-    val promise = Promise.make<DeleteResult>()
-    val filter = Filters.and(Filters.eq(id), Filters.eq(Entity.DELETED, true))
-    getCollection(entityClass).deleteOne(filter, deleteOptions)
-      .subscribe(ForOneSubscriber(promise))
-    return promise.future
-  }
-
   override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<BulkWriteResult> {
     if (entities.isEmpty()) {
       return Future.successful(BulkWriteResult.acknowledged(0, 0, 0, 0, emptyList(), emptyList()))

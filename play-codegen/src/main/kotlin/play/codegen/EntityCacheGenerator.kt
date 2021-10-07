@@ -31,14 +31,12 @@ class EntityCacheGenerator : PlayAnnotationProcessor() {
   }
 
   override fun process(annotations: MutableSet<out TypeElement>, roundEnv: RoundEnvironment): Boolean {
-    var found = false
     for (elem in roundEnv.subtypesOf(Entity)) {
       if (!elem.isAnnotationPresent(DisableCodegen)) {
         generate(elem)
-        found = true
       }
     }
-    return found
+    return true
   }
 
   private fun generate(elem: TypeElement) {

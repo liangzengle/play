@@ -5,7 +5,6 @@ dependencies {
 
     implementation libs.kotlinpoet.poet
     implementation libs.kotlinpoet.metadata
-    implementation libs.kotlinpoet.metadataspecs
 }
 
 compileKotlin {

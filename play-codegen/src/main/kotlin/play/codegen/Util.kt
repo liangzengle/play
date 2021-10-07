@@ -1,29 +1,17 @@
 package play.codegen
 
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.WildcardTypeName
 import javax.lang.model.element.ExecutableElement
+import javax.lang.model.element.VariableElement
 
 internal val objectMethodNames =
   setOf("hashCode", "equals", "toString", "clone", "wait", "notify", "notifyAll", "finalize")
 
-internal fun isObjectMethod(elem: ExecutableElement) =
-  !objectMethodNames.contains(elem.simpleName.toString()) && elem.parameters.isEmpty()
-
-internal fun ExecutableElement.toBuilder(typeTable: Map<String, TypeName>): FunSpec.Builder {
-  val name = simpleName.toString()
-  val builder = FunSpec.builder(name)
-  val returnType = resolveTypeVariables(returnType.asTypeName(), typeTable)
-  builder.returns(returnType)
-
-  for (parameter in parameters) {
-    val paramName = parameter.simpleName.toString()
-    val param =
-      ParameterSpec.builder(paramName, resolveTypeVariables(parameter.asType().asTypeName(), typeTable)).build()
-    builder.addParameter(param)
-  }
-  return builder
-}
+internal fun isObjectMethod(elem: ExecutableElement) = objectMethodNames.contains(elem.simpleName.toString())
 
 internal fun resolveTypeVariables(type: TypeName, typeTable: Map<String, TypeName>): TypeName {
   if (type is TypeVariableName) return typeTable[type.name]
@@ -80,3 +68,7 @@ internal inline fun <T> Any.unsafeCast(): T = this as T
 internal fun String.capitalize() = this.replaceFirstChar { it.uppercaseChar() }
 
 internal fun String.uncapitalize() = this.replaceFirstChar { it.lowercaseChar() }
+
+internal fun toParamStr(parameters: List<VariableElement>): String {
+  return parameters.joinToString(separator = ", ") { it.simpleName }
+}

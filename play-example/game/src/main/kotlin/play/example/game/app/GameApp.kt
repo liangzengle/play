@@ -9,6 +9,7 @@ import play.entity.PlayEntityCacheConfiguration
 import play.entity.cache.DefaultEntityCachePersistFailOver
 import play.entity.cache.EntityCachePersistFailOver
 import play.event.EnableGuavaEventBus
+import play.example.game.app.module.player.Self
 import play.example.game.container.gm.GmCommandService
 import play.example.game.container.gs.domain.GameServerId
 import play.inject.PlayInjector
@@ -26,8 +27,8 @@ import play.mongodb.PlayMongoRepositoryConfiguration
 class GameApp {
 
   @Bean
-  fun gmCommandService(injector: PlayInjector): GmCommandService {
-    return GmCommandService(injector)
+  fun gmCommandService(injector: PlayInjector): GmCommandService<Self> {
+    return GmCommandService(Self::class.java, injector)
   }
 
   @Bean

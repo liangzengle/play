@@ -69,7 +69,7 @@ internal class ResourceSetImpl<K, T, G, E>(
   private val groupMap: Map<G, ResourceGroup<T>> by unsafeLazy {
     val map = list
       .groupBy { (it as Grouped<G>).groupBy() }
-      .mapValues { ResourceGroupImpl<T, Comparable<*>>(resourceClass, it.value) }
+      .mapValues { ResourceGroupImpl<T, Comparable<Comparable<*>>>(resourceClass, it.value) }
     ImmutableMap.copyOf(map)
   }
 

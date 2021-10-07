@@ -1,8 +1,7 @@
 package play.db
 
 @Suppress("UNCHECKED_CAST")
-@JvmInline
-value class ResultMap(private val map: Map<String, Any?>) {
+class ResultMap(private val map: Map<String, Any?>) {
   fun <T> getOrNull(key: String): T? = map[key] as T?
 
   fun getBoolean(key: String): Boolean {

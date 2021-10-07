@@ -30,7 +30,10 @@ open class DelegatedResourceSet<T : AbstractResource> internal constructor(priva
     }
 
     internal fun init(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
-      instances = resourceSets.mapValues { DelegatedResourceSet(it.value) }
+      instances = resourceSets.mapValues {
+        check(it !is DelegatedResourceSet<*>)
+        DelegatedResourceSet(it.value)
+      }
     }
   }
 

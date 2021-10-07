@@ -1,6 +1,17 @@
 plugins {
     id "play.modular-code" version "0.1"
-    id 'org.jetbrains.kotlin.plugin.serialization' version "1.5.21"
+    id 'org.jetbrains.kotlin.plugin.serialization' version libs.versions.kotlin.lang
+    id 'application'
+}
+
+application {
+    mainClass = "play.example.game.AppKt"
+}
+
+task createStartScripts(type: CreateStartScripts) {
+    applicationName = "app"
+    unixStartScriptGenerator.template = resources.text.fromFile('unixStartScript2.txt')
+    windowsStartScriptGenerator.template = resources.text.fromFile('windowsStartScript.txt')
 }
 
 repositories {

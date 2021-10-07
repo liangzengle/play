@@ -1,33 +1,36 @@
 [versions]
-akka = "2.6.14"
-auto-service = "1.0-rc7"
+akka = "2.6.16"
+auto-service = "1.0"
 bson4jackson = "2.12.0"
-caffeine = "3.0.2"
+caffeine = "3.0.4"
 checker = "3.15.0"
-classgraph = "4.8.114"
+classgraph = "4.8.116"
 eclipse-collections = "10.4.0"
-fastutil = "8.5.4"
-guava = "30.1.1-jre"
-hibernat-validator = "6.1.2.Final"
+fastutil = "8.5.6"
+guava = "31.0.1-jre"
+hibernate-validator = "7.0.1.Final"
 javax-inject = "1"
-jackson = "2.12.2"
-javax-el = "3.0.0"
+jackson = "2.13.0"
+jakarta-el-api = "4.0.0"
+jakarta-el-impl = "4.0.2"
 jctools = "3.3.0"
 junit = "5.7.0"
-kotlin-lang = "1.5.30"
-kotlin-logging = "2.0.6"
-kotlinpoet = "1.9.0"
-kotlinx-serialization = "1.2.1"
+kotlin-lang = "1.6.0-M1"
+# kotlin-lang = "1.5.31"
+kotlin-logging = "2.0.11"
+kotlinpoet-poet = "1.10.1"
+kotlinx-serialization = "1.3.0"
+ktlint = "9.4.1"
 log4j = "2.14.1"
 logback = "1.2.3"
-micrometer = "1.7.3"
-mongodb-driver = "4.0.5"
-mvel = "2.4.12.Final"
-netty = "4.1.65.Final"
+micrometer = "1.7.4"
+mongodb-driver = "4.3.2"
+mvel = "2.4.13.Final"
+netty = "4.1.68.Final"
 scala-library = "2.13.5"
 scala-java8-compact = "0.9.0"
 slf4j = "1.7.30"
-spring-boot = "2.5.2"
+spring-boot = "2.5.5"
 typesafe-config = "1.4.1"
 unsafe-accessor = "1.6.1"
 
@@ -44,10 +47,10 @@ classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classg
 eclipse-collections = { module = "org.eclipse.collections:eclipse-collections", version.ref = "eclipse-collections" }
 fastutil-core = { module = "it.unimi.dsi:fastutil-core", version.ref = "fastutil" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
-hibernat-validator = { module = "org.hibernate.validator:hibernate-validator", version.ref = "hibernat-validator" }
+hibernate-validator = { module = "org.hibernate.validator:hibernate-validator", version.ref = "hibernate-validator" }
 javax-inject = { module = "javax.inject:javax.inject", version.ref = "javax-inject" }
-javax-el-api = { module = "javax.el:javax.el-api", version.ref = "javax-el" }
-javax-el-impl = { module = "org.glassfish:javax.el", version.ref = "javax-el" }
+jakarta-el-api = { module = "jakarta.el:jakarta.el-api", version.ref = "jakarta-el-api" }
+jakarta-el-impl = { module = "org.glassfish:jakarta.el", version.ref = "jakarta-el-impl" }
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref = "jackson" }
 jackson-datatype-guava = { module = "com.fasterxml.jackson.datatype:jackson-datatype-guava", version.ref = "jackson" }
@@ -56,13 +59,17 @@ jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
 junit-jupiter-impl = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+kotlin-compiler-embeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin-lang" }
 kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin-lang" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin-lang" }
-kotlin-logging = { module = "io.github.microutils:kotlin-logging", version.ref = "kotlin-logging" }
-kotlinpoet-poet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
-kotlinpoet-metadata = { module = "com.squareup:kotlinpoet-metadata", version.ref = "kotlinpoet" }
-kotlinpoet-metadataspecs = { module = "com.squareup:kotlinpoet-metadata-specs", version.ref = "kotlinpoet" }
-kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinx-serialization" }
+kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin-lang" }
+kotlin-gradleApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin-lang" }
+kotlin-allopen = { module = "org.jetbrains.kotlin:kotlin-allopen", version.ref = "kotlin-lang" }
+kotlin-logging = { module = "io.github.microutils:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+kotlinpoet-poet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet-poet" }
+kotlinpoet-metadata = { module = "com.squareup:kotlinpoet-metadata", version.ref = "kotlinpoet-poet" }
+kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf-jvm", version.ref = "kotlinx-serialization" }
+ktlint-gradle =  { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
 log4j-slf4j = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }
@@ -82,10 +89,10 @@ unsafe-accessor = { module = "io.github.karlatemp:unsafe-accessor", version.ref 
 
 [bundles]
 jackson = ["jackson-module-kotlin", "jackson-datatype-jdk8", "jackson-datatype-guava", "jackson-datatype-eclipse-collections"]
-javax-el = ["javax-el-api", "javax-el-impl"]
+jakarta-el = ["jakarta-el-api", "jakarta-el-impl"]
 logging = ["kotlin-logging", "slf4j"]
 log4j = ["log4j-api", "log4j-core", "log4j-slf4j", "log4j-jul"]
-el = ["javax-el-api", "javax-el-impl", "mvel"]
+el = ["jakarta-el-api", "jakarta-el-impl", "mvel"]
 netty = ["netty-all", "netty-epoll"]
 kotlin = ["kotlin-jvm", "kotlin-reflect"]
 akka = ["akka-typed-actor", "akka-typed-cluster", "akka-typed-serialization-jackson"]

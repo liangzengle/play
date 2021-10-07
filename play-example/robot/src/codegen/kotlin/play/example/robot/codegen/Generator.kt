@@ -74,9 +74,6 @@ object Generator {
     val typeSpecList = arrayListOf<TypeSpec>()
     val funSpecList = arrayListOf<FunSpec>()
     for (method in clazz.methods) {
-      if (method.returnType != RequestResult::class.java) {
-        continue
-      }
       val cmd = method.getAnnotation(Cmd::class.java) ?: continue
       val req = FunSpec.builder("${method.name}Req")
       req.addParameter("player", Types.RobotPlayer)

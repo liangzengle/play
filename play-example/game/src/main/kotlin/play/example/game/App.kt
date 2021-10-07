@@ -28,7 +28,7 @@ import kotlin.system.exitProcess
  */
 object App {
   init {
-    Thread.setDefaultUncaughtExceptionHandler(LoggingUncaughtExceptionHandler)
+    LoggingUncaughtExceptionHandler.setAsDefault()
     SystemProps.set("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager")
   }
 

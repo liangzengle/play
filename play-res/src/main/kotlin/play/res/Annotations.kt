@@ -73,10 +73,3 @@ annotation class SingletonResource
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 annotation class Extend(val table: KClass<out AbstractResource>)
-
-/**
- * 提供[NavigableResourceSet]的api
- */
-@Retention(AnnotationRetention.BINARY)
-@Target(AnnotationTarget.CLASS)
-annotation class ExposeNavigableApi

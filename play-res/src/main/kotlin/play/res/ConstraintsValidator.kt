@@ -1,11 +1,11 @@
 package play.res
 
+import jakarta.validation.Validation
 import org.hibernate.validator.HibernateValidatorFactory
 import play.Log
 import play.util.collection.filterDuplicated
 import play.util.reflect.Reflect
 import java.util.*
-import javax.validation.Validation
 
 internal class ConstraintsValidator(
   private val resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>

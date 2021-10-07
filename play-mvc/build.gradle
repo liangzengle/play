@@ -1,7 +1,7 @@
 plugins {
-    id 'org.jetbrains.kotlin.plugin.serialization' version "$kotlin_version"
+    id 'org.jetbrains.kotlin.plugin.serialization' version libs.versions.kotlin.lang
 }
 dependencies {
     api project(':play-core')
-    api "org.jetbrains.kotlinx:kotlinx-serialization-protobuf:$kotlinx_serialization_version"
+    api libs.kotlinx.serialization.protobuf
 }

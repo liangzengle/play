@@ -32,15 +32,16 @@ class Session(private val ch: Channel, val actorRef: ActorRef<SessionActor.Comma
   init {
     writer = if (flushIntervalMillis > 0) SessionWriter.WriteNoFlush(ch) else SessionWriter.WriteFlush(ch)
     if (writer is SessionWriter.WriteNoFlush) {
-      flushSchedule = ch.eventLoop()
+      val future = ch.eventLoop()
         .scheduleWithFixedDelay(
           { writer.flush() },
           flushIntervalMillis.toLong(),
           flushIntervalMillis.toLong(),
           TimeUnit.MILLISECONDS
         )
+      this.flushSchedule = future
       ch.closeFuture().addListener {
-        flushSchedule?.cancel(false)
+        future.cancel(false)
       }
     }
   }

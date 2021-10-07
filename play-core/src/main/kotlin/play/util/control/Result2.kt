@@ -4,9 +4,8 @@ import java.io.Serializable
 import java.util.*
 import play.util.unsafeCast
 
-@JvmInline
 @Suppress("UNCHECKED_CAST")
-value class Result2<out T>(private val value: Any) {
+class Result2<out T>(private val value: Any) {
 
   fun isOk() = value !is Err
 

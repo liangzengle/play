@@ -109,8 +109,8 @@ abstract class Scheduler(private val workerPool: Executor, val clock: Clock) {
     startTime: Optional<LocalDateTime>,
     endTime: Optional<LocalDateTime>
   ): Cancellable {
-    val sequenceGenerator = CronSequenceGenerator(cronExpr)
-    val trigger = PeriodCronTrigger(sequenceGenerator, startTime.getOrNull(), endTime.getOrNull())
+    val sequenceGenerator = CronExpression.parse(cronExpr)
+    val trigger = BoundedCronTrigger(sequenceGenerator, startTime.getOrNull(), endTime.getOrNull())
     return schedule(trigger, taskExecutor, task)
   }
 

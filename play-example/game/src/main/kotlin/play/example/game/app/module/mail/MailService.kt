@@ -122,7 +122,7 @@ class MailService @Inject constructor(
     if (mailCfgId != mailId) {
       Log.error { "找不到邮件模板: $mailId" }
     }
-    val mailConfig = MailResourceSet(mailCfgId)
+    val mailConfig = MailResourceSet.getOrThrow(mailCfgId)
     sendMail(self, Mail(mailConfig.title, mailConfig.content, rewards, source))
   }
 

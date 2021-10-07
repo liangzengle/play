@@ -17,7 +17,7 @@ object Scala {
 
   def vectorOf[T](elem: T): Vector[T] = Vector(elem)
 
-  def vectorOf[T <: AnyRef](elems: Array[T]): Vector[T] = Vector(elems: _*)
+  def vectorOf[T <: AnyRef](elems: Array[T]): Vector[T] = Vector(ArraySeq.unsafeWrapArray(elems): _*)
 
   def vectorOf[T](elems: java.lang.Iterable[T]): Vector[T] = elems.asScala.toVector
 
@@ -25,7 +25,7 @@ object Scala {
 
   def listOf[T](elem: T): List[T] = List(elem)
 
-  def listOf[T <: AnyRef](elems: Array[T]): List[T] = List(elems: _*)
+  def listOf[T <: AnyRef](elems: Array[T]): List[T] = List(ArraySeq.unsafeWrapArray(elems): _*)
 
   def listOf[T](elems: java.lang.Iterable[T]): List[T] = elems.asScala.toList
 
@@ -41,7 +41,7 @@ object Scala {
 
   def setOf[T](elem: T): Set[T] = Set(elem)
 
-  def setOf[T <: AnyRef](elems: Array[T]): Set[T] = Set(elems: _*)
+  def setOf[T <: AnyRef](elems: Array[T]): Set[T] = Set(ArraySeq.unsafeWrapArray(elems): _*)
 
   def setOf[T](elems: java.lang.Iterable[T]): Set[T] = elems.asScala.toSet
 

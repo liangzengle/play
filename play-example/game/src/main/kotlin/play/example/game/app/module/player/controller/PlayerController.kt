@@ -21,7 +21,7 @@ import javax.inject.Singleton
 @Named
 class PlayerController @Inject constructor(
   private val service: PlayerService,
-  private val gmCommandService: GmCommandService
+  private val gmCommandService: GmCommandService<Self>
 ) : AbstractController(ModuleId.Player) {
 
   @Cmd(1, dummy = true)

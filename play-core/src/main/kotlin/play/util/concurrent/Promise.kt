@@ -8,8 +8,7 @@ typealias PlayPromise<T> = Promise<T>
  * A wrapper of CompletableFuture
  * @author LiangZengle
  */
-@JvmInline
-value class Promise<T>(private val cf: CompletableFuture<T>) {
+class Promise<T>(private val cf: CompletableFuture<T>) {
 
   val future: Future<T> get() = Future(cf)
 

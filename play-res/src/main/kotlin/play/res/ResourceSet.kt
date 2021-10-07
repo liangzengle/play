@@ -28,8 +28,6 @@ interface ResourceSet<T : AbstractResource> {
 
   fun getOrNull(id: Int): T?
 
-  operator fun invoke(id: Int): T = getOrThrow(id)
-
   fun list(): List<T>
 
   fun reversedList(): List<T> = list().asReversed()

@@ -17,6 +17,7 @@ import play.util.forEach
 import play.util.unsafeCast
 import scala.concurrent.Promise
 import java.time.Duration
+import kotlin.system.exitProcess
 
 /**
  *
@@ -47,21 +48,26 @@ class GameServerManager(
   }
 
   private fun init(cmd: Init) {
-    val repository = containerRepositoryProvider.get()
-    repository
-      .listIds(GameServerEntity::class.java)
-      .onSuccess { serverIds ->
-        if (serverIds.isEmpty()) {
-          val conf = parentApplicationContext.getBean(Config::class.java)
-          val initialServerId = conf.getInt("play.initial-game-server-id")
-          self.tell(CreateGameServer(initialServerId, PlayPromise.make()))
-        } else {
-          serverIds.forEach(gameServerIds::add)
-          serverIds.forEach { serverId ->
-            self.tell(StartGameServer(serverId, PlayPromise.make()))
+    return try {
+      val repository = containerRepositoryProvider.get()
+      repository
+        .listIds(GameServerEntity::class.java)
+        .onSuccess { serverIds ->
+          if (serverIds.isEmpty()) {
+            val conf = parentApplicationContext.getBean(Config::class.java)
+            val initialServerId = conf.getInt("play.initial-game-server-id")
+            self.tell(CreateGameServer(initialServerId, PlayPromise.make()))
+          } else {
+            serverIds.forEach(gameServerIds::add)
+            serverIds.forEach { serverId ->
+              self.tell(StartGameServer(serverId, PlayPromise.make()))
+            }
           }
-        }
-      }.await(Duration.ofSeconds(10))
+        }.await(Duration.ofSeconds(10))
+    } catch (e: Throwable) {
+      log.error("游戏服初始化失败，关闭系统...", e)
+      exitProcess(-1)
+    }
   }
 
   private fun createGameServer(cmd: CreateGameServer) {

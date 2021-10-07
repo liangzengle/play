@@ -1,10 +1,10 @@
 package play.example.game.app.module.task.config
 
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotEmpty
 import play.example.game.app.module.reward.model.Reward
 import play.example.game.app.module.task.target.TaskTarget
 import play.res.AbstractResource
-import javax.validation.Valid
-import javax.validation.constraints.NotEmpty
 
 /**
  * 任务配置基类

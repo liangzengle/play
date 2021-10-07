@@ -6,7 +6,7 @@ import play.util.EmptyIntArray
 import play.util.EmptyLongArray
 import play.util.EmptyStringArray
 
-data class Request(@JvmField val header: Header, @JvmField val body: RequestBody) {
+data class Request(val header: Header, @JvmField val body: RequestBody) {
   fun msgId() = header.msgId.toInt()
 }
 
@@ -23,7 +23,7 @@ abstract class AbstractPlayerRequest(@JvmField val playerId: Long, @JvmField val
 class PlayerRequest(playerId: Long, request: Request) : AbstractPlayerRequest(playerId, request)
 
 class Response(
-  @JvmField val header: Header,
+  val header: Header,
   @JvmField val statusCode: Int,
   @JvmField val body: ByteArray = EmptyByteArray
 ) {

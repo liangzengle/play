@@ -27,7 +27,3 @@ task generateCaches(type: JavaExec) {
 }
 compileJava.dependsOn(generateCaches)
 compileKotlin.dependsOn(generateCaches)
-
-compileCodegenKotlin {
-    kotlinOptions.jvmTarget = "11"
-}

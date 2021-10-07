@@ -1,8 +1,8 @@
 package play.res.validation
 
+import jakarta.validation.Constraint
+import jakarta.validation.Payload
 import play.res.AbstractResource
-import javax.validation.Constraint
-import javax.validation.Payload
 import kotlin.reflect.KClass
 
 @Retention(AnnotationRetention.RUNTIME)

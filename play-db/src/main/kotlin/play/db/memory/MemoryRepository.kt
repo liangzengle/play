@@ -48,11 +48,6 @@ class MemoryRepository : Repository {
     return Future.successful(Unit)
   }
 
-  override fun <ID, E : Entity<ID>> deleteIfDeleted(id: ID, entityClass: Class<E>): Future<out Any> {
-    getMap(entityClass).remove(id)
-    return Future.successful(Unit)
-  }
-
   override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<out Any> {
     return Future.successful(Unit)
   }

@@ -43,23 +43,23 @@ object ClassUtil {
   }
 
   @JvmStatic
-  fun <T> loadClass(fqcn: String): Class<out T> {
-    return Class.forName(fqcn, true, null).unsafeCast()
+  fun <T> loadClass(qualifiedName: String): Class<out T> {
+    return loadClass(qualifiedName, javaClass.classLoader)
   }
 
   @JvmStatic
-  fun <T> loadClass(fqcn: String, classLoader: ClassLoader): Class<out T> {
-    return Class.forName(fqcn, true, classLoader).unsafeCast()
+  fun <T> loadClass(qualifiedName: String, classLoader: ClassLoader): Class<out T> {
+    return loadClass<T>(qualifiedName, true, classLoader).unsafeCast()
   }
 
   @JvmStatic
-  fun <T> loadClass(fqcn: String, initialize: Boolean): Class<out T> {
-    return Class.forName(fqcn, initialize, null).unsafeCast()
+  fun <T> loadClass(qualifiedName: String, initialize: Boolean): Class<out T> {
+    return loadClass<T>(qualifiedName, initialize, javaClass.classLoader).unsafeCast()
   }
 
   @JvmStatic
-  fun <T> loadClass(fqcn: String, initialize: Boolean, classLoader: ClassLoader): Class<out T> {
-    return Class.forName(fqcn, initialize, classLoader).unsafeCast()
+  fun <T> loadClass(qualifiedName: String, initialize: Boolean, classLoader: ClassLoader): Class<out T> {
+    return Class.forName(qualifiedName, initialize, classLoader).unsafeCast()
   }
 
   @JvmStatic

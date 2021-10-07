@@ -10,7 +10,9 @@ import java.util.*
 internal object ResourceHelper {
   private val idComparator = Comparator.comparingInt<AbstractResource> { it.id }
   private val keyComparator =
-    Comparator.comparing<AbstractResource, Comparable<*>> { it.unsafeCast<UniqueKey<*>>().key() }
+    Comparator.comparing<AbstractResource, Comparable<Comparable<*>>> {
+      it.unsafeCast<UniqueKey<*>>().key().unsafeCast()
+    }
 
 
   fun isSingletonResource(clazz: Class<*>): Boolean {

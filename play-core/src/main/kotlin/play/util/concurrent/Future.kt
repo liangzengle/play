@@ -12,8 +12,7 @@ typealias PlayFuture<T> = Future<T>
  * A wrapper of CompletableFuture
  * @author LiangZengle
  */
-@JvmInline
-value class Future<T>(private val cf: CompletableFuture<T>) {
+class Future<T>(private val cf: CompletableFuture<T>) {
 
   fun toJava(): CompletableFuture<T> = cf
 
