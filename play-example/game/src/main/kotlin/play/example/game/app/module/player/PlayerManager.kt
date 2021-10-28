@@ -15,7 +15,7 @@ import play.example.game.app.module.player.domain.PlayerErrorCode
 import play.example.game.app.module.player.event.PlayerEvent
 import play.example.game.app.module.player.event.PlayerEventDispatcher
 import play.example.game.app.module.player.event.PromisedPlayerEvent
-import play.example.game.app.module.task.TaskEventReceiver
+import play.example.game.app.module.playertask.PlayerTaskEventReceiver
 import play.example.game.container.gs.logging.ActorMdc
 import play.example.game.container.net.Session
 import play.mvc.Request
@@ -31,7 +31,7 @@ class PlayerManager(
   private val playerService: PlayerService,
   private val requestHandler: PlayerRequestHandler,
   cronScheduler: ActorCronScheduler<Command>,
-  private val taskEventReceiver: TaskEventReceiver,
+  private val taskEventReceiver: PlayerTaskEventReceiver,
   private val actorMdc: ActorMdc
 ) : AbstractTypedActor<PlayerManager.Command>(context) {
 
@@ -122,7 +122,7 @@ class PlayerManager(
       playerService: PlayerService,
       requestHandler: PlayerRequestHandler,
       scheduler: Scheduler,
-      taskEventReceiver: TaskEventReceiver,
+      taskEventReceiver: PlayerTaskEventReceiver,
       actorMdc: ActorMdc
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->

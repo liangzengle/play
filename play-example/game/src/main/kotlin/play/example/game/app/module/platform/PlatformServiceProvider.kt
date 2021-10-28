@@ -1,17 +1,14 @@
 package play.example.game.app.module.platform
 
+import org.springframework.stereotype.Component
 import play.example.game.app.module.platform.domain.Platform
 import play.util.collection.toImmutableEnumMap
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  * Created by liang on 2020/6/27.
  */
-@Singleton
-@Named
-class PlatformServiceProvider @Inject constructor(serviceList: List<PlatformService>) {
+@Component
+class PlatformServiceProvider(serviceList: List<PlatformService>) {
 
   private val services = serviceList.toImmutableEnumMap { it.platform }
 

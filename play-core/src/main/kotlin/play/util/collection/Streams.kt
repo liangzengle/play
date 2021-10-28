@@ -1,11 +1,9 @@
 package play.util.collection
 
 import com.google.common.collect.ImmutableMap
-import java.util.function.Function
 import play.util.unsafeCast
-import java.util.stream.Collector
+import java.util.function.Function
 import java.util.stream.Collectors
-import java.util.stream.IntStream
 import java.util.stream.Stream
 
 fun <K, V> Stream<Pair<K, V>>.toMap(): Map<K, V> {

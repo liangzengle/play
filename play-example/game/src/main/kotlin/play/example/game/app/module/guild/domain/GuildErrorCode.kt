@@ -1,8 +1,8 @@
 package play.example.game.app.module.guild.domain
 
 import play.example.common.ModularCode
-import play.example.game.app.module.ModuleId
 import play.example.common.StatusCode
+import play.example.game.app.module.ModuleId
 
 /**
  * 工会错误码

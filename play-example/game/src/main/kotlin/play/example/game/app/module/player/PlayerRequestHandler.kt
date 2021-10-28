@@ -1,6 +1,7 @@
 package play.example.game.app.module.player
 
 import akka.actor.typed.ActorRef
+import org.springframework.stereotype.Component
 import play.example.common.StatusCode
 import play.example.game.app.ControllerInvokerManager
 import play.example.game.container.net.Session
@@ -9,17 +10,13 @@ import play.util.control.getCause
 import play.util.exception.isFatal
 import play.util.function.IntIntPredicate
 import play.util.logging.getLogger
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  * 玩家请求处理
  * @author LiangZengle
  */
-@Singleton
-@Named
-class PlayerRequestHandler @Inject constructor(private val controllerInvokerManager: ControllerInvokerManager) {
+@Component
+class PlayerRequestHandler(private val controllerInvokerManager: ControllerInvokerManager) {
 
   private val logger = getLogger()
 

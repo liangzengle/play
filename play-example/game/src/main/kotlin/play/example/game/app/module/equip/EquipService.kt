@@ -1,14 +1,12 @@
 package play.example.game.app.module.equip
 
+import org.springframework.stereotype.Component
 import play.example.common.StatusCode
 import play.example.game.app.module.player.Self
 import play.util.control.Result2
 import play.util.control.ok
-import javax.inject.Named
-import javax.inject.Singleton
 
-@Singleton
-@Named
+@Component
 class EquipService {
 
   fun putOn(self: Self, equipUid: Int, pos: Int) = StatusCode.Failure

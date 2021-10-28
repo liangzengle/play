@@ -1,11 +1,12 @@
 package play.example.game.app.module.mail
 
 import org.springframework.beans.factory.BeanFactory
+import org.springframework.stereotype.Component
 import play.Log
-import play.example.game.app.module.common.config.CommonSettingConf
-import play.example.game.app.module.mail.config.MailResourceSet
+import play.example.game.app.module.common.res.CommonSettingConf
 import play.example.game.app.module.mail.entity.*
 import play.example.game.app.module.mail.event.PlayerMailEvent
+import play.example.game.app.module.mail.res.MailResourceSet
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.player.condition.PlayerConditionService
 import play.example.game.app.module.player.event.*
@@ -15,13 +16,9 @@ import play.example.game.container.net.Session
 import play.spring.OrderedSmartInitializingSingleton
 import play.util.time.Time.currentMillis
 import java.util.function.Predicate
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
-@Singleton
-@Named
-class MailService @Inject constructor(
+@Component
+class MailService(
   private val publicMailCache: PublicMailEntityCache,
   private val playerMailIdEntityCache: PlayerMailIdEntityCache,
   private val playerMailCache: PlayerMailEntityCache,

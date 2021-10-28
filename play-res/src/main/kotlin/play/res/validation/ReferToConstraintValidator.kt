@@ -3,7 +3,7 @@ package play.res.validation
 import jakarta.validation.ConstraintValidatorContext
 import play.res.AbstractResource
 
-class ReferToConstraintValidator : ConfigConstraintValidator<ReferTo, Int>() {
+class ReferToConstraintValidator : ResourceConstraintValidator<ReferTo, Int>() {
 
   private lateinit var referToResource: Class<out AbstractResource>
 

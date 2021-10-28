@@ -12,8 +12,8 @@ import play.example.common.StatusCode
 import play.example.game.app.module.account.entity.AccountEntityCache
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.PlayerManager
+import play.example.game.app.module.player.PlayerModule
 import play.example.game.app.module.player.PlayerService
-import play.example.game.app.module.player.controller.PlayerModule
 import play.example.game.container.net.Session
 import play.example.game.container.net.SessionActor
 import play.mvc.Request

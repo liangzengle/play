@@ -10,7 +10,6 @@ import kotlinx.serialization.protobuf.ProtoBuf
 import play.Log
 import play.akka.AbstractTypedActor
 import play.akka.send
-import play.example.game.app.module.account.controller.AccountModule
 import play.example.game.app.module.account.domain.AccountErrorCode
 import play.example.game.app.module.account.entity.Account
 import play.example.game.app.module.account.entity.AccountEntityCache

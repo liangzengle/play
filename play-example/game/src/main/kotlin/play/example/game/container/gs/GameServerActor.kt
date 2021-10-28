@@ -17,7 +17,7 @@ import play.akka.stoppedBehavior
 import play.db.DatabaseNameProvider
 import play.example.game.app.GameApp
 import play.example.game.app.module.platform.domain.Platform
-import play.example.game.app.module.server.config.ServerConfig
+import play.example.game.app.module.server.res.ServerConfig
 import play.example.game.container.gs.domain.GameServerId
 import play.example.game.container.gs.logging.ActorMdc
 import play.res.ResourceManager

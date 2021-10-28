@@ -1,16 +1,14 @@
 package play.example.game.app.module.item
 
+import org.springframework.stereotype.Component
 import play.example.game.app.module.player.Self
 import play.example.game.container.gm.GmCommandModule
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  * 物品GM
  * @author LiangZengle
  */
-@Singleton
-@Named
+@Component
 class ItemGM : GmCommandModule() {
   override val name: String get() = "Item"
 

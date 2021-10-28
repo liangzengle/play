@@ -1,20 +1,17 @@
 package play.example.game.app.module.reward
 
+import org.springframework.stereotype.Component
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.player.args.PlayerArgProvider
 import play.example.game.app.module.player.args.PlayerArgs
-import play.example.game.app.module.reward.config.RawReward
 import play.example.game.app.module.reward.model.Reward
+import play.example.game.app.module.reward.res.RawReward
 import play.inject.PlayInjector
 import play.util.collection.toImmutableMap
 import play.util.unsafeLazy
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
-@Singleton
-@Named
-class RawRewardConverter @Inject constructor(private val injector: PlayInjector) {
+@Component
+class RawRewardConverter(private val injector: PlayInjector) {
   private val playerArgProviders by unsafeLazy {
     injector.getInstancesOfType(PlayerArgProvider::class.java).toImmutableMap { it.key }
   }

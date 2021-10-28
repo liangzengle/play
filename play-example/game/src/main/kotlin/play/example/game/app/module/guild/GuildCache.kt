@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.example.common.id.GameUIDGenerator
 import play.example.game.app.module.guild.entity.GuildEntityCache
-import play.example.game.app.module.server.config.ServerConfig
+import play.example.game.app.module.server.res.ServerConfig
 import play.spring.OrderedSmartInitializingSingleton
 import play.util.collection.ConcurrentLongLongMap
 import java.util.*

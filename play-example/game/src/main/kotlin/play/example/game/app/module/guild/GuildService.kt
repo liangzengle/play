@@ -2,19 +2,16 @@ package play.example.game.app.module.guild
 
 import akka.actor.typed.ActorRef
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.stereotype.Component
 import play.example.game.app.module.guild.entity.GuildEntityCache
 import play.util.unsafeLazy
 import java.util.*
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  * 工会模块逻辑处理
  */
-@Singleton
-@Named
-class GuildService @Inject constructor(
+@Component
+class GuildService(
   private val guildManagerProvider: ObjectProvider<ActorRef<GuildManager.Command>>,
   private val guildEntityCache: GuildEntityCache,
   private val guildCache: GuildCache

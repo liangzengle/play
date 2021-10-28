@@ -1,9 +1,9 @@
 package play.example.game.app.module.reward.json
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import play.example.game.app.module.reward.config.RawReward
 import play.example.game.app.module.reward.model.Reward
 import play.example.game.app.module.reward.model.RewardType
+import play.example.game.app.module.reward.res.RawReward
 import play.util.json.AbstractTypeResolver
 
 class RawRewardTypeResolver : AbstractTypeResolver<RawReward>() {

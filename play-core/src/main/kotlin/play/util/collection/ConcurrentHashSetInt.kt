@@ -1,9 +1,9 @@
 package play.util.collection
 
+import org.jctools.maps.NonBlockingSetInt
 import java.util.*
 import java.util.stream.IntStream
 import java.util.stream.StreamSupport
-import org.jctools.maps.NonBlockingSetInt
 
 class ConcurrentHashSetInt : MutableSetInt {
   @Transient

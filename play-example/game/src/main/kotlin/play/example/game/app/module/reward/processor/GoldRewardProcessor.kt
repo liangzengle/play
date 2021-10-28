@@ -1,12 +1,10 @@
 package play.example.game.app.module.reward.processor
 
+import org.springframework.stereotype.Component
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.reward.model.RewardType
-import javax.inject.Named
-import javax.inject.Singleton
 
-@Singleton
-@Named
+@Component
 class GoldRewardProcessor : CurrencyRewardProcessor(RewardType.Gold) {
   override fun getValue(self: Self): Long {
     TODO("Not yet implemented")

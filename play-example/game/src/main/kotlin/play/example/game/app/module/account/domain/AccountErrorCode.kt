@@ -1,8 +1,8 @@
 package play.example.game.app.module.account.domain
 
 import play.example.common.ModularCode
-import play.example.game.app.module.ModuleId
 import play.example.common.StatusCode
+import play.example.game.app.module.ModuleId
 
 /**
  * 账号相关错误码

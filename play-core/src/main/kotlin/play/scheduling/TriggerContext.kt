@@ -5,6 +5,7 @@ import java.time.LocalDateTime
 
 interface TriggerContext {
   val clock: Clock
+
   /**
    * Return the last <i>scheduled</i> execution time of the task,
    * or `null` if not scheduled before.
@@ -31,7 +32,7 @@ internal class SimpleTriggerContext(
   @Volatile private var lastCompletionTime: LocalDateTime?
 ) : TriggerContext {
 
-  constructor(clock: Clock) : this(clock,null, null, null)
+  constructor(clock: Clock) : this(clock, null, null, null)
 
   fun update(
     lastScheduledExecutionTime: LocalDateTime?,

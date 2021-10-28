@@ -2,8 +2,8 @@ package play.net.netty
 
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
-import play.util.logging.getLogger
 import play.net.NetServer
+import play.util.logging.getLogger
 
 class NettyServer(
   val name: String,

@@ -1,7 +1,6 @@
 package play.example.common.akka
 
 import akka.actor.typed.ActorSystem
-import akka.actor.typed.javadsl.*
 import com.typesafe.config.Config
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

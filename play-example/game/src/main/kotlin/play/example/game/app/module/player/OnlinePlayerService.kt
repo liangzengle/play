@@ -1,6 +1,7 @@
 package play.example.game.app.module.player
 
 import org.jctools.maps.NonBlockingHashMapLong
+import org.springframework.stereotype.Component
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.domain.OnlinePlayer
 import play.example.game.container.net.Session
@@ -13,13 +14,9 @@ import java.util.*
 import java.util.function.LongConsumer
 import java.util.stream.LongStream
 import java.util.stream.StreamSupport
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
-@Singleton
-@Named
-class OnlinePlayerService @Inject constructor(private val scheduler: Scheduler) {
+@Component
+class OnlinePlayerService(private val scheduler: Scheduler) {
 
   private val onlinePlayers = NonBlockingHashMapLong<OnlinePlayer>()
 

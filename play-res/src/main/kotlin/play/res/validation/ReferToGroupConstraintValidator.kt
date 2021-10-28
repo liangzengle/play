@@ -4,7 +4,7 @@ import jakarta.validation.ConstraintValidatorContext
 import play.res.AbstractResource
 import play.res.GroupedResourceSet
 
-class ReferToGroupConstraintValidator : ConfigConstraintValidator<ReferToGroup, Any>() {
+class ReferToGroupConstraintValidator : ResourceConstraintValidator<ReferToGroup, Any>() {
 
   private lateinit var referToResource: Class<out AbstractResource>
 

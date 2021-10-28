@@ -1,20 +1,17 @@
 package play.example.game.app.module.item
 
-import play.example.game.app.module.item.config.ItemResourceSet
+import org.springframework.stereotype.Component
 import play.example.game.app.module.item.domain.ItemType
+import play.example.game.app.module.item.res.ItemResourceSet
 import play.example.game.app.module.player.Self
 import play.util.control.Result2
 import play.util.control.ok
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  * 物品模块逻辑处理
  */
-@Singleton
-@Named
-class ItemService @Inject constructor() {
+@Component
+class ItemService() {
 
   fun test() {
     ItemResourceSet.getGroupOrThrow(ItemType.Normal).list()

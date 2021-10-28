@@ -1,6 +1,7 @@
 package play.example.game.app.module.reward
 
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
+import org.springframework.stereotype.Component
 import play.example.common.StatusCode
 import play.example.game.app.module.mail.MailService
 import play.example.game.app.module.player.Self
@@ -13,13 +14,9 @@ import play.util.control.err
 import play.util.control.map
 import play.util.control.ok
 import play.util.logging.getLogger
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
-@Singleton
-@Named
-class RewardService @Inject constructor(
+@Component
+class RewardService(
   private val mailService: MailService,
   processorList: List<RewardProcessor<Reward>>
 ) {

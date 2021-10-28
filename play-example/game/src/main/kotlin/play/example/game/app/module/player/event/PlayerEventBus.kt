@@ -2,18 +2,15 @@ package play.example.game.app.module.player.event
 
 import akka.actor.typed.ActorRef
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.stereotype.Component
 import play.example.game.app.module.player.OnlinePlayerService
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.task.event.TaskEvent
 import java.util.function.LongFunction
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
-@Singleton
-@Named
-class PlayerEventBus @Inject constructor(
+@Component
+class PlayerEventBus(
   private val playerManager: ObjectProvider<ActorRef<PlayerManager.Command>>,
   private val onlinePlayerService: OnlinePlayerService,
   private val dispatcher: ObjectProvider<PlayerEventDispatcher>

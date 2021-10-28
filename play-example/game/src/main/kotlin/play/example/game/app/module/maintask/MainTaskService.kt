@@ -1,40 +1,37 @@
 package play.example.game.app.module.maintask
 
-import play.example.game.app.module.maintask.config.MainTaskResource
-import play.example.game.app.module.maintask.config.MainTaskResourceSet
+import org.springframework.stereotype.Component
 import play.example.game.app.module.maintask.domain.MainTaskErrorCode
 import play.example.game.app.module.maintask.domain.MainTaskLogSource
 import play.example.game.app.module.maintask.entity.MainTaskEntityCache
 import play.example.game.app.module.maintask.entity.PlayerMainTask
+import play.example.game.app.module.maintask.res.MainTaskResource
+import play.example.game.app.module.maintask.res.MainTaskResourceSet
 import play.example.game.app.module.player.Self
-import play.example.game.app.module.task.AbstractTaskService
+import play.example.game.app.module.playertask.AbstractPlayerTaskService
+import play.example.game.app.module.playertask.message.TaskInfo
 import play.example.game.app.module.task.domain.TaskErrorCode
 import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.event.TaskEvent
-import play.example.game.app.module.task.message.TaskInfo
 import play.util.filterOrNull
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  * 主线任务模块逻辑处理
  */
-@Singleton
-@Named
-public class MainTaskService @Inject constructor(
+@Component
+public class MainTaskService(
   private val mainTaskEntityCache: MainTaskEntityCache
-) : AbstractTaskService<PlayerMainTask, MainTaskResource>() {
+) : AbstractPlayerTaskService<PlayerMainTask, MainTaskResource>() {
 
   /**
    * 添加任务
    *
    * @param self 自己
-   * @param playerTask 新任务
+   * @param task 新任务
    */
-  override fun addPlayerTask(self: Self, playerTask: PlayerMainTask) {
+  override fun addTask(self: Self, task: PlayerMainTask) {
     val entity = mainTaskEntityCache.getOrCreate(self.id)
-    entity.task = playerTask
+    entity.task = task
   }
 
   /**
@@ -44,7 +41,7 @@ public class MainTaskService @Inject constructor(
    * @param taskConf 任务配置
    * @return PlayerTask
    */
-  override fun createPlayerTask(self: Self, taskConf: MainTaskResource): PlayerMainTask {
+  override fun createTask(self: Self, taskConf: MainTaskResource): PlayerMainTask {
     return PlayerMainTask(taskConf.id)
   }
 
@@ -55,7 +52,7 @@ public class MainTaskService @Inject constructor(
    * @param taskId 任务id
    * @return PlayerTask?
    */
-  override fun getPlayerTask(self: Self, taskId: Int): PlayerMainTask? {
+  override fun getTask(self: Self, taskId: Int): PlayerMainTask? {
     return mainTaskEntityCache.getOrNull(self.id)?.task
   }
 

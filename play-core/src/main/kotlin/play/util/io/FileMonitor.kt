@@ -1,12 +1,12 @@
 package play.util.io
 
+import play.util.logging.getLogger
 import java.io.File
 import java.io.IOException
 import java.nio.file.*
 import java.util.stream.Stream
 import kotlin.concurrent.thread
 import kotlin.math.max
-import play.util.logging.getLogger
 
 open class FileMonitor internal constructor(
   val root: File,

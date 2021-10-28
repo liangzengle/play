@@ -69,7 +69,7 @@ kotlin-logging = { module = "io.github.microutils:kotlin-logging-jvm", version.r
 kotlinpoet-poet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet-poet" }
 kotlinpoet-metadata = { module = "com.squareup:kotlinpoet-metadata", version.ref = "kotlinpoet-poet" }
 kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf-jvm", version.ref = "kotlinx-serialization" }
-ktlint-gradle =  { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint" }
+ktlint-gradle = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlint" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
 log4j-slf4j = { module = "org.apache.logging.log4j:log4j-slf4j-impl", version.ref = "log4j" }

@@ -1,4 +1,5 @@
 @file:JvmName("ConfigUtil")
+
 package play.util
 
 import com.typesafe.config.Config

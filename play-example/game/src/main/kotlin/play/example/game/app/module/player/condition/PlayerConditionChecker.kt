@@ -1,14 +1,12 @@
 package play.example.game.app.module.player.condition
 
+import org.springframework.stereotype.Component
 import play.example.common.StatusCode
 import play.example.game.app.module.player.Self
 import play.util.collection.toImmutableMap
 import play.util.control.Result2
 import play.util.reflect.Reflect
 import play.util.unsafeCast
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  *
@@ -23,9 +21,8 @@ abstract class PlayerConditionChecker<T>(@JvmField val type: PlayerConditionType
   abstract fun check(self: Self, condition: T): Result2<Nothing>
 }
 
-@Singleton
-@Named
-class PlayerConditionService @Inject constructor(checkers: List<PlayerConditionChecker<out PlayerCondition>>) {
+@Component
+class PlayerConditionService(checkers: List<PlayerConditionChecker<out PlayerCondition>>) {
   private val checkerMap =
     checkers.toImmutableMap({ it.type }, { it.unsafeCast<PlayerConditionChecker<PlayerCondition>>() })
 

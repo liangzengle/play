@@ -70,7 +70,10 @@ class EclipseCollectionsPreferImmutableModule : Module() {
     val primitiveDeserializersField =
       EclipseCollectionsDeserializers::class.java.getDeclaredField("PRIMITIVE_DESERIALIZERS")
     val primitiveDeserializers =
-      Reflect.getFieldValue<MutableMap<Class<out PrimitiveIterable>, JsonDeserializer<*>>>(primitiveDeserializersField, null)!!
+      Reflect.getFieldValue<MutableMap<Class<out PrimitiveIterable>, JsonDeserializer<*>>>(
+        primitiveDeserializersField,
+        null
+      )!!
     replaceCollectionDeserializer(primitiveDeserializers)
 
     val entriesField = EclipseMapDeserializers::class.java.getDeclaredField("ENTRIES")

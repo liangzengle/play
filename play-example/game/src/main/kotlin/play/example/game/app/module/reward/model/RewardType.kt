@@ -1,9 +1,9 @@
 package play.example.game.app.module.reward.model
 
-import play.example.game.app.module.reward.config.CurrencyRawReward
-import play.example.game.app.module.reward.config.ItemRawReward
-import play.example.game.app.module.reward.config.NonRawReward
-import play.example.game.app.module.reward.config.RawReward
+import play.example.game.app.module.reward.res.CurrencyRawReward
+import play.example.game.app.module.reward.res.ItemRawReward
+import play.example.game.app.module.reward.res.NonRawReward
+import play.example.game.app.module.reward.res.RawReward
 import play.util.enumration.IdEnum
 import play.util.enumration.IdEnumOps
 import play.util.enumration.idEnumOpsOf

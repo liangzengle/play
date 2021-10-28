@@ -3,7 +3,6 @@ package play.example.game.app.module.reward.model
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.ArrayNode
 import com.google.common.collect.ImmutableList
 import jakarta.validation.Valid
 import play.example.game.app.module.reward.RewardHelper

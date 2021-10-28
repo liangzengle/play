@@ -9,12 +9,12 @@ import play.akka.AbstractTypedActor
 import play.akka.accept
 import play.akka.sameBehavior
 import play.example.game.app.module.ModuleId
-import play.example.game.app.module.guild.config.GuildSettingConf
 import play.example.game.app.module.guild.domain.GuildErrorCode
 import play.example.game.app.module.guild.domain.GuildLogSource
 import play.example.game.app.module.guild.entity.GuildEntity
 import play.example.game.app.module.guild.entity.GuildEntityCache
 import play.example.game.app.module.guild.message.*
+import play.example.game.app.module.guild.res.GuildSettingConf
 import play.example.game.app.module.player.PlayerRequestHandler
 import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.reward.model.CostResultSet

@@ -1,5 +1,6 @@
 package play.example.game.app.module.reward
 
+import org.springframework.stereotype.Component
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.player.event.PlayerEventListener
 import play.example.game.app.module.player.event.PlayerEventReceive
@@ -7,17 +8,13 @@ import play.example.game.app.module.player.event.PlayerEventReceiveBuilder
 import play.example.game.app.module.player.event.PlayerExecCost
 import play.example.game.app.module.reward.model.CostList
 import play.util.control.peek
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  * 玩家的奖励/消耗处理
  * @author LiangZengle
  */
-@Singleton
-@Named
-class PlayerRewardService @Inject constructor(
+@Component
+class PlayerRewardService(
   private val rewardService: RewardService
 ) : PlayerEventListener {
   override fun playerEventReceive(): PlayerEventReceive {

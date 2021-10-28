@@ -118,7 +118,8 @@ object ImplementFunctions : EntityCacheComponent() {
           .addStatement("val opt = getCached(id)")
           .beginControlFlow("if (!opt.isPresent)")
           .addStatement(
-            """throw IllegalStateException("${'$'}{entityClass.simpleName}(${'$'}id)保存失败，与缓存中的对象不一致")""")
+            """throw IllegalStateException("${'$'}{entityClass.simpleName}(${'$'}id)保存失败，与缓存中的对象不一致")"""
+          )
           .nextControlFlow("else")
           .addStatement("persistService.update(opt.get())")
           .endControlFlow()

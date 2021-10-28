@@ -1,13 +1,13 @@
 package play.scala
 
-import java.time.Duration
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
 import play.scala.collection.Scala
 import play.util.concurrent.PlayFuture
 import scala.compat.java8.FutureConverters
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import java.time.Duration
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 
 typealias ScalaFuture<T> = Future<T>
 

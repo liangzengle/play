@@ -1,20 +1,17 @@
 package play.example.game.app.module.guild
 
+import org.springframework.stereotype.Component
 import play.example.game.app.module.ModuleId
 import play.example.game.app.module.guild.message.GuildInfo
 import play.mvc.*
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  * 工会模块请求处理
  */
 @GeneratePlayerRequestMessage(GuildManager.Command::class)
-@Singleton
-@Named
+@Component
 @Controller(ModuleId.Guild)
-public class GuildController @Inject constructor(
+public class GuildController(
   private val guildService: GuildService
 ) : AbstractController(ModuleId.Guild) {
 

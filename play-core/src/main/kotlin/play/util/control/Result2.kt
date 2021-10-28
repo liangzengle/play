@@ -1,8 +1,8 @@
 package play.util.control
 
+import play.util.unsafeCast
 import java.io.Serializable
 import java.util.*
-import play.util.unsafeCast
 
 @Suppress("UNCHECKED_CAST")
 class Result2<out T>(private val value: Any) {

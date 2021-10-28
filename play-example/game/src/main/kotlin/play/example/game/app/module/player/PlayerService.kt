@@ -1,6 +1,7 @@
 package play.example.game.app.module.player
 
 import mu.KLogging
+import org.springframework.stereotype.Component
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.entity.PlayerEntity
 import play.example.game.app.module.player.entity.PlayerEntityCache
@@ -18,13 +19,9 @@ import play.util.time.Time.currentMillis
 import play.util.time.Time.isCurrentMonth
 import play.util.time.Time.isCurrentWeek
 import play.util.time.Time.isToday
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
-@Singleton
-@Named
-class PlayerService @Inject constructor(
+@Component
+class PlayerService(
   private val eventBus: PlayerEventBus,
   private val playerCache: PlayerEntityCache,
   private val playerInfoCache: PlayerInfoEntityCache,

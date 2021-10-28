@@ -9,7 +9,7 @@ import play.util.control.Result2
  */
 sealed class RequestResult<out T> {
 
-  data class Normal<T>(val code: Int, val value: T?): RequestResult<T>()
+  data class Normal<T>(val code: Int, val value: T?) : RequestResult<T>()
 
   object None : RequestResult<Unit>()
 

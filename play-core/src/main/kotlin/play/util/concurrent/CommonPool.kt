@@ -7,5 +7,5 @@ import java.util.concurrent.ForkJoinPool
  * @author LiangZengle
  */
 object CommonPool : ExecutorService by ForkJoinPool.commonPool() {
-  
+
 }

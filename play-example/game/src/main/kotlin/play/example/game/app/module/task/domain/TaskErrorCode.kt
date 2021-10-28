@@ -12,7 +12,7 @@ abstract class TaskErrorCode(moduleId: Short) : StatusCode(moduleId) {
   /**
    * 任务不存在
    */
-  abstract val PlayerTaskNotExist: Result2<Nothing>
+  abstract val TaskNotExist: Result2<Nothing>
 
   /**
    * 任务奖励已领取

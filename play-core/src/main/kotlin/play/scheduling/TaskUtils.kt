@@ -30,7 +30,7 @@ import play.util.exception.rethrow
  * @author Juergen Hoeller
  * @since 3.0
  */
-internal object  TaskUtils {
+internal object TaskUtils {
   /**
    * An ErrorHandler strategy that will log the Exception but perform
    * no further handling. This will suppress the error so that

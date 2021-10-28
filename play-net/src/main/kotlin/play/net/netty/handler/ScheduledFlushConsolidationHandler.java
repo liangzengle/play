@@ -86,7 +86,7 @@ public class ScheduledFlushConsolidationHandler extends ChannelDuplexHandler {
     /**
      * Create new instance.
      *
-     * @param explicitFlushAfterFlushes the number of flushes after which an explicit flush will be done.
+     * @param explicitFlushAfterFlushes       the number of flushes after which an explicit flush will be done.
      * @param consolidateWhenNoReadInProgress whether to consolidate flushes even when no read loop is currently
      *                                        ongoing.
      */
@@ -97,10 +97,10 @@ public class ScheduledFlushConsolidationHandler extends ChannelDuplexHandler {
     /**
      * Create new instance.
      *
-     * @param explicitFlushAfterFlushes the number of flushes after which an explicit flush will be done.
+     * @param explicitFlushAfterFlushes       the number of flushes after which an explicit flush will be done.
      * @param consolidateWhenNoReadInProgress whether to consolidate flushes even when no read loop is currently
      *                                        ongoing.
-     * @param flushDelayMillis flush delay when consolidateWhenNoReadInProgress is true
+     * @param flushDelayMillis                flush delay when consolidateWhenNoReadInProgress is true
      */
     public ScheduledFlushConsolidationHandler(int explicitFlushAfterFlushes, boolean consolidateWhenNoReadInProgress, int flushDelayMillis) {
         this.explicitFlushAfterFlushes =

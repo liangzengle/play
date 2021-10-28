@@ -4,15 +4,16 @@ import com.google.common.eventbus.Subscribe
 import org.eclipse.collections.api.set.primitive.ImmutableIntSet
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.eclipse.collections.impl.factory.primitive.IntSets
+import org.springframework.stereotype.Component
 import play.db.QueryService
 import play.event.EventBus
 import play.example.game.app.module.platform.domain.Platform
 import play.example.game.app.module.player.event.PlayerEventBus
-import play.example.game.app.module.server.config.ServerConfig
 import play.example.game.app.module.server.entity.Server
 import play.example.game.app.module.server.entity.ServerEntityCache
 import play.example.game.app.module.server.event.ServerOpenEvent
 import play.example.game.app.module.server.event.ServerOpenPlayerEvent
+import play.example.game.app.module.server.res.ServerConfig
 import play.inject.SpringPlayInjector
 import play.util.classOf
 import play.util.max
@@ -21,14 +22,10 @@ import play.util.time.Time.betweenDays
 import play.util.time.Time.currentDate
 import play.util.time.Time.currentDateTime
 import java.time.LocalDate
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 import kotlin.time.seconds
 
-@Singleton
-@Named
-class ServerService @Inject constructor(
+@Component
+class ServerService(
   queryService: QueryService,
   private val serverCache: ServerEntityCache,
   private val conf: ServerConfig,

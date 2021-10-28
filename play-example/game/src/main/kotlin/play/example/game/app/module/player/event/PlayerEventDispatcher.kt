@@ -3,6 +3,7 @@ package play.example.game.app.module.player.event
 import com.google.common.collect.ImmutableListMultimap
 import com.google.common.collect.ImmutableMap
 import org.springframework.beans.factory.BeanFactory
+import org.springframework.stereotype.Component
 import play.example.game.app.module.player.Self
 import play.inject.PlayInjector
 import play.spring.OrderedSmartInitializingSingleton
@@ -12,13 +13,9 @@ import play.util.isAbstract
 import play.util.isAssignableFrom
 import play.util.logging.getLogger
 import play.util.unsafeCast
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
-@Singleton
-@Named
-class PlayerEventDispatcher @Inject constructor(private val injector: PlayInjector) :
+@Component
+class PlayerEventDispatcher(private val injector: PlayInjector) :
   OrderedSmartInitializingSingleton {
   private val logger = getLogger()
 

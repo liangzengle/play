@@ -79,7 +79,7 @@ private class ImpossibleDeserializer(javaType: JavaType) : StdDeserializer<Any>(
 
   override fun createContextual(ctxt: DeserializationContext, property: BeanProperty): JsonDeserializer<*> {
     if (property !is FieldProperty) {
-      throw IllegalStateException("")
+      throw IllegalStateException()
     }
     val member = property.member.member
     throw IllegalResourceFieldTypeException("集合字段类型应声明为接口类型: ${member.declaringClass.name}.${member.name}")

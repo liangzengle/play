@@ -1,21 +1,19 @@
 package play.example.game.app.module.reward.processor
 
+import org.springframework.stereotype.Component
 import play.example.common.StatusCode
-import play.example.game.app.module.item.config.ItemResourceSet
 import play.example.game.app.module.item.domain.ItemType
+import play.example.game.app.module.item.res.ItemResourceSet
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.reward.model.*
 import play.util.control.Result2
 import play.util.control.ok
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  *
  * @author LiangZengle
  */
-@Singleton
-@Named
+@Component
 class ItemRewardProcessor : RewardProcessor<ItemReward>(RewardType.Item) {
 
   override fun transform(self: Self, reward: ItemReward): List<Reward>? {

@@ -8,7 +8,6 @@ import play.net.http.BasicHttpRequest
 import play.net.http.HttpParameters
 import play.util.toOptional
 import java.util.*
-import kotlin.NoSuchElementException
 
 class BasicNettyHttpRequest internal constructor(
   val id: Long,

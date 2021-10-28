@@ -1,6 +1,7 @@
 package play.example.game.app.module.player.scheduling
 
 import org.jctools.maps.NonBlockingHashMapLong
+import org.springframework.stereotype.Component
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.player.event.PlayerEvent
 import play.example.game.app.module.player.event.PlayerEventBus
@@ -12,17 +13,13 @@ import play.util.time.Time.toMillis
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  * 玩家定时器
  * @author LiangZengle
  */
-@Singleton
-@Named
-class PlayerScheduler @Inject constructor(
+@Component
+class PlayerScheduler(
   private val scheduler: Scheduler,
   private val playerEventBus: PlayerEventBus
 ) {

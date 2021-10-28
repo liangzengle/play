@@ -48,7 +48,7 @@ class AccountIdCache @Autowired constructor(
     }
     idGenerators = idGeneratorMap
   }
-  
+
   fun nextId(platformId: Byte, serverId: Short): OptionalLong {
     val key = toInt(platformId.toShort(), serverId)
     val idGenerator = idGenerators.getIfAbsentPut(key) {

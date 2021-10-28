@@ -2,11 +2,11 @@
 
 package play.scala
 
-import java.util.*
 import play.util.control.getCause
 import scala.util.Either
 import scala.util.Left
 import scala.util.Right
+import java.util.*
 
 inline fun <L, R> right(value: R) = Right.apply<L, R>(value)
 

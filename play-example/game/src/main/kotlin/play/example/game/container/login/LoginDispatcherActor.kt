@@ -5,7 +5,7 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Receive
 import org.eclipse.collections.api.set.primitive.IntSet
 import play.akka.AbstractTypedActor
-import play.example.game.app.module.account.controller.AccountModule
+import play.example.game.app.module.account.AccountModule
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.container.net.Session
 import play.example.game.container.net.SessionManager

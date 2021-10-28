@@ -70,7 +70,7 @@ abstract class AbstractTask(val id: Int) {
   /**
    * 是否已经完成或者已领奖
    */
-  fun isFinishedOrRewarded() = status != TaskStatus.Accepted
+  fun isFinishedOrRewarded() = isFinished() || isRewarded()
 
   /**
    * 设置为完成状态

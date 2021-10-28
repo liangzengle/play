@@ -5,7 +5,10 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.Self
-import play.mvc.*
+import play.mvc.Cmd
+import play.mvc.Controller
+import play.mvc.MsgId
+import play.mvc.Push
 import play.util.concurrent.CommonPool
 import play.util.reflect.ClassScanner
 import java.io.File

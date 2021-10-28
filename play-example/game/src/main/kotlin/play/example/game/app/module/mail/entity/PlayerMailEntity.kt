@@ -29,7 +29,7 @@ class PlayerMailEntity(
   fun isRewarded() = (status and 2) != 0
 
   fun hasReward() = !isRewarded() && rewards.isNotEmpty()
-  
+
   override fun toString(): String {
     return "PlayerMailEntity(title='$title', content='$content', rewards=$rewards, logSource=$logSource, status=$status, createTime=$createTime)"
   }

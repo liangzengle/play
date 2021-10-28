@@ -14,7 +14,7 @@ public object MainTaskErrorCode : TaskErrorCode(ModuleId.MainTask) {
   /**
    * 任务不存在
    */
-  override val PlayerTaskNotExist: Result2<Nothing> = code(1)
+  override val TaskNotExist: Result2<Nothing> = code(1)
 
   /**
    * 任务奖励已领取

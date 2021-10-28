@@ -5,7 +5,7 @@ import play.entity.IntIdEntity
 import play.entity.cache.CacheSpec
 import play.entity.cache.NeverExpireEvaluator
 import play.example.game.app.module.player.condition.PlayerCondition
-import play.example.game.app.module.reward.config.RawReward
+import play.example.game.app.module.reward.res.RawReward
 import play.util.collection.ConcurrentHashSetLong
 
 /**

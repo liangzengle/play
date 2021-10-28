@@ -1,22 +1,19 @@
 package play.example.game.app.module.player
 
+import org.springframework.stereotype.Component
 import play.entity.cache.EntityCacheManager
 import play.entity.cache.UnsafeEntityCacheOps
 import play.example.game.app.module.player.entity.AbstractPlayerLongIdEntity
 import play.util.reflect.ClassScanner
 import play.util.unsafeCast
-import javax.inject.Inject
-import javax.inject.Named
-import javax.inject.Singleton
 
 /**
  * 玩家实体数据缓存初始化
  *
  * @author LiangZengle
  */
-@Singleton
-@Named
-class PlayerEntityCacheInitializer @Inject constructor(
+@Component
+class PlayerEntityCacheInitializer(
   classScanner: ClassScanner,
   entityCacheManager: EntityCacheManager
 ) {

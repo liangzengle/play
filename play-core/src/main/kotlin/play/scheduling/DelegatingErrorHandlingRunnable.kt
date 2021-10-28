@@ -15,7 +15,6 @@
  */
 package play.scheduling
 
-import java.lang.Runnable
 import java.lang.reflect.UndeclaredThrowableException
 import javax.annotation.Nonnull
 
