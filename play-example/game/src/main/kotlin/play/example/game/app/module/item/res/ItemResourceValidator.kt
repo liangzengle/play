@@ -1,8 +1,8 @@
 package play.example.game.app.module.item.res
 
-import play.res.GenericResourceValidator
 import play.res.ResourceSet
-import play.res.ResourceSetSupplier
+import play.res.ResourceSetProvider
+import play.res.validation.validator.GenericResourceValidator
 
 /**
  *
@@ -11,7 +11,7 @@ import play.res.ResourceSetSupplier
 class ItemResourceValidator : GenericResourceValidator<ItemResource>() {
   override fun validate(
     resourceSet: ResourceSet<ItemResource>,
-    resourceSetSupplier: ResourceSetSupplier,
+    resourceSetProvider: ResourceSetProvider,
     errors: MutableCollection<String>
   ) {
     if (resourceSet.size() < 2) {

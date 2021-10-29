@@ -1,7 +1,8 @@
-package play.res.validation
+package play.res.validation.validator
 
 import jakarta.validation.ConstraintValidatorContext
 import play.res.AbstractResource
+import play.res.validation.constraints.ReferTo
 
 class ReferToConstraintValidator : ResourceConstraintValidator<ReferTo, Int>() {
 

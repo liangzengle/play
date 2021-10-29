@@ -11,10 +11,10 @@ abstract class AbstractResource constructor(@JvmField val id: Int) {
   /**
    * 自定义初始化
    *
-   * @param resourceSetSupplier 获取ResourceSet
+   * @param resourceSetProvider 获取ResourceSet
    * @param errors 初始化时的错误信息
    */
-  open fun initialize(resourceSetSupplier: ResourceSetSupplier, errors: MutableCollection<String>) {}
+  open fun initialize(resourceSetProvider: ResourceSetProvider, errors: MutableCollection<String>) {}
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true

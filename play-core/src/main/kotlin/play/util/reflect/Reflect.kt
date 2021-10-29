@@ -173,6 +173,11 @@ object Reflect {
   }
 
   @JvmStatic
+  fun getAllFields(clazz: Class<*>, filter: (Field) -> Boolean): Iterable<Field> {
+    return Iterables.filter(getAllFields(clazz)) { filter(it!!) }
+  }
+
+  @JvmStatic
   fun getAllMethods(clazz: Class<*>): Iterable<Method> {
     var iterable = clazz.declaredMethods.asIterable()
     var superType = clazz.superclass
@@ -181,5 +186,10 @@ object Reflect {
       superType = superType.superclass
     }
     return iterable
+  }
+
+  @JvmStatic
+  fun getAllMethods(clazz: Class<*>, filter: (Method) -> Boolean): Iterable<Method> {
+    return Iterables.filter(getAllMethods(clazz)) { filter(it!!) }
   }
 }

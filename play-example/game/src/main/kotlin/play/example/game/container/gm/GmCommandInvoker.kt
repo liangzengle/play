@@ -5,10 +5,12 @@ import play.util.reflect.Reflect
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 
-class GmCommandInvoker(private val method: Method, private val target: Any, commanderType: Class<*>) {
+class GmCommandInvoker(private val method: Method, commanderType: Class<*>) {
 
   private val parameters: List<Parameter>
   private val parameterConverters: List<ParameterConverter<*>>
+
+  val targetClass get() = method.declaringClass
 
   init {
     method.trySetAccessible()
@@ -18,7 +20,7 @@ class GmCommandInvoker(private val method: Method, private val target: Any, comm
     parameterConverters = parameters.map { ParameterConverter.invoke(it.type) }
   }
 
-  fun invoke(commander: Any, args: List<String>): Any? {
+  fun invoke(commander: Any, target: Any, args: List<String>): Any? {
     val params = arrayOfNulls<Any?>(parameters.size + 1)
     params[0] = commander
     for (i in parameters.indices) {
@@ -61,6 +63,6 @@ class GmCommandInvoker(private val method: Method, private val target: Any, comm
   override fun toString(): String {
     val firstParamTypeName = method.parameterTypes[0].simpleName
     val otherParamTypeNames = parameters.mkString(',') { it.type.simpleName }
-    return "${target.javaClass.simpleName}.${method.name}($firstParamTypeName, $otherParamTypeNames)"
+    return "${method.declaringClass.simpleName}.${method.name}($firstParamTypeName, $otherParamTypeNames)"
   }
 }

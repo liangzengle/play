@@ -43,3 +43,6 @@ sealed class RequestResult<out T> {
     }
   }
 }
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T> Result2<T>.toRequestResult() = RequestResult(this)

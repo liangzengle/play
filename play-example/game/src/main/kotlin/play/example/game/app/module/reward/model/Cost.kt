@@ -2,10 +2,11 @@ package play.example.game.app.module.reward.model
 
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.JsonNode
+import jakarta.validation.Valid
 import play.util.json.Json
 import kotlin.math.ceil
 
-data class Cost(@field:JsonValue val reward: Reward) {
+data class Cost(@field:JsonValue @field:Valid val reward: Reward) {
   companion object {
     @JvmStatic
     private fun fromJson(jsonNode: JsonNode): Cost {

@@ -2,7 +2,7 @@ package play.example.game.container.admin
 
 import play.res.AbstractConfig
 import play.res.ResourcePath
-import play.res.ResourceSetSupplier
+import play.res.ResourceSetProvider
 
 /**
  *
@@ -14,7 +14,7 @@ data class AdminSetting(
   val playerCreateReportUrl: String
 ) : AbstractConfig() {
 
-  override fun initialize(resourceSetSupplier: ResourceSetSupplier, errors: MutableCollection<String>) {
+  override fun initialize(resourceSetProvider: ResourceSetProvider, errors: MutableCollection<String>) {
     println(this)
   }
 }

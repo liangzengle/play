@@ -1,4 +1,4 @@
-package play.res.validation
+package play.res.validation.validator
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext

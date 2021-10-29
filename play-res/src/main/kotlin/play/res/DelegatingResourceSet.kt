@@ -3,19 +3,19 @@ package play.res
 import play.Log
 import play.util.unsafeCastOrNull
 
-open class DelegatedResourceSet<T : AbstractResource> internal constructor(private var delegatee: ResourceSet<T>) :
+open class DelegatingResourceSet<T : AbstractResource> internal constructor(private var delegatee: ResourceSet<T>) :
   ResourceSet<T> {
 
   companion object {
-    private var instances = emptyMap<Class<*>, DelegatedResourceSet<AbstractResource>>()
+    private var instances = emptyMap<Class<*>, DelegatingResourceSet<AbstractResource>>()
 
-    fun <T : AbstractResource> getOrThrow(clazz: Class<*>): DelegatedResourceSet<T> {
+    fun <T : AbstractResource> getOrThrow(clazz: Class<*>): DelegatingResourceSet<T> {
       return getOrNull(clazz)
-        ?: throw IllegalStateException("DelegatedResourceSet for [${clazz.simpleName}] is not initialized.")
+        ?: throw IllegalStateException("DelegatingResourceSet for [${clazz.simpleName}] is not initialized.")
     }
 
-    fun <T : AbstractResource> getOrNull(clazz: Class<*>): DelegatedResourceSet<T>? {
-      return instances[clazz].unsafeCastOrNull<DelegatedResourceSet<T>>()
+    fun <T : AbstractResource> getOrNull(clazz: Class<*>): DelegatingResourceSet<T>? {
+      return instances[clazz].unsafeCastOrNull<DelegatingResourceSet<T>>()
     }
 
     internal fun update(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
@@ -24,15 +24,15 @@ open class DelegatedResourceSet<T : AbstractResource> internal constructor(priva
         if (delegated != null) {
           delegated.updateDelegatee(v)
         } else {
-          Log.error { "DelegatedResourceSet not exists, update failed: ${k.simpleName}" }
+          Log.error { "DelegatingResourceSet not exists, update failed: ${k.simpleName}" }
         }
       }
     }
 
     internal fun init(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
       instances = resourceSets.mapValues {
-        check(it !is DelegatedResourceSet<*>)
-        DelegatedResourceSet(it.value)
+        check(it !is DelegatingResourceSet<*>)
+        DelegatingResourceSet(it.value)
       }
     }
   }

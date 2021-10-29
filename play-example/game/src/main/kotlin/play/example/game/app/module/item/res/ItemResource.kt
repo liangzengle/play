@@ -41,9 +41,9 @@ class ItemResource : AbstractResource(), ItemLikeResource, ExtensionKey<ItemReso
 
   override fun keyInGroup(): Int = id
 
-  override fun initialize(resourceSetSupplier: ResourceSetSupplier, errors: MutableCollection<String>) {
+  override fun initialize(resourceSetProvider: ResourceSetProvider, errors: MutableCollection<String>) {
     println("ItemResource postInitialize: $this")
-    val commonSetting = resourceSetSupplier.getSingleton(CommonSetting::class.java)
+    val commonSetting = resourceSetProvider.getSingleton(CommonSetting::class.java)
     bagFullMailId = commonSetting.get().bagFullMailId
   }
 

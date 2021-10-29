@@ -17,10 +17,8 @@ import play.util.concurrent.CommonPool
 import play.util.concurrent.NamedThreadFactory
 import play.util.reflect.ClassScanner
 import java.time.Clock
-import java.util.concurrent.Executor
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.*
+
 
 /**
  *
@@ -76,7 +74,27 @@ class PlayCoreConfiguration {
   @Lazy
   fun scheduledExecutorService(): ScheduledExecutorService {
     val threadFactory = NamedThreadFactory.newBuilder("scheduler").daemon(true).build()
-    val executor = ScheduledThreadPoolExecutor(1, threadFactory)
+    val executor = object : ScheduledThreadPoolExecutor(1, threadFactory) {
+      override fun afterExecute(r: Runnable?, t: Throwable?) {
+        super.afterExecute(r, t)
+        var ex = t
+        if (ex == null && r is Future<*> && r.isDone) {
+          try {
+            r.get()
+          } catch (ce: CancellationException) {
+            ex = ce
+          } catch (ee: ExecutionException) {
+            ex = ee.cause
+          } catch (ie: InterruptedException) {
+            // ignore/reset
+            Thread.currentThread().interrupt()
+          }
+        }
+        if (ex != null) {
+          Log.error(ex) { ex.message }
+        }
+      }
+    }
     executor.prestartCoreThread()
     executor.removeOnCancelPolicy = true
     return executor

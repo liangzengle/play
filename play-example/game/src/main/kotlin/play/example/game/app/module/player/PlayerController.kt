@@ -16,7 +16,7 @@ import play.util.control.ok
 @Component
 class PlayerController(
   private val service: PlayerService,
-  private val gmCommandService: GmCommandService<Self>
+  private val gmCommandService: GmCommandService
 ) : AbstractController(ModuleId.Player) {
 
   @Cmd(1, dummy = true)

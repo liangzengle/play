@@ -1,8 +1,9 @@
-package play.res.validation
+package play.res.validation.validator
 
 import jakarta.validation.ConstraintValidatorContext
 import play.res.AbstractResource
 import play.res.GroupedResourceSet
+import play.res.validation.constraints.ReferToGroup
 
 class ReferToGroupConstraintValidator : ResourceConstraintValidator<ReferToGroup, Any>() {
 

@@ -3,7 +3,7 @@ package play.example.game.app.module.reward.model
 import jakarta.validation.constraints.Min
 import play.example.game.app.module.item.res.ItemResource
 import play.example.game.app.module.reward.json.RewardTypeResolver
-import play.res.validation.ReferTo
+import play.res.validation.constraints.ReferTo
 import play.util.json.JsonAbstractType
 
 @JsonAbstractType(RewardTypeResolver::class)

@@ -10,7 +10,9 @@ import play.util.toOptional
 import java.util.*
 
 class BasicNettyHttpRequest internal constructor(
+  @JvmField
   val id: Long,
+  @JvmField
   val toNetty: FullHttpRequest,
   private val remoteAddress: HostAndPort
 ) : BasicHttpRequest {

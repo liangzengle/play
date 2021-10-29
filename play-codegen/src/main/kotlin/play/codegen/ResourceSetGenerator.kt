@@ -57,14 +57,14 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
 
   private fun implementResourceSet(elem: TypeElement, classBuilder: TypeSpec.Builder) {
     val genericResourceSet = ResourceSet.parameterizedBy(elem.asClassName())
-    val genericDelegatedResourceSet = DelegatedResourceSet.parameterizedBy(elem.asClassName())
+    val genericDelegatingResourceSet = DelegatingResourceSet.parameterizedBy(elem.asClassName())
     classBuilder.addProperty(
       PropertySpec
-        .builder("underlying", genericDelegatedResourceSet, KModifier.PRIVATE)
+        .builder("underlying", genericDelegatingResourceSet, KModifier.PRIVATE)
         .addAnnotation(JvmStatic::class)
         .initializer(
           "%T.getOrThrow(%T::class.java)",
-          DelegatedResourceSet,
+          DelegatingResourceSet,
           elem.asType()
         )
         .build()
@@ -234,11 +234,11 @@ class ResourceSetGenerator : PlayAnnotationProcessor() {
   private fun implementSingleton(type: TypeElement, classBuilder: TypeSpec.Builder) {
     val resourceTypeName = type.asClassName()
     val genericSingletonResourceSet = SingletonResourceSet.parameterizedBy(resourceTypeName)
-    val genericDelegatedResourceSet = DelegatedResourceSet.parameterizedBy(resourceTypeName)
+    val genericDelegatingResourceSet = DelegatingResourceSet.parameterizedBy(resourceTypeName)
     classBuilder.addProperty(
       PropertySpec
-        .builder("underlying", genericDelegatedResourceSet, KModifier.PRIVATE)
-        .initializer("%T.getOrThrow(%T::class.java)", DelegatedResourceSet, type.asType())
+        .builder("underlying", genericDelegatingResourceSet, KModifier.PRIVATE)
+        .initializer("%T.getOrThrow(%T::class.java)", DelegatingResourceSet, type.asType())
         .build()
     )
 

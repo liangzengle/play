@@ -1,13 +1,13 @@
 package play.res
 
 @Suppress("UNCHECKED_CAST")
-class ResourceSetSupplier internal constructor(private val resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
+class ResourceSetProvider internal constructor(internal val resourceSetMap: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
 
   internal var dependentResources: MutableSet<Class<*>>? = null
 
   fun <T : AbstractResource> get(clazz: Class<T>): ResourceSet<T> {
     dependentResources?.add(clazz)
-    val resourceSet = resourceSets[clazz as Class<AbstractResource>] ?: throw NoSuchElementException(clazz.name)
+    val resourceSet = resourceSetMap[clazz as Class<AbstractResource>] ?: throw NoSuchElementException(clazz.name)
     return resourceSet as ResourceSet<T>
   }
 
@@ -17,5 +17,9 @@ class ResourceSetSupplier internal constructor(private val resourceSets: Map<Cla
 
   inline fun <reified T : AbstractResource> get(): ResourceSet<T> {
     return get(T::class.java)
+  }
+
+  internal fun contains(resourceClass: Class<out AbstractResource>): Boolean {
+    return resourceSetMap.contains(resourceClass)
   }
 }

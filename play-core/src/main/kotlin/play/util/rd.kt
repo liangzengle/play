@@ -148,12 +148,22 @@ object rd {
   }
 
   fun <T> random(elems: Iterable<T>, count: Int, weigher: (T) -> Int): List<T> {
+    return random(elems, count, weigher, ArrayList()) { list, elem -> list.apply { add(elem) } }
+  }
+
+  fun <T, R, R1 : R> random(
+    elems: Iterable<T>,
+    count: Int,
+    weigher: (T) -> Int,
+    initial: R1,
+    accumulator: (R1, T) -> R1
+  ): R {
     val totalProb = elems.sumOf { max(weigher(it), 0) }
     if (totalProb < 1) {
-      return emptyList()
+      return initial
     }
     var n = 0
-    val result = ArrayList<T>(count)
+    var result = initial
     while (n < count) {
       var r = nextInt(totalProb)
       for (elem in elems) {
@@ -163,7 +173,7 @@ object rd {
         }
         if (weights > r) {
           n++
-          result += elem
+          result = accumulator(result, elem)
           break
         }
         r -= weights

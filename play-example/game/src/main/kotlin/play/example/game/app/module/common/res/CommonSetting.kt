@@ -5,7 +5,7 @@ import org.eclipse.collections.impl.factory.primitive.LongLongMaps
 import play.example.game.app.module.mail.res.MailResource
 import play.res.AbstractResource
 import play.res.SingletonResource
-import play.res.validation.ReferTo
+import play.res.validation.constraints.ReferTo
 
 /**
  * 全局配置

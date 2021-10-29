@@ -6,6 +6,7 @@ import play.Log
 import play.res.reader.ConfigReader
 import play.res.reader.JsonResourceReader
 import play.res.reader.Reader
+import play.res.validation.validator.ResourceValidator
 import play.util.collection.ConcurrentHashSet
 import play.util.collection.filterDuplicatedBy
 import play.util.collection.toImmutableMap
@@ -76,7 +77,7 @@ class ResourceManager(
     resourceClasses.filterDuplicatedBy { getReader(it).getURL(it).getOrThrow() }
       .also { if (it.isNotEmpty()) throw IllegalStateException("配置路径冲突: ${it.values}") }
     resourceSets = load(resourceClasses, true)
-    initDelegatedResourceSets(resourceSets)
+    initDelegatingResourceSets(resourceSets)
     updateVersion()
     if (setting.autoReload) {
       setupAutoReload()
@@ -103,7 +104,7 @@ class ResourceManager(
     val reloaded = load(finalResourcesToLoad, setting.validateOnReload)
     for ((k, v) in reloaded) {
       if (!k.isAnnotationPresent(AllowRemoveOnReload::class.java)) {
-        val prev = DelegatedResourceSet.getOrNull<AbstractResource>(k) ?: continue
+        val prev = DelegatingResourceSet.getOrNull<AbstractResource>(k) ?: continue
         for (elem in prev.list()) {
           if (!v.contains(elem.id)) {
             Log.warn { "重加载时删除了配置: ${k.simpleName}(${elem.id})" }
@@ -111,7 +112,8 @@ class ResourceManager(
         }
       }
     }
-    updateDelegatedResourceSets(reloaded)
+    this.resourceSets = this.resourceSets + reloaded
+    updateDelegatingResourceSets(reloaded)
 
     fun getFileName(cls: Class<*>): String {
       return getReader(cls).getURL(cls).map { url ->
@@ -156,15 +158,15 @@ class ResourceManager(
     val resourceClassToResourceSet = read(classes)
     val errors = ConcurrentLinkedQueue<String>()
     val allResourceSets = this.resourceSets + resourceClassToResourceSet
-    val resourceSetSupplier = ResourceSetSupplier(allResourceSets)
+    val resourceSetProvider = ResourceSetProvider(allResourceSets)
     val dependentMap = hashMapOf<Class<*>, Set<Class<*>>>()
     for ((k, v) in resourceClassToResourceSet) {
       val dependentResources = ConcurrentHashSet<Class<*>>()
-      resourceSetSupplier.dependentResources = dependentResources
+      resourceSetProvider.dependentResources = dependentResources
       v.list().parallelStream().forEach { e ->
-        e.initialize(resourceSetSupplier, errors)
+        e.initialize(resourceSetProvider, errors)
       }
-      resourceSetSupplier.dependentResources = null
+      resourceSetProvider.dependentResources = null
       if (dependentResources.isNotEmpty()) {
         dependentMap[k] = dependentResources
       }
@@ -178,13 +180,13 @@ class ResourceManager(
       throw InvalidResourceException(errors)
     }
     if (validate) {
+      Log.info { "开始[配置验证]" }
       val validationErrors = ConstraintsValidator(allResourceSets).validate(classes)
       errors += validationErrors
-    }
-    validators.forEach {
-      if (it !is GenericResourceValidator<*> || resourceClassToResourceSet.containsKey(it.resourceClass)) {
-        it.validate(resourceSetSupplier, errors)
+      for (validator in validators) {
+        validator.validate(resourceSetProvider, errors)
       }
+      Log.info { "完成[配置验证]" }
     }
     if (errors.isNotEmpty()) {
       throw InvalidResourceException(errors)
@@ -192,12 +194,12 @@ class ResourceManager(
     return resourceClassToResourceSet
   }
 
-  private fun updateDelegatedResourceSets(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
-    DelegatedResourceSet.update(resourceSets)
+  private fun updateDelegatingResourceSets(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
+    DelegatingResourceSet.update(resourceSets)
   }
 
-  private fun initDelegatedResourceSets(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
-    DelegatedResourceSet.init(resourceSets)
+  private fun initDelegatingResourceSets(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>) {
+    DelegatingResourceSet.init(resourceSets)
   }
 
   private fun setupAutoReload() {

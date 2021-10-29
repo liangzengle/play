@@ -32,6 +32,7 @@ class ConfigReader : Reader {
       val config =
         ConfigFactory.parseURL(url, ConfigParseOptions.defaults().setSyntax(configSyntax))
           .withFallback(ConfigFactory.parseString("{ id = 1 }"))
+          .resolve()
       val bean =
         Reader.readObject(config.root().render(ConfigRenderOptions.concise()), clazz)
       Collections.singletonList(bean)

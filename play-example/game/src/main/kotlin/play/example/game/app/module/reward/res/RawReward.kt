@@ -4,7 +4,7 @@ import jakarta.validation.constraints.Min
 import play.example.game.app.module.item.res.ItemResource
 import play.example.game.app.module.reward.json.RawRewardTypeResolver
 import play.example.game.app.module.reward.model.*
-import play.res.validation.ReferTo
+import play.res.validation.constraints.ReferTo
 import play.util.el.Eval
 import play.util.json.JsonAbstractType
 
