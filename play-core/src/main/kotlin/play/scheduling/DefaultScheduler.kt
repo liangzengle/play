@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
  * Created by LiangZengle on 2020/2/20.
  */
 class DefaultScheduler(private val scheduleService: ScheduledExecutorService, executor: Executor, clock: Clock) :
-  Scheduler(executor, clock), ScheduledExecutorService by scheduleService {
+  AbstractScheduler(executor, clock), ScheduledExecutorService by scheduleService {
 
   override fun schedule(delay: Duration, taskExecutor: Executor, task: Runnable): Cancellable {
     return scheduleService.schedule(

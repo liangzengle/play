@@ -94,4 +94,6 @@ internal class ReschedulingRunnable(
       return f != null && f.cancel()
     }
   }
+
+  override fun unwrap(): Any = currentFuture!!
 }

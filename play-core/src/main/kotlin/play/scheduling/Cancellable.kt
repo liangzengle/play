@@ -13,12 +13,16 @@ interface Cancellable {
 
   fun isCancelled(): Boolean
 
+  fun unwrap(): Any
+
   companion object {
     @JvmStatic
     val cancelled = object : Cancellable {
       override fun cancel() = false
 
       override fun isCancelled(): Boolean = true
+
+      override fun unwrap(): Any = this
     }
 
     @JvmStatic
@@ -84,4 +88,6 @@ private class ScheduledFutureCancellableAdapter(private val f: ScheduledFuture<*
   override fun isCancelled(): Boolean {
     return f.isCancelled
   }
+
+  override fun unwrap(): Any = f
 }
