@@ -13,8 +13,7 @@ internal object ResourceHelper {
     Comparator.comparing<AbstractResource, Comparable<Comparable<*>>> {
       it.unsafeCast<UniqueKey<*>>().key().unsafeCast()
     }
-
-
+  
   fun isSingletonResource(clazz: Class<*>): Boolean {
     return clazz.isAnnotationPresent(SingletonResource::class.java) || isConfig(clazz)
   }
@@ -43,50 +42,16 @@ internal object ResourceHelper {
         errors.add("只能有1条配置: $simpleName")
       }
 
-      val minId = resourceClass.getAnnotation(MinID::class.java)?.value ?: 1
-      val invalidIdList = elems.asSequence().filter { it.id < minId }.map { it.id }.toList()
-      if (invalidIdList.isNotEmpty()) {
-        errors.add("ID必须大于[$minId]: $simpleName$invalidIdList")
-      }
-
-      val duplicatedIds = elems.asSequence().map { it.id }.filterDuplicated()
-      if (duplicatedIds.isNotEmpty()) {
-        errors.add("ID重复: $simpleName${duplicatedIds.values}")
-      }
+      checkId(resourceClass, elems, errors)
 
       val hasUniqueKey = UniqueKey::class.java.isAssignableFrom(resourceClass)
       if (hasUniqueKey) {
-        // TODO
-        val duplicatedKeys = elems.asSequence().map { (it as UniqueKey<*>).key() }.filterDuplicated()
-        if (duplicatedKeys.isNotEmpty()) {
-          errors.add("Key重复: $simpleName${duplicatedKeys.values}")
-        }
-        val uniqueKeyType: Class<Any> = Reflect.getRawClassOfTypeArg(
-          resourceClass.asSubclass(UniqueKey::class.java),
-          UniqueKey::class.java,
-          0
-        )
-        if (ClassUtil.getPrimitiveType(uniqueKeyType) == Int::class.java) {
-          errors.add("UniqueKey的类型不能为Int: $simpleName")
-        }
+        checkUniqueKey(resourceClass, elems, errors)
       }
 
       val hasGroupUniqueKey = GroupedUniqueKey::class.java.isAssignableFrom(resourceClass)
       if (hasGroupUniqueKey) {
-        elems.asSequence().map { it.unsafeCast<GroupedUniqueKey<Any, *>>() }.groupBy { it.groupBy() }
-          .forEach { (groupId, group) ->
-            val treeSet = TreeSet<Comparable<*>>()
-            val duplicated = TreeSet<Comparable<*>>()
-            for (o in group) {
-              val key = o.keyInGroup()
-              if (!treeSet.add(key)) {
-                duplicated.add(key)
-              }
-            }
-            if (duplicated.isNotEmpty()) {
-              errors.add("组内唯一key重复: resource=${simpleName}, group=$groupId, duplicatedKeys=$duplicated")
-            }
-          }
+        checkUniqueKeyInGroup(resourceClass, elems, errors)
       }
 
       if (errors.isNotEmpty()) {
@@ -112,6 +77,68 @@ internal object ResourceHelper {
       throw e
     } catch (e: Exception) {
       throw IllegalStateException("ResourceSet<$simpleName>创建失败", e)
+    }
+  }
+
+  private fun checkId(
+    resourceClass: Class<AbstractResource>,
+    elems: List<AbstractResource>,
+    errors: MutableCollection<String>
+  ) {
+    val simpleName = resourceClass.simpleName
+    val minId = resourceClass.getAnnotation(MinID::class.java)?.value ?: 1
+    val invalidIdList = elems.asSequence().filter { it.id < minId }.map { it.id }.toList()
+    if (invalidIdList.isNotEmpty()) {
+      errors.add("ID必须大于[$minId]: $simpleName$invalidIdList")
+    }
+
+    val duplicatedIds = elems.asSequence().map { it.id }.filterDuplicated()
+    if (duplicatedIds.isNotEmpty()) {
+      errors.add("ID重复: $simpleName${duplicatedIds.values}")
+    }
+  }
+
+  private fun checkUniqueKeyInGroup(
+    resourceClass: Class<AbstractResource>,
+    elems: List<AbstractResource>,
+    errors: MutableCollection<String>
+  ) {
+    elems.asSequence()
+      .map { it.unsafeCast<GroupedUniqueKey<Any, *>>() }
+      .groupBy { it.groupBy() }
+      .forEach { (groupId, group) ->
+        val treeSet = TreeSet<Comparable<*>>()
+        val duplicated = TreeSet<Comparable<*>>()
+        for (o in group) {
+          val key = o.keyInGroup()
+          if (!treeSet.add(key)) {
+            duplicated.add(key)
+          }
+        }
+        if (duplicated.isNotEmpty()) {
+          errors.add("组内唯一key重复: resource=${resourceClass.simpleName}, group=$groupId, duplicatedKeys=$duplicated")
+        }
+      }
+  }
+
+  private fun checkUniqueKey(
+    resourceClass: Class<AbstractResource>,
+    elems: List<AbstractResource>,
+    errors: MutableCollection<String>
+  ) {
+    val simpleName = resourceClass.simpleName
+    // TODO
+    val duplicatedKeys = elems.asSequence().map { (it as UniqueKey<*>).key() }.filterDuplicated()
+    if (duplicatedKeys.isNotEmpty()) {
+      errors.add("Key重复: $simpleName${duplicatedKeys.values}")
+    }
+    val uniqueKeyType: Class<Any> = Reflect.getRawClassOfTypeArg(
+      resourceClass.asSubclass(UniqueKey::class.java),
+      UniqueKey::class.java,
+      0
+    )
+    if (ClassUtil.getPrimitiveType(uniqueKeyType) == Int::class.java) {
+      errors.add("UniqueKey的类型不能为Int: $simpleName")
     }
   }
 }

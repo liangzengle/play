@@ -22,6 +22,8 @@ import play.example.game.container.gs.domain.GameServerId
 import play.example.game.container.gs.logging.ActorMdc
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
+import play.scheduling.ManagedScheduler
+import play.scheduling.Scheduler
 import play.spring.PlayNonWebApplicationContextFactory
 import play.spring.rootBeanDefinition
 import play.util.classOf
@@ -121,6 +123,8 @@ class GameServerActor(
     val dbNamePattern = conf.getString("play.db.name-pattern")
     val dbName = String.format(dbNamePattern, serverId)
 
+    val scheduler = parentApplicationContext.getBean(Scheduler::class.java)
+    val managedScheduler = ManagedScheduler(scheduler)
     // TODO
     val platformNames = listOf("Dev")
     val platformIdArray = ByteArray(platformNames.size)
@@ -137,6 +141,7 @@ class GameServerActor(
         it.beanFactory.registerSingleton("gameServerId", GameServerId(serverId))
         it.beanFactory.registerSingleton("serverConfig", serverConfig)
         it.beanFactory.registerSingleton("dbNameProvider", DatabaseNameProvider { dbName })
+        it.beanFactory.registerSingleton("scheduler", managedScheduler)
       }
     )
     applicationContext = springApplication.run()

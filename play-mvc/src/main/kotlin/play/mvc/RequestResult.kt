@@ -20,6 +20,8 @@ sealed class RequestResult<out T> {
     @JvmStatic
     fun <T> ok(value: T) = Normal(0, value)
 
+    inline fun <T> ok(op: () -> T) = Normal(0, op())
+
     @JvmStatic
     fun err(code: Int) = Normal(code, null)
 

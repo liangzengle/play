@@ -2,6 +2,8 @@ package play.db
 
 import play.entity.Entity
 import play.util.concurrent.Future
+import play.util.empty
+import play.util.emptyInt
 import java.util.*
 import javax.annotation.CheckReturnValue
 
@@ -9,9 +11,9 @@ interface ParameterizedQueryService<P> : QueryService {
 
   fun <ID, E : Entity<ID>> query(
     entityClass: Class<E>,
-    where: Optional<P> = Optional.empty(),
-    order: Optional<P> = Optional.empty(),
-    limit: Optional<Int> = Optional.empty()
+    where: Optional<P> = empty(),
+    order: Optional<P> = empty(),
+    limit: OptionalInt = emptyInt()
   ): Future<List<E>> {
     return fold(entityClass, where, order, limit, LinkedList()) { list, e -> list.apply { add(e) } }
   }
@@ -19,9 +21,9 @@ interface ParameterizedQueryService<P> : QueryService {
   fun <ID, E : Entity<ID>> query(
     entityClass: Class<E>,
     fields: List<String>,
-    where: Optional<P> = Optional.empty(),
-    order: Optional<P> = Optional.empty(),
-    limit: Optional<Int> = Optional.empty()
+    where: Optional<P> = empty(),
+    order: Optional<P> = empty(),
+    limit: OptionalInt = emptyInt()
   ): Future<List<ResultMap>> {
     return fold(
       entityClass,
@@ -42,8 +44,8 @@ interface ParameterizedQueryService<P> : QueryService {
     entityClass: Class<E>,
     fields: List<String>,
     where: Optional<P>,
-    order: Optional<P> = Optional.empty(),
-    limit: Optional<Int> = Optional.empty(),
+    order: Optional<P> = empty(),
+    limit: OptionalInt = emptyInt(),
     f: (ResultMap) -> Unit
   ): Future<Unit> {
     return fold(entityClass, fields, where, order, limit, Unit) { _, r ->
@@ -56,7 +58,7 @@ interface ParameterizedQueryService<P> : QueryService {
     entityClass: Class<E>,
     where: Optional<P>,
     order: Optional<P>,
-    limit: Optional<Int>,
+    limit: OptionalInt,
     initial: R1,
     folder: (R1, E) -> R1
   ): Future<R>
@@ -67,7 +69,7 @@ interface ParameterizedQueryService<P> : QueryService {
     fields: List<String>,
     where: Optional<P>,
     order: Optional<P>,
-    limit: Optional<Int>,
+    limit: OptionalInt,
     initial: R1,
     folder: (R1, ResultMap) -> R1
   ): Future<R>

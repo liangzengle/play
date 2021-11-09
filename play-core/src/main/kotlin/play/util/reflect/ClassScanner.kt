@@ -71,4 +71,11 @@ class ClassScanner(scanExecutor: ExecutorService, jarsToScan: List<String>, pack
     }
     return classInfoList.standardClasses.filter(ClassInfoFilters.ordinaryClass()).loadClasses(superType)
   }
+
+  fun getOrdinaryClassesAnnotatedWith(annotationType: Class<out Annotation>): List<Class<*>> {
+    return scanResult.getClassesWithAnnotation(annotationType)
+      .standardClasses
+      .filter(ClassInfoFilters.ordinaryClass())
+      .loadClasses()
+  }
 }

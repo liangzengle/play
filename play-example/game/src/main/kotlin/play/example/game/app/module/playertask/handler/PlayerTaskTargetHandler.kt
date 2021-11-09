@@ -8,7 +8,7 @@ import play.example.game.app.module.task.res.AbstractTaskResource
 import play.example.game.app.module.task.target.TaskTarget
 
 /**
- * 任务目标处理
+ * 玩家任务目标处理
  *
  * @author LiangZengle
  */
@@ -16,7 +16,7 @@ abstract class PlayerTaskTargetHandler<Target : TaskTarget, Event : TaskEvent>(t
   DomainTaskTargetHandler<Self, Target, Event>(type) {
 
   /**
-   * 返回初始任务进度值
+   * 获取任务初始化时的进度值
    *
    * @param owner 玩家自己
    * @param target 任务目标

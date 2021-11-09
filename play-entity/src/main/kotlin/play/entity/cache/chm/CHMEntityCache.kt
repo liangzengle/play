@@ -2,7 +2,6 @@ package play.entity.cache.chm
 
 import mu.KLogging
 import play.entity.Entity
-import play.entity.ImmutableEntity
 import play.entity.cache.*
 import play.inject.PlayInjector
 import play.scheduling.Scheduler

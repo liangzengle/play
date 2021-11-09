@@ -71,6 +71,15 @@ class MemoryRepository : Repository {
     return Future.successful(getMap(entityClass).keys.toList() as List<ID>)
   }
 
+  override fun <ID, E : Entity<ID>, C, C1 : C> collectId(
+    entityClass: Class<E>,
+    c: C1,
+    accumulator: (C1, ID) -> C1
+  ): Future<C> {
+    val result = getMap(entityClass).keys.fold(c) { acc, id -> accumulator(acc, id as ID) }
+    return Future.successful(result)
+  }
+
   override fun <ID, E : Entity<ID>, R, R1 : R> fold(entityClass: Class<E>, initial: R1, f: (R1, E) -> R1): Future<R> {
     var result = initial
     for (entity in getMap(entityClass).values) {

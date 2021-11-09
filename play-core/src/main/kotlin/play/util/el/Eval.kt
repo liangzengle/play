@@ -1,6 +1,7 @@
 package play.util.el
 
 import org.mvel2.MVEL
+import org.mvel2.integration.VariableResolverFactory
 import play.util.unsafeCast
 import java.io.Serializable
 import java.util.concurrent.ConcurrentHashMap
@@ -16,6 +17,11 @@ object Eval {
   private fun compile(expr: String): Serializable {
     return compiledExpressions.computeIfAbsent(expr, MVEL::compileExpression)
   }
+
+  /**
+   * 获取缓存的公式数量
+   */
+  fun cachedExprCount() = compiledExpressions.size
 
   /**
    * 没有变量的公式求值
@@ -59,6 +65,29 @@ object Eval {
    */
   fun eval(expr: String, args: Map<String, Any>, ctx: Any?): Result {
     return Result(kotlin.Result.runCatching { MVEL.executeExpression(compile(expr), ctx, args) })
+  }
+
+  /**
+   * 公式求值
+   *
+   * @param expr 公式
+   * @param factory VariableResolverFactory
+   * @return Result
+   */
+  fun eval(expr: String, factory: VariableResolverFactory): Result {
+    return Result(kotlin.Result.runCatching { MVEL.executeExpression(compile(expr), factory) })
+  }
+
+  /**
+   * 公式求值
+   *
+   * @param expr 公式
+   * @param ctx 上下文（提供所需的函数）
+   * @param factory VariableResolverFactory
+   * @return Result
+   */
+  fun eval(expr: String, ctx: Any, factory: VariableResolverFactory): Result {
+    return Result(kotlin.Result.runCatching { MVEL.executeExpression(compile(expr), ctx, factory) })
   }
 
   /**

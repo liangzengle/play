@@ -1,6 +1,8 @@
 package play.example.game.container.gs
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
@@ -8,16 +10,19 @@ import com.typesafe.config.Config
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList
 import org.springframework.context.ConfigurableApplicationContext
 import play.akka.AbstractTypedActor
+import play.akka.sameBehavior
+import play.akka.stoppedBehavior
 import play.example.game.container.db.ContainerRepositoryProvider
 import play.example.game.container.gs.entity.GameServerEntity
-import play.scala.toPlay
+import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.control.getCause
 import play.util.forEach
 import play.util.unsafeCast
 import scala.concurrent.Promise
-import java.time.Duration
+import kotlin.concurrent.thread
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.seconds
 
 /**
  *
@@ -30,6 +35,7 @@ class GameServerManager(
 ) : AbstractTypedActor<GameServerManager.Command>(context) {
   interface Command
   object Init : Command
+  private class InitResult(val result: Result<Void>) : Command
   data class CreateGameServer(val serverId: Int, val promise: PlayPromise<Int>) : Command
   private class CreateGameServerResult(val serverId: Int, val result: Result<Unit>) : Command
   data class StartGameServer(val serverId: Int, val promise: PlayPromise<Int>) : Command
@@ -40,33 +46,51 @@ class GameServerManager(
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
       .accept(::init)
+      .accept(::onInitResult)
       .accept(::createGameServer)
       .accept(::startGameServer)
       .accept(::onCreateGameServerResult)
       .accept(::closeGameServer)
+      .acceptSignal(::postStop)
       .build()
   }
 
+  private fun postStop(signal: PostStop) {
+    thread { exitProcess(-1) }
+  }
+
   private fun init(cmd: Init) {
-    return try {
-      val repository = containerRepositoryProvider.get()
-      repository
-        .listIds(GameServerEntity::class.java)
-        .onSuccess { serverIds ->
-          if (serverIds.isEmpty()) {
-            val conf = parentApplicationContext.getBean(Config::class.java)
-            val initialServerId = conf.getInt("play.initial-game-server-id")
-            self.tell(CreateGameServer(initialServerId, PlayPromise.make()))
-          } else {
-            serverIds.forEach(gameServerIds::add)
-            serverIds.forEach { serverId ->
-              self.tell(StartGameServer(serverId, PlayPromise.make()))
-            }
-          }
-        }.await(Duration.ofSeconds(10))
-    } catch (e: Throwable) {
-      log.error("游戏服初始化失败，关闭系统...", e)
-      exitProcess(-1)
+    val repository = containerRepositoryProvider.get()
+    repository
+      .listIds(GameServerEntity::class.java)
+      .flatMap { serverIds ->
+        val futures = if (serverIds.isEmpty()) {
+          val conf = parentApplicationContext.getBean(Config::class.java)
+          val initialServerId = conf.getInt("play.initial-game-server-id")
+          val promise = PlayPromise.make<Int>()
+          self.tell(CreateGameServer(initialServerId, promise))
+          listOf(promise.future)
+        } else {
+          serverIds
+            .map { serverId ->
+              val promise = PlayPromise.make<Int>()
+              self.tell(StartGameServer(serverId, promise))
+              promise.future
+            }.toList()
+        }
+        PlayFuture.allOf(futures)
+      }.timeout(60.seconds)
+      .pipToSelf(::InitResult)
+  }
+
+  private fun onInitResult(initResult: InitResult): Behavior<Command> {
+    val result = initResult.result
+    return if (result.isFailure) {
+      log.error("服务器启动失败", result.getCause())
+      stoppedBehavior()
+    } else {
+      log.info("服务器启动成功")
+      sameBehavior()
     }
   }
 
@@ -122,10 +146,14 @@ class GameServerManager(
       },
       serverId.toString()
     )
-    val promise = Promise.apply<Unit>()
-    app.tell(GameServerActor.Start(promise))
-    cmd.promise.completeWith(promise.future().toPlay().map { 0 })
-    promise.future().pipToSelf { CreateGameServerResult(serverId, it) }
+    val promise = cmd.promise
+    val startPromise = Promise.apply<Unit>()
+    app.tell(GameServerActor.Start(startPromise))
+    startPromise.future()
+      .onComplete {
+        self.tell(CreateGameServerResult(serverId, it))
+        promise.complete(it.map { serverId })
+      }
   }
 
   private fun closeGameServer(cmd: CloseGameServer) {

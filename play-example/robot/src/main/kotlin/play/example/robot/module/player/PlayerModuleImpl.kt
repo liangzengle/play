@@ -3,7 +3,7 @@ package play.example.robot.module.player
 import mu.KLogging
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.message.PlayerDTO
-import play.example.game.container.gm.GmResult
+import play.example.robot.module.CommandModule
 import play.example.robot.module.PlayerModule
 
 /**
@@ -11,7 +11,7 @@ import play.example.robot.module.PlayerModule
  * @author LiangZengle
  */
 @Component
-class PlayerModuleImpl : PlayerModule() {
+class PlayerModuleImpl(private val commandModule: CommandModule) : PlayerModule() {
   companion object : KLogging()
 
   override fun createResp(player: RobotPlayer, data: Boolean, req: CreateRequestParams?) {
@@ -27,15 +27,9 @@ class PlayerModuleImpl : PlayerModule() {
 
   override fun pingResp(player: RobotPlayer, data: String, req: PingRequestParams?) {
     logger.info("$player >> pong: ${req?.msg} $data")
-    pingReq(player, "hello")
-  }
+//    pingReq(player, "hello")
 
-  override fun gmResp(player: RobotPlayer, data: GmResult, req: GmRequestParams?) {
-    println("gm指令使用成功: ${req?.cmd}")
-  }
-
-  override fun gmError(player: RobotPlayer, statusCode: Int, data: GmResult?, req: GmRequestParams?) {
-    System.err.println("gm指令使用失败: ${req?.cmd} $statusCode")
+    commandModule.listReq(player)
   }
 
   override fun StringMessageResp(player: RobotPlayer, data: String, req: Any?) {

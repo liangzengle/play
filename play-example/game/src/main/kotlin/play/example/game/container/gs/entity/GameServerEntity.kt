@@ -1,8 +1,8 @@
 package play.example.game.container.gs.entity
 
 import play.codegen.DisableCodegen
-import play.entity.ImmutableEntity
 import play.entity.IntIdEntity
+import play.entity.cache.ImmutableEntity
 
 /**
  *

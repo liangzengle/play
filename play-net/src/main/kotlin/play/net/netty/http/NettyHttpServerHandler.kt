@@ -101,15 +101,18 @@ abstract class NettyHttpServerHandler(protected val actionManager: HttpActionMan
     val formParams = LinkedHashMap(parameters)
     if (hasFormData(request)) {
       val postDecoder = HttpPostRequestDecoder(request)
-      val bodyHttpDatas = postDecoder.bodyHttpDatas
-      for (i in bodyHttpDatas.indices) {
-        val httpData = bodyHttpDatas[i]
-        if (httpData.httpDataType == InterfaceHttpData.HttpDataType.Attribute) {
-          val attribute = httpData as Attribute
-          addParam(formParams, attribute.name, attribute.value)
+      try {
+        val bodyHttpDatas = postDecoder.bodyHttpDatas
+        for (i in bodyHttpDatas.indices) {
+          val httpData = bodyHttpDatas[i]
+          if (httpData.httpDataType == InterfaceHttpData.HttpDataType.Attribute) {
+            val attribute = httpData as Attribute
+            addParam(formParams, attribute.name, attribute.value)
+          }
         }
+      } finally {
+        postDecoder.destroy()
       }
-      postDecoder.destroy()
     }
     return formParams
   }
@@ -164,16 +167,17 @@ abstract class NettyHttpServerHandler(protected val actionManager: HttpActionMan
 
   private fun handleAsync(request: NettyHttpRequest, action: Action): Future<HttpResult.Strict> {
     val p = Promise.make<HttpResult.Strict>()
-    Future { action(request) }.onComplete {
-      if (it.isSuccess) {
-        when (val result = it.getOrThrow()) {
-          is HttpResult.Strict -> p.success(result)
-          is HttpResult.Lazy -> p.completeWith(result.future)
+    Future { action(request) }
+      .onComplete {
+        if (it.isSuccess) {
+          when (val result = it.getOrThrow()) {
+            is HttpResult.Strict -> p.success(result)
+            is HttpResult.Lazy -> p.completeWith(result.future)
+          }
+        } else {
+          p.failure(it.getCause())
         }
-      } else {
-        p.failure(it.getCause())
       }
-    }
     return p.future
   }
 

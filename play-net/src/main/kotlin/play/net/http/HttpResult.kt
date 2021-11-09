@@ -22,9 +22,9 @@ sealed class HttpResult {
 
   class Lazy(val future: Future<Strict>) : HttpResult() {
     override val status: Int
-      get() = if (!future.isCompleted()) throw NoSuchElementException("Future Incomplete") else future.get().status
+      get() = future.getNowOrThrow().status
     override val body: HttpEntity
-      get() = if (!future.isCompleted()) throw NoSuchElementException("Future Incomplete") else future.get().body
+      get() = future.getNowOrThrow().body
 
     override fun toString(): String {
       return future.toString()

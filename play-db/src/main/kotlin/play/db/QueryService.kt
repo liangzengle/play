@@ -26,6 +26,8 @@ interface QueryService : EntityCacheLoader {
 
   fun <ID, E : Entity<ID>> listIds(entityClass: Class<E>): Future<List<ID>>
 
+  fun <ID, E : Entity<ID>, C, C1 : C> collectId(entityClass: Class<E>, c: C1, accumulator: (C1, ID) -> C1): Future<C>
+
   @CheckReturnValue
   fun <ID, E : Entity<ID>> foreach(entityClass: Class<E>, f: (E) -> Unit): Future<Unit> {
     return fold(entityClass, Unit) { _, e ->

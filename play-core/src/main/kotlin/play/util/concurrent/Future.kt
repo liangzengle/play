@@ -12,7 +12,8 @@ typealias PlayFuture<T> = Future<T>
  * A wrapper of CompletableFuture
  * @author LiangZengle
  */
-class Future<T>(private val cf: CompletableFuture<T>) {
+@JvmInline
+value class Future<T>(private val cf: CompletableFuture<T>) {
 
   fun toJava(): CompletableFuture<T> = cf
 
@@ -241,7 +242,21 @@ class Future<T>(private val cf: CompletableFuture<T>) {
     return Future(newCF)
   }
 
-  fun get(): T {
+  fun recoverFromTimeout(value: T): Future<T> {
+    return recover(TimeoutException::class.java) { value }
+  }
+
+  fun timeout(timeout: Duration): Future<T> {
+    cf.orTimeout(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
+    return this
+  }
+
+  fun timeout(timeout: java.time.Duration): Future<T> {
+    cf.orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
+    return this
+  }
+
+  fun getSync(): T {
     return cf.get()
   }
 

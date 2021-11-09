@@ -1,4 +1,4 @@
-package play.example.game.container.gm
+package play.example.game.container.command
 
 import com.fasterxml.jackson.core.JsonProcessingException
 import play.util.json.Json

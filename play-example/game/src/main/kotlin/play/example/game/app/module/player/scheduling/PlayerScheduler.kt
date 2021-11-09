@@ -22,7 +22,7 @@ import java.util.*
 class PlayerScheduler(
   private val scheduler: Scheduler,
   private val playerEventBus: PlayerEventBus
-) {
+) : AutoCloseable {
 
   private val scheduleMap = NonBlockingHashMapLong<WeakHashMap<PlayerEvent, Cancellable>>()
 
@@ -145,5 +145,9 @@ class PlayerScheduler(
   fun cancelAll(self: Self) {
     val map = scheduleMap.remove(self.id) ?: return
     map.values.forEach { it.cancel() }
+  }
+
+  override fun close() {
+    scheduleMap.values.forEach { map -> map.values.forEach { it.cancel() } }
   }
 }

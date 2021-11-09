@@ -6,7 +6,6 @@ import com.github.benmanes.caffeine.cache.RemovalCause
 import com.github.benmanes.caffeine.cache.RemovalListener
 import mu.KLogging
 import play.entity.Entity
-import play.entity.ImmutableEntity
 import play.entity.cache.*
 import play.inject.PlayInjector
 import play.scheduling.Scheduler

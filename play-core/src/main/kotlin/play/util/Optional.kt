@@ -4,13 +4,13 @@ package play.util
 
 import java.util.*
 
-inline fun <T> T?.toOptional() = Optional.ofNullable(this)
+inline fun <T : Any> T?.toOptional(): Optional<T> = Optional.ofNullable(this)
 
 inline fun Int?.toOptional(): OptionalInt = if (this == null) OptionalInt.empty() else OptionalInt.of(this)
 
 inline fun Long?.toOptional(): OptionalLong = if (this == null) OptionalLong.empty() else OptionalLong.of(this)
 
-inline fun <T> empty() = Optional.empty<T>()
+inline fun <T> empty(): Optional<T> = Optional.empty<T>()
 inline fun emptyInt() = OptionalInt.empty()
 inline fun emptyLong() = OptionalLong.empty()
 

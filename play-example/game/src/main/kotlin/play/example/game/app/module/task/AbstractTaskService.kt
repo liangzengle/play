@@ -28,7 +28,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
   protected val logger = getLogger()
 
   @Autowired
-  private lateinit var simpleTaskHandlerProvider: SimpleTaskHandlerProvider
+  private lateinit var commonTaskHandlerProvider: CommonTaskHandlerProvider
 
   /**
    * 获取目标处理器
@@ -44,9 +44,9 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskEvent 任务事件
    */
   fun onEvent(owner: T, taskEvent: TaskEvent) {
-    val simpleHandler = simpleTaskHandlerProvider.getHandlerOrNull(taskEvent.type)
-    val targetHandler = getHandlerOrNull(taskEvent.type)
-    if (simpleHandler == null && targetHandler == null) {
+    val commonHandler = commonTaskHandlerProvider.getHandlerOrNull(taskEvent.type)
+    val domainHandler = getHandlerOrNull(taskEvent.type)
+    if (commonHandler == null && domainHandler == null) {
       logger.error { "找不到任务目标处理器：${taskEvent.type}" }
       return
     }
@@ -68,13 +68,13 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
           continue
         }
         val progress = task.getProgress(i)
-        val change = targetHandler?.onEvent(owner, target, taskEvent, progress, taskConf)
-          ?: simpleHandler?.onEvent(target, taskEvent, progress, taskConf) ?: 0
+        val change = domainHandler?.onEvent(owner, target, taskEvent, progress, taskConf)
+          ?: commonHandler?.onEvent(target, taskEvent, progress, taskConf) ?: 0
         if (change == 0) {
           continue
         }
         var newProgress = (progress + change) max 0
-        if (newProgress > target.value && trimProgress()) {
+        if (newProgress > target.value && trimProgress(taskConf)) {
           newProgress = target.value
         }
         task.setProgress(i, newProgress)
@@ -244,9 +244,9 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
   /**
    * 任务进度是否允许超出任务目标值
    *
-   * @return 默认为true
+   * @return 默认不允许
    */
-  protected open fun trimProgress() = true
+  protected open fun trimProgress(taskConf: TaskConfig) = true
 
   /**
    * 获取玩家进行中的任务

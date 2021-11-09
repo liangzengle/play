@@ -72,4 +72,4 @@ internal val SingletonResource = ClassName.bestGuess("play.res.SingletonResource
 
 val classOf = MemberName("play.util", "classOf")
 
-val Result2 = ClassName.bestGuess("play.util.control.Result2")
+val Result2 = ClassName.bestGuess("play.util.control.Result2-Deprecated")

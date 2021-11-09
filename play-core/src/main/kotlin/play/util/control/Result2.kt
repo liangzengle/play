@@ -5,7 +5,8 @@ import java.io.Serializable
 import java.util.*
 
 @Suppress("UNCHECKED_CAST")
-class Result2<out T>(private val value: Any) {
+@JvmInline
+value class Result2<out T>(private val value: Any) {
 
   fun isOk() = value !is Err
 
@@ -13,17 +14,17 @@ class Result2<out T>(private val value: Any) {
 
   fun get(): T = value as T
 
-  fun <R, T : R> getOrDefault(value: R): R {
-    return if (isErr()) value else this.value as R
+  fun getOrDefault(value: @UnsafeVariance T): T {
+    return if (isErr()) value else this.value as T
   }
 
-  fun <T> toOption(): Optional<T> = if (isErr()) Optional.empty() else Optional.ofNullable(value.unsafeCast())
+  fun toOption(): Optional<out T> = if (isErr()) Optional.empty() else Optional.ofNullable(value.unsafeCast())
 
   fun getErrorCode(): Int = (value as? Err)?.code ?: 0
 
   fun asErr(): Err = value as Err
 
-  fun <T> asErrResult(): Result2<T> = Result2(asErr())
+  fun <U> asErrResult(): Result2<U> = Result2(asErr())
 
   operator fun invoke(msg: String): Result2<T> = if (isErr()) err(getErrorCode(), msg) else this
 

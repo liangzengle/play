@@ -39,6 +39,9 @@ dependencies {
     api libs.javax.inject
 
     api libs.bundles.log4j
+
+    testImplementation libs.kotlinpoet.poet
+    testImplementation libs.kotlinpoet.metadata
 }
 
 

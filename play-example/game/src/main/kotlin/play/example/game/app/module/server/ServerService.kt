@@ -3,6 +3,7 @@ package play.example.game.app.module.server
 import com.google.common.eventbus.Subscribe
 import org.eclipse.collections.api.set.primitive.ImmutableIntSet
 import org.eclipse.collections.api.set.primitive.IntSet
+import org.eclipse.collections.api.set.primitive.MutableIntSet
 import org.eclipse.collections.impl.factory.primitive.IntSets
 import org.springframework.stereotype.Component
 import play.db.QueryService
@@ -22,7 +23,7 @@ import play.util.time.Time.betweenDays
 import play.util.time.Time.currentDate
 import play.util.time.Time.currentDateTime
 import java.time.LocalDate
-import kotlin.time.seconds
+import kotlin.time.Duration.Companion.seconds
 
 @Component
 class ServerService(
@@ -37,8 +38,9 @@ class ServerService(
   private val serverIds: ImmutableIntSet
 
   init {
-    val idList = queryService.listIds(classOf<Server>()).get(5.seconds)
-    val serverIds = IntSets.mutable.ofAll(idList.stream().mapToInt(Int::toInt))
+    val serverIds: MutableIntSet =
+      queryService.collectId(classOf<Server>(), IntSets.mutable.empty()) { set, id -> set.apply { add(id) } }
+        .get(5.seconds)
     if (serverIds.isEmpty) {
       injector.whenAvailable {
         serverCache.create(Server(conf.serverId.toInt()))

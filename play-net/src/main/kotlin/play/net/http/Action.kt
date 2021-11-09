@@ -1,7 +1,6 @@
 package play.net.http
 
 import com.google.common.collect.Maps
-import play.util.logging.getLogger
 
 data class RoutePath(val root: String, val children: List<ParPath>) {
 
@@ -80,7 +79,6 @@ data class RoutePath(val root: String, val children: List<ParPath>) {
   }
 
   companion object {
-    private val logger = getLogger()
 
     @JvmStatic
     fun parse(path: String): RoutePath {
@@ -100,8 +98,7 @@ data class RoutePath(val root: String, val children: List<ParPath>) {
           RoutePath(root, children)
         }
       } catch (e: Exception) {
-        logger.error(e) { "RoutePath解析失败: $path" }
-        throw IllegalArgumentException(path, e)
+        throw IllegalArgumentException("RoutePath解析失败: $path", e)
       }
     }
   }

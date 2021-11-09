@@ -1,11 +1,11 @@
-package play.example.game.container.gm
+package play.example.game.container.command
 
 import play.util.collection.mkString
 import play.util.reflect.Reflect
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 
-class GmCommandInvoker(private val method: Method, commanderType: Class<*>) {
+class CommandInvoker(private val method: Method, commanderType: Class<*>) {
 
   private val parameters: List<Parameter>
   private val parameterConverters: List<ParameterConverter<*>>
@@ -28,9 +28,9 @@ class GmCommandInvoker(private val method: Method, commanderType: Class<*>) {
       val parameter = parameters[i]
       val arg: String =
         if (args.size <= i) {
-          val defaultValue = parameter.getAnnotation(GmCommandModule.Arg::class.java)?.defaultValue
+          val defaultValue = parameter.getAnnotation(Arg::class.java)?.defaultValue
           if (defaultValue.isNullOrEmpty()) {
-            throw GmCommandArgMissingException("缺少第${paramIdx}个参数: $this $args")
+            throw CommandArgMissingException("缺少第${paramIdx}个参数: $this $args")
           }
           defaultValue
         } else {
@@ -39,7 +39,7 @@ class GmCommandInvoker(private val method: Method, commanderType: Class<*>) {
       try {
         params[paramIdx] = parameterConverters[i].convert(parameter, arg)
       } catch (e: IllegalArgumentException) {
-        throw GmCommandIllegalArgException("第${i + 1}个参数错误: $this $args")
+        throw CommandIllegalArgException("第${i + 1}个参数错误: $this $args")
       }
     }
     return Reflect.invokeMethod(method, target, *params)
@@ -49,7 +49,7 @@ class GmCommandInvoker(private val method: Method, commanderType: Class<*>) {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
 
-    other as GmCommandInvoker
+    other as CommandInvoker
 
     if (method != other.method) return false
 

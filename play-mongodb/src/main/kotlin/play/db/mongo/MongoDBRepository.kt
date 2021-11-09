@@ -98,7 +98,7 @@ class MongoDBRepository constructor(
   }
 
   override fun <ID, E : Entity<ID>, R, R1 : R> fold(entityClass: Class<E>, initial: R1, f: (R1, E) -> R1): Future<R> {
-    return fold(entityClass, empty(), empty(), empty(), initial, f)
+    return fold(entityClass, empty(), empty(), emptyInt(), initial, f)
   }
 
   override fun <ID, E : Entity<ID>, R, R1 : R> fold(
@@ -107,7 +107,7 @@ class MongoDBRepository constructor(
     initial: R1,
     folder: (R1, ResultMap) -> R1
   ): Future<R> {
-    return fold(entityClass, fields, empty(), empty(), empty(), initial, folder)
+    return fold(entityClass, fields, empty(), empty(), emptyInt(), initial, folder)
   }
 
   override fun <ID, E : Entity<ID>> findById(entityClass: Class<E>, id: ID): Future<Optional<E>> {
@@ -134,7 +134,7 @@ class MongoDBRepository constructor(
     entityClass: Class<E>,
     where: Optional<Bson>,
     order: Optional<Bson>,
-    limit: Optional<Int>,
+    limit: OptionalInt,
     initial: R1,
     folder: (R1, E) -> R1
   ): Future<R> {
@@ -153,7 +153,7 @@ class MongoDBRepository constructor(
     fields: List<String>,
     where: Optional<Bson>,
     order: Optional<Bson>,
-    limit: Optional<Int>,
+    limit: OptionalInt,
     initial: R1,
     folder: (R1, ResultMap) -> R1
   ): Future<R> {
@@ -174,7 +174,18 @@ class MongoDBRepository constructor(
   }
 
   override fun <ID, E : Entity<ID>> listIds(entityClass: Class<E>): Future<List<ID>> {
-    val promise = Promise.make<List<ID>>()
+    return collectId(entityClass, LinkedList<ID>()) { list, id ->
+      list.add(id)
+      list
+    }
+  }
+
+  override fun <ID, E : Entity<ID>, C, C1 : C> collectId(
+    entityClass: Class<E>,
+    c: C1,
+    accumulator: (C1, ID) -> C1
+  ): Future<C> {
+    val promise = Promise.make<C>()
     val idType = getIdType<ID>(entityClass)
     getRawCollection(entityClass)
       .find()
@@ -182,11 +193,10 @@ class MongoDBRepository constructor(
       .subscribe(
         FoldSubscriber(
           promise,
-          LinkedList()
+          c
         ) { list, doc ->
           val id = convertToID(doc[ID]!!, idType)
-          list.add(id)
-          list
+          accumulator(list, id)
         }
       )
     return promise.future

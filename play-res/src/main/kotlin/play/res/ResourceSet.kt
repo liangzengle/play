@@ -59,7 +59,7 @@ internal class EmptyResourceSet<T : AbstractResource> : ResourceSet<T> {
 }
 
 
-interface UniqueKeyResourceSet<K, T> {
+interface UniqueKeyResourceSet<K, T : Any> {
   fun containsKey(key: K): Boolean
 
   fun getByKey(key: K): Optional<T> = getByKeyOrNull(key).toOptional()

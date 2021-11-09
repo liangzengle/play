@@ -14,11 +14,10 @@ import play.example.common.akka.AkkaConfiguration
 import play.example.common.akka.GuardianBehavior
 import play.example.common.net.NettyServerConfiguration
 import play.example.game.app.module.player.Self
-import play.example.game.container.gm.GmCommandInvokerManager
+import play.example.game.container.command.CommandManager
 import play.example.game.container.login.LoginDispatcherActor
 import play.example.game.container.net.SessionManager
 import play.http.EnableHttpClient
-import play.inject.PlayInjector
 import play.mongodb.PlayMongoConfiguration
 import play.util.reflect.ClassScanner
 
@@ -48,7 +47,7 @@ class ContainerApp : ActorConfigurationSupport {
   }
 
   @Bean
-  fun gmCommandInvokerManager(classScanner: ClassScanner, injector: PlayInjector): GmCommandInvokerManager {
-    return GmCommandInvokerManager(Self::class.java, classScanner, injector)
+  fun gmCommandInvokerManager(classScanner: ClassScanner): CommandManager {
+    return CommandManager(Self::class.java, classScanner)
   }
 }
