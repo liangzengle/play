@@ -20,7 +20,7 @@ import play.example.game.app.module.player.PlayerEntityCacheInitializer
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.server.ServerService
-import play.example.game.container.gs.logging.ActorMdc
+import play.example.game.container.gs.logging.ActorMDC
 import play.example.game.container.login.LoginDispatcherActor
 import play.example.game.container.net.Session
 import play.mvc.Request
@@ -41,7 +41,7 @@ class AccountManager(
   private val playerManager: ActorRef<PlayerManager.Command>,
   private val playerEntityCacheInitializer: PlayerEntityCacheInitializer,
   private val playerService: PlayerService,
-  private val actorMdc: ActorMdc
+  private val actorMdc: ActorMDC
 ) : AbstractTypedActor<AccountManager.Command>(context) {
 
   init {
@@ -164,7 +164,7 @@ class AccountManager(
       playerManager: ActorRef<PlayerManager.Command>,
       playerEntityCacheInitializer: PlayerEntityCacheInitializer,
       playerService: PlayerService,
-      actorMdc: ActorMdc
+      actorMdc: ActorMDC
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
         AccountManager(

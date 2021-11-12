@@ -14,6 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import play.ShutdownCoordinator
 import play.db.mongo.Mongo
 
 /**
@@ -25,14 +26,18 @@ import play.db.mongo.Mongo
 class PlayMongoConfiguration {
 
   @Bean("dbExecutor")
-  fun dbExecutor(config: Config): EventLoopGroup {
+  fun dbExecutor(config: Config, shutdownCoordinator: ShutdownCoordinator): EventLoopGroup {
     val nThread = config.getInt("play.mongodb.client-threads")
     val threadFactory = DefaultThreadFactory("mongo")
-    return if (Epoll.isAvailable()) {
+    val executor = if (Epoll.isAvailable()) {
       EpollEventLoopGroup(nThread, threadFactory)
     } else {
       NioEventLoopGroup(nThread, threadFactory)
     }
+    shutdownCoordinator.addShutdownTask("Shutdown db executor", executor) {
+      it.shutdownGracefully().sync()
+    }
+    return executor
   }
 
   @Bean

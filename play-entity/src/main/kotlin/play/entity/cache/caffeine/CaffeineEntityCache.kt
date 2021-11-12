@@ -277,6 +277,9 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
 
   @Suppress("UNCHECKED_CAST")
   override fun persist(): Future<Unit> {
+    if (!initialized) {
+      return Future.successful(Unit)
+    }
     val entities = getCache().asMap().values.asSequence()
       .filter { !(isImmutable && it.lastPersistTime != 0L) }
       .map { it.peekEntity() }

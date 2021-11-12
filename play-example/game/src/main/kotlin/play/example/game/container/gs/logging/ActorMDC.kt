@@ -3,14 +3,14 @@ package play.example.game.container.gs.logging
 import akka.japi.function.Function
 import play.util.unsafeCast
 
-class ActorMdc(
+class ActorMDC(
   val staticMdc: Map<String, String>,
   private val mdcPerMessage: Function<Any, Map<String, String>>
 ) {
-  constructor(staticMdc: Map<String, String>) : this(staticMdc, noMdcPerMessage)
+  constructor(staticMDC: Map<String, String>) : this(staticMDC, noMDCPerMessage)
 
   companion object {
-    private val noMdcPerMessage = Function<Any, Map<String, String>> { emptyMap() }
+    private val noMDCPerMessage = Function<Any, Map<String, String>> { emptyMap() }
   }
 
   fun <T> mdcPerMessage(): Function<T, Map<String, String>> = mdcPerMessage.unsafeCast()

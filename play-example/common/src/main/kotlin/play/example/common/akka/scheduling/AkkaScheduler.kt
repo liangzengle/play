@@ -24,7 +24,9 @@ class AkkaScheduler(
 
     override fun isCancelled(): Boolean = this@toPlay.isCancelled
 
-    override fun unwrap(): Any = this@toPlay
+    override fun canceller(): AkkaCancellableCanceller = AkkaCancellableCanceller
+
+    override fun taskHandle(): akka.actor.Cancellable = this@toPlay
   }
 
   override fun schedule(delay: Duration, taskExecutor: Executor, task: Runnable): Cancellable {

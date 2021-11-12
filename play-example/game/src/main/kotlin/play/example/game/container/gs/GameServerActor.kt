@@ -19,7 +19,7 @@ import play.example.game.app.GameApp
 import play.example.game.app.module.platform.domain.Platform
 import play.example.game.app.module.server.res.ServerConfig
 import play.example.game.container.gs.domain.GameServerId
-import play.example.game.container.gs.logging.ActorMdc
+import play.example.game.container.gs.logging.ActorMDC
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
 import play.scheduling.ManagedScheduler
@@ -41,12 +41,13 @@ class GameServerActor(
   ctx: ActorContext<Command>,
   parent: ActorRef<GameServerManager.Command>,
   val serverId: Int,
-  val parentApplicationContext: ConfigurableApplicationContext
+  val parentApplicationContext: ConfigurableApplicationContext,
+  val actorMdc: ActorMDC
 ) : AbstractTypedActor<GameServerActor.Command>(ctx) {
 
   interface Command
   data class Spawn<T>(
-    val behaviorFactory: (ActorMdc) -> Behavior<T>,
+    val behaviorFactory: (ActorMDC) -> Behavior<T>,
     val name: String,
     val promise: PlayPromise<ActorRef<T>>
   ) : Command
@@ -54,8 +55,6 @@ class GameServerActor(
   class Start(val promise: Promise<Unit>) : Command
   object Stop : Command
   private class StartResult(val ex: Throwable?) : Command
-
-  private val actorMdc = ActorMdc(mapOf("serverId" to serverId.toString()))
 
   private lateinit var applicationContext: ConfigurableApplicationContext
 
@@ -136,12 +135,15 @@ class GameServerActor(
     springApplication.addInitializers(
       ApplicationContextInitializer<ConfigurableApplicationContext> {
         it.unsafeCast<BeanDefinitionRegistry>()
-          .registerBeanDefinition("gameServerActor", rootBeanDefinition(typeOf<ActorRef<Command>>(), self))
+          .apply {
+            registerBeanDefinition("gameServerActor", rootBeanDefinition(typeOf<ActorRef<Command>>(), self))
+            registerBeanDefinition("scheduler", rootBeanDefinition(typeOf<Scheduler>(), managedScheduler))
+          }
+
         it.beanFactory.registerSingleton("appActorMdc", actorMdc)
         it.beanFactory.registerSingleton("gameServerId", GameServerId(serverId))
         it.beanFactory.registerSingleton("serverConfig", serverConfig)
         it.beanFactory.registerSingleton("dbNameProvider", DatabaseNameProvider { dbName })
-        it.beanFactory.registerSingleton("scheduler", managedScheduler)
       }
     )
     applicationContext = springApplication.run()
@@ -157,7 +159,7 @@ class GameServerActor(
 
   private fun postStop(signal: PostStop) {
     if (this::applicationContext.isInitialized) {
-      applicationContext.stop()
+      applicationContext.close()
     }
     log.info("Game server [{}] stopped.", serverId)
   }

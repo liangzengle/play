@@ -14,6 +14,7 @@ import play.akka.sameBehavior
 import play.akka.stoppedBehavior
 import play.example.game.container.db.ContainerRepositoryProvider
 import play.example.game.container.gs.entity.GameServerEntity
+import play.example.game.container.gs.logging.ActorMDC
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.control.getCause
@@ -37,7 +38,7 @@ class GameServerManager(
   object Init : Command
   private class InitResult(val result: Result<Void>) : Command
   data class CreateGameServer(val serverId: Int, val promise: PlayPromise<Int>) : Command
-  private class CreateGameServerResult(val serverId: Int, val result: Result<Unit>) : Command
+  private class GameServerStartResult(val serverId: Int, val result: Result<Unit>) : Command
   data class StartGameServer(val serverId: Int, val promise: PlayPromise<Int>) : Command
   data class CloseGameServer(val serverId: Int) : Command
 
@@ -49,7 +50,7 @@ class GameServerManager(
       .accept(::onInitResult)
       .accept(::createGameServer)
       .accept(::startGameServer)
-      .accept(::onCreateGameServerResult)
+      .accept(::onGameServerStartResult)
       .accept(::closeGameServer)
       .acceptSignal(::postStop)
       .build()
@@ -69,12 +70,14 @@ class GameServerManager(
           val initialServerId = conf.getInt("play.initial-game-server-id")
           val promise = PlayPromise.make<Int>()
           self.tell(CreateGameServer(initialServerId, promise))
+          gameServerIds.add(initialServerId)
           listOf(promise.future)
         } else {
           serverIds
             .map { serverId ->
               val promise = PlayPromise.make<Int>()
               self.tell(StartGameServer(serverId, promise))
+              gameServerIds.add(serverId)
               promise.future
             }.toList()
         }
@@ -123,7 +126,7 @@ class GameServerManager(
     }
   }
 
-  private fun onCreateGameServerResult(cmd: CreateGameServerResult) {
+  private fun onGameServerStartResult(cmd: GameServerStartResult) {
     val logger = context.log
     val serverId = cmd.serverId
     if (cmd.result.isSuccess) {
@@ -135,23 +138,28 @@ class GameServerManager(
 
   private fun startGameServer(cmd: StartGameServer) {
     val serverId = cmd.serverId
-    val app = context.spawn(
-      Behaviors.setup<GameServerActor.Command> { ctx ->
+    val actorMDC = ActorMDC(mapOf("serverId" to serverId.toString()))
+    val behavior = Behaviors.withMdc(
+      GameServerActor.Command::class.java,
+      actorMDC.staticMdc,
+      actorMDC.mdcPerMessage(),
+      Behaviors.setup { ctx ->
         GameServerActor(
           ctx,
           self,
           serverId,
-          parentApplicationContext
+          parentApplicationContext,
+          actorMDC
         )
-      },
-      serverId.toString()
+      }
     )
+    val app = context.spawn(behavior, serverId.toString())
     val promise = cmd.promise
     val startPromise = Promise.apply<Unit>()
     app.tell(GameServerActor.Start(startPromise))
     startPromise.future()
       .onComplete {
-        self.tell(CreateGameServerResult(serverId, it))
+        self.tell(GameServerStartResult(serverId, it))
         promise.complete(it.map { serverId })
       }
   }

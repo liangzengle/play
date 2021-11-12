@@ -326,6 +326,9 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
 
   @Suppress("UNCHECKED_CAST")
   override fun persist(): Future<Unit> {
+    if (!initialized) {
+      return Future.successful(Unit)
+    }
     val entities = getCache().values
       .asSequence()
       .filterIsInstance<NonEmpty<ID, E>>()

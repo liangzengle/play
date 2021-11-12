@@ -1,6 +1,7 @@
 package play.entity.cache
 
 import mu.KLogging
+import play.Orders
 import play.ShutdownCoordinator
 import play.entity.Entity
 import play.entity.IntIdEntity
@@ -13,7 +14,7 @@ import java.io.File
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
 abstract class EntityCacheManager {
   abstract fun getAllCaches(): Iterable<EntityCache<*, *>>
@@ -39,26 +40,42 @@ class EntityCacheManagerImpl constructor(
   private val factory: EntityCacheFactory,
   shutdownCoordinator: ShutdownCoordinator,
   injector: PlayInjector,
-  persistFailOver: EntityCachePersistFailOver
-) : EntityCacheManager() {
+  private val persistFailOver: EntityCachePersistFailOver
+) : EntityCacheManager(), AutoCloseable {
   companion object : KLogging()
 
   private val initializerProvider = EntityInitializerProvider(injector)
 
   private val caches = ConcurrentHashMap<Class<*>, EntityCache<*, *>>()
 
+  private var closed = false
+
   init {
     logger.info { "Using ${factory.javaClass.simpleName}" }
     logger.info { "Using ${persistFailOver.javaClass.simpleName}" }
-    shutdownCoordinator.addShutdownTask("缓存数据入库") {
-      caches.values.forEach { cache ->
-        val result = cache.persist().getResult(Duration.seconds(60))
-        if (result.isFailure) {
-          logger.error(result.getCause()) { "[${cache.entityClass.simpleName}]缓存数据入库失败，尝试保存到文件" }
+    shutdownCoordinator.addShutdownTask("缓存数据入库", Orders.Lowest, this) {
+      it.close()
+    }
+  }
+
+  override fun close() {
+    if (closed) {
+      return
+    }
+    closed = true
+
+    for (cache in caches.values) {
+      val result = cache.persist().getResult(1.minutes)
+      if (result.isFailure) {
+        logger.error(result.getCause()) { "[${cache.entityClass.simpleName}]缓存数据入库失败，尝试使用[${persistFailOver.javaClass.simpleName}]处理" }
+        try {
           persistFailOver.onPersistFailed(cache)
+        } catch (e: Exception) {
+          logger.error(e) { "Exception occurred when performing persist failover." }
         }
       }
     }
+    logger.info { "缓存入库执行完毕" }
   }
 
   override fun getAllCaches(): Iterable<EntityCache<*, *>> {

@@ -21,8 +21,9 @@ class ActorCronScheduler<T : Any> constructor(
    * @param triggerEvent 触发时发送的事件，非单例对象需要实现hashCode和equals
    */
   fun schedule(cron: String, triggerEvent: T) {
+    val actorRef = context.self // avoid lambda capture `this`
     val future = scheduler.scheduleCron(cron) {
-      context.self.tell(triggerEvent)
+      actorRef.tell(triggerEvent)
     }
     schedules.put(triggerEvent, future)?.cancel()
   }

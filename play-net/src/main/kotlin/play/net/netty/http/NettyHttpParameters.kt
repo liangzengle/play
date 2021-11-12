@@ -16,7 +16,7 @@ class NettyHttpParameters internal constructor(private val parameters: Map<Strin
 
   override fun toString(): String {
     val b = StringBuilder(128)
-    b.append("parameter: ").append('\n')
+    b.append("parameters: ").append('\n')
     parameters.forEach {
       b.append('\t').append(it.key).append('=')
       if (it.value.size > 1) {

@@ -76,8 +76,9 @@ internal class ReschedulingRunnable(
     super.run()
     val completionTime = LocalDateTime.now(triggerContext.clock)
     synchronized(triggerContextMonitor) {
-      check(scheduledExecutionTime != null) { "No scheduled execution" }
-      triggerContext.update(scheduledExecutionTime!!, actualExecutionTime, completionTime)
+      val executionTime = scheduledExecutionTime
+      check(executionTime != null) { "No scheduled execution" }
+      triggerContext.update(executionTime, actualExecutionTime, completionTime)
       if (!obtainCurrentFuture().isCancelled()) {
         schedule()
       }
@@ -90,10 +91,11 @@ internal class ReschedulingRunnable(
 
   override fun cancel(): Boolean {
     synchronized(triggerContextMonitor) {
-      val f = currentFuture
-      return f != null && f.cancel()
+      return obtainCurrentFuture().cancel()
     }
   }
 
-  override fun unwrap(): Any = currentFuture!!
+  override fun canceller(): Canceller<*> = CancellableCanceller
+
+  override fun taskHandle(): Any = this
 }

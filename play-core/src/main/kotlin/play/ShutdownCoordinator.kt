@@ -1,8 +1,9 @@
 package play
 
 import play.util.logging.LogCloser
+import java.lang.ref.WeakReference
 import java.util.*
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import kotlin.concurrent.thread
 
 /**
@@ -17,9 +18,21 @@ interface ShutdownCoordinator {
    *
    * @param name 唯一的名称
    * @param priority 优先级(越小越高): [PRIORITY_HIGHEST]、[PRIORITY_NORMAL]、[PRIORITY_LOWEST]
-   * @param task 要执行的任务
+   * @param ref 执行task的对象
+   * @param task 要执行的任务，注意不要引用外部的变量
    */
-  fun addShutdownTask(name: String, priority: Int = Orders.Normal, task: () -> Unit)
+  fun <T> addShutdownTask(name: String, priority: Int, ref: T, task: (T) -> Unit)
+
+  /**
+   * 添加一个关闭任务
+   *
+   * @param name 唯一的名称
+   * @param ref 执行task的对象
+   * @param task 要执行的任务，注意不要引用外部的变量
+   */
+  fun <T> addShutdownTask(name: String, ref: T, task: (T) -> Unit) {
+    addShutdownTask(name, Orders.Normal, ref, task)
+  }
 
   fun shutdown()
 
@@ -33,16 +46,23 @@ interface ShutdownCoordinator {
 }
 
 class DefaultShutdownCoordinator : ShutdownCoordinator {
-  private val stopped = AtomicBoolean()
+  @Suppress("unused")
+  @Volatile
+  private var stopped = 0
+
+  companion object {
+    @JvmStatic
+    private val stoppedUpdater = AtomicIntegerFieldUpdater.newUpdater(DefaultShutdownCoordinator::class.java, "stopped")
+  }
 
   init {
     Runtime.getRuntime().addShutdownHook(thread(false) { shutdown() })
   }
 
-  private fun isStopped() = stopped.get()
+  private fun isStopped() = stoppedUpdater.get(this) == 1
 
   override fun shutdown() {
-    if (!stopped.compareAndSet(false, true)) {
+    if (!stoppedUpdater.compareAndSet(this, 0, 1)) {
       return
     }
     Log.info { "Application shutting down..." }
@@ -51,17 +71,17 @@ class DefaultShutdownCoordinator : ShutdownCoordinator {
       if (succeed) {
         Log.info { "Application shutdown successfully." }
       } else {
-        Log.warn { "Application shutdown EXCEPTIONALLY!!!" }
+        Log.error { "Application shutdown EXCEPTIONALLY!!!" }
       }
     }
     LogCloser.shutdown()
   }
 
-  private val hooks = LinkedList<PriorityShutdownTask>()
+  private val hooks = LinkedList<PriorityShutdownTask<*>>()
 
-  override fun addShutdownTask(name: String, priority: Int, task: () -> Unit) {
+  override fun <T> addShutdownTask(name: String, priority: Int, ref: T, task: (T) -> Unit) {
     require(name.isNotEmpty()) { "name is empty." }
-    val hook = PriorityShutdownTask(name, priority, task)
+    val hook = PriorityShutdownTask(name, priority, ref, task)
     synchronized(this) {
       if (isStopped()) {
         hook.run()
@@ -71,16 +91,17 @@ class DefaultShutdownCoordinator : ShutdownCoordinator {
     }
   }
 
-  private class PriorityShutdownTask(
+  private class PriorityShutdownTask<T>(
     val name: String,
     val priority: Int,
-    private val task: () -> Unit
-  ) : Comparable<PriorityShutdownTask> {
+    ref: T,
+    private val task: (T) -> Unit
+  ) : WeakReference<T>(ref), Comparable<PriorityShutdownTask<*>> {
 
     fun run(): Boolean {
       return try {
         Log.info { "$name..." }
-        task()
+        get()?.also(task)
         true
       } catch (e: Throwable) {
         Log.error(e) { "[$name]执行失败" }
@@ -88,7 +109,7 @@ class DefaultShutdownCoordinator : ShutdownCoordinator {
       }
     }
 
-    override fun compareTo(other: PriorityShutdownTask): Int = priority.compareTo(other.priority)
+    override fun compareTo(other: PriorityShutdownTask<*>): Int = priority.compareTo(other.priority)
 
     override fun toString(): String {
       return "PriorityShutdownTask($name, $priority)"

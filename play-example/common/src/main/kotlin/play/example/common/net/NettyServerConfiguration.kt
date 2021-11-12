@@ -3,6 +3,7 @@ package play.example.common.net
 import io.netty.channel.ChannelOption
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.WriteBufferWaterMark
+import mu.KLogging
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -18,21 +19,25 @@ import play.net.netty.createEventLoopGroup
 @Configuration(proxyBeanMethods = false)
 class NettyServerConfiguration {
 
+  companion object : KLogging()
+
   @Bean("bossEventLoopGroup")
   fun bossEventLoopGroup(shutdownCoordinator: ShutdownCoordinator): EventLoopGroup {
     val executor = createEventLoopGroup("netty-boss", 1)
-    shutdownCoordinator.addShutdownTask("Shutdown bossEventLoopGroup", Orders.Highest) {
-      executor.shutdownGracefully().await()
-    }
+    shutdownCoordinator
+      .addShutdownTask("Shutdown bossEventLoopGroup", Orders.Highest, executor) {
+        it.shutdownGracefully().await()
+      }
     return executor
   }
 
   @Bean("workerEventLoopGroup")
   fun workerEventLoopGroup(shutdownCoordinator: ShutdownCoordinator): EventLoopGroup {
     val executor = createEventLoopGroup("netty-worker", 0)
-    shutdownCoordinator.addShutdownTask("Shutdown workerEventLoopGroup", Orders.lowerThan(Orders.Highest)) {
-      executor.shutdownGracefully().await()
-    }
+    shutdownCoordinator
+      .addShutdownTask("Shutdown workerEventLoopGroup", Orders.lowerThan(Orders.Highest), executor) {
+        it.shutdownGracefully().await()
+      }
     return executor
   }
 

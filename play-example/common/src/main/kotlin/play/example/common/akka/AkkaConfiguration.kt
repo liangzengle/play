@@ -24,9 +24,9 @@ class AkkaConfiguration {
     shutdownCoordinator: ShutdownCoordinator
   ): ActorSystem<GuardianBehavior.Command> {
     val system = ActorSystem.create(GuardianBehavior.behavior, conf.getString("play.actor-system-name"))
-    shutdownCoordinator.addShutdownTask("Shutdown Actor System") {
-      system.terminate()
-      system.whenTerminated().await(Duration.ofMinutes(1))
+    shutdownCoordinator.addShutdownTask("Shutdown Actor System", system) {
+      it.terminate()
+      it.whenTerminated().await(Duration.ofMinutes(1))
     }
     return system
   }
