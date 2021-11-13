@@ -29,6 +29,6 @@ abstract class GameServerScopeConfiguration : ApplicationContextAware {
   protected fun <T> spawn(name: String, behaviorCreation: (ActorMDC) -> Behavior<T>): ActorRef<T> {
     val promise = PlayPromise.make<ActorRef<T>>()
     gameServer.tell(GameServerActor.Spawn(behaviorCreation, name, promise))
-    return promise.future.get(Duration.ofSeconds(10))
+    return promise.future.blockingGet(Duration.ofSeconds(10))
   }
 }

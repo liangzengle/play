@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import mu.KLogging
 import play.util.Cleaners
 import play.util.unsafeCast
+import java.time.Clock
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
@@ -37,6 +38,10 @@ class ManagedScheduler(private val underlying: Scheduler) : Scheduler, AutoClose
     override fun run() {
       clean(schedules, "Cleaner")
     }
+  }
+
+  override fun clock(): Clock {
+    return underlying.clock()
   }
 
   override fun schedule(delay: Duration, task: Runnable): Cancellable {

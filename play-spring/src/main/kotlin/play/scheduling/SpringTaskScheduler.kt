@@ -14,13 +14,11 @@ import java.util.concurrent.ScheduledFuture
  *
  * @author LiangZengle
  */
-internal class SpringTaskScheduler(private val scheduler: Scheduler, private val _clock: Clock) : TaskScheduler {
+class SpringTaskScheduler(private val scheduler: Scheduler) : TaskScheduler {
 
-  override fun getClock(): Clock {
-    return _clock
-  }
+  override fun getClock(): Clock = scheduler.clock()
 
-  override fun schedule(task: Runnable, trigger: Trigger): ScheduledFuture<*>? {
+  override fun schedule(task: Runnable, trigger: Trigger): ScheduledFuture<*> {
     return scheduler.schedule(PlayTriggerAdapter(trigger), task).toScheduledFuture()
   }
 

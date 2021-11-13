@@ -9,12 +9,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
-import org.springframework.scheduling.TaskScheduler
 import play.scheduling.DefaultScheduler
 import play.scheduling.Scheduler
-import play.scheduling.SpringTaskScheduler
 import play.util.concurrent.CommonPool
-import play.util.concurrent.NamedThreadFactory
+import play.util.concurrent.threadFactory
 import play.util.reflect.ClassScanner
 import java.time.Clock
 import java.util.concurrent.*
@@ -73,7 +71,7 @@ class PlayCoreConfiguration {
   @ConditionalOnMissingBean(value = [Scheduler::class, ScheduledExecutorService::class])
   @Lazy
   fun scheduledExecutorService(): ScheduledExecutorService {
-    val threadFactory = NamedThreadFactory.newBuilder("scheduler").daemon(true).build()
+    val threadFactory = threadFactory("scheduler", true)
     val executor = object : ScheduledThreadPoolExecutor(1, threadFactory) {
       override fun afterExecute(r: Runnable?, t: Throwable?) {
         super.afterExecute(r, t)
@@ -106,8 +104,8 @@ class PlayCoreConfiguration {
     return DefaultScheduler(scheduleService.`object`, executor, clock)
   }
 
-  @Bean
-  fun taskScheduler(scheduler: Scheduler, clock: Clock): TaskScheduler {
-    return SpringTaskScheduler(scheduler, clock)
-  }
+//  @Bean
+//  fun taskScheduler(scheduler: Scheduler): TaskScheduler {
+//    return SpringTaskScheduler(scheduler)
+//  }
 }

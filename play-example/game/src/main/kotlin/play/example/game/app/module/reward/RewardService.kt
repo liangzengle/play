@@ -77,7 +77,16 @@ class RewardService(
       return RewardResultSet(emptyList())
     }
     val logSource = tryResultSet.logSource
-    val results = tryResultSet.results.map { processors[it.reward.type]!!.execReward(self, it, logSource) }
+    val results = ArrayList<RewardResult>(tryResultSet.results.size)
+    for (tryRewardResult in tryResultSet.results) {
+      val rewardType = tryRewardResult.reward.type
+      try {
+        val rewardResult = processors[rewardType]!!.execReward(self, tryRewardResult, logSource)
+        results.add(rewardResult)
+      } catch (e: Exception) {
+        logger.error(e) { "self=$self, reward=${tryRewardResult.reward}, logSource=$logSource" }
+      }
+    }
     if (tryResultSet.bagFullStrategy == BagFullStrategy.Mail) {
       val mailRewards = results.mapNotNull { it.mailReward }
       if (mailRewards.isNotEmpty()) {
@@ -140,9 +149,15 @@ class RewardService(
 
   fun execCost(self: Self, tryResultSet: TryCostResultSet): CostResultSet {
     val logSource = tryResultSet.logSource
-    val results = tryResultSet.results.map {
-      val processor = processors[it.cost.type] ?: error("should not happen.")
-      processor.execCost(self, it, logSource)
+    val results = ArrayList<CostResult>(tryResultSet.results.size)
+    for (tryCostResult in tryResultSet.results) {
+      val costType = tryCostResult.cost.type
+      try {
+        val costResult = processors[costType]!!.execCost(self, tryCostResult, logSource)
+        results.add(costResult)
+      } catch (e: Exception) {
+        logger.error(e) { "self=$self, cost=${tryCostResult.cost}, logSource=$logSource" }
+      }
     }
     log(self, results, logSource)
     return CostResultSet(results)

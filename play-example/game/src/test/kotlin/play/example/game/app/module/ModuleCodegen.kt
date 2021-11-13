@@ -22,38 +22,36 @@ import java.nio.file.StandardOpenOption
  */
 object ModuleCodegen {
 
-  val moduleName = "Friend"
-  val moduleDesc = "好友"
+  val moduleName = "ServerTask"
+  val moduleDesc = "全服任务"
 
-  val modulePackage = "play.example.game.module"
+  val modulePackage = "play.example.game.app.module"
   val moduleDir =
-    Paths.get(SystemProps.userDir() + "/play-example/game/src/main/kotlin/play/example/module/${moduleName.lowercase()}")
+    Paths.get(SystemProps.userDir() + "/play-example/game/src/main/kotlin/play/example/game/app/module/${moduleName.lowercase()}")
 
   private val ModuleId = ModuleId::class.java.asTypeName()
 
   @JvmStatic
   fun main(args: Array<String>) {
     val entityDir = moduleDir.resolve("entity")
-    val configDir = moduleDir.resolve("config")
-    val controllerDir = moduleDir.resolve("controller")
+    val configDir = moduleDir.resolve("res")
     val domainDir = moduleDir.resolve("domain")
 
     Files.createDirectories(entityDir)
     Files.createDirectories(configDir)
-    Files.createDirectories(controllerDir)
     Files.createDirectories(domainDir)
 
     write("$modulePackage.${moduleName.lowercase()}", moduleDir, createService())
     write("$modulePackage.${moduleName.lowercase()}.domain", domainDir, createErrorCode())
     write("$modulePackage.${moduleName.lowercase()}.domain", domainDir, createLogSource())
-    write("$modulePackage.${moduleName.lowercase()}.controller", controllerDir, createController())
+    write("$modulePackage.${moduleName.lowercase()}", moduleDir, createController())
   }
 
   private fun createErrorCode(): TypeSpec {
     val className = "${moduleName}ErrorCode"
     return TypeSpec.objectBuilder(className)
       .addKdoc("${moduleDesc}错误码")
-      .superclass(StatusCode::class.java.asClassName())
+      .superclass(StatusCode::class)
       .addSuperclassConstructorParameter("%T.$moduleName", ModuleId)
       .addAnnotation(
         AnnotationSpec.builder(ModularCode::class)
@@ -66,7 +64,7 @@ object ModuleCodegen {
     val className = "${moduleName}LogSource"
     return TypeSpec.objectBuilder(className)
       .addKdoc("${moduleDesc}日志源")
-      .superclass(LogSource::class.java.asClassName())
+      .superclass(LogSource::class)
       .addSuperclassConstructorParameter("%T.$moduleName", ModuleId)
       .addAnnotation(
         AnnotationSpec.builder(ModularCode::class)
@@ -79,7 +77,7 @@ object ModuleCodegen {
     val className = "${moduleName}Service"
     val classBuilder = TypeSpec.classBuilder(className)
     val entityCacheClass = toClassName("$modulePackage.${moduleName.lowercase()}.entity.${moduleName}EntityCache")
-    val cachePropertyName = "${moduleName.lowercase()}EntityCache"
+    val cachePropertyName = "${moduleName.replaceFirstChar { it.lowercaseChar() }}EntityCache"
     classBuilder
       .addKdoc("${moduleDesc}模块逻辑处理")
       .addAnnotation(Component::class)
@@ -102,7 +100,7 @@ object ModuleCodegen {
     val className = "${moduleName}Controller"
     val classBuilder = TypeSpec.classBuilder(className)
     val serviceClass = toClassName("$modulePackage.${moduleName.lowercase()}.${moduleName}Service")
-    val serviceName = "${moduleName.lowercase()}Service"
+    val serviceName = "${moduleName.replaceFirstChar { it.lowercaseChar() }}Service"
     classBuilder
       .addKdoc("${moduleDesc}模块请求处理")
       .addAnnotation(Component::class)

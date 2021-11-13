@@ -65,7 +65,7 @@ class EntityCacheManagerImpl constructor(
     closed = true
 
     for (cache in caches.values) {
-      val result = cache.persist().getResult(1.minutes)
+      val result = cache.persist().blockingGetResult(1.minutes)
       if (result.isFailure) {
         logger.error(result.getCause()) { "[${cache.entityClass.simpleName}]缓存数据入库失败，尝试使用[${persistFailOver.javaClass.simpleName}]处理" }
         try {

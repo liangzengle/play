@@ -1,9 +1,9 @@
 package play.net.http
 
-import mu.KLogging
+import org.slf4j.LoggerFactory
 import play.util.concurrent.Future
 import play.util.concurrent.Future.Companion.toFuture
-import play.util.exception.isFatal
+import play.util.logging.Logger
 import play.util.mkStringTo
 import java.net.URI
 import java.net.URLEncoder
@@ -15,27 +15,46 @@ import java.util.concurrent.CompletionException
 import java.util.concurrent.Flow
 import java.util.concurrent.atomic.AtomicLong
 
+typealias JHttpClient = HttpClient
+
 /**
  * Created by LiangZengle on 2020/2/20.
  */
 class HttpClient constructor(
-  private val client: HttpClient,
+  private val name: String,
+  private val client: JHttpClient,
   private val readTimeout: Duration = Duration.ofSeconds(5)
 ) {
-  companion object : KLogging()
+
+  private val logger = Logger(LoggerFactory.getLogger(HttpClient::class.qualifiedName + '.' + name))
 
   init {
-    require(readTimeout > Duration.ZERO) { "readTimeout > Duration.ZERO" }
+    require(readTimeout > Duration.ZERO) { "illegal readTimeout: $readTimeout" }
   }
 
   private val counter = AtomicLong()
 
   fun toJava(): HttpClient = client
 
+  override fun toString(): String {
+    return "HttpClient($name)"
+  }
+
+  fun copy(name: String, readTimeout: Duration): play.net.http.HttpClient {
+    return HttpClient(name, client, readTimeout)
+  }
+
+  fun get(
+    uri: String,
+    params: Map<String, Any>
+  ): Future<HttpResponse<String>> {
+    return get(uri, params, mapOf())
+  }
+
   fun get(
     uri: String,
     params: Map<String, Any>,
-    headers: Map<String, String> = mapOf()
+    headers: Map<String, String>
   ): Future<HttpResponse<String>> {
     val request = makeGetRequest(uri, params, headers)
     return sendAsync(request)
@@ -43,8 +62,15 @@ class HttpClient constructor(
 
   fun post(
     uri: String,
+    form: Map<String, Any>
+  ): Future<HttpResponse<String>> {
+    return post(uri, form, mapOf())
+  }
+
+  fun post(
+    uri: String,
     form: Map<String, Any>,
-    headers: Map<String, String> = mapOf()
+    headers: Map<String, String>
   ): Future<HttpResponse<String>> {
     val b = HttpRequest.newBuilder()
     b.uri(URI.create(uri))
@@ -57,8 +83,15 @@ class HttpClient constructor(
 
   fun post(
     uri: String,
+    json: String
+  ): Future<HttpResponse<String>> {
+    return post(uri, json, mapOf())
+  }
+
+  fun post(
+    uri: String,
     json: String,
-    headers: Map<String, String> = mapOf()
+    headers: Map<String, String>
   ): Future<HttpResponse<String>> {
     val b = HttpRequest.newBuilder()
     b.uri(URI.create(uri))
@@ -126,8 +159,20 @@ class HttpClient constructor(
       .mapToFailure({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.statusCode()) })
   }
 
+  fun <Body> sendAsync(
+    request: HttpRequest,
+    bodyHandler: HttpResponse.BodyHandler<Body>
+  ): Future<HttpResponse<Body>> {
+    val requestNo = counter.incrementAndGet()
+    logRequest(requestNo, request)
+    return client.sendAsync(request, bodyHandler)
+      .toFuture()
+      .andThen { v, e -> logResponse(requestNo, request, v, e) }
+      .mapToFailure({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.statusCode()) })
+  }
+
   private fun logRequest(requestNo: Long, request: HttpRequest) {
-    request.bodyPublisher().filter { it.contentLength() > 0 }.ifPresentOrElse(
+    request.bodyPublisher().ifPresentOrElse(
       {
         it.subscribe(
           object : Flow.Subscriber<ByteBuffer?> {
@@ -139,18 +184,16 @@ class HttpClient constructor(
             }
 
             override fun onNext(item: ByteBuffer?) {
-              item?.asReadOnlyBuffer()?.let { buffer ->
+              val content = item?.asReadOnlyBuffer()?.let { buffer ->
                 val byteArray = ByteArray(buffer.remaining())
                 buffer.get(byteArray)
-                logger.info { "[$requestNo] sending http request: $request ${String(byteArray, Charsets.UTF_8)}" }
-              }
+                String(byteArray, Charsets.UTF_8)
+              } ?: ""
+              logger.info { "[$requestNo] sending http request: $request $content" }
             }
 
             override fun onError(throwable: Throwable) {
-              logger.error(throwable) { "error occurred when subscribing http request: $request" }
-              if (throwable.isFatal()) {
-                throw throwable
-              }
+              logger.error(throwable) { "[$requestNo] error occurred when subscribing http request: $request" }
             }
           }
         )
@@ -162,7 +205,7 @@ class HttpClient constructor(
   private fun logResponse(
     requestNo: Long,
     request: HttpRequest,
-    response: HttpResponse<String>?,
+    response: HttpResponse<*>?,
     exception: Throwable?
   ) {
     if (response == null && exception == null) {

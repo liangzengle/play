@@ -22,7 +22,7 @@ import kotlin.reflect.jvm.internal.impl.name.FqName
 object Generator {
   @JvmStatic
   fun main(args: Array<String>) {
-    val dir = args[0].replace('.', '/')
+    val dir = if (args.isEmpty()) null else args[0].replace('.', '/')
     println(dir)
 
     val dispatcher = TypeSpec.classBuilder("ResponseDispatcher")
@@ -61,14 +61,17 @@ object Generator {
     dispatchCodeBlock.endControlFlow()
     dispatch.addCode(dispatchCodeBlock.build())
     val typeSpec = dispatcher.primaryConstructor(ctor.build()).addFunction(dispatch.build()).build()
-    FileSpec.builder("play.example.robot.net", "ResponseDispatcher")
-      .addType(typeSpec)
-      .build()
-      .writeTo(File(dir))
+
+    if (dir != null) {
+      FileSpec.builder("play.example.robot.net", "ResponseDispatcher")
+        .addType(typeSpec)
+        .build()
+        .writeTo(File(dir))
+    }
   }
 
   private fun generate(
-    dir: String,
+    dir: String?,
     className: ClassName,
     clazz: Class<*>,
     moduleId: Short,
@@ -233,10 +236,12 @@ object Generator {
       .addTypes(typeSpecList)
       .addFunctions(funSpecList).build()
 
-    FileSpec.builder(className.packageName, className.simpleName)
-      .addType(typeSpec)
-      .build()
-      .writeTo(File(dir))
+    if (dir != null) {
+      FileSpec.builder(className.packageName, className.simpleName)
+        .addType(typeSpec)
+        .build()
+        .writeTo(File(dir))
+    }
   }
 
   private fun getModuleName(clazz: Class<*>): String {

@@ -2,6 +2,7 @@ package play.example.game.app.module.playertask
 
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.Self
+import play.example.game.app.module.task.TaskEventBus
 import play.example.game.app.module.task.entity.AbstractTask
 import play.example.game.app.module.task.event.TaskEvent
 import play.example.game.app.module.task.res.AbstractTaskResource
@@ -13,7 +14,10 @@ import play.util.logging.getLogger
  * @author LiangZengle
  */
 @Component
-class PlayerTaskEventReceiver(private val taskServices: List<AbstractPlayerTaskService<AbstractTask, AbstractTaskResource>>) {
+class PlayerTaskEventReceiver(
+  private val taskServices: List<AbstractPlayerTaskService<AbstractTask, AbstractTaskResource>>,
+  private val taskEventBus: TaskEventBus
+) {
 
   private val logger = getLogger()
 
@@ -27,5 +31,6 @@ class PlayerTaskEventReceiver(private val taskServices: List<AbstractPlayerTaskS
         logger.error(e) { "任务事件处理失败: $event" }
       }
     }
+    taskEventBus.post(event)
   }
 }

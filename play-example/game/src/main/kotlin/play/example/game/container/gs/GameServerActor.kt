@@ -12,6 +12,7 @@ import org.springframework.boot.Banner
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
+import org.springframework.scheduling.TaskScheduler
 import play.akka.AbstractTypedActor
 import play.akka.stoppedBehavior
 import play.db.DatabaseNameProvider
@@ -24,6 +25,7 @@ import play.res.ResourceManager
 import play.res.ResourceReloadListener
 import play.scheduling.ManagedScheduler
 import play.scheduling.Scheduler
+import play.scheduling.SpringTaskScheduler
 import play.spring.PlayNonWebApplicationContextFactory
 import play.spring.rootBeanDefinition
 import play.util.classOf
@@ -124,6 +126,7 @@ class GameServerActor(
 
     val scheduler = parentApplicationContext.getBean(Scheduler::class.java)
     val managedScheduler = ManagedScheduler(scheduler)
+    val taskScheduler = SpringTaskScheduler(managedScheduler)
     // TODO
     val platformNames = listOf("Dev")
     val platformIdArray = ByteArray(platformNames.size)
@@ -138,6 +141,7 @@ class GameServerActor(
           .apply {
             registerBeanDefinition("gameServerActor", rootBeanDefinition(typeOf<ActorRef<Command>>(), self))
             registerBeanDefinition("scheduler", rootBeanDefinition(typeOf<Scheduler>(), managedScheduler))
+            registerBeanDefinition("taskScheduler", rootBeanDefinition(typeOf<TaskScheduler>(), taskScheduler))
           }
 
         it.beanFactory.registerSingleton("appActorMdc", actorMdc)

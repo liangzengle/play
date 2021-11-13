@@ -40,7 +40,7 @@ class ServerService(
   init {
     val serverIds: MutableIntSet =
       queryService.collectId(classOf<Server>(), IntSets.mutable.empty()) { set, id -> set.apply { add(id) } }
-        .get(5.seconds)
+        .blockingGet(5.seconds)
     if (serverIds.isEmpty) {
       injector.whenAvailable {
         serverCache.create(Server(conf.serverId.toInt()))

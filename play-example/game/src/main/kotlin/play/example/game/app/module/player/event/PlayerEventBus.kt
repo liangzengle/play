@@ -41,8 +41,6 @@ class PlayerEventBus(
   }
 
   fun postToOnlinePlayers(eventFactory: LongFunction<out PlayerEvent>) {
-    onlinePlayerService.foreach {
-      post(eventFactory.apply(it))
-    }
+    onlinePlayerService.onLinePlayerIdIterator().forEach { post(eventFactory.apply(it)) }
   }
 }

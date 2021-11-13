@@ -42,11 +42,11 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
   }
 
   fun mapToFailure(predicate: (T) -> Boolean, mapper: (T) -> Throwable): Future<T> {
-    return flatMap { if (predicate(it)) failed(mapper(it)) else successful(it) }
+    return flatMap { if (predicate(it)) failed(mapper(it)) else this }
   }
 
   fun mapToFailure(ec: Executor, predicate: (T) -> Boolean, mapper: (T) -> Throwable): Future<T> {
-    return flatMap(ec) { if (predicate(it)) failed(mapper(it)) else successful(it) }
+    return flatMap(ec) { if (predicate(it)) failed(mapper(it)) else this }
   }
 
   fun filterNot(predicate: (T) -> Boolean): Future<T> {
@@ -57,11 +57,11 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
     return flatMap(ec) { if (!predicate(it)) successful(it) else failed(NoSuchElementException("Predicate failed")) }
   }
 
-  fun andThen(f: (T, Throwable) -> Unit): Future<T> {
+  fun andThen(f: (T, Throwable?) -> Unit): Future<T> {
     return Future(cf.whenComplete { v, e -> f(v, e) })
   }
 
-  fun andThen(ec: Executor, f: (T, Throwable) -> Unit): Future<T> {
+  fun andThen(ec: Executor, f: (T, Throwable?) -> Unit): Future<T> {
     return Future(cf.whenCompleteAsync({ v, e -> f(v, e) }, ec))
   }
 
@@ -256,17 +256,17 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
     return this
   }
 
-  fun getSync(): T {
+  fun blockingGet(): T {
     return cf.get()
   }
 
   @Throws(TimeoutException::class)
-  fun get(timeout: Duration): T {
+  fun blockingGet(timeout: Duration): T {
     return cf.get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
   }
 
   @Throws(TimeoutException::class)
-  fun get(timeout: java.time.Duration): T {
+  fun blockingGet(timeout: java.time.Duration): T {
     return cf.get(timeout.toMillis(), TimeUnit.MILLISECONDS)
   }
 
@@ -289,7 +289,7 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
     cf.get(timeout.toMillis(), TimeUnit.MILLISECONDS)
   }
 
-  fun getResult(timeout: Duration): Result<T> {
+  fun blockingGetResult(timeout: Duration): Result<T> {
     return try {
       val value = cf.get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
       Result.success(value)
@@ -300,8 +300,8 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
     }
   }
 
-  fun getResult(timeout: java.time.Duration): Result<T> {
-    return getResult(timeout.toKotlinDuration())
+  fun blockingGetResult(timeout: java.time.Duration): Result<T> {
+    return blockingGetResult(timeout.toKotlinDuration())
   }
 
   fun isCompleted() = cf.isDone

@@ -19,6 +19,8 @@ abstract class AbstractScheduler(private val workerPool: Executor, val clock: Cl
   fun withErrorHandling(task: Runnable, isRepeated: Boolean): Runnable =
     DelegatingErrorHandlingRunnable(task, TaskUtils.getDefaultErrorHandler(isRepeated))
 
+  override fun clock(): Clock = clock
+
   override fun schedule(delay: Duration, task: Runnable): Cancellable {
     return schedule(delay, workerPool, task)
   }

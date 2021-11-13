@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
  */
 class NamedThreadFactory constructor(
   private val namePrefix: String,
-  private val isDaemon: Boolean = false,
-  private val priority: Int = Thread.currentThread().priority,
+  private val isDaemon: Boolean,
+  private val priority: Int,
   private val threadGroup: ThreadGroup?,
   private val exceptionHandler: Thread.UncaughtExceptionHandler?
 ) : ThreadFactory {
@@ -66,4 +66,14 @@ class NamedThreadFactory constructor(
       return NamedThreadFactory(namePrefix, daemon, priority, threadGroup, exceptionHandler)
     }
   }
+}
+
+fun threadFactory(
+  namePrefix: String,
+  isDaemon: Boolean = false,
+  priority: Int = Thread.currentThread().priority,
+  threadGroup: ThreadGroup? = null,
+  exceptionHandler: Thread.UncaughtExceptionHandler? = null
+): ThreadFactory {
+  return NamedThreadFactory(namePrefix, isDaemon, priority, threadGroup, exceptionHandler)
 }

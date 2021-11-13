@@ -11,7 +11,6 @@ import play.util.collection.keysIterator
 import play.util.time.Time.currentMillis
 import java.time.Duration
 import java.util.*
-import java.util.function.LongConsumer
 import java.util.stream.LongStream
 import java.util.stream.StreamSupport
 
@@ -53,18 +52,13 @@ class OnlinePlayerService(private val scheduler: Scheduler) {
     Session.writeAll(onLinePlayerIdIterator(), msg)
   }
 
-  fun onLinePlayerIdStream(): LongStream {
+  fun onlinePlayerIdStream(): LongStream {
     val it = onLinePlayerIdIterator()
     val splitter = Spliterators.spliteratorUnknownSize(it, 0)
     return StreamSupport.longStream(splitter, false)
   }
 
   fun onLinePlayerIdIterator(): PrimitiveIterator.OfLong = onlinePlayers.keysIterator()
-
-  fun foreach(action: LongConsumer) {
-    val it = onLinePlayerIdIterator()
-    it.forEachRemaining(action)
-  }
 
   fun getLoginParams(playerId: Long): Optional<LoginParams> {
     return Optional.ofNullable(getLoginParamsOrNull(playerId))

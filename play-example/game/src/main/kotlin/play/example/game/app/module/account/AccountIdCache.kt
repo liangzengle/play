@@ -16,7 +16,7 @@ import play.util.primitive.high16
 import play.util.primitive.low16
 import play.util.primitive.toInt
 import java.util.*
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @Component
 class AccountIdCache @Autowired constructor(
@@ -32,7 +32,7 @@ class AccountIdCache @Autowired constructor(
       val accountId = platformService.toAccountId(account)
       map[accountId] = account.id
       map
-    }.get(Duration.seconds(5))
+    }.blockingGet(5.seconds)
 
     val maxIds = IntLongMaps.mutable.empty()
     for ((accountId, id) in accountIdToId) {

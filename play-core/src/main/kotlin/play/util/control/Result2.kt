@@ -90,3 +90,8 @@ inline fun <T> Result2<T>.peek(f: (T) -> Unit): Result2<T> {
   forEach(f)
   return this
 }
+
+inline fun <T> Result2<T>.onOk(f: (T) -> Unit): Result2<T> {
+  forEach(f)
+  return this
+}

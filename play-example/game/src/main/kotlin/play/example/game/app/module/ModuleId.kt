@@ -12,4 +12,5 @@ object ModuleId {
   const val ModuleControl: Short = 8
   const val Mail: Short = 9
   const val Command: Short = 10
+  const val ServerTask: Short = 11
 }

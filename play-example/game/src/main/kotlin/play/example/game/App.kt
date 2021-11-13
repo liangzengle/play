@@ -16,7 +16,6 @@ import play.example.game.container.gs.GameServerManager
 import play.net.netty.NettyServer
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
-import play.util.concurrent.CommonPool
 import play.util.concurrent.LoggingUncaughtExceptionHandler
 import play.util.reflect.ClassScanner
 import play.util.unsafeCast
@@ -76,7 +75,7 @@ object App {
   private fun newClassScanner(conf: Config): ClassScanner {
     val jarsToScan = conf.getStringList("play.reflection.jars-to-scan")
     val packagesToScan = conf.getStringList("play.reflection.packages-to-scan")
-    return ClassScanner(CommonPool, jarsToScan, packagesToScan)
+    return ClassScanner(jarsToScan, packagesToScan)
   }
 
   private fun loadConfig(priorityConf: Config?): Config {

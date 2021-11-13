@@ -173,7 +173,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     }
     val f = entityCacheLoader.loadById(id, entityClass)
     try {
-      val entity: E? = f.get(settings.loadTimeout).getOrNull()
+      val entity: E? = f.blockingGet(settings.loadTimeout).getOrNull()
       if (entity == null || entity.isDeleted()) {
         return null
       }
@@ -271,7 +271,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     if (missing.isEmpty()) {
       return result
     }
-    val loaded = entityCacheLoader.loadAll(missing, entityClass).get(Duration.ofSeconds(5))
+    val loaded = entityCacheLoader.loadAll(missing, entityClass).blockingGet(Duration.ofSeconds(5))
     for (entity in loaded) {
       if (entity.isDeleted()) {
         continue

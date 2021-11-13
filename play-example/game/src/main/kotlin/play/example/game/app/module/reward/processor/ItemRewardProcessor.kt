@@ -33,7 +33,9 @@ class ItemRewardProcessor : RewardProcessor<ItemReward>(RewardType.Item) {
     checkFcm: Boolean
   ): Result2<TryRewardResult> {
     // TODO
-    val itemCfg = ItemResourceSet.getOrNull(reward.cfgId) ?: return StatusCode.ConfigNotFound
+    if (!ItemResourceSet.contains(reward.cfgId)) {
+      return StatusCode.ResourceNotFound
+    }
     return ok(TryRewardResult(reward, usedBagSize, 0, 0))
   }
 

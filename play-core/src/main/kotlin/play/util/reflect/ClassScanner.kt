@@ -4,6 +4,7 @@ import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfoList
 import io.github.classgraph.ScanResult
 import play.Log
+import play.util.concurrent.CommonPool
 import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 
@@ -13,6 +14,8 @@ import java.util.concurrent.ExecutorService
  * Created by LiangZengle on 2020/2/16.
  */
 class ClassScanner(scanExecutor: ExecutorService, jarsToScan: List<String>, packagesToScan: List<String>) {
+  constructor(jarsToScan: List<String>, packagesToScan: List<String>) : this(CommonPool, jarsToScan, packagesToScan)
+
   private val weakScanResult =
     WeakReferenceScanResult(scanExecutor, jarsToScan.toTypedArray(), packagesToScan.toTypedArray())
 
@@ -44,7 +47,7 @@ class ClassScanner(scanExecutor: ExecutorService, jarsToScan: List<String>, pack
 
     private fun scan(): ScanResult {
       scanTimes++
-      Log.info { "ClassScanner running ${scanTimes}th class scan" }
+      Log.info { "ClassScanner(${Integer.toHexString(hashCode())}) running ${scanTimes}th class scan" }
       return ClassGraph()
         .acceptJars(*jarsToScan)
         .acceptPackages(*packagesToScan)

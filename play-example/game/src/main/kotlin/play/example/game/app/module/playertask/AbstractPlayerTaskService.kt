@@ -3,7 +3,6 @@ package play.example.game.app.module.playertask
 import org.springframework.beans.factory.annotation.Autowired
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.reward.RewardService
-import play.example.game.app.module.reward.model.RewardList
 import play.example.game.app.module.reward.model.RewardResultSet
 import play.example.game.app.module.task.AbstractTaskService
 import play.example.game.app.module.task.domain.TaskTargetType
@@ -40,7 +39,7 @@ abstract class AbstractPlayerTaskService<Task : AbstractTask, TaskConfig : Abstr
    * @return 奖励结果
    */
   open fun getTaskReward(self: Self, taskId: Int): Result2<RewardResultSet> {
-    val taskConfig = getTaskConfig(taskId) ?: return errorCode.ConfigNotFound
+    val taskConfig = getTaskConfig(taskId) ?: return errorCode.ResourceNotFound
     val playerTask = getTask(self, taskId) ?: return errorCode.TaskNotExist
     if (playerTask.isRewarded()) {
       return errorCode.TaskRewarded
@@ -49,7 +48,7 @@ abstract class AbstractPlayerTaskService<Task : AbstractTask, TaskConfig : Abstr
       return errorCode.TaskNotFinished
     }
     val rewards = getRewards(self, taskConfig)
-    val rewardResult = rewardService.tryAndExecReward(self, RewardList(rewards), logSource.TaskReward)
+    val rewardResult = rewardService.tryAndExecReward(self, rewards, logSource.TaskReward)
     if (rewardResult.isOk()) {
       playerTask.setRewarded()
       onTaskRewarded(self, playerTask, taskConfig)

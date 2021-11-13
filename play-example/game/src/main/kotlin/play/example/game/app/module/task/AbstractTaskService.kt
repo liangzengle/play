@@ -2,7 +2,7 @@ package play.example.game.app.module.task
 
 import org.springframework.beans.factory.annotation.Autowired
 import play.example.common.StatusCode
-import play.example.game.app.module.reward.model.Reward
+import play.example.game.app.module.reward.model.RewardList
 import play.example.game.app.module.task.domain.TaskErrorCode
 import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.domain.TaskTargetType
@@ -99,7 +99,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @return 任务接取结果
    */
   open fun acceptTask(owner: T, taskId: Int): Result2<Task> {
-    val taskConfig = getTaskConfig(taskId) ?: return StatusCode.ConfigNotFound
+    val taskConfig = getTaskConfig(taskId) ?: return StatusCode.ResourceNotFound
     val checkResult = checkAcceptConditions(owner, taskConfig)
     if (checkResult != errorCode.Success) {
       return checkResult
@@ -284,7 +284,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskConf 任务配置
    * @return 任务奖励
    */
-  protected open fun getRewards(owner: T, taskConf: TaskConfig): List<Reward> {
+  protected open fun getRewards(owner: T, taskConf: TaskConfig): RewardList {
     return taskConf.rewards;
   }
 

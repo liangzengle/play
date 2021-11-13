@@ -16,6 +16,6 @@ interface ActorConfigurationSupport {
     val promise = Promise.make<ActorRef<T>>()
     val cmd = GuardianBehavior.Spawn(behavior, name, promise)
     actorSystem.tell(cmd)
-    return promise.future.get(Duration.ofSeconds(3))
+    return promise.future.blockingGet(Duration.ofSeconds(3))
   }
 }

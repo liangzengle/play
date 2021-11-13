@@ -1,5 +1,6 @@
 package play.scheduling
 
+import java.time.Clock
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
@@ -8,6 +9,8 @@ import java.util.concurrent.Executor
 typealias PlayScheduler = Scheduler
 
 interface Scheduler {
+
+  fun clock(): Clock
 
   fun schedule(delay: Duration, task: Runnable): Cancellable
 
