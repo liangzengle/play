@@ -10,7 +10,7 @@ sealed class HttpEntity {
 
   companion object {
     @JvmStatic
-    val empty: Strict = Strict(EmptyByteArray)
+    val empty: Strict = Strict(EmptyByteArray, Optional.of("text/plain"))
   }
 
   class Strict(val data: ByteArray, private val contentType: Optional<String>) : HttpEntity() {

@@ -35,7 +35,7 @@ class GameServerManager(
   private val containerRepositoryProvider: ContainerRepositoryProvider
 ) : AbstractTypedActor<GameServerManager.Command>(context) {
   interface Command
-  object Init : Command
+  class Init(val promise: PlayPromise<Void>) : Command
   private class InitResult(val result: Result<Void>) : Command
   data class CreateGameServer(val serverId: Int, val promise: PlayPromise<Int>) : Command
   private class GameServerStartResult(val serverId: Int, val result: Result<Unit>) : Command
@@ -62,7 +62,7 @@ class GameServerManager(
 
   private fun init(cmd: Init) {
     val repository = containerRepositoryProvider.get()
-    repository
+    val future = repository
       .listIds(GameServerEntity::class.java)
       .flatMap { serverIds ->
         val futures = if (serverIds.isEmpty()) {
@@ -83,7 +83,8 @@ class GameServerManager(
         }
         PlayFuture.allOf(futures)
       }.timeout(60.seconds)
-      .pipToSelf(::InitResult)
+    future.pipToSelf(::InitResult)
+    cmd.promise.completeWith(future)
   }
 
   private fun onInitResult(initResult: InitResult): Behavior<Command> {

@@ -27,6 +27,7 @@ import play.scheduling.ManagedScheduler
 import play.scheduling.Scheduler
 import play.scheduling.SpringTaskScheduler
 import play.spring.PlayNonWebApplicationContextFactory
+import play.spring.closeAndWait
 import play.spring.rootBeanDefinition
 import play.util.classOf
 import play.util.concurrent.PlayPromise
@@ -163,7 +164,7 @@ class GameServerActor(
 
   private fun postStop(signal: PostStop) {
     if (this::applicationContext.isInitialized) {
-      applicationContext.close()
+      applicationContext.closeAndWait()
     }
     log.info("Game server [{}] stopped.", serverId)
   }

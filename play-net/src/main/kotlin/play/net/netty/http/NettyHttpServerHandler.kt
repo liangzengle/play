@@ -31,7 +31,7 @@ abstract class NettyHttpServerHandler(protected val actionManager: HttpActionMan
 
   private fun nextId() = requestIdGenerator.incrementAndGet()
 
-  override fun channelRead(ctx: ChannelHandlerContext, msg: Any?) {
+  override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
     if (msg !is FullHttpRequest) {
       super.channelRead(ctx, msg)
       return
@@ -41,11 +41,15 @@ abstract class NettyHttpServerHandler(protected val actionManager: HttpActionMan
       val hostAndPort = ctx.channel().remoteAddress().getHostAndPort()
       val request = BasicNettyHttpRequest(requestId, msg, hostAndPort)
       logAccess(request)
-      if (filters.isNotEmpty() && filters.any { !it.accept(request) }) {
-        writeResponse(ctx, request, HttpResult.forbidden(), "Rejected By Filter")
-        return
-      }
 
+      if (filters.isNotEmpty()) {
+        for (filter in filters) {
+          if (!filter.accept(request)) {
+            writeResponse(ctx, request, HttpResult.forbidden(), "Rejected By Filter: ${filter.javaClass.simpleName}")
+            return
+          }
+        }
+      }
       val maybeAction = findAction(request)
       if (maybeAction.isEmpty) {
         writeResponse(ctx, request, HttpResult.notFount(), "Action Not Found")

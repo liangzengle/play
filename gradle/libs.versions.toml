@@ -1,10 +1,11 @@
 [versions]
-akka = "2.6.16"
+akka = "2.6.17"
+asm = "9.2"
 auto-service = "1.0"
-bson4jackson = "2.12.0"
+bson4jackson = "2.13.0"
 caffeine = "3.0.4"
-checker = "3.15.0"
-classgraph = "4.8.116"
+checker = "3.19.0"
+classgraph = "4.8.131"
 eclipse-collections = "10.4.0"
 fastutil = "8.5.6"
 guava = "31.0.1-jre"
@@ -14,23 +15,23 @@ jackson = "2.13.0"
 jakarta-el-api = "4.0.0"
 jakarta-el-impl = "4.0.2"
 jctools = "3.3.0"
-junit = "5.7.0"
+junit = "5.8.1"
 kotlin-lang = "1.6.0-RC2"
 # kotlin-lang = "1.5.31"
 kotlin-logging = "2.0.11"
-kotlinpoet-poet = "1.10.1"
-kotlinx-serialization = "1.3.0"
-ktlint = "9.4.1"
+kotlinpoet-poet = "1.10.2"
+kotlinx-serialization = "1.3.1"
+ktlint = "10.2.0"
 log4j = "2.14.1"
-logback = "1.2.3"
-micrometer = "1.7.4"
-mongodb-driver = "4.3.2"
+logback = "1.2.7"
+micrometer = "1.8.0"
+mongodb-driver = "4.4.0"
 mvel = "2.4.13.Final"
-netty = "4.1.68.Final"
-scala-library = "2.13.5"
-scala-java8-compact = "0.9.0"
+netty = "4.1.70.Final"
+scala-library = "2.13.7"
+scala-java8-compact = "1.0.2"
 slf4j = "1.7.30"
-spring-boot = "2.5.5"
+spring-boot = "2.5.6"
 typesafe-config = "1.4.1"
 unsafe-accessor = "1.6.1"
 
@@ -39,6 +40,7 @@ akka-typed-actor = { module = "com.typesafe.akka:akka-actor-typed_2.13", version
 # akka-typed-remote = { module = "com.typesafe.akka:akka-remote-typed_2.13", version.ref = "akka" }
 akka-typed-cluster = { module = "com.typesafe.akka:akka-cluster-typed_2.13", version.ref = "akka" }
 akka-typed-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 auto-service = { module = "com.google.auto.service:auto-service", version.ref = "auto-service" }
 bson4jackson = { module = "de.undercouch:bson4jackson", version.ref = "bson4jackson" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
@@ -78,8 +80,10 @@ logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
 mongodb = { module = "org.mongodb:mongodb-driver-reactivestreams", version.ref = "mongodb-driver" }
 mvel = { module = "org.mvel:mvel2", version.ref = "mvel" }
-netty-all = { module = "io.netty:netty-all", version.ref = "netty" }
+#netty-all = { module = "io.netty:netty-all", version.ref = "netty" }
+netty-codec-http = { module = "io.netty:netty-codec-http", version.ref = "netty" }
 netty-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
+netty-handler = { module = "io.netty:netty-handler", version.ref = "netty" }
 scala-library = { module = "org.scala-lang:scala-library", version.ref = "scala-library" }
 scala-java8-compact = { module = "org.scala-lang.modules:scala-java8-compat_2.13", version.ref = "scala-java8-compact" }
 slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
@@ -93,7 +97,7 @@ jakarta-el = ["jakarta-el-api", "jakarta-el-impl"]
 logging = ["kotlin-logging", "slf4j"]
 log4j = ["log4j-api", "log4j-core", "log4j-slf4j", "log4j-jul"]
 el = ["jakarta-el-api", "jakarta-el-impl", "mvel"]
-netty = ["netty-all", "netty-epoll"]
+netty = ["netty-codec-http", "netty-handler", "netty-epoll"]
 kotlin = ["kotlin-jvm", "kotlin-reflect"]
 akka = ["akka-typed-actor", "akka-typed-cluster", "akka-typed-serialization-jackson"]
 scala = ["scala-library", "scala-java8-compact"]

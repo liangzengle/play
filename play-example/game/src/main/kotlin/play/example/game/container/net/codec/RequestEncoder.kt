@@ -21,7 +21,7 @@ object RequestEncoder : ChannelOutboundHandlerAdapter() {
     }
 
     val msgId = msg.header.msgId.value
-    val sequenceNo = msg.header.sequenceNo
+    val sequenceNo = msg.header.requestId
     val body = MessageCodec.encode(msg.body)
     val len = 8 + body.size
     val buffer = ctx.channel().alloc().ioBuffer(len)

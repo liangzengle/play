@@ -30,9 +30,11 @@ class ContainerAdminConfiguration {
       .host(host)
       .port(port)
       .childHandler { ch ->
-        ch.pipeline().addLast(HttpServerCodec())
-        ch.pipeline().addLast(HttpObjectAggregator(maxContentLength, true))
-        ch.pipeline().addLast("handler", handler)
+        ch.pipeline().apply {
+          addLast(HttpServerCodec())
+          addLast(HttpObjectAggregator(maxContentLength, true))
+          addLast("handler", handler)
+        }
       }
       .build("admin-http")
   }

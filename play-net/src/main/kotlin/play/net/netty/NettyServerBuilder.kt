@@ -2,6 +2,7 @@ package play.net.netty
 
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.*
+import io.netty.channel.socket.ServerSocketChannel
 import io.netty.channel.socket.SocketChannel
 
 /**
@@ -43,6 +44,15 @@ class NettyServerBuilder {
 
   fun handler(handler: ChannelHandler): NettyServerBuilder {
     this.handler = handler
+    return this
+  }
+
+  fun handler(channelInitializer: (ServerSocketChannel) -> Unit): NettyServerBuilder {
+    this.handler = object : ChannelInitializer<ServerSocketChannel>() {
+      override fun initChannel(ch: ServerSocketChannel) {
+        channelInitializer(ch)
+      }
+    }
     return this
   }
 

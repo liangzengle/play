@@ -23,13 +23,12 @@ class PlayerModuleImpl(private val commandModule: CommandModule) : PlayerModule(
     player.name = data.name
     println("$player logged in")
     pingReq(player, "hello")
+    commandModule.listReq(player)
   }
 
   override fun pingResp(player: RobotPlayer, data: String, req: PingRequestParams?) {
     logger.info("$player >> pong: ${req?.msg} $data")
-//    pingReq(player, "hello")
-
-    commandModule.listReq(player)
+    pingReq(player, "hello")
   }
 
   override fun StringMessageResp(player: RobotPlayer, data: String, req: Any?) {

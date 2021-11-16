@@ -18,14 +18,14 @@ object ResponseEncoder : ChannelOutboundHandlerAdapter() {
       return
     }
     val msgId = msg.header.msgId.value
-    val sequenceNo = msg.header.sequenceNo
+    val requestId = msg.header.requestId
     val statusCode = msg.statusCode
     val len = 12 + msg.body.size
     val buffer = ctx.channel().alloc().ioBuffer(len)
     buffer
       .writeInt(len)
       .writeInt(msgId)
-      .writeInt(sequenceNo)
+      .writeInt(requestId)
       .writeInt(statusCode)
       .writeBytes(msg.body)
     ctx.write(buffer, promise)

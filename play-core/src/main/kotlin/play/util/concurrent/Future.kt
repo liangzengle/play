@@ -289,6 +289,10 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
     cf.get(timeout.toMillis(), TimeUnit.MILLISECONDS)
   }
 
+  fun await() {
+    cf.get()
+  }
+
   fun blockingGetResult(timeout: Duration): Result<T> {
     return try {
       val value = cf.get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)

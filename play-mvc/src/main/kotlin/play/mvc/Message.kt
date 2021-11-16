@@ -71,14 +71,14 @@ value class Header(private val value: Long) {
 
   val msgId: MsgId get() = MsgId((value shr 32 and 0x7ffffff).toInt())
 
-  val sequenceNo: Int get() = value.toInt()
+  val requestId: Int get() = value.toInt()
 
   val moduleId: Short get() = msgId.moduleId
 
   val cmd: Byte get() = msgId.cmd
 
   override fun toString(): String {
-    return "Header($msgId, $sequenceNo)"
+    return "Header($msgId, $requestId)"
   }
 }
 

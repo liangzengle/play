@@ -14,14 +14,17 @@ import play.mvc.MessageCodec
 import play.mvc.Request
 
 /**
- *
+ * 登录消息按服id分发
  * @author LiangZengle
  */
 class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<SessionManager.Command>) :
   AbstractTypedActor<LoginDispatcherActor.Command>(ctx) {
   interface Command
-  class UnhandledLoginRequest(val request: Request, val session: Session) : Command
-  class RegisterLoginReceiver(val serverIds: IntSet, val receiver: ActorRef<UnhandledLoginRequest>) : Command
+  class UnhandledLoginRequest(@JvmField val request: Request, @JvmField val session: Session) : Command
+  class RegisterLoginReceiver(
+    @JvmField val serverIds: IntSet,
+    @JvmField val receiver: ActorRef<UnhandledLoginRequest>
+  ) : Command
 
   private val receivers = ArrayList<RegisterLoginReceiver>(1)
 
@@ -45,23 +48,25 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
   private fun handle(req: UnhandledLoginRequest) {
     when (req.request.msgId()) {
       AccountModule.login -> dispatch(req)
-      else -> context.log.warn("Unhandled request: {}", req.request)
+      else -> log.warn("Unhandled request: {}", req.request)
     }
   }
 
   private fun dispatch(req: UnhandledLoginRequest) {
-    val requestBody = req.request.body
-    val params = MessageCodec.decode<LoginParams>(requestBody.bytes)
-    val serverId = params.serverId
-    for (i in receivers.indices) {
-      val cmd = receivers[i]
-      val receiver = cmd.receiver
-      val serverIds = cmd.serverIds
-      if (serverIds.contains(serverId)) {
-        receiver.tell(req)
-        return
+    try {
+      val requestBody = req.request.body
+      val params = MessageCodec.decode<LoginParams>(requestBody.bytes)
+      val serverId = params.serverId
+      for (i in receivers.indices) {
+        val cmd = receivers[i]
+        if (cmd.serverIds.contains(serverId)) {
+          cmd.receiver.tell(req)
+          return
+        }
       }
+      log.info("No receiver for login message: {}", params)
+    } catch (e: Exception) {
+      log.error(e.message, e)
     }
-    context.log.info("No receiver for login message: {}", params)
   }
 }

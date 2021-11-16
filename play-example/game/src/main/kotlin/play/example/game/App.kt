@@ -9,7 +9,6 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
 import play.Log
-import play.OS
 import play.SystemProps
 import play.example.game.container.ContainerApp
 import play.example.game.container.gs.GameServerManager
@@ -17,9 +16,11 @@ import play.net.netty.NettyServer
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
 import play.util.concurrent.LoggingUncaughtExceptionHandler
+import play.util.concurrent.PlayPromise
 import play.util.reflect.ClassScanner
 import play.util.unsafeCast
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.minutes
 
 /**
  *
@@ -27,24 +28,23 @@ import kotlin.system.exitProcess
  */
 object App {
   init {
-    LoggingUncaughtExceptionHandler.setAsDefault()
+    Thread.setDefaultUncaughtExceptionHandler(LoggingUncaughtExceptionHandler)
     SystemProps.set("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager")
   }
 
   @JvmStatic
   fun main(args: Array<String>) {
-    Log.info { "App start" }
-    if (OS.isWindows) {
-      setWindowsProperties()
-    }
+    Log.info { "App starting" }
 
     val config = loadConfig(null)
     val classScanner = newClassScanner(config)
 
     try {
+      // 初始化策划配置
       val resourceManager = ResourceManager(config.getString("play.res.path"), classScanner)
       resourceManager.init()
 
+      // 启动Spring
       val springApplication = SpringApplicationBuilder()
         .bannerMode(Banner.Mode.OFF)
         .sources(ContainerApp::class.java)
@@ -53,20 +53,30 @@ object App {
       springApplication.addInitializers(
         ApplicationContextInitializer<ConfigurableApplicationContext> {
           it.beanFactory.registerSingleton("config", config)
-          it.beanFactory.registerSingleton("configManager", resourceManager)
+          it.beanFactory.registerSingleton("resourceManager", resourceManager)
           it.beanFactory.registerSingleton("classScanner", classScanner)
         })
       val applicationContext = springApplication.run()
 
+      // 注册配置监听器
       val resourceReloadListeners = applicationContext.getBeansOfType(ResourceReloadListener::class.java).values
       resourceManager.registerReloadListeners(resourceReloadListeners)
 
-      applicationContext.getBean("gameServerManager").unsafeCast<ActorRef<GameServerManager.Command>>()
-        .tell(GameServerManager.Init)
+      // 初始化游戏服
+      val initPromise = PlayPromise.make<Void>()
+      applicationContext.getBean("gameServerManager")
+        .unsafeCast<ActorRef<GameServerManager.Command>>()
+        .tell(GameServerManager.Init(initPromise))
+      // 阻塞等待初始化完成
+      initPromise.future.await(5.minutes)
 
+      // 开启网络服务
       startNettyServer(applicationContext, "gameSocketServer")
       startNettyServer(applicationContext, "adminHttpServer")
+
+      Log.info { "App started" }
     } catch (e: Throwable) {
+      Log.error(e) { "App failed to start" }
       e.printStackTrace()
       exitProcess(-1)
     }
@@ -88,9 +98,5 @@ object App {
 
   private fun startNettyServer(applicationContext: ApplicationContext, name: String) {
     applicationContext.getBean(name, NettyServer::class.java).start()
-  }
-
-  private fun setWindowsProperties() {
-    SystemProps.setIfAbsent("io.netty.availableProcessors", "4")
   }
 }

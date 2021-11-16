@@ -16,7 +16,7 @@ import java.util.*
  */
 class ContainerAdminHttpServerHandler(actionManager: ContainerAdminHttpActionManager) :
   NettyHttpServerHandler(actionManager) {
-  override val filters: List<HttpRequestFilter> = emptyList()
+  override val filters: List<HttpRequestFilter> = listOf(AdminWhitelistIpFilter())
   override val logger: Logger = getLogger()
 
   override fun findAction(request: BasicNettyHttpRequest): Optional<Action> {

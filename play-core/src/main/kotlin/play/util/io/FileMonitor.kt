@@ -33,6 +33,8 @@ open class FileMonitor internal constructor(
       if (events.isNotEmpty()) {
         handleEvents(path, events)
       }
+    } catch (e: Exception) {
+      logger.error(e) { "Exception occurred when processing file events at ${root.absolutePath}" }
     } finally {
       key.reset()
     }
@@ -79,7 +81,7 @@ open class FileMonitor internal constructor(
             break
           }
           val key = service.take()
-          Thread.sleep(3000)
+          Thread.sleep(5000)
           process(key)
         } catch (e: ClosedWatchServiceException) {
           if (!closed && root.exists()) {

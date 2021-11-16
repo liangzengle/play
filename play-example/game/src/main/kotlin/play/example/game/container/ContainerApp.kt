@@ -43,7 +43,11 @@ class ContainerApp : ActorConfigurationSupport {
     actorSystem: ActorSystem<GuardianBehavior.Command>,
     sessionManager: ActorRef<SessionManager.Command>
   ): ActorRef<LoginDispatcherActor.Command> {
-    return spawn(actorSystem, Behaviors.setup { ctx -> LoginDispatcherActor(ctx, sessionManager) }, "loginDispatcher")
+    return spawn(
+      actorSystem,
+      Behaviors.setup { ctx -> LoginDispatcherActor(ctx, sessionManager) },
+      "LoginDispatcherActor"
+    )
   }
 
   @Bean
