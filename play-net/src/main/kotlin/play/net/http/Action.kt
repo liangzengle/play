@@ -116,7 +116,7 @@ abstract class Action(val path: RoutePath, val methods: List<String>) {
     if (methods.isEmpty()) {
       return true
     }
-    val upperCaseMethod = method.toUpperCase()
+    val upperCaseMethod = method.uppercase()
     for (i in methods.indices) {
       if (methods[i] == upperCaseMethod) {
         return true

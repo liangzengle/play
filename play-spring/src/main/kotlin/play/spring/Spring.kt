@@ -2,7 +2,6 @@
 
 package play.spring
 
-import org.springframework.beans.factory.config.BeanDefinition
 import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.beans.factory.support.RootBeanDefinition
 import org.springframework.context.ConfigurableApplicationContext
@@ -15,10 +14,6 @@ import kotlin.reflect.KType
 import kotlin.reflect.javaType
 
 fun KType.toResolvableType() = ResolvableType.forType(this.javaType)
-
-fun BeanDefinitionRegistry.registerBeanDefinition(beanName: String, beanDefinition: BeanDefinition) {
-  registerBeanDefinition(beanName, beanDefinition)
-}
 
 fun <T : Any> BeanDefinitionRegistry.registerBeanDefinition(beanName: String, kType: KType, instance: T) {
   registerBeanDefinition(beanName, rootBeanDefinition(kType.toResolvableType(), instance))

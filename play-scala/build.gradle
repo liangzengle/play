@@ -2,6 +2,11 @@ plugins {
     id "scala"
 }
 
+ext {
+    scalaMajorVersion = '3'
+    scalaVersion = "$scalaMajorVersion.1.0"
+}
+
 dependencies {
     api libs.bundles.scala
 }

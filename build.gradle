@@ -37,6 +37,8 @@ configure(subprojects) {
     apply plugin: "org.jlleitschuh.gradle.ktlint-idea"
     apply plugin: "kotlin-spring"
 
+    apply plugin: 'project-report'
+
 
     ktlint {
 //        debug = true
@@ -117,4 +119,6 @@ configure(subprojects) {
         main.java.srcDirs += "src/main/kotlin"
         test.java.srcDirs += "src/test/kotlin"
     }
+    tasks.withType(Jar) { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
 }
+

@@ -19,6 +19,7 @@ import java.lang.reflect.Type
 import kotlin.reflect.jvm.internal.impl.builtins.jvm.JavaToKotlinClassMap
 import kotlin.reflect.jvm.internal.impl.name.FqName
 
+@OptIn(DelicateKotlinPoetApi::class)
 object Generator {
   @JvmStatic
   fun main(args: Array<String>) {

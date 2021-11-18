@@ -16,7 +16,7 @@ jakarta-el-api = "4.0.0"
 jakarta-el-impl = "4.0.2"
 jctools = "3.3.0"
 junit = "5.8.1"
-kotlin-lang = "1.6.0-RC2"
+kotlin-lang = "1.6.0"
 # kotlin-lang = "1.5.31"
 kotlin-logging = "2.0.11"
 kotlinpoet-poet = "1.10.2"
@@ -28,18 +28,17 @@ micrometer = "1.8.0"
 mongodb-driver = "4.4.0"
 mvel = "2.4.13.Final"
 netty = "4.1.70.Final"
-scala-library = "2.13.7"
+scala-library = "3.1.0"
 scala-java8-compact = "1.0.2"
-slf4j = "1.7.30"
+slf4j = "1.7.32"
 spring-boot = "2.5.6"
 typesafe-config = "1.4.1"
 unsafe-accessor = "1.6.1"
 
 [libraries]
-akka-typed-actor = { module = "com.typesafe.akka:akka-actor-typed_2.13", version.ref = "akka" }
-# akka-typed-remote = { module = "com.typesafe.akka:akka-remote-typed_2.13", version.ref = "akka" }
-akka-typed-cluster = { module = "com.typesafe.akka:akka-cluster-typed_2.13", version.ref = "akka" }
-akka-typed-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
+akka-typed-actor = { module = "com.typesafe.akka:akka-actor-typed_3", version.ref = "akka" }
+akka-typed-cluster = { module = "com.typesafe.akka:akka-cluster-typed_3", version.ref = "akka" }
+akka-typed-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_3", version.ref = "akka" }
 asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
 auto-service = { module = "com.google.auto.service:auto-service", version.ref = "auto-service" }
 bson4jackson = { module = "de.undercouch:bson4jackson", version.ref = "bson4jackson" }
@@ -56,6 +55,7 @@ jakarta-el-impl = { module = "org.glassfish:jakarta.el", version.ref = "jakarta-
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref = "jackson" }
 jackson-datatype-guava = { module = "com.fasterxml.jackson.datatype:jackson-datatype-guava", version.ref = "jackson" }
+jackson-module-scala = { module = "com.fasterxml.jackson.module:jackson-module-scala_3", version.ref = "jackson" }
 jackson-datatype-eclipse-collections = { module = "com.fasterxml.jackson.datatype:jackson-datatype-eclipse-collections", version.ref = "jackson" }
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
@@ -84,9 +84,10 @@ mvel = { module = "org.mvel:mvel2", version.ref = "mvel" }
 netty-codec-http = { module = "io.netty:netty-codec-http", version.ref = "netty" }
 netty-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
 netty-handler = { module = "io.netty:netty-handler", version.ref = "netty" }
-scala-library = { module = "org.scala-lang:scala-library", version.ref = "scala-library" }
-scala-java8-compact = { module = "org.scala-lang.modules:scala-java8-compat_2.13", version.ref = "scala-java8-compact" }
-slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+scala-library = { module = "org.scala-lang:scala3-library_3", version.ref = "scala-library" }
+scala-java8-compact = { module = "org.scala-lang.modules:scala-java8-compat_3", version.ref = "scala-java8-compact" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 spring-boot-starter = { module = "org.springframework.boot:spring-boot-starter", version.ref = "spring-boot" }
 typesafe-config = { module = "com.typesafe:config", version.ref = "typesafe-config" }
 unsafe-accessor = { module = "io.github.karlatemp:unsafe-accessor", version.ref = "unsafe-accessor" }
@@ -94,11 +95,11 @@ unsafe-accessor = { module = "io.github.karlatemp:unsafe-accessor", version.ref 
 [bundles]
 jackson = ["jackson-module-kotlin", "jackson-datatype-jdk8", "jackson-datatype-guava", "jackson-datatype-eclipse-collections"]
 jakarta-el = ["jakarta-el-api", "jakarta-el-impl"]
-logging = ["kotlin-logging", "slf4j"]
+logging = ["kotlin-logging", "slf4j-api", "slf4j-simple"]
 log4j = ["log4j-api", "log4j-core", "log4j-slf4j", "log4j-jul"]
 el = ["jakarta-el-api", "jakarta-el-impl", "mvel"]
 netty = ["netty-codec-http", "netty-handler", "netty-epoll"]
 kotlin = ["kotlin-jvm", "kotlin-reflect"]
 akka = ["akka-typed-actor", "akka-typed-cluster", "akka-typed-serialization-jackson"]
-scala = ["scala-library", "scala-java8-compact"]
+scala = ["scala-library", "scala-java8-compact", "jackson-module-scala"]
 junit = ["junit-jupiter-engine", "junit-jupiter-api", "junit-jupiter-impl"]

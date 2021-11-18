@@ -40,7 +40,7 @@ internal class ConstraintsValidator(
 
   private fun validate(resourceSets: Map<Class<AbstractResource>, ResourceSet<AbstractResource>>): List<String> {
     val errors = LinkedList<String>()
-    for ((resourceClass, resourceSet) in resourceSets) {
+    for ((_, resourceSet) in resourceSets) {
       for (resource in resourceSet.list()) {
         val violations = validator.validate(resource)
         for (violation in violations) {

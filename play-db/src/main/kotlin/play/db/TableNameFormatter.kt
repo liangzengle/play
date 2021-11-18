@@ -19,9 +19,9 @@ class LowerUnderscoreFormatter : TableNameFormatter() {
     for (i in input.indices) {
       val c = input[i]
       if (c.isUpperCase()) {
-        if (i == 0) b.append(c.toLowerCase())
+        if (i == 0) b.append(c.lowercase())
         else {
-          b.append('_').append(c.toLowerCase())
+          b.append('_').append(c.lowercase())
         }
       } else {
         b.append(c)
