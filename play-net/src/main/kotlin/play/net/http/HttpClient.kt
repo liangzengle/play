@@ -156,7 +156,7 @@ class HttpClient constructor(
     return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
       .toFuture()
       .andThen { v, e -> logResponse(requestNo, request, v, e) }
-      .mapToFailure({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.statusCode()) })
+      .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.statusCode()) })
   }
 
   fun <Body> sendAsync(
@@ -168,7 +168,7 @@ class HttpClient constructor(
     return client.sendAsync(request, bodyHandler)
       .toFuture()
       .andThen { v, e -> logResponse(requestNo, request, v, e) }
-      .mapToFailure({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.statusCode()) })
+      .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.statusCode()) })
   }
 
   private fun logRequest(requestNo: Long, request: HttpRequest) {

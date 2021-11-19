@@ -33,35 +33,33 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
     return Future(cf.thenComposeAsync({ f(it).toJava() }, ec))
   }
 
-  fun filter(predicate: (T) -> Boolean): Future<T> {
-    return flatMap { if (predicate(it)) successful(it) else failed(NoSuchElementException("Predicate failed")) }
+  /**
+   * reject a successful Future if [shouldReject] returns true
+   *
+   * @param shouldReject detect should reject or not
+   * @return a new Future
+   */
+  fun rejectIf(shouldReject: (T) -> Boolean): Future<T> {
+    return rejectIf(shouldReject) { NoSuchElementException("<rejected>") }
   }
 
-  fun filter(ec: Executor, predicate: (T) -> Boolean): Future<T> {
-    return flatMap(ec) { if (predicate(it)) successful(it) else failed(NoSuchElementException("Predicate failed")) }
+  fun rejectIf(ec: Executor, shouldReject: (T) -> Boolean): Future<T> {
+    return rejectIf(ec, shouldReject) { NoSuchElementException("<rejected>") }
   }
 
-  fun mapToFailure(predicate: (T) -> Boolean, mapper: (T) -> Throwable): Future<T> {
-    return flatMap { if (predicate(it)) failed(mapper(it)) else this }
+  fun rejectIf(shouldReject: (T) -> Boolean, mapper: (T) -> Throwable): Future<T> {
+    return flatMap { if (shouldReject(it)) failed(mapper(it)) else this }
   }
 
-  fun mapToFailure(ec: Executor, predicate: (T) -> Boolean, mapper: (T) -> Throwable): Future<T> {
-    return flatMap(ec) { if (predicate(it)) failed(mapper(it)) else this }
+  fun rejectIf(ec: Executor, shouldReject: (T) -> Boolean, mapper: (T) -> Throwable): Future<T> {
+    return flatMap(ec) { if (shouldReject(it)) failed(mapper(it)) else this }
   }
 
-  fun filterNot(predicate: (T) -> Boolean): Future<T> {
-    return flatMap { if (!predicate(it)) successful(it) else failed(NoSuchElementException("Predicate failed")) }
-  }
-
-  fun filterNot(ec: Executor, predicate: (T) -> Boolean): Future<T> {
-    return flatMap(ec) { if (!predicate(it)) successful(it) else failed(NoSuchElementException("Predicate failed")) }
-  }
-
-  fun andThen(f: (T, Throwable?) -> Unit): Future<T> {
+  fun andThen(f: (T?, Throwable?) -> Unit): Future<T> {
     return Future(cf.whenComplete { v, e -> f(v, e) })
   }
 
-  fun andThen(ec: Executor, f: (T, Throwable?) -> Unit): Future<T> {
+  fun andThen(ec: Executor, f: (T?, Throwable?) -> Unit): Future<T> {
     return Future(cf.whenCompleteAsync({ v, e -> f(v, e) }, ec))
   }
 
@@ -253,6 +251,11 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
 
   fun timeout(timeout: java.time.Duration): Future<T> {
     cf.orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
+    return this
+  }
+
+  fun timeoutOrElse(timeout: Duration, defaultValue: T): Future<T> {
+    cf.completeOnTimeout(defaultValue, timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
     return this
   }
 
