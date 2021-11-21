@@ -15,6 +15,7 @@ class GuavaEventBusSubscriberRegister(private val eventBus: GuavaEventBus) : Sma
   @Suppress("UnstableApiUsage")
   override fun afterSingletonsInstantiated() {
     val guavaEventBus = eventBus.asGuava()
+    // TODO avoid scan all beans
     Arrays.stream(applicationContext.beanDefinitionNames)
       .parallel()
       .forEach {

@@ -1,6 +1,5 @@
 package play.example.game.app.module.task
 
-import org.springframework.beans.factory.annotation.Autowired
 import play.example.common.StatusCode
 import play.example.game.app.module.reward.model.RewardList
 import play.example.game.app.module.task.domain.TaskErrorCode
@@ -23,12 +22,12 @@ import java.util.*
  *
  * @author LiangZengle
  */
-abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : AbstractTaskResource> {
+@Suppress("MemberVisibilityCanBePrivate")
+abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : AbstractTaskResource>(
+  protected val commonTaskHandlerProvider: CommonTaskHandlerProvider
+) {
 
   protected val logger = getLogger()
-
-  @Autowired
-  private lateinit var commonTaskHandlerProvider: CommonTaskHandlerProvider
 
   /**
    * 获取目标处理器
@@ -285,7 +284,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @return 任务奖励
    */
   protected open fun getRewards(owner: T, taskConf: TaskConfig): RewardList {
-    return taskConf.rewards;
+    return taskConf.rewards
   }
 
   /**

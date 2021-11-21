@@ -55,6 +55,22 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
     return flatMap(ec) { if (shouldReject(it)) failed(mapper(it)) else this }
   }
 
+  fun rejectIfNot(rejectExcept: (T) -> Boolean): Future<T> {
+    return rejectIfNot(rejectExcept) { NoSuchElementException("<rejected>") }
+  }
+
+  fun rejectIfNot(ec: Executor, rejectExcept: (T) -> Boolean): Future<T> {
+    return rejectIfNot(ec, rejectExcept) { NoSuchElementException("<rejected>") }
+  }
+
+  fun rejectIfNot(rejectExcept: (T) -> Boolean, mapper: (T) -> Throwable): Future<T> {
+    return flatMap { if (!rejectExcept(it)) failed(mapper(it)) else this }
+  }
+
+  fun rejectIfNot(ec: Executor, rejectExcept: (T) -> Boolean, mapper: (T) -> Throwable): Future<T> {
+    return flatMap(ec) { if (!rejectExcept(it)) failed(mapper(it)) else this }
+  }
+
   fun andThen(f: (T?, Throwable?) -> Unit): Future<T> {
     return Future(cf.whenComplete { v, e -> f(v, e) })
   }

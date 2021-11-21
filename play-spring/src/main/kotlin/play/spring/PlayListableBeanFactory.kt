@@ -3,6 +3,7 @@ package play.spring
 import org.springframework.beans.BeansException
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.support.DefaultListableBeanFactory
+import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import play.Orders
 import javax.annotation.Priority
@@ -34,6 +35,9 @@ class PlayListableBeanFactory() : DefaultListableBeanFactory() {
   }
 
   private fun getOrder(bean: Any): Int {
+    if (bean is Ordered) {
+      return bean.order
+    }
     val springOrder = bean.javaClass.getAnnotation(Order::class.java)
     if (springOrder != null) {
       return springOrder.value

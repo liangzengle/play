@@ -13,6 +13,7 @@ import play.example.game.app.module.servertask.handler.ServerTaskTargetHandler
 import play.example.game.app.module.servertask.res.ServerTaskResource
 import play.example.game.app.module.servertask.res.ServerTaskResourceSet
 import play.example.game.app.module.task.AbstractTaskService
+import play.example.game.app.module.task.CommonTaskHandlerProvider
 import play.example.game.app.module.task.domain.TaskErrorCode
 import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.domain.TaskTargetType
@@ -29,9 +30,10 @@ import java.util.*
  */
 @Component
 public class ServerTaskService @Autowired constructor(
+  commonTaskHandlerProvider: CommonTaskHandlerProvider,
   private val serverTaskEntityCache: ServerTaskEntityCache,
   private val serverId: GameServerId
-) : AbstractTaskService<ServerTaskEntity, ServerTask, ServerTaskResource>() {
+) : AbstractTaskService<ServerTaskEntity, ServerTask, ServerTaskResource>(commonTaskHandlerProvider) {
 
   override fun getHandlerOrNull(targetType: TaskTargetType): ServerTaskTargetHandler<TaskTarget, TaskEvent>? {
     return null

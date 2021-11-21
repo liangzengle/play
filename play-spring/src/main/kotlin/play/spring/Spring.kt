@@ -2,16 +2,21 @@
 
 package play.spring
 
+import org.springframework.beans.factory.BeanFactory
+import org.springframework.beans.factory.ListableBeanFactory
 import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.beans.factory.support.RootBeanDefinition
+import org.springframework.context.ApplicationContext
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.core.ResolvableType
 import play.Log
+import play.util.reflect.Reflect
 import play.util.unsafeCast
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import kotlin.reflect.KType
 import kotlin.reflect.javaType
+import kotlin.reflect.typeOf
 
 fun KType.toResolvableType() = ResolvableType.forType(this.javaType)
 
@@ -30,6 +35,19 @@ fun <T : Any> rootBeanDefinition(kType: KType, instance: T): RootBeanDefinition 
   val definition = RootBeanDefinition(resolvableType.rawClass.unsafeCast()) { instance }
   definition.setTargetType(resolvableType)
   return definition
+}
+
+inline fun <reified T> ListableBeanFactory.getInstance(): T {
+  val type = typeOf<T>()
+  return getBeanProvider<T>(type.toResolvableType()).ifUnique ?: throw IllegalStateException("No unique bean for type: $type" )
+}
+
+inline fun <reified T> ListableBeanFactory.getInstances(): Collection<T> {
+  return getBeansOfType(T::class.java).values
+}
+
+inline fun <reified T> BeanFactory.getInstance(name: String): T {
+  return getBean(name, T::class.java)
 }
 
 private const val SLEEP = 50

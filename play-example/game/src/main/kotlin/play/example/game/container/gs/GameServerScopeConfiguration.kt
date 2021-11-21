@@ -5,8 +5,8 @@ import akka.actor.typed.Behavior
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 import play.example.game.container.gs.logging.ActorMDC
+import play.spring.getInstance
 import play.util.concurrent.PlayPromise
-import play.util.unsafeCast
 import play.util.unsafeLazy
 import java.time.Duration
 
@@ -19,7 +19,7 @@ abstract class GameServerScopeConfiguration : ApplicationContextAware {
   private lateinit var applicationContext: ApplicationContext
 
   private val gameServer: ActorRef<GameServerActor.Command> by unsafeLazy {
-    applicationContext.getBean("gameServerActor").unsafeCast()
+    applicationContext.getInstance<ActorRef<GameServerActor.Command>>()
   }
 
   override fun setApplicationContext(applicationContext: ApplicationContext) {

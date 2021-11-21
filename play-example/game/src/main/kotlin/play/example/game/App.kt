@@ -15,10 +15,11 @@ import play.example.game.container.gs.GameServerManager
 import play.net.netty.NettyServer
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
+import play.spring.getInstance
+import play.spring.getInstances
 import play.util.concurrent.LoggingUncaughtExceptionHandler
 import play.util.concurrent.PlayPromise
 import play.util.reflect.ClassScanner
-import play.util.unsafeCast
 import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.minutes
 
@@ -52,20 +53,20 @@ object App {
 
       springApplication.addInitializers(
         ApplicationContextInitializer<ConfigurableApplicationContext> {
-          it.beanFactory.registerSingleton("config", config)
-          it.beanFactory.registerSingleton("resourceManager", resourceManager)
-          it.beanFactory.registerSingleton("classScanner", classScanner)
+          it.beanFactory.apply {
+            registerSingleton("config", config)
+            registerSingleton("resourceManager", resourceManager)
+            registerSingleton("classScanner", classScanner)
+          }
         })
       val applicationContext = springApplication.run()
 
       // 注册配置监听器
-      val resourceReloadListeners = applicationContext.getBeansOfType(ResourceReloadListener::class.java).values
-      resourceManager.registerReloadListeners(resourceReloadListeners)
+      resourceManager.registerReloadListeners(applicationContext.getInstances<ResourceReloadListener>())
 
       // 初始化游戏服
       val initPromise = PlayPromise.make<Void>()
-      applicationContext.getBean("gameServerManager")
-        .unsafeCast<ActorRef<GameServerManager.Command>>()
+      applicationContext.getInstance<ActorRef<GameServerManager.Command>>()
         .tell(GameServerManager.Init(initPromise))
       // 阻塞等待初始化完成
       initPromise.future.await(5.minutes)
@@ -97,6 +98,6 @@ object App {
   }
 
   private fun startNettyServer(applicationContext: ApplicationContext, name: String) {
-    applicationContext.getBean(name, NettyServer::class.java).start()
+    applicationContext.getInstance<NettyServer>(name).start()
   }
 }

@@ -26,9 +26,7 @@ import play.res.ResourceReloadListener
 import play.scheduling.ManagedScheduler
 import play.scheduling.Scheduler
 import play.scheduling.SpringTaskScheduler
-import play.spring.PlayNonWebApplicationContextFactory
-import play.spring.closeAndWait
-import play.spring.rootBeanDefinition
+import play.spring.*
 import play.util.classOf
 import play.util.concurrent.PlayPromise
 import play.util.logging.withMDC
@@ -121,11 +119,11 @@ class GameServerActor(
       .sources(classOf<GameApp>())
       .contextFactory(PlayNonWebApplicationContextFactory())
       .build()
-    val conf = parentApplicationContext.getBean(Config::class.java)
+    val conf = parentApplicationContext.getInstance<Config>()
     val dbNamePattern = conf.getString("play.db.name-pattern")
     val dbName = String.format(dbNamePattern, serverId)
 
-    val scheduler = parentApplicationContext.getBean(Scheduler::class.java)
+    val scheduler = parentApplicationContext.getInstance<Scheduler>()
     val managedScheduler = ManagedScheduler(scheduler)
     val taskScheduler = SpringTaskScheduler(managedScheduler)
     // TODO
@@ -138,22 +136,22 @@ class GameServerActor(
 
     springApplication.addInitializers(
       ApplicationContextInitializer<ConfigurableApplicationContext> {
-        it.unsafeCast<BeanDefinitionRegistry>()
-          .apply {
-            registerBeanDefinition("gameServerActor", rootBeanDefinition(typeOf<ActorRef<Command>>(), self))
-            registerBeanDefinition("scheduler", rootBeanDefinition(typeOf<Scheduler>(), managedScheduler))
-            registerBeanDefinition("taskScheduler", rootBeanDefinition(typeOf<TaskScheduler>(), taskScheduler))
-          }
-
-        it.beanFactory.registerSingleton("appActorMdc", actorMdc)
-        it.beanFactory.registerSingleton("gameServerId", GameServerId(serverId))
-        it.beanFactory.registerSingleton("serverConfig", serverConfig)
-        it.beanFactory.registerSingleton("dbNameProvider", DatabaseNameProvider { dbName })
+        it.unsafeCast<BeanDefinitionRegistry>().apply {
+          registerBeanDefinition("gameServerActor", rootBeanDefinition(typeOf<ActorRef<Command>>(), self))
+          registerBeanDefinition("scheduler", rootBeanDefinition(typeOf<Scheduler>(), managedScheduler))
+          registerBeanDefinition("taskScheduler", rootBeanDefinition(typeOf<TaskScheduler>(), taskScheduler))
+        }
+        it.beanFactory.apply {
+          registerSingleton("actorMdc", actorMdc)
+          registerSingleton("gameServerId", GameServerId(serverId))
+          registerSingleton("serverConfig", serverConfig)
+          registerSingleton("dbNameProvider", DatabaseNameProvider { dbName })
+        }
       }
     )
     applicationContext = springApplication.run()
-    val resourceManager = applicationContext.getBean(ResourceManager::class.java)
-    val resourceReloadListeners = applicationContext.getBeansOfType(ResourceReloadListener::class.java).values
+    val resourceManager = applicationContext.getInstance<ResourceManager>()
+    val resourceReloadListeners = applicationContext.getInstances<ResourceReloadListener>()
     resourceManager.registerReloadListeners(resourceReloadListeners)
   }
 

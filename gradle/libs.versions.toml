@@ -33,7 +33,7 @@ netty = "4.1.70.Final"
 scala-library = "2.13.7"
 scala-java8-compact = "1.0.2"
 slf4j = "1.7.32"
-spring-boot = "2.5.6"
+spring-boot = "2.6.0"
 typesafe-config = "1.4.1"
 unsafe-accessor = "1.6.1"
 

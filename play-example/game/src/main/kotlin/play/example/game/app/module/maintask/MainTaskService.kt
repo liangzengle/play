@@ -9,7 +9,10 @@ import play.example.game.app.module.maintask.res.MainTaskResource
 import play.example.game.app.module.maintask.res.MainTaskResourceSet
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.playertask.AbstractPlayerTaskService
+import play.example.game.app.module.playertask.PlayerTaskTargetHandlerProvider
 import play.example.game.app.module.playertask.message.TaskInfo
+import play.example.game.app.module.reward.RewardService
+import play.example.game.app.module.task.CommonTaskHandlerProvider
 import play.example.game.app.module.task.domain.TaskErrorCode
 import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.event.TaskEvent
@@ -20,8 +23,15 @@ import play.util.filterOrNull
  */
 @Component
 public class MainTaskService(
-  private val mainTaskEntityCache: MainTaskEntityCache
-) : AbstractPlayerTaskService<PlayerMainTask, MainTaskResource>() {
+  private val mainTaskEntityCache: MainTaskEntityCache,
+  commonTaskHandlerProvider: CommonTaskHandlerProvider,
+  targetHandlerProvider: PlayerTaskTargetHandlerProvider,
+  rewardService: RewardService
+) : AbstractPlayerTaskService<PlayerMainTask, MainTaskResource>(
+  commonTaskHandlerProvider,
+  targetHandlerProvider,
+  rewardService
+) {
 
   /**
    * 添加任务

@@ -15,6 +15,7 @@ import play.akka.stoppedBehavior
 import play.example.game.container.db.ContainerRepositoryProvider
 import play.example.game.container.gs.entity.GameServerEntity
 import play.example.game.container.gs.logging.ActorMDC
+import play.spring.getInstance
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.control.getCause
@@ -66,7 +67,7 @@ class GameServerManager(
       .listIds(GameServerEntity::class.java)
       .flatMap { serverIds ->
         val futures = if (serverIds.isEmpty()) {
-          val conf = parentApplicationContext.getBean(Config::class.java)
+          val conf = parentApplicationContext.getInstance<Config>()
           val initialServerId = conf.getInt("play.initial-game-server-id")
           val promise = PlayPromise.make<Int>()
           self.tell(CreateGameServer(initialServerId, promise))
