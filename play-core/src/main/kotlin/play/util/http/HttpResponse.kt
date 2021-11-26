@@ -1,8 +1,8 @@
-package play.net.http
+package play.util.http
 
 import java.net.http.HttpResponse
 
-fun <T> HttpResponse<T>.isSuccess() = HttpStatusCode.isSuccess(statusCode())
+fun <T> HttpResponse<T>.isSuccess() = statusCode() in 200..299
 
 fun <T> HttpResponse<T>.getOrNull(): T? = body()
 

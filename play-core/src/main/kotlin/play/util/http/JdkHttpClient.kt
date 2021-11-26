@@ -1,4 +1,4 @@
-package play.net.http
+package play.util.http
 
 import org.slf4j.LoggerFactory
 import play.util.concurrent.Future
@@ -7,26 +7,28 @@ import play.util.logging.Logger
 import play.util.mkStringTo
 import java.net.URI
 import java.net.URLEncoder
-import java.net.http.*
-import java.net.http.HttpClient
+import java.net.http.HttpConnectTimeoutException
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.net.http.HttpTimeoutException
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CompletionException
 import java.util.concurrent.Flow
 import java.util.concurrent.atomic.AtomicLong
 
-typealias JHttpClient = HttpClient
+typealias JHttpClient = java.net.http.HttpClient
 
 /**
  * Created by LiangZengle on 2020/2/20.
  */
-class HttpClient constructor(
+class JdkHttpClient constructor(
   private val name: String,
   private val client: JHttpClient,
   private val readTimeout: Duration = Duration.ofSeconds(5)
-) {
+) : PlayHttpClient {
 
-  private val logger = Logger(LoggerFactory.getLogger(HttpClient::class.qualifiedName + '.' + name))
+  private val logger = Logger(LoggerFactory.getLogger(JdkHttpClient::class.qualifiedName + '.' + name))
 
   init {
     require(readTimeout > Duration.ZERO) { "illegal readTimeout: $readTimeout" }
@@ -34,46 +36,35 @@ class HttpClient constructor(
 
   private val counter = AtomicLong()
 
-  fun toJava(): HttpClient = client
+  fun toJava(): JHttpClient = client
+
+  override fun close() {
+  }
 
   override fun toString(): String {
-    return "HttpClient($name)"
+    return "JdkHttpClient($name)"
   }
 
-  fun copy(name: String, readTimeout: Duration): play.net.http.HttpClient {
-    return HttpClient(name, client, readTimeout)
+  fun copy(name: String, readTimeout: Duration): JdkHttpClient {
+    return JdkHttpClient(name, client, readTimeout)
   }
 
-  fun get(
-    uri: String,
-    params: Map<String, Any>
-  ): Future<HttpResponse<String>> {
-    return get(uri, params, mapOf())
-  }
-
-  fun get(
-    uri: String,
+  override fun get(
+    url: String,
     params: Map<String, Any>,
     headers: Map<String, String>
-  ): Future<HttpResponse<String>> {
-    val request = makeGetRequest(uri, params, headers)
+  ): Future<String> {
+    val request = makeGetRequest(url, params, headers)
     return sendAsync(request)
   }
 
-  fun post(
-    uri: String,
-    form: Map<String, Any>
-  ): Future<HttpResponse<String>> {
-    return post(uri, form, mapOf())
-  }
-
-  fun post(
-    uri: String,
+  override fun post(
+    url: String,
     form: Map<String, Any>,
     headers: Map<String, String>
-  ): Future<HttpResponse<String>> {
+  ): Future<String> {
     val b = HttpRequest.newBuilder()
-    b.uri(URI.create(uri))
+    b.uri(URI.create(url))
       .timeout(readTimeout)
       .POST(HttpRequest.BodyPublishers.ofString(makeQueryString(form)))
     b.header("Content-Type", "application/x-www-form-urlencoded")
@@ -81,22 +72,15 @@ class HttpClient constructor(
     return sendAsync(b.build())
   }
 
-  fun post(
-    uri: String,
-    json: String
-  ): Future<HttpResponse<String>> {
-    return post(uri, json, mapOf())
-  }
-
-  fun post(
-    uri: String,
-    json: String,
+  override fun post(
+    url: String,
+    data: String,
     headers: Map<String, String>
-  ): Future<HttpResponse<String>> {
+  ): Future<String> {
     val b = HttpRequest.newBuilder()
-    b.uri(URI.create(uri))
+    b.uri(URI.create(url))
       .timeout(readTimeout)
-      .POST(HttpRequest.BodyPublishers.ofString(json))
+      .POST(HttpRequest.BodyPublishers.ofString(data))
     b.header("Content-Type", "application/json")
     headers.forEach { (k, v) -> b.header(k, v) }
     return sendAsync(b.build())
@@ -150,13 +134,14 @@ class HttpClient constructor(
     )
   }
 
-  fun sendAsync(request: HttpRequest): Future<HttpResponse<String>> {
+  fun sendAsync(request: HttpRequest): Future<String> {
     val requestNo = counter.incrementAndGet()
     logRequest(requestNo, request)
     return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
       .toFuture()
       .andThen { v, e -> logResponse(requestNo, request, v, e) }
       .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.statusCode()) })
+      .map { it.body() ?: "" }
   }
 
   fun <Body> sendAsync(
@@ -220,7 +205,8 @@ class HttpClient constructor(
         is HttpTimeoutException -> logger.error { "[$requestNo] http request timeout" }
         else -> logger.error(cause) { "[$requestNo] http request failure: ${cause.javaClass.simpleName}" }
       }
-    } else if (response != null) {
+    } else {
+      checkNotNull(response)
       logger.info { "[$requestNo] http response: ${response.statusCode()} ${response.body()}" }
     }
   }

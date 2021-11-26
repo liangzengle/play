@@ -1,6 +1,7 @@
 [versions]
 akka = "2.6.17"
 asm = "9.2"
+asynchttpclient = "2.12.3"
 auto-service = "1.0.1"
 bson4jackson = "2.13.0"
 caffeine = "3.0.4"
@@ -41,6 +42,7 @@ akka-typed-actor = { module = "com.typesafe.akka:akka-actor-typed_2.13", version
 akka-typed-cluster = { module = "com.typesafe.akka:akka-cluster-typed_2.13", version.ref = "akka" }
 akka-typed-serialization-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
 asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asynchttpclient = { module = "org.asynchttpclient:async-http-client", version.ref = "asynchttpclient" }
 auto-service = { module = "com.google.auto.service:auto-service", version.ref = "auto-service" }
 bson4jackson = { module = "de.undercouch:bson4jackson", version.ref = "bson4jackson" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }

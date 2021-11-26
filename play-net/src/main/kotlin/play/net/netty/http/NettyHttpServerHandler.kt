@@ -158,6 +158,7 @@ abstract class NettyHttpServerHandler(protected val actionManager: HttpActionMan
           Unpooled.wrappedBuffer(entity.data)
         )
         response.headers().set(HttpHeaderNames.CONTENT_ENCODING, "UTF-8")
+        response.headers().set(HttpHeaderNames.CONNECTION, "close")
         entity.contentType().forEach { response.headers().set(HttpHeaderNames.CONTENT_TYPE, it) }
         entity.contentLength().forEach { response.headers().set(HttpHeaderNames.CONTENT_LENGTH, it) }
         response

@@ -82,8 +82,8 @@ class NettyServerBuilder {
   }
 
   fun build(name: String): NettyServer {
-    check(host.isNotEmpty()) { "`host` is empty." }
-    check(port in 1..65535) { "`port` illegal: $port" }
+    require(host.isNotEmpty()) { "`host` is empty." }
+    require(port in 1..65535) { "`port` illegal: $port" }
     val b = ServerBootstrap()
     b.options(options)
     b.childOptions(childOptions)

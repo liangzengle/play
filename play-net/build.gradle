@@ -2,4 +2,7 @@ dependencies {
     implementation project(":play-core")
 
     api libs.bundles.netty
+    api(libs.asynchttpclient) {
+        exclude group: 'io.netty', module: '*'
+    }
 }
