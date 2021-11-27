@@ -14,13 +14,14 @@ import play.db.ResultMap
 import play.db.TableNameResolver
 import play.db.mongo.Mongo.ID
 import play.entity.Entity
-import play.entity.IntIdEntity
-import play.entity.LongIdEntity
+import play.entity.EntityHelper
+import play.entity.ObjId
+import play.entity.ObjIdEntity
 import play.util.*
 import play.util.concurrent.Future
 import play.util.concurrent.Promise
 import play.util.json.Json
-import play.util.reflect.Reflect
+import java.lang.reflect.Type
 import java.util.*
 import javax.annotation.CheckReturnValue
 
@@ -123,6 +124,27 @@ class MongoDBRepository constructor(
     return promise.future
   }
 
+  override fun <K, ID : ObjId, E : ObjIdEntity<ID>> listMultiIds(
+    entityClass: Class<E>,
+    keyName: String,
+    keyValue: K
+  ): Future<List<ID>> {
+    val idType = EntityHelper.getIdType(entityClass)
+    val where = Filters.and(Filters.eq("$ID.$keyName", keyValue), Filters.ne(Entity.DELETED, true))
+    return fold(
+      entityClass,
+      listOf(ID),
+      where.toOptional(),
+      empty(),
+      emptyInt(),
+      LinkedList<ID>()
+    ) { list, r ->
+      val id = convertToID<ID>(r.getObject(ID), idType)
+      list.add(id)
+      list
+    }
+  }
+
   override fun <ID, E : Entity<ID>> listAll(entityClass: Class<E>): Future<List<E>> {
     val promise = Promise.make<List<E>>()
     getCollection(entityClass).find().subscribe(FoldSubscriber(promise, LinkedList()) { list, e -> list.add(e); list })
@@ -186,7 +208,7 @@ class MongoDBRepository constructor(
     accumulator: (C1, ID) -> C1
   ): Future<C> {
     val promise = Promise.make<C>()
-    val idType = getIdType<ID>(entityClass)
+    val idType = EntityHelper.getIdType(entityClass)
     getRawCollection(entityClass)
       .find()
       .projection(Projections.include(ID))
@@ -195,25 +217,15 @@ class MongoDBRepository constructor(
           promise,
           c
         ) { list, doc ->
-          val id = convertToID(doc[ID]!!, idType)
+          val id = convertToID<ID>(doc[ID]!!, idType)
           accumulator(list, id)
         }
       )
     return promise.future
   }
 
-  private fun <ID> getIdType(entityClass: Class<out Entity<*>>): Class<ID> {
-    if (isAssignableFrom<LongIdEntity>(entityClass)) {
-      return Long::class.java.unsafeCast()
-    }
-    if (isAssignableFrom<IntIdEntity>(entityClass)) {
-      return Int::class.java.unsafeCast()
-    }
-    return Reflect.getRawClassOfTypeArg(entityClass, Entity::class.java, 0)
-  }
-
-  private fun <ID> convertToID(obj: Any, idType: Class<ID>): ID {
-    if (idType.isInstance(obj)) {
+  private fun <ID> convertToID(obj: Any, idType: Type): ID {
+    if (idType is Class<*> && idType.isInstance(obj)) {
       return obj.unsafeCast()
     }
     return Json.convert(obj, idType)

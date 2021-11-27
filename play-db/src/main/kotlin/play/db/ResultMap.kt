@@ -4,6 +4,8 @@ package play.db
 class ResultMap(private val map: Map<String, Any?>) {
   fun <T> getOrNull(key: String): T? = map[key] as T?
 
+  fun <T> getOrThrow(key: String): T = getOrNull(key) ?: throw NoSuchElementException(key)
+
   fun getBoolean(key: String): Boolean {
     return when (val v = getObject(key)) {
       is Boolean -> v

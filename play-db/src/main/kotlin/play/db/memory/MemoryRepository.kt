@@ -3,6 +3,10 @@ package play.db.memory
 import play.db.Repository
 import play.db.ResultMap
 import play.entity.Entity
+import play.entity.ObjId
+import play.entity.ObjIdEntity
+import play.entity.cache.multiKey
+import play.util.collection.toImmutableList
 import play.util.concurrent.Future
 import play.util.unsafeCast
 import java.util.*
@@ -95,5 +99,15 @@ class MemoryRepository : Repository {
     folder: (R1, ResultMap) -> R1
   ): Future<R> {
     return Future.failed(UnsupportedOperationException())
+  }
+
+  override fun <K, ID : ObjId, E : ObjIdEntity<ID>> listMultiIds(
+    entityClass: Class<E>,
+    keyName: String,
+    keyValue: K
+  ): Future<List<ID>> {
+  val result= getMap(entityClass).values.asSequence().map { it.unsafeCast<E>() }
+    .filter { it.multiKey<K>() == keyValue }.map { it.id }.toImmutableList()
+    return Future.successful(result)
   }
 }
