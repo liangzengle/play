@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.PropertyAccessor
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -121,6 +122,9 @@ object Json {
   @JvmStatic
   fun <T> convert(fromValue: Any, toValueType: Class<T>): T = mapper.convertValue(fromValue, toValueType)
 
+  @JvmStatic
+  fun <T> convert(fromValue: Any, targetType: Type): T = mapper.convertValue(fromValue, targetType.toJavaType())
+
   inline fun <reified E> to(content: String): E = mapper.readValue(content)
   inline fun <reified E> to(src: ByteArray): E = mapper.readValue(src)
   inline fun <reified E> to(src: URL): E = mapper.readValue(src)
@@ -129,4 +133,6 @@ object Json {
   fun stringify(value: Any): String = mapper.writeValueAsString(value)
 
   fun <T : Any> T.toJsonString(): String = stringify(this)
+
+  fun Type.toJavaType(): JavaType = mapper.typeFactory.constructType(this)
 }
