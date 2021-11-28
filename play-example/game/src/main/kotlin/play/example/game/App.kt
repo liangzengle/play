@@ -34,11 +34,16 @@ object App {
   }
 
   @JvmStatic
+  lateinit var classScanner: ClassScanner
+    private set
+
+  @JvmStatic
   fun main(args: Array<String>) {
     Log.info { "App starting" }
 
     val config = loadConfig(null)
     val classScanner = newClassScanner(config)
+    App.classScanner = classScanner
 
     try {
       // 初始化策划配置

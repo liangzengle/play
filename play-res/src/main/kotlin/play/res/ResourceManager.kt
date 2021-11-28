@@ -6,10 +6,7 @@ import play.res.reader.ConfigReader
 import play.res.reader.JsonResourceReader
 import play.res.reader.Reader
 import play.res.validation.validator.ResourceValidator
-import play.util.collection.ConcurrentHashSet
-import play.util.collection.filterDuplicatedBy
-import play.util.collection.toImmutableMap
-import play.util.control.exists
+import play.util.collection.*
 import play.util.createInstance
 import play.util.io.FileMonitor
 import play.util.isAbstract
@@ -17,17 +14,20 @@ import play.util.reflect.ClassScanner
 import play.util.reflect.isAnnotationPresent
 import play.util.unsafeCast
 import java.io.File
+import java.net.URL
 import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import javax.annotation.concurrent.GuardedBy
+import kotlin.collections.setOf
+import kotlin.io.path.toPath
 
 @Suppress("UNCHECKED_CAST")
 class ResourceManager(
   private val setting: Setting,
   private val resolver: ResourceUrlResolver,
   private val resourceReader: Reader,
-  private val configReader: Reader,
+  private val configReader: ConfigReader,
   private val resourceClasses: List<Class<out AbstractResource>>,
   private val validators: List<ResourceValidator>
 ) {
@@ -204,12 +204,21 @@ class ResourceManager(
   }
 
   private fun setupAutoReload() {
+    fun isChanged(clazz: Class<*>, changeSet: Set<URL>): Boolean {
+      val reader = getReader(clazz)
+      return if (reader is ConfigReader) {
+        reader.getAllURLs(clazz).any(changeSet::contains)
+      } else {
+        changeSet.contains(reader.getURL(clazz).getOrThrow())
+      }
+    }
+
     fun reloadChangedFiles(changeList: Set<File>) {
       val changeSet = changeList.asSequence().map { it.toURI().toURL() }.toSet()
-      val classesToReload = resourceClasses.asSequence()
-        .filter { clazz ->
-          getReader(clazz).getURL(clazz).exists { changeSet.contains(it) }
-        }.toSet()
+      val classesToReload = resourceClasses
+        .parallelStream()
+        .filter { clazz -> isChanged(clazz, changeSet) }
+        .toImmutableSet()
       reload(classesToReload)
     }
 
@@ -230,16 +239,15 @@ class ResourceManager(
     }
   }
 
-  private fun getTopLevelResourceDirs(resourceClasses: Iterable<Class<*>>): Set<File> {
+  private fun getTopLevelResourceDirs(resourceClasses: Collection<Class<*>>): Set<File> {
     val dirPaths = resourceClasses
-      .asSequence()
+      .parallelStream()
       .filter { ResourceHelper.isConfig(it) }
-      .map { clazz ->
-        val url = configReader.getURL(clazz).getOrThrow()
-        Paths.get(url.toURI()).parent
+      .flatMap { clazz ->
+        configReader.getAllURLs(clazz).stream().map { it.toURI().toPath().parent }
       }
-      .plusElement(Paths.get(resolver.rootPath))
       .toMutableSet()
+    dirPaths.add(Paths.get(resolver.rootPath))
 
     // 移除子目录
     while (true) {

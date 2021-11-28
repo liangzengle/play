@@ -8,6 +8,7 @@ import play.example.game.app.module.task.domain.TaskTargetType
 import play.example.game.app.module.task.entity.AbstractTask
 import play.example.game.app.module.task.entity.TaskStatus
 import play.example.game.app.module.task.event.TaskEvent
+import play.example.game.app.module.task.event.adpater.TaskEventAdapters
 import play.example.game.app.module.task.handler.DomainTaskTargetHandler
 import play.example.game.app.module.task.res.AbstractTaskResource
 import play.example.game.app.module.task.target.TaskTarget
@@ -87,6 +88,13 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
     }
     if (changedTasks.isNotEmpty()) {
       onTaskChanged(owner, changedTasks)
+    }
+
+    val adaptedEvents = TaskEventAdapters.adapt(taskEvent)
+    if (adaptedEvents.isNotEmpty()) {
+      for (adaptedEvent in adaptedEvents) {
+        onEvent(owner, adaptedEvent)
+      }
     }
   }
 

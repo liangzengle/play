@@ -3,7 +3,7 @@ package play.res
 import play.util.collection.mkString
 import play.util.exception.NoStackTraceException
 
-class ResourceNotFoundException(path: String) : NoStackTraceException(path)
+class SourceNotFoundException(path: String) : NoStackTraceException(path)
 
 class InvalidResourceException(msg: String) : NoStackTraceException(msg) {
 
