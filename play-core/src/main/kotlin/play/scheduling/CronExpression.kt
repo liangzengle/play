@@ -17,7 +17,7 @@ interface CronExpression {
       val qualifiedName =
         SystemProps.getOrDefault("cron.expression.factory", CronSequenceGeneratorFactory::class.qualifiedName)
       val factoryType = ClassUtil.loadClass<Factory>(qualifiedName)
-      factory = Reflect.createInstance(factoryType)
+      factory = Reflect.newInstance(factoryType)
       Log.debug { "Using $qualifiedName" }
     }
 

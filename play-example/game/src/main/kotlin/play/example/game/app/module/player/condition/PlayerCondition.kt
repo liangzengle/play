@@ -1,5 +1,6 @@
 package play.example.game.app.module.player.condition
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import play.example.game.app.module.player.Self
 import play.example.game.app.module.player.event.PlayerEvent
@@ -15,7 +16,7 @@ import play.util.json.JsonAbstractType
 abstract class PlayerCondition(@JvmField val type: PlayerConditionType)
 
 class PlayerConditionTypeResolver : AbstractTypeResolver<PlayerCondition>() {
-  override fun resolve(node: ObjectNode): Class<out PlayerCondition> {
+  override fun resolve(node: JsonNode): Class<out PlayerCondition> {
     val typeNode = node.get("type")
     return PlayerConditionType.valueOf(typeNode.textValue()).type
   }

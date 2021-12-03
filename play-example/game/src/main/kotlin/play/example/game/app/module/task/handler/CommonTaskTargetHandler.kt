@@ -1,6 +1,6 @@
 package play.example.game.app.module.task.handler
 
-import play.example.game.app.module.task.domain.TaskTargetType
+import play.example.game.app.module.task.domain.CommonTaskTargetType
 import play.example.game.app.module.task.event.TaskEvent
 import play.example.game.app.module.task.res.AbstractTaskResource
 import play.example.game.app.module.task.target.TaskTarget
@@ -10,7 +10,7 @@ import play.example.game.app.module.task.target.TaskTarget
  *
  * @author LiangZengle
  */
-abstract class CommonTaskTargetHandler<Target : TaskTarget, Event : TaskEvent>(val type: TaskTargetType) {
+abstract class CommonTaskTargetHandler<Target : TaskTarget, Event : TaskEvent>(val type: CommonTaskTargetType) {
 
   /**
    * 获取任务初始化时的进度值

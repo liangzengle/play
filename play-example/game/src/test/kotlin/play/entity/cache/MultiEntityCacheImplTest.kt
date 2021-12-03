@@ -8,6 +8,7 @@ import play.db.memory.MemoryRepository
 import play.entity.cache.chm.CHMEntityCacheFactory
 import play.inject.NOOPPlayInjector
 import play.scheduling.DefaultScheduler
+import play.util.unsafeCast
 import java.time.Clock
 import java.util.concurrent.Executors
 import java.util.concurrent.ForkJoinPool
@@ -41,7 +42,7 @@ internal class MultiEntityCacheImplTest {
     EntityCacheManagerImpl(entityCacheFactory, shutdownCoordinator, NOOPPlayInjector, NOOPEntityCachePersistFailOver)
 
   private val entityCache = entityCacheManager.get(MyEntity::class.java)
-  private val partitionEntityCache = MultiEntityCacheImpl<Long, MyObjId, MyEntity>(entityCache, memoryRepository, )
+  private val partitionEntityCache = MultiEntityCacheImpl<Long, MyObjId, MyEntity>(entityCache, memoryRepository, scheduler, DefaultMultiCacheExpireEvaluator.unsafeCast())
 
   @Test
   fun getMulti() {

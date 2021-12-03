@@ -18,6 +18,7 @@ import play.example.game.app.module.task.domain.TaskErrorCode
 import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.domain.TaskTargetType
 import play.example.game.app.module.task.event.TaskEvent
+import play.example.game.app.module.task.res.AbstractTaskResourceExtension
 import play.example.game.app.module.task.target.TaskTarget
 import play.example.game.container.gs.domain.GameServerId
 import play.util.control.Result2
@@ -37,6 +38,10 @@ public class ServerTaskService @Autowired constructor(
 
   override fun getHandlerOrNull(targetType: TaskTargetType): ServerTaskTargetHandler<TaskTarget, TaskEvent>? {
     return null
+  }
+
+  override fun getResourceExtension(): AbstractTaskResourceExtension<ServerTaskResource>? {
+    return ServerTaskResourceSet.extension()
   }
 
   override fun addTask(owner: ServerTaskEntity, task: ServerTask) {

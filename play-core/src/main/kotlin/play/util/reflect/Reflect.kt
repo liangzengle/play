@@ -70,10 +70,10 @@ object Reflect {
   }
 
   @JvmStatic
-  fun <T> createInstance(clazz: Class<out T>): T = clazz.getDeclaredConstructor().newInstance(*EmptyObjectArray)
+  fun <T> newInstance(clazz: Class<out T>): T = clazz.getDeclaredConstructor().newInstance(*EmptyObjectArray)
 
   @JvmStatic
-  fun <T> createInstanceWithArgs(clazz: Class<out T>, vararg args: Any?): T {
+  fun <T> newInstanceWithArgs(clazz: Class<out T>, vararg args: Any?): T {
     outer@
     for (ctor in clazz.declaredConstructors) {
       if (ctor.parameterCount != args.size) {
@@ -93,25 +93,25 @@ object Reflect {
   }
 
   @JvmStatic
-  fun <T> createInstance(requiredType: Class<T>, fqcn: String): T {
-    return createInstanceWithArgs(requiredType, fqcn, *EmptyObjectArray)
+  fun <T> newInstance(requiredType: Class<T>, fqcn: String): T {
+    return newInstanceWithArgs(requiredType, fqcn, *EmptyObjectArray)
   }
 
   @JvmStatic
-  fun <T> createInstanceWithArgs(requiredType: Class<T>, fqcn: String, vararg args: Any?): T {
+  fun <T> newInstanceWithArgs(requiredType: Class<T>, fqcn: String, vararg args: Any?): T {
     val clazz = Class.forName(fqcn)
     if (!requiredType.isAssignableFrom(clazz)) {
       throw ClassCastException("${clazz.name} can't assigned to ${requiredType.name}")
     }
-    return createInstanceWithArgs(clazz as Class<out T>, *args)
+    return newInstanceWithArgs(clazz as Class<out T>, *args)
   }
 
-  inline fun <reified T> createInstance(fqcn: String): T {
-    return createInstance(T::class.java, fqcn)
+  inline fun <reified T> newInstance(fqcn: String): T {
+    return newInstance(T::class.java, fqcn)
   }
 
-  inline fun <reified T> createInstance(fqcn: String, vararg args: Any?): T {
-    return createInstanceWithArgs(T::class.java, fqcn, *args)
+  inline fun <reified T> newInstance(fqcn: String, vararg args: Any?): T {
+    return newInstanceWithArgs(T::class.java, fqcn, *args)
   }
 
   @JvmStatic

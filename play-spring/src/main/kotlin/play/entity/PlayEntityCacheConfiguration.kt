@@ -31,7 +31,7 @@ class PlayEntityCacheConfiguration {
   ): EntityCacheFactory {
     val conf = config.getConfig("play.entity.cache")
     val factory = conf.getString("factory")
-    return Reflect.createInstance(factory, writer, loader, injector, scheduler, executor, conf)
+    return Reflect.newInstance(factory, writer, loader, injector, scheduler, executor, conf)
   }
 
   @Bean

@@ -15,7 +15,7 @@ import kotlin.reflect.KClass
 
 abstract class AbstractTypeResolver<T : Any> {
 
-  abstract fun resolve(node: ObjectNode): Class<out T>
+  abstract fun resolve(node: JsonNode): Class<out T>
 
   open fun recover(ex: Throwable): T? = null
 }

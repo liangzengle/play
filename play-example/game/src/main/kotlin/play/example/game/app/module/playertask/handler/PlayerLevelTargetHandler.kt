@@ -3,6 +3,7 @@ package play.example.game.app.module.playertask.handler
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.player.Self
+import play.example.game.app.module.playertask.domain.PlayerTaskTargetType
 import play.example.game.app.module.task.domain.TaskTargetType
 import play.example.game.app.module.task.event.PlayerLevelTaskEvent
 import play.example.game.app.module.task.res.AbstractTaskResource
@@ -15,7 +16,7 @@ import play.example.game.app.module.task.target.PlayerLevelTaskTarget
  */
 @Component
 class PlayerLevelTargetHandler(private val playerService: PlayerService) :
-  PlayerTaskTargetHandler<PlayerLevelTaskTarget, PlayerLevelTaskEvent>(TaskTargetType.PlayerLevel) {
+  PlayerTaskTargetHandler<PlayerLevelTaskTarget, PlayerLevelTaskEvent>(PlayerTaskTargetType.PlayerLevel) {
   override fun getInitialProgress(owner: Self, target: PlayerLevelTaskTarget, taskConfig: AbstractTaskResource): Int {
     return playerService.getPlayerLevel(owner.id)
   }

@@ -4,8 +4,8 @@ import com.typesafe.config.ConfigFactory
 import play.Log
 import play.res.ResourcePath
 import play.res.SourceNotFoundException
-import play.util.TSConfig
-import play.util.TSConfig.toJson
+import play.util.TSConfigs
+import play.util.TSConfigs.toJson
 import java.net.URL
 import java.util.*
 
@@ -41,6 +41,6 @@ class ConfigReader : Reader {
 
   fun getAllURLs(clazz: Class<*>): Set<URL> {
     val url = getURL(clazz).getOrThrow()
-    return TSConfig.getIncludedUrls(url)
+    return TSConfigs.getIncludedUrls(url, true)
   }
 }

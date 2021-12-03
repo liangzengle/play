@@ -1,5 +1,8 @@
 package play.util
 
+import java.util.stream.Stream
+import java.util.stream.StreamSupport
+
 fun <T> Iterable<T>.mkStringTo(
   b: StringBuilder,
   separator: Char,
@@ -48,4 +51,8 @@ fun <T> Iterable<T>.mkString(
   }
   b.append(postfix)
   return b.toString()
+}
+
+fun <E> Iterable<E>.toStream(): Stream<E> {
+  return if( this is Collection<E>) stream() else StreamSupport.stream(this.spliterator(), false)
 }

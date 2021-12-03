@@ -32,7 +32,7 @@ object TaskEventAdapters {
       val typeArgs = Reflect.getTypeArgs(adapterType, TaskEventAdapter::class.java)
       val fromType: Class<out TaskEvent> = Reflect.getRawClass(typeArgs[0])
       val toType: Class<out TaskEvent> = Reflect.getRawClass(typeArgs[1])
-      val adapter = Reflect.createInstance(adapterType) as TaskEventAdapter<TaskEvent, TaskEvent>
+      val adapter = Reflect.newInstance(adapterType) as TaskEventAdapter<TaskEvent, TaskEvent>
       builder.put(fromType, adapter)
       pathBuilder.put(fromType, toType)
     }

@@ -1,7 +1,7 @@
 package play.example.game.app.module.playertask.handler
 
 import play.example.game.app.module.player.Self
-import play.example.game.app.module.task.domain.TaskTargetType
+import play.example.game.app.module.playertask.domain.PlayerTaskTargetType
 import play.example.game.app.module.task.event.TaskEvent
 import play.example.game.app.module.task.handler.DomainTaskTargetHandler
 import play.example.game.app.module.task.res.AbstractTaskResource
@@ -12,7 +12,7 @@ import play.example.game.app.module.task.target.TaskTarget
  *
  * @author LiangZengle
  */
-abstract class PlayerTaskTargetHandler<Target : TaskTarget, Event : TaskEvent>(type: TaskTargetType) :
+abstract class PlayerTaskTargetHandler<Target : TaskTarget, Event : TaskEvent>(type: PlayerTaskTargetType) :
   DomainTaskTargetHandler<Self, Target, Event>(type) {
 
   /**

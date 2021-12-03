@@ -88,7 +88,7 @@ class EntityCacheManagerImpl constructor(
     if (cache != null) {
       return cache as EntityCache<ID, E>
     }
-    if (!ClassUtil.isTopLevelConcreteClass(clazz)) {
+    if (!ClassUtil.isInstantiable(clazz)) {
       throw IllegalArgumentException("$clazz should be a top level concrete class.")
     }
     return caches.computeIfAbsent(clazz) { factory.create(it as Class<E>, initializerProvider) }.unsafeCast()

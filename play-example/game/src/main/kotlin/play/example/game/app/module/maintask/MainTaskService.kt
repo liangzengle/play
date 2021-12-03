@@ -16,6 +16,7 @@ import play.example.game.app.module.task.CommonTaskHandlerProvider
 import play.example.game.app.module.task.domain.TaskErrorCode
 import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.event.TaskEvent
+import play.example.game.app.module.task.res.AbstractTaskResourceExtension
 import play.util.filterOrNull
 
 /**
@@ -32,6 +33,10 @@ public class MainTaskService(
   targetHandlerProvider,
   rewardService
 ) {
+
+  override fun getResourceExtension(): AbstractTaskResourceExtension<MainTaskResource>? {
+    return MainTaskResourceSet.extension();
+  }
 
   /**
    * 添加任务

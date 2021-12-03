@@ -62,14 +62,16 @@ object ClassUtil {
     return Class.forName(qualifiedName, initialize, classLoader).unsafeCast()
   }
 
+  /**
+   * 判断是否可创建实例
+   *
+   * @param clazz
+   * @return
+   */
   @JvmStatic
-  fun isTopLevelConcreteClass(clazz: Class<*>): Boolean {
-    return !clazz.isMemberClass &&
-      !clazz.isLocalClass &&
-      !clazz.isAnonymousClass &&
-      clazz.declaringClass === null &&
-      !clazz.isInterface &&
-      !clazz.isAbstract()
+  fun isInstantiable(clazz: Class<*>): Boolean {
+    return !clazz.isLocalClass && !clazz.isAnonymousClass && !clazz.isInterface && !clazz.isAbstract()
+      && !clazz.isEnum && !(clazz.isMemberClass && !clazz.isStatic())
   }
 
   @JvmStatic
@@ -84,7 +86,7 @@ fun <T> Class<T>.getTypeArg(superType: Class<in T>, index: Int): Type {
 
 fun <T> Type.getRawClass(): Class<T> = Reflect.getRawClass(this)
 
-fun <T> Class<T>.createInstance(): T = Reflect.createInstance(this)
+fun <T> Class<T>.createInstance(): T = Reflect.newInstance(this)
 
 fun Class<*>.isPublic() = Modifier.isPublic(modifiers)
 

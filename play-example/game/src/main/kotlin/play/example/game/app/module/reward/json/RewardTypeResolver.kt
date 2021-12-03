@@ -1,5 +1,6 @@
 package play.example.game.app.module.reward.json
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import play.example.game.app.module.reward.model.Reward
 import play.example.game.app.module.reward.model.RewardType
@@ -7,7 +8,7 @@ import play.example.game.app.module.reward.res.RawReward
 import play.util.json.AbstractTypeResolver
 
 class RawRewardTypeResolver : AbstractTypeResolver<RawReward>() {
-  override fun resolve(node: ObjectNode): Class<out RawReward> {
+  override fun resolve(node: JsonNode): Class<out RawReward> {
     return getRewardType(node).rawRewardClass
   }
 
@@ -19,7 +20,7 @@ class RawRewardTypeResolver : AbstractTypeResolver<RawReward>() {
 
 
 class RewardTypeResolver : AbstractTypeResolver<Reward>() {
-  override fun resolve(node: ObjectNode): Class<out Reward> {
+  override fun resolve(node: JsonNode): Class<out Reward> {
     return getRewardType(node).rewardClass
   }
 
@@ -29,7 +30,7 @@ class RewardTypeResolver : AbstractTypeResolver<Reward>() {
   }
 }
 
-private fun getRewardType(node: ObjectNode): RewardType {
+private fun getRewardType(node: JsonNode): RewardType {
   val typeNode = node.get("type")
   val rewardType = if (typeNode.isInt) {
     RewardType.getOrThrow(typeNode.intValue())

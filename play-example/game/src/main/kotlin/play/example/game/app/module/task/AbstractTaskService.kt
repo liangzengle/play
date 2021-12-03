@@ -11,6 +11,7 @@ import play.example.game.app.module.task.event.TaskEvent
 import play.example.game.app.module.task.event.adpater.TaskEventAdapters
 import play.example.game.app.module.task.handler.DomainTaskTargetHandler
 import play.example.game.app.module.task.res.AbstractTaskResource
+import play.example.game.app.module.task.res.AbstractTaskResourceExtension
 import play.example.game.app.module.task.target.TaskTarget
 import play.util.control.Result2
 import play.util.control.ok
@@ -37,6 +38,13 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    */
   protected abstract fun getHandlerOrNull(targetType: TaskTargetType): DomainTaskTargetHandler<T, TaskTarget, TaskEvent>?
 
+  protected abstract fun getResourceExtension(): AbstractTaskResourceExtension<TaskConfig>?
+
+  private fun isInterested(targetType: TaskTargetType): Boolean {
+    val extension = getResourceExtension() ?: return true
+    return extension.containsTargetType(targetType)
+  }
+
   /**
    * 处理任务事件
    *
@@ -44,6 +52,9 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskEvent 任务事件
    */
   fun onEvent(owner: T, taskEvent: TaskEvent) {
+    if (!isInterested(taskEvent.type)) {
+      return
+    }
     val commonHandler = commonTaskHandlerProvider.getHandlerOrNull(taskEvent.type)
     val domainHandler = getHandlerOrNull(taskEvent.type)
     if (commonHandler == null && domainHandler == null) {

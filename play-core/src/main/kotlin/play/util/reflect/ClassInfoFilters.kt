@@ -6,7 +6,7 @@ object ClassInfoFilters {
 
   @JvmStatic
   fun ordinaryClass(): ClassInfoList.ClassInfoFilter = ClassInfoList.ClassInfoFilter {
-    !it.isAbstract && !it.isInnerClass && !it.isAnonymousInnerClass
+    !it.isAbstract && !it.isAnonymousInnerClass && !it.isEnum && !(it.isInnerClass && !it.isStatic)
   }
 
   @JvmStatic

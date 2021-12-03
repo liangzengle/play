@@ -25,3 +25,9 @@ abstract class MultiCacheExpireEvaluator<E : Entity<out ObjId>, K> {
 
   abstract fun canExpire(key: K): Boolean
 }
+
+object DefaultMultiCacheExpireEvaluator: MultiCacheExpireEvaluator<Entity<out ObjId>, Any>() {
+  override fun canExpire(key: Any): Boolean {
+    return true
+  }
+}
