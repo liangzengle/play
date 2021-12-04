@@ -12,14 +12,14 @@ class CommandManager constructor(
 ) {
 
   private val descriptors: List<CommandModuleDescriptor> by lazy {
-    classScanner.getOrdinaryClassesAnnotatedWith(CommandModule::class.java)
+    classScanner.getInstantiatableClassesAnnotatedWith(CommandModule::class.java)
       .asSequence()
       .map(::toCommandModuleDescriptor)
       .toImmutableList()
   }
 
   private val invokerMap: Map<String, Map<String, CommandInvoker>> by lazy {
-    classScanner.getOrdinaryClassesAnnotatedWith(CommandModule::class.java)
+    classScanner.getInstantiatableClassesAnnotatedWith(CommandModule::class.java)
       .asSequence()
       .map { moduleClass ->
         val commandModule = moduleClass.getAnnotation(CommandModule::class.java)

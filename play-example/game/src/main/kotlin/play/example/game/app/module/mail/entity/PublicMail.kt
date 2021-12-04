@@ -23,7 +23,7 @@ import play.util.collection.ConcurrentHashSetLong
  * @param createTime 创建时间
  */
 @Merge(Merge.Strategy.PreservePrimary)
-@CacheSpec(loadAllOnInit = true, expireEvaluator = NeverExpireEvaluator::class)
+@CacheSpec(loadAllOnInit = true, neverExpire = true)
 class PublicMail(
   id: Int,
   val title: String,

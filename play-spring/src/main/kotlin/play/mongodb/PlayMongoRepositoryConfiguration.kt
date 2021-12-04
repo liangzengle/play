@@ -23,7 +23,7 @@ class PlayMongoRepositoryConfiguration {
   @Bean
   fun mongoDBRepositoryIndexCustomizer(): MongoDBRepositoryCustomizer {
     return MongoDBRepositoryCustomizer { repository, classScanner ->
-      val entityClasses = classScanner.getOrdinarySubclasses(Entity::class.java)
+      val entityClasses = classScanner.getInstantiatableSubclasses(Entity::class.java)
       Mongo.ensureIndexes(repository, entityClasses)
     }
   }

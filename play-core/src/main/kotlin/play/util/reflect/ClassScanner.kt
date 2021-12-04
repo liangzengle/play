@@ -57,28 +57,28 @@ class ClassScanner(scanExecutor: ExecutorService, jarsToScan: List<String>, pack
     }
   }
 
-  fun <T> getOrdinarySubclassInfoList(superType: Class<T>): ClassInfoList {
+  fun <T> getInstantiatableSubclassInfoList(superType: Class<T>): ClassInfoList {
     val classInfoList = if (superType.isInterface) {
       scanResult.getClassesImplementing(superType.name)
     } else {
       scanResult.getSubclasses(superType.name)
     }
-    return classInfoList.standardClasses.filter(ClassInfoFilters.ordinaryClass())
+    return classInfoList.standardClasses.filter(ClassInfoFilters.instantiatableClass())
   }
 
-  fun <T> getOrdinarySubclasses(superType: Class<T>): List<Class<T>> {
+  fun <T> getInstantiatableSubclasses(superType: Class<T>): List<Class<T>> {
     val classInfoList = if (superType.isInterface) {
       scanResult.getClassesImplementing(superType.name)
     } else {
       scanResult.getSubclasses(superType.name)
     }
-    return classInfoList.standardClasses.filter(ClassInfoFilters.ordinaryClass()).loadClasses(superType)
+    return classInfoList.standardClasses.filter(ClassInfoFilters.instantiatableClass()).loadClasses(superType)
   }
 
-  fun getOrdinaryClassesAnnotatedWith(annotationType: Class<out Annotation>): List<Class<*>> {
+  fun getInstantiatableClassesAnnotatedWith(annotationType: Class<out Annotation>): List<Class<*>> {
     return scanResult.getClassesWithAnnotation(annotationType)
       .standardClasses
-      .filter(ClassInfoFilters.ordinaryClass())
+      .filter(ClassInfoFilters.instantiatableClass())
       .loadClasses()
   }
 }

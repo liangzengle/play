@@ -42,10 +42,10 @@ class ResourceManager(
       val configReader = ConfigReader()
       val setting = Setting(true, "version.txt", true)
       val resourceClasses = classScanner
-        .getOrdinarySubclassInfoList(AbstractResource::class.java)
+        .getInstantiatableSubclassInfoList(AbstractResource::class.java)
         .filter { !it.isAnnotationPresent(Ignore::class.java) }
         .loadClasses(AbstractResource::class.java)
-      val validators = classScanner.getOrdinarySubclasses(ResourceValidator::class.java).map { it.createInstance() }
+      val validators = classScanner.getInstantiatableSubclasses(ResourceValidator::class.java).map { it.createInstance() }
       return ResourceManager(setting, urlResolver, resourceReader, configReader, resourceClasses, validators)
     }
   }

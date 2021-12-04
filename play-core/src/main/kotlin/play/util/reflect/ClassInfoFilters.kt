@@ -5,7 +5,7 @@ import io.github.classgraph.ClassInfoList
 object ClassInfoFilters {
 
   @JvmStatic
-  fun ordinaryClass(): ClassInfoList.ClassInfoFilter = ClassInfoList.ClassInfoFilter {
+  fun instantiatableClass(): ClassInfoList.ClassInfoFilter = ClassInfoList.ClassInfoFilter {
     !it.isAbstract && !it.isAnonymousInnerClass && !it.isEnum && !(it.isInnerClass && !it.isStatic)
   }
 

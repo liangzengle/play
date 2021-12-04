@@ -1,26 +1,40 @@
 package play.entity.cache
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import mu.KLogging
 import play.entity.Entity
 import play.entity.ObjId
 import play.util.unsafeCast
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.VarHandle
+import kotlin.math.log
 
 /**
  *
  * @author LiangZengle
  */
-object EntityCacheHelper {
+object EntityCacheHelper : KLogging() {
 
   @JvmStatic
   fun getInitialSizeOrDefault(entityClass: Class<*>, default: Int): Int {
-    return entityClass.getAnnotation(CacheSpec::class.java)?.initialSize?.let {
+    return entityClass.getAnnotation(InitialCacheSize::class.java)?.value?.let {
       when (it.first()) {
         'x', 'X' -> it.substring(1).toInt() * default
         else -> it.toInt()
       }
     } ?: default
+  }
+
+  @JvmStatic
+  fun reportMissingInitialCacheSize(entityClass: Class<*>) {
+    val shouldSpecifyInitialCacheSize = entityClass.getAnnotation(ShouldSpecifyInitialCacheSize::class.java) ?: return
+    if (!shouldSpecifyInitialCacheSize.value) {
+      return
+    }
+    val initialCacheSize = entityClass.getAnnotation(InitialCacheSize::class.java)
+    if (initialCacheSize == null) {
+      logger.warn { "Probably missing @${InitialCacheSize::class.simpleName} on ${entityClass.name}. You can use @${ShouldSpecifyInitialCacheSize::class.simpleName}(false) to suppress waring." }
+    }
   }
 
   @JvmStatic
@@ -51,9 +65,7 @@ object EntityCacheHelper {
   }
 
   internal class MultiKeyAccessor<K>(
-    private val name: String,
-    private val type: Class<K>,
-    private val handle: VarHandle
+    private val name: String, private val type: Class<K>, private val handle: VarHandle
   ) {
     fun getValue(entity: Entity<*>): K {
       return handle.get(entity.id()).unsafeCast()

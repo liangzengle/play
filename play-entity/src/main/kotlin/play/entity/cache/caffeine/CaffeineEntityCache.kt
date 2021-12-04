@@ -69,18 +69,23 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
         return
       }
       val cacheSpec = entityClass.getAnnotation(CacheSpec::class.java)
-      expireEvaluator = when (val expireEvaluator = cacheSpec?.expireEvaluator) {
-        null -> DefaultExpireEvaluator
-        DefaultExpireEvaluator::class -> DefaultExpireEvaluator
-        NeverExpireEvaluator::class -> NeverExpireEvaluator
-        else -> injector.getInstance(expireEvaluator.java)
+      expireEvaluator = if (cacheSpec.neverExpire) NeverExpireEvaluator else {
+        when (val expireEvaluator = cacheSpec?.expireEvaluator) {
+          null -> DefaultExpireEvaluator
+          DefaultExpireEvaluator::class -> DefaultExpireEvaluator
+          NeverExpireEvaluator::class -> NeverExpireEvaluator
+          else -> injector.getInstance(expireEvaluator.java)
+          }
       }
       val isNeverExpire = expireEvaluator == NeverExpireEvaluator
       evictShelter = if (isNeverExpire) null else ConcurrentHashMap()
       initializer = initializerProvider.get(entityClass)
+
+      EntityCacheHelper.reportMissingInitialCacheSize(entityClass)
+      val initialCacheSize = EntityCacheHelper.getInitialSizeOrDefault(entityClass, settings.initialSize)
       val builder: Caffeine<ID, CacheObj<ID, E>> = Caffeine.newBuilder().unsafeCast()
       builder.executor(executor)
-      builder.initialCapacity(EntityCacheHelper.getInitialSizeOrDefault(entityClass, settings.initialSize))
+      builder.initialCapacity(initialCacheSize)
       if (!isNeverExpire) {
         val duration =
           if ((cacheSpec?.expireAfterAccess ?: 0) > 0) Duration.ofSeconds(cacheSpec.expireAfterAccess.toLong())

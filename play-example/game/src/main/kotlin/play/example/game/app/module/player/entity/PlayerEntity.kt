@@ -9,7 +9,7 @@ package play.example.game.app.module.player.entity
  * @property mtime Long 每月重置时间
  * @constructor
  */
-class PlayerEntity(id: Long, val ctime: Long) : AbstractPlayerLongIdEntity(id) {
+class PlayerEntity(id: Long, val ctime: Long) : AbstractPlayerEntity(id) {
 
   // 新的天时间
   var dtime = 0L

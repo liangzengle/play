@@ -61,15 +61,19 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
         return
       }
       val cacheSpec = entityClass.getAnnotation(CacheSpec::class.java)
-      expireEvaluator = when (val expireEvaluator = cacheSpec?.expireEvaluator) {
-        null -> DefaultExpireEvaluator
-        DefaultExpireEvaluator::class -> DefaultExpireEvaluator
-        NeverExpireEvaluator::class -> NeverExpireEvaluator
-        else -> injector.getInstance(expireEvaluator.java)
+      expireEvaluator = if (cacheSpec.neverExpire) NeverExpireEvaluator else {
+        when (val expireEvaluator = cacheSpec?.expireEvaluator) {
+          null -> DefaultExpireEvaluator
+          DefaultExpireEvaluator::class -> DefaultExpireEvaluator
+          NeverExpireEvaluator::class -> NeverExpireEvaluator
+          else -> injector.getInstance(expireEvaluator.java)
+        }
       }
       initializer = initializerProvider.get(entityClass)
 
-      val cache = ConcurrentHashMap<ID, CacheObj<ID, E>>()
+      EntityCacheHelper.reportMissingInitialCacheSize(entityClass)
+      val initialCacheSize = EntityCacheHelper.getInitialSizeOrDefault(entityClass, settings.initialSize)
+      val cache = ConcurrentHashMap<ID, CacheObj<ID, E>>(initialCacheSize)
       val isLoadAllOnInit = cacheSpec?.loadAllOnInit ?: false
       if (isLoadAllOnInit) {
         logger.debug { "Loading all [${entityClass.simpleName}]" }
@@ -89,18 +93,13 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
           else settings.expireAfterAccess
         val durationMillis = duration.toMillis()
         scheduler.scheduleWithFixedDelay(
-          duration,
-          duration.dividedBy(2),
-          executor
+          duration, duration.dividedBy(2), executor
         ) { scheduledExpire(durationMillis) }
       }
 
       if (!isImmutable) {
         scheduler.scheduleWithFixedDelay(
-          settings.persistInterval,
-          settings.persistInterval.dividedBy(2),
-          executor,
-          this::scheduledPersist
+          settings.persistInterval, settings.persistInterval.dividedBy(2), executor, this::scheduledPersist
         )
       }
       initialized = true
@@ -110,14 +109,11 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   private fun scheduledPersist() {
     val now = currentMillis()
     val persistTimeThreshold = now - settings.persistInterval.toMillis()
-    val entities = getCache().values.asSequence()
-      .filterIsInstance<NonEmpty<ID, E>>()
-      .filter { it.lastAccessTime() < persistTimeThreshold }
-      .map {
+    val entities = getCache().values.asSequence().filterIsInstance<NonEmpty<ID, E>>()
+      .filter { it.lastAccessTime() < persistTimeThreshold }.map {
         it.lastPersistTime = now
         it.peekEntity()
-      }
-      .toList()
+      }.toList()
     if (entities.isNotEmpty()) {
       entityCacheWriter.batchInsertOrUpdate(entities)
     }
@@ -126,12 +122,11 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   private fun scheduledExpire(expireAfterAccess: Long) {
     val cache = getCache()
     val accessTimeThreshold = currentMillis() - expireAfterAccess
-    cache.values.asSequence()
-      .filter {
-        it.lastAccessTime() <= accessTimeThreshold &&
-          (it.isEmpty() || expireEvaluator.canExpire(it.asNonEmpty().peekEntity()))
-      }
-      .forEach {
+    cache.values.asSequence().filter {
+        it.lastAccessTime() <= accessTimeThreshold && (it.isEmpty() || expireEvaluator.canExpire(
+          it.asNonEmpty().peekEntity()
+        ))
+      }.forEach {
         cache.computeIfPresent(it.id()) { _, v ->
           if (v.lastAccessTime() > accessTimeThreshold) {
             v
@@ -190,9 +185,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   private fun computeIfAbsent(
-    id: ID,
-    loadOnEmpty: ((ID) -> E)?,
-    loadOnAbsent: ((ID) -> E?)?
+    id: ID, loadOnEmpty: ((ID) -> E)?, loadOnAbsent: ((ID) -> E?)?
   ): E? {
     val cache = getCache()
     var cacheObj = cache[id]
@@ -235,11 +228,8 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun getOrCreate(id: ID, creation: (ID) -> E): E {
-    return computeIfAbsent(
-      id,
-      { k -> createEntity(k, creation) },
-      { k -> load(k) ?: createEntity(k, creation) }
-    ) ?: error("won't happen")
+    return computeIfAbsent(id, { k -> createEntity(k, creation) }, { k -> load(k) ?: createEntity(k, creation) })
+      ?: error("won't happen")
   }
 
   private fun createEntity(id: ID, creation: (ID) -> E): E {
@@ -329,13 +319,9 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     if (!initialized) {
       return Future.successful(Unit)
     }
-    val entities = getCache().values
-      .asSequence()
-      .filterIsInstance<NonEmpty<ID, E>>()
-      .filter { !(isImmutable && it.lastPersistTime != 0L) }
-      .map { it.peekEntity() }
-      .plus(persistingEntities.values.asSequence())
-      .toList()
+    val entities = getCache().values.asSequence().filterIsInstance<NonEmpty<ID, E>>()
+      .filter { !(isImmutable && it.lastPersistTime != 0L) }.map { it.peekEntity() }
+      .plus(persistingEntities.values.asSequence()).toList()
     return entityCacheWriter.batchInsertOrUpdate(entities) as Future<Unit>
   }
 
@@ -401,8 +387,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   private class NonEmpty<ID : Any, E : Entity<ID>>(
-    private val entity: E,
-    @field:Volatile private var lastAccessTime: Long
+    private val entity: E, @field:Volatile private var lastAccessTime: Long
   ) : CacheObj<ID, E>() {
 
     constructor(entity: E) : this(entity, currentMillis())

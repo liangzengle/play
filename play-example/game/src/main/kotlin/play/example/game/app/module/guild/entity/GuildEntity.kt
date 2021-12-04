@@ -12,7 +12,7 @@ import play.util.collection.ConcurrentHashSet
  * @author LiangZengle
  */
 @Merge(Merge.Strategy.All)
-@CacheSpec(loadAllOnInit = true, expireEvaluator = NeverExpireEvaluator::class)
+@CacheSpec(loadAllOnInit = true, neverExpire = true)
 class GuildEntity(id: Long, val name: String) : LongIdEntity(id) {
 
   var leaderId = 0L

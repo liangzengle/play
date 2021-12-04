@@ -43,18 +43,15 @@ object Mongo {
       val authSource = conf.getString("auth-source")
       builder.credential(MongoCredential.createCredential(user, authSource, pwd.toCharArray()))
     }
-    val bsonFactory = BsonFactory()
-      .enable(BsonParser.Feature.HONOR_DOCUMENT_LENGTH)
+    val bsonFactory = BsonFactory().enable(BsonParser.Feature.HONOR_DOCUMENT_LENGTH)
       .enable(BsonGenerator.Feature.WRITE_BIGDECIMALS_AS_DECIMAL128)
-    val objectMapper = Json.configure(ObjectMapper(bsonFactory))
-      .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
+    val objectMapper = Json.configure(ObjectMapper(bsonFactory)).disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
       .addMixIn(LongIdEntity::class.java, MongoLongIdMixIn::class.java)
       .addMixIn(IntIdEntity::class.java, MongoIntIdMixIn::class.java)
       .addMixIn(ObjIdEntity::class.java, MongoObjIdMixIn::class.java)
     val entityCodecProvider = EntityCodecProvider(objectMapper)
     val codecRegistry = CodecRegistries.fromRegistries(
-      CodecRegistries.fromProviders(entityCodecProvider),
-      MongoClientSettings.getDefaultCodecRegistry()
+      CodecRegistries.fromProviders(entityCodecProvider), MongoClientSettings.getDefaultCodecRegistry()
     )
     val nThread = conf.getInt("client-threads")
     builder.applyToConnectionPoolSettings {
@@ -68,20 +65,18 @@ object Mongo {
   private fun newNettyStreamFactory(eventLoopGroup: EventLoopGroup): NettyStreamFactoryFactory {
     val builder = NettyStreamFactoryFactory.builder()
     if (eventLoopGroup is EpollEventLoopGroup) {
-      builder.eventLoopGroup(eventLoopGroup)
-        .socketChannelClass(EpollSocketChannel::class.java)
+      builder.eventLoopGroup(eventLoopGroup).socketChannelClass(EpollSocketChannel::class.java)
     } else {
-      builder.eventLoopGroup(eventLoopGroup)
-        .socketChannelClass(NioSocketChannel::class.java)
+      builder.eventLoopGroup(eventLoopGroup).socketChannelClass(NioSocketChannel::class.java)
     }
     return builder.build()
   }
 
   fun ensureIndexes(repository: MongoDBRepository, entityClasses: List<Class<Entity<*>>>) {
-    for (entityClass in entityClasses) {
+    entityClasses.parallelStream().forEach { entityClass ->
       val indexes = entityClass.getAnnotationsByType(Index::class.java)
       for (index in indexes) {
-        if (index.fields.isEmpty()) return
+        if (index.fields.isEmpty()) continue
         val fields = index.fields.copyOf()
         for (i in fields.indices) {
           val field = fields[i]

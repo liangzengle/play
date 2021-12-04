@@ -1,9 +1,6 @@
 package play.example.game.app.module.task.event.adpater
 
-import com.google.common.collect.ImmutableList
-import com.google.common.collect.ImmutableListMultimap
-import com.google.common.collect.ListMultimap
-import com.google.common.collect.Lists
+import com.google.common.collect.*
 import play.example.game.App
 import play.example.game.app.module.task.event.TaskEvent
 import play.util.reflect.Reflect
@@ -19,12 +16,12 @@ object TaskEventAdapters {
 
     init {
       val adapterTypes: List<Class<TaskEventAdapter<*, *>>> =
-        App.classScanner.getOrdinarySubclasses(TaskEventAdapter::class.java)
+        App.classScanner.getInstantiatableSubclasses(TaskEventAdapter::class.java)
       adapterMap = buildAdapterMap(adapterTypes)
     }
   }
 
-  private fun buildAdapterMap(adapterTypes: List<Class<out TaskEventAdapter<*, *>>>): ImmutableListMultimap<Class<*>, TaskEventAdapter<TaskEvent, TaskEvent>> {
+  private fun buildAdapterMap(adapterTypes: List<Class<out TaskEventAdapter<*, *>>>): ListMultimap<Class<*>, TaskEventAdapter<TaskEvent, TaskEvent>> {
     val builder = ImmutableListMultimap.builder<Class<*>, TaskEventAdapter<TaskEvent, TaskEvent>>()
     val pathBuilder = ImmutableListMultimap.builder<Class<*>, Class<*>>()
     @Suppress("UNCHECKED_CAST")
@@ -42,7 +39,7 @@ object TaskEventAdapters {
 
   private fun checkCircularAdapter(pathMap: ListMultimap<Class<*>, Class<*>>) {
     // check circular adapter
-    fun visit(eventType: Class<*>, visited: MutableSet<Class<*>>, pathMap: ListMultimap<Class<*>, Class<*>>) {
+    fun visit(eventType: Class<*>, visited: MutableSet<Class<*>>, pathMap: Multimap<Class<*>, Class<*>>) {
       for (toType in pathMap.get(eventType)) {
         if (!visited.add(toType)) {
           throw IllegalStateException("circular adapter: ${visited.joinToString("->")}->$toType")

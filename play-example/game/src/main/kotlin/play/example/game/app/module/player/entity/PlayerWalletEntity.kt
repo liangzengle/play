@@ -7,7 +7,7 @@ import org.eclipse.collections.impl.factory.primitive.IntLongMaps
  *
  * @author LiangZengle
  */
-class PlayerWalletEntity(id: Long) : AbstractPlayerLongIdEntity(id) {
+class PlayerWalletEntity(id: Long) : AbstractPlayerEntity(id) {
 
   /**
    * 货币类型:余额

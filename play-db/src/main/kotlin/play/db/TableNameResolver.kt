@@ -23,10 +23,10 @@ class TableNameResolver constructor(
       if (postfixesToTrimBeforeFormat.isNotEmpty()) {
         name = trimPostfixes(clazz.simpleName, postfixesToTrimBeforeFormat)
       }
+      name = tableNameFormatter.format(name)
     } else {
       name = tableName.value
     }
-    name = tableNameFormatter.format(name)
     tableNameCache[clazz] = name
     return name
   }

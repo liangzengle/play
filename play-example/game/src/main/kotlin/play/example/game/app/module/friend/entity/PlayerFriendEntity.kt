@@ -5,13 +5,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.entity.cache.EntityInitializer
 import play.example.game.app.module.player.PlayerService
-import play.example.game.app.module.player.entity.AbstractPlayerLongIdEntity
+import play.example.game.app.module.player.entity.AbstractPlayerEntity
 
 /**
  * 好友
  * @author LiangZengle
  */
-class PlayerFriendEntity(id: Long) : AbstractPlayerLongIdEntity(id) {
+class PlayerFriendEntity(id: Long) : AbstractPlayerEntity(id) {
 
   private var friends = LongSets.mutable.empty()
 

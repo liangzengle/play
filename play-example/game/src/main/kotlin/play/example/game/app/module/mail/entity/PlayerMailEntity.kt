@@ -1,6 +1,6 @@
 package play.example.game.app.module.mail.entity
 
-import play.example.game.app.module.player.entity.AbstractPlayerObjIdEntity
+import play.example.game.app.module.player.entity.AbstractPlayerMultiEntity
 import play.example.game.app.module.player.entity.PlayerObjId
 import play.example.game.app.module.reward.model.Reward
 
@@ -14,7 +14,7 @@ class PlayerMailEntity(
   val logSource: Int,
   var status: Int,
   val createTime: Long
-) : AbstractPlayerObjIdEntity<PlayerMailId>(id) {
+) : AbstractPlayerMultiEntity<PlayerMailId>(id) {
 
   fun setRead() {
     status = status or 1

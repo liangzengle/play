@@ -2,9 +2,9 @@ package play.example.game.app.module.mail.entity
 
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.eclipse.collections.impl.factory.primitive.IntSets
-import play.example.game.app.module.player.entity.AbstractPlayerLongIdEntity
+import play.example.game.app.module.player.entity.AbstractPlayerEntity
 
-class PlayerMailIdEntity(id: Long) : AbstractPlayerLongIdEntity(id) {
+class PlayerMailIdEntity(id: Long) : AbstractPlayerEntity(id) {
   private val mailIds = IntSets.mutable.empty()
 
   @Transient

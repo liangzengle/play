@@ -7,8 +7,8 @@ import kotlin.reflect.KClass
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 annotation class CacheSpec(
-  val initialSize: String = SIZE_DEFAULT,
   val loadAllOnInit: Boolean = false,
+  val neverExpire: Boolean = false,
   val expireAfterAccess: Int = 0,
   val expireEvaluator: KClass<out ExpireEvaluator> = DefaultExpireEvaluator::class
 ) {

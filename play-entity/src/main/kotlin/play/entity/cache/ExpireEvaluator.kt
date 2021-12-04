@@ -10,7 +10,7 @@ interface ExpireEvaluator {
   fun canExpire(entity: Entity<*>): Boolean
 }
 
-internal object DefaultExpireEvaluator : ExpireEvaluator {
+object DefaultExpireEvaluator : ExpireEvaluator {
   override fun canExpire(entity: Entity<*>): Boolean = true
 }
 

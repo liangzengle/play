@@ -1,17 +1,19 @@
 package play.example.game.app.module.server.entity
 
+import play.db.Merge
 import play.entity.IntIdEntity
 import play.entity.cache.CacheSpec
-import play.entity.cache.NeverExpireEvaluator
+import play.entity.cache.ImmutableEntity
+import play.entity.cache.InitialCacheSize
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
-@CacheSpec(
-  initialSize = CacheSpec.SIZE_ONE,
-  expireEvaluator = NeverExpireEvaluator::class
-)
-class Server(id: Int) : IntIdEntity(id) {
+@Merge(Merge.Strategy.All)
+@InitialCacheSize(InitialCacheSize.ONE)
+@CacheSpec(neverExpire = true)
+@ImmutableEntity
+class ServerEntity(id: Int) : IntIdEntity(id) {
 
   private var openTime: LocalDateTime? = null
 
