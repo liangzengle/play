@@ -88,8 +88,12 @@ class PlayerService(
 
   fun isPlayerExists(playerId: Long) = playerIdNameCache.isPlayerExists(playerId)
 
-  fun getPlayerName(playerId: Long): String {
-    return if (isPlayerExists(playerId)) playerIdNameCache.getPlayerNameOrThrow(playerId) else ""
+  fun getPlayerNameOrThrow(playerId: Long): String {
+    return playerIdNameCache.getPlayerNameOrThrow(playerId)
+  }
+
+  fun getPlayerNameOrElse(playerId: Long, defaultValue: String): String {
+    return if (isPlayerExists(playerId)) playerIdNameCache.getPlayerNameOrThrow(playerId) else defaultValue
   }
 
   /**

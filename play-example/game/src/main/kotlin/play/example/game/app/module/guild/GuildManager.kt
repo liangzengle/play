@@ -152,7 +152,7 @@ class GuildManager(
       val guildId = guildCache.genGuildId()
       val guild = GuildEntity(guildId, guildName)
       guild.leaderId = playerId
-      guild.leaderName = playerService.getPlayerName(playerId)
+      guild.leaderName = playerService.getPlayerNameOrThrow(playerId)
       guild.members.add(playerId)
       guildEntityCache.unsafeOps().initWithEmptyValue(guild.id)
       guildEntityCache.create(guild)

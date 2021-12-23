@@ -48,3 +48,10 @@ include 'play-example-game'
 project(':play-example-game').projectDir = file('./play-example/game')
 include 'play-example-robot'
 project(':play-example-robot').projectDir = file('./play-example/robot')
+
+include 'play-example-rpc-broker'
+project(':play-example-rpc-broker').projectDir = file('./play-example/rpc-broker')
+include 'play-example-rpc-api'
+project(':play-example-rpc-api').projectDir = file('./play-example/rpc-api')
+include 'play-example-rpc-test'
+project(':play-example-rpc-test').projectDir = file('./play-example/rpc-test')

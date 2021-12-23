@@ -11,9 +11,9 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
  */
 class PlayNonWebApplicationContextFactory : ApplicationContextFactory {
   override fun create(webApplicationType: WebApplicationType): ConfigurableApplicationContext {
-    if (webApplicationType != WebApplicationType.NONE) {
-      throw IllegalArgumentException("WebApplication is not supported")
-    }
+//    if (webApplicationType != WebApplicationType.NONE) {
+//      throw IllegalArgumentException("WebApplication is not supported")
+//    }
     try {
       return AnnotationConfigApplicationContext(PlayListableBeanFactory())
     } catch (ex: Exception) {

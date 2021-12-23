@@ -69,7 +69,7 @@ object ClassUtil {
    * @return
    */
   @JvmStatic
-  fun isInstantiable(clazz: Class<*>): Boolean {
+  fun isInstantiatable(clazz: Class<*>): Boolean {
     return !clazz.isLocalClass && !clazz.isAnonymousClass && !clazz.isInterface && !clazz.isAbstract()
       && !clazz.isEnum && !(clazz.isMemberClass && !clazz.isStatic())
   }
