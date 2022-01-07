@@ -13,7 +13,7 @@ idea.module {
 
 dependencies {
     api project(":play-core")
-    codegenImplementation libs.kotlinpoet.poet
+    codegenImplementation  Deps.KotlinPoetDeprecated
 }
 
 task generateCaches(type: JavaExec) {

@@ -15,7 +15,7 @@ dependencies {
     api project(':play-example-game')
 
     codegenImplementation project(':play-example-game')
-    codegenImplementation libs.kotlinpoet.poet
+    codegenImplementation Deps.KotlinPoetDeprecated
 }
 
 task generateCaches(type: JavaExec) {

@@ -1,7 +1,0 @@
-plugins {
-    id "scala"
-}
-
-dependencies {
-    api libs.bundles.scala
-}

@@ -1,5 +1,6 @@
 package play.example.game.app.module.player.event
 
+import com.google.common.collect.ImmutableMap
 import play.example.game.app.module.player.Self
 
 interface PlayerEventListener {
@@ -45,6 +46,6 @@ class PlayerEventReceiveBuilder {
   }
 
   fun build(): PlayerEventReceive {
-    return PlayerEventReceive(map.toMap())
+    return PlayerEventReceive(ImmutableMap.copyOf(map))
   }
 }

@@ -51,7 +51,7 @@ class ContainerApp : ActorConfigurationSupport {
   }
 
   @Bean
-  fun gmCommandInvokerManager(classScanner: ClassScanner): CommandManager {
+  fun commandManager(classScanner: ClassScanner): CommandManager {
     return CommandManager(Self::class.java, classScanner)
   }
 }

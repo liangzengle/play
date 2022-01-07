@@ -1,6 +1,0 @@
-dependencies {
-    api project(':play-db')
-    api libs.mongodb
-    api libs.bundles.netty
-    implementation libs.bson4jackson
-}

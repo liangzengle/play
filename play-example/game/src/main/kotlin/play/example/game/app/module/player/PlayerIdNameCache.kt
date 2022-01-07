@@ -9,7 +9,9 @@ import play.example.game.app.module.player.exception.PlayerNotExistsException
 import play.util.collection.ConcurrentIntObjectMap
 import play.util.collection.ConcurrentLongObjectMap
 import play.util.collection.ConcurrentObjectLongMap
+import play.util.toOptional
 import java.time.Duration
+import java.util.*
 
 @Component
 class PlayerIdNameCache @Autowired constructor(queryService: QueryService) {
@@ -59,7 +61,7 @@ class PlayerIdNameCache @Autowired constructor(queryService: QueryService) {
     return idToName[playerId] ?: throw PlayerNotExistsException(playerId)
   }
 
-  fun getPlayerNameOrEmpty(playerId: Long): String {
-    return idToName[playerId] ?: ""
+  fun getPlayerName(playerId: Long): Optional<String> {
+    return idToName[playerId].toOptional()
   }
 }

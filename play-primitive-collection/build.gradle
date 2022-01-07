@@ -1,4 +1,0 @@
-dependencies {
-    api project(':play-eclipse-collectionx')
-    implementation libs.fastutil.core
-}

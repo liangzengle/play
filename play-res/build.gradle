@@ -1,4 +1,0 @@
-dependencies {
-    api project(':play-core')
-    api libs.hibernate.validator.core
-}

@@ -12,10 +12,10 @@ idea.module {
 }
 
 dependencies {
-    codegenImplementation libs.kotlinpoet.poet
-    codegenImplementation libs.eclipse.collections
+    codegenImplementation Deps.KotlinPoetDeprecated
+    codegenImplementation Deps.EclipseCollections
 
-    implementation libs.eclipse.collections
+    implementation Deps.EclipseCollections
 }
 
 task generateCode(type: JavaExec) {
