@@ -19,6 +19,8 @@ import java.lang.reflect.UndeclaredThrowableException
 import javax.annotation.Nonnull
 
 /**
+ * copied from spring framework
+ *
  * Runnable wrapper that catches any exception or error thrown from its
  * delegate Runnable and allows an [ErrorHandler] to handle it.
  *

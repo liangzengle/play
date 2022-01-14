@@ -8,7 +8,7 @@ import akka.actor.typed.javadsl.Receive
 import play.akka.AbstractTypedActor
 import play.akka.send
 import play.akka.withResumeSupervisor
-import play.example.common.akka.scheduling.ActorCronScheduler
+import play.example.common.akka.scheduling.ActorScheduler
 import play.example.common.scheduling.Cron
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.domain.PlayerErrorCode
@@ -20,7 +20,6 @@ import play.example.game.container.gs.logging.ActorMDC
 import play.example.game.container.net.Session
 import play.mvc.Request
 import play.mvc.Response
-import play.scheduling.Scheduler
 import play.util.exception.NoStackTraceException
 import play.util.unsafeCast
 
@@ -30,13 +29,13 @@ class PlayerManager(
   private val playerIdNameCache: PlayerIdNameCache,
   private val playerService: PlayerService,
   private val requestHandler: PlayerRequestHandler,
-  cronScheduler: ActorCronScheduler<Command>,
+  actorScheduler: ActorRef<ActorScheduler.Command>,
   private val taskEventReceiver: PlayerTaskEventReceiver,
   private val actorMdc: ActorMDC
 ) : AbstractTypedActor<PlayerManager.Command>(context) {
 
   init {
-    cronScheduler.schedule(Cron.EveryDay, NewDayStart)
+    actorScheduler.tell(ActorScheduler.ScheduleCron(Cron.EveryDay, NewDayStart, self))
   }
 
   override fun createReceive(): Receive<Command> {
@@ -121,7 +120,7 @@ class PlayerManager(
       playerIdNameCache: PlayerIdNameCache,
       playerService: PlayerService,
       requestHandler: PlayerRequestHandler,
-      scheduler: Scheduler,
+      actorScheduler: ActorRef<ActorScheduler.Command>,
       taskEventReceiver: PlayerTaskEventReceiver,
       actorMdc: ActorMDC
     ): Behavior<Command> {
@@ -132,7 +131,7 @@ class PlayerManager(
           playerIdNameCache,
           playerService,
           requestHandler,
-          ActorCronScheduler(scheduler, ctx),
+          actorScheduler,
           taskEventReceiver,
           actorMdc
         )

@@ -8,7 +8,7 @@ import play.scheduling.Scheduler
  * 供Actor内部使用的Cron定时计划
  * @author LiangZengle
  */
-class ActorCronScheduler<T : Any> constructor(
+class ActorInternalCronScheduler<T : Any> constructor(
   private val scheduler: Scheduler,
   private val context: ActorContext<T>
 ) {
@@ -43,9 +43,13 @@ class ActorCronScheduler<T : Any> constructor(
    * @param eventType 事件类型
    */
   fun cancelAll(eventType: Class<out T>) {
-    val eventList = schedules.keys.filter { eventType.isAssignableFrom(it.javaClass) }
-    for (scheduledEvent in eventList) {
-      schedules.remove(scheduledEvent)?.cancel()
+    val it = schedules.entries.iterator()
+    while (it.hasNext()) {
+      val (event, cancellable) = it.next()
+      if (eventType.isAssignableFrom(event.javaClass)) {
+        it.remove()
+        cancellable.cancel()
+      }
     }
   }
 

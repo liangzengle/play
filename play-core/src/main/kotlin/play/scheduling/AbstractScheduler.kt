@@ -74,7 +74,9 @@ abstract class AbstractScheduler(private val workerPool: Executor, val clock: Cl
   }
 
   override fun scheduleCron(cronExpr: String, taskExecutor: Executor, task: Runnable): Cancellable {
-    return scheduleCron(cronExpr, taskExecutor, task, Optional.empty(), Optional.empty())
+    val sequenceGenerator = CronExpression.parse(cronExpr)
+    val trigger = CronTrigger(sequenceGenerator)
+    return schedule(trigger, taskExecutor, task)
   }
 
   override fun scheduleCron(

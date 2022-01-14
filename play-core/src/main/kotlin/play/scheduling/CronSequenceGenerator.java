@@ -26,6 +26,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 /**
+ * copied from spring framework
+ *
  * Date sequence generator for a
  * <a href="http://www.manpagez.com/man/5/crontab/">Crontab pattern</a>,
  * allowing clients to specify a pattern that the sequence matches.

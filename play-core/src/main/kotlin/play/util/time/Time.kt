@@ -36,7 +36,10 @@ object Time {
   fun currentMillis() = clock.millis()
 
   @JvmStatic
-  fun currentSeconds(): Int = (clock.millis() / 1000).toIntChecked()
+  fun currentSecondsInt(): Int = (clock.millis() / 1000).toIntChecked()
+
+  @JvmStatic
+  fun currentSeconds(): Long = clock.millis() / 1000
 
   @JvmStatic
   fun nanoTime(): Long = System.nanoTime()

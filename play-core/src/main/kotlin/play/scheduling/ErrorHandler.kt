@@ -16,6 +16,8 @@
 package play.scheduling
 
 /**
+ * copied from spring framework
+ *
  * A strategy for handling errors. This is especially useful for handling
  * errors that occur during asynchronous execution of tasks that have been
  * submitted to a TaskScheduler. In such cases, it may not be possible to

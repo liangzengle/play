@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory
 import play.util.exception.rethrow
 
 /**
+ * copied from spring framework
+ *
  * Utility methods for decorating tasks with error handling.
  *
  *

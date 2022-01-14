@@ -16,6 +16,7 @@
 package play.scheduling
 
 import play.util.time.Time.toMillis
+import play.util.time.currentDateTime
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDateTime
@@ -24,6 +25,8 @@ import javax.annotation.Nullable
 import javax.annotation.concurrent.GuardedBy
 
 /**
+ * copied from spring framework
+ *
  * Internal adapter that reschedules an underlying [Runnable] according
  * to the next execution time suggested by a given [Trigger].
  *
@@ -67,17 +70,16 @@ internal class ReschedulingRunnable(
 
   @GuardedBy("triggerContextMonitor")
   private fun obtainCurrentFuture(): Cancellable {
-    check(currentFuture != null) { "No scheduled future" }
-    return currentFuture!!
+    return checkNotNull(currentFuture) { "No scheduled future" }
   }
 
   override fun run() {
-    val actualExecutionTime = LocalDateTime.now(triggerContext.clock)
+    val actualExecutionTime = triggerContext.clock.currentDateTime()
     super.run()
-    val completionTime = LocalDateTime.now(triggerContext.clock)
+    val completionTime = triggerContext.clock.currentDateTime()
     synchronized(triggerContextMonitor) {
       val executionTime = scheduledExecutionTime
-      check(executionTime != null) { "No scheduled execution" }
+      checkNotNull(executionTime) { "No scheduled execution" }
       triggerContext.update(executionTime, actualExecutionTime, completionTime)
       if (!obtainCurrentFuture().isCancelled()) {
         schedule()
