@@ -51,9 +51,9 @@ object Deps {
     const val Metadata = "com.squareup:kotlinpoet-metadata:$Version"
     const val Ksp = "com.squareup:kotlinpoet-ksp:$Version"
   }
+
   @Deprecated("")
   const val KotlinPoetDeprecated = "com.squareup:kotlinpoet:${Versions.KotlinPoet}"
-
 
   object Log4j {
     private const val Version = Versions.Log4j
@@ -61,6 +61,10 @@ object Deps {
     const val Core = "org.apache.logging.log4j:log4j-core:$Version"
     const val Slf4j = "org.apache.logging.log4j:log4j-slf4j-impl:$Version"
     const val Jul = "org.apache.logging.log4j:log4j-jul:$Version"
+  }
+
+  object MongoDB {
+    const val Driver = "org.mongodb:mongodb-driver-reactivestreams:${Versions.MongoDB}"
   }
 
   object Netty {
@@ -82,9 +86,15 @@ object Deps {
     const val Java8 = "org.scala-lang.modules:scala-java8-compat_2.13:${Versions.ScalaJava8Compact}"
   }
 
-  object MongoDB {
-    const val Driver = "org.mongodb:mongodb-driver-reactivestreams:${Versions.MongoDB}"
+  object SpringBoot {
+    const val Starter = "org.springframework.boot:spring-boot-starter:${Versions.SpringBoot}"
   }
+
+  object AlibabaRsocket {
+    val Broker = "com.alibaba.rsocket:alibaba-broker-spring-boot-starter:${Versions.AlibabaRsocket}"
+    val Client = "com.alibaba.rsocket:alibaba-rsocket-spring-boot-starter:${Versions.AlibabaRsocket}"
+  }
+
 
   const val Asm = "org.ow2.asm:asm:${Versions.Asm}"
 
@@ -120,8 +130,6 @@ object Deps {
   const val Logback = "ch.qos.logback:logback-classic:${Versions.Logback}"
 
   const val Micrometer = "io.micrometer:micrometer-core:${Versions.Micrometer}"
-
-  const val SpringBootStarter = "org.springframework.boot:spring-boot-starter:${Versions.SpringBoot}"
 
   const val TsConfig = "com.typesafe:config:${Versions.TsConfig}"
 

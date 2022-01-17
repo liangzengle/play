@@ -1,4 +1,4 @@
-package play.example.game.container.rpc
+package play.rsocket.rpc
 
 import com.alibaba.rsocket.cloudevents.CloudEventImpl
 import com.alibaba.rsocket.metadata.GSVRoutingMetadata
@@ -24,7 +24,7 @@ import reactor.extra.processor.TopicProcessor
  *
  * @author LiangZengle
  */
-class ContainerRSocketResponderHandler(
+class RSocketResponderHandler(
   private val serviceCall: GSVLocalReactiveServiceCaller,
   eventProcessor: TopicProcessor<CloudEventImpl<*>>,
   requester: RSocket,
@@ -40,7 +40,7 @@ class ContainerRSocketResponderHandler(
     payload: Payload?
   ): Mono<Payload> {
     return try {
-      val methodHandler = serviceCall.getInvokeMethod(routing)
+      val methodHandler = serviceCall.getInvokeMethod(routing.group, routing.version, routing.service, routing.method)
       if (methodHandler != null) {
         val result: Any? = if (methodHandler.isAsyncReturn) {
           invokeLocalService(methodHandler, dataEncodingMetadata, payload)
@@ -60,7 +60,7 @@ class ContainerRSocketResponderHandler(
         }
       } else {
         ReferenceCountUtil.safeRelease(payload)
-        Mono.error(InvalidException(RsocketErrorCode.message("RST-201404", routing!!.service, routing!!.method)))
+        Mono.error(InvalidException(RsocketErrorCode.message("RST-201404", routing.service, routing.method)))
       }
     } catch (e: Exception) {
       log.error(RsocketErrorCode.message("RST-200500"), e)

@@ -1,7 +1,6 @@
-package play.example.game.container.rpc
+package play.rsocket.rpc
 
 import com.alibaba.rsocket.ServiceMapping
-import com.alibaba.rsocket.metadata.GSVRoutingMetadata
 import com.alibaba.rsocket.rpc.ReactiveMethodHandler
 import com.alibaba.rsocket.utils.MurmurHash3
 import com.alibaba.spring.boot.rsocket.RSocketProperties
@@ -15,7 +14,7 @@ import org.springframework.beans.factory.config.BeanPostProcessor
 /**
  * @author LiangZengle
  */
-class ContainerRSocketServiceAnnotationProcessor(rsocketProperties: RSocketProperties) :
+class RSocketServiceAnnotationProcessor(rsocketProperties: RSocketProperties) :
   AbstractRSocketServiceAnnotationProcessor(rsocketProperties.group, rsocketProperties.version),
   BeanPostProcessor,
   GSVLocalReactiveServiceCaller {
@@ -51,7 +50,7 @@ class ContainerRSocketServiceAnnotationProcessor(rsocketProperties: RSocketPrope
       val key = HandlerId(group, serviceName, version, handlerName)
       methodInvokeEntrances[key] = ReactiveMethodHandler(serviceName, method, handler)
     }
-    
+
     logger.debug { "rsocket rpc add provider: group=$group, serviceName=$serviceName, version=$version" }
   }
 
@@ -74,11 +73,16 @@ class ContainerRSocketServiceAnnotationProcessor(rsocketProperties: RSocketPrope
     }
   }
 
-  override fun getInvokeMethod(routing: GSVRoutingMetadata): ReactiveMethodHandler? {
-    return methodInvokeEntrances[HandlerId(routing.group ?: "", routing.service, routing.version ?: "", routing.method)]
+  override fun getInvokeMethod(
+    group: String?,
+    version: String?,
+    serviceName: String,
+    method: String
+  ): ReactiveMethodHandler? {
+    return methodInvokeEntrances[HandlerId(group ?: "", serviceName, version ?: "", method)]
   }
 
-  override fun getInvokeMethod(serviceName: String?, method: String?): ReactiveMethodHandler? {
+  override fun getInvokeMethod(serviceName: String, method: String): ReactiveMethodHandler? {
     throw UnsupportedOperationException()
   }
 

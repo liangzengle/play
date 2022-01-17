@@ -1,5 +1,6 @@
 object Versions {
   const val Akka = "2.6.18"
+  const val AlibabaRsocket = "1.1.2"
   const val Asm = "9.2"
   const val AsyncHttpClient = "2.12.3"
   const val AutoService = "1.0.1"

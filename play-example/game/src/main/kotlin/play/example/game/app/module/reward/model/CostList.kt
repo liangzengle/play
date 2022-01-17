@@ -24,8 +24,7 @@ class CostList private constructor(
       if (jsonNode.isEmpty) {
         return Empty
       }
-      val type = Json.mapper.typeFactory.constructCollectionType(ImmutableList::class.java, Cost::class.java)
-      val costs = Json.mapper.convertValue<ImmutableList<Cost>>(jsonNode, type)
+      val costs = Json.convert<ImmutableList<Cost>>(jsonNode)
       return CostList(costs)
     }
 

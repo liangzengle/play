@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
 import play.example.game.container.gs.domain.GameServerId
-import play.example.game.container.rpc.ContainerRSocketServiceAnnotationProcessor
+import play.rsocket.rpc.RSocketServiceAnnotationProcessor
 import play.util.json.Json
 
 /**
@@ -45,7 +45,7 @@ class GameRSocketRpcConfiguration {
 
   @Bean
   fun gameRSocketServiceAnnotationProcessor(
-    rSocketServiceAnnotationProcessor: ContainerRSocketServiceAnnotationProcessor, gameServerId: GameServerId
+    rSocketServiceAnnotationProcessor: RSocketServiceAnnotationProcessor, gameServerId: GameServerId
   ): GameRSocketServiceAnnotationProcessor {
     return GameRSocketServiceAnnotationProcessor(rSocketServiceAnnotationProcessor, gameServerId)
   }

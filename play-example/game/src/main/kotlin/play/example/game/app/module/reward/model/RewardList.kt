@@ -24,8 +24,7 @@ class RewardList private constructor(
       if (jsonNode.isEmpty) {
         return Empty
       }
-      val type = Json.mapper.typeFactory.constructCollectionType(List::class.java, Reward::class.java)
-      val rewards = Json.mapper.convertValue<List<Reward>>(jsonNode, type)
+      val rewards = Json.convert<List<Reward>>(jsonNode)
       return RewardList(rewards)
     }
 

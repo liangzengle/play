@@ -27,6 +27,7 @@ include("play-eclipse-collectionx")
 include("play-spring")
 include("play-boot")
 include("play-primitive-collection")
+include("play-rsocket-rpc")
 
 include("play-modular-code")
 project(":play-modular-code").projectDir = file("./play-plugins/play-modular-code")

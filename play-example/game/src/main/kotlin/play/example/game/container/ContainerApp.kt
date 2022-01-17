@@ -19,6 +19,7 @@ import play.example.game.container.login.LoginDispatcherActor
 import play.example.game.container.net.SessionManager
 import play.http.EnableHttpClient
 import play.mongodb.PlayMongoConfiguration
+import play.rsocket.rpc.RSocketRpcConfiguration
 import play.util.reflect.ClassScanner
 
 /**
@@ -34,7 +35,8 @@ import play.util.reflect.ClassScanner
     PlayDBConfiguration::class,
     PlayMongoConfiguration::class,
     NettyServerConfiguration::class,
-    AkkaConfiguration::class
+    AkkaConfiguration::class,
+    RSocketRpcConfiguration::class
   ]
 )
 class ContainerApp : ActorConfigurationSupport {

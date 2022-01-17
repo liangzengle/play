@@ -4,5 +4,5 @@ dependencies {
   compileOnly(project(":play-res"))
   compileOnly(project(":play-entity"))
   compileOnly(project(":play-mongodb"))
-  compileOnly(Deps.SpringBootStarter)
+  compileOnly(Deps.SpringBoot.Starter)
 }

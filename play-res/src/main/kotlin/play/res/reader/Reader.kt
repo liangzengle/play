@@ -1,6 +1,7 @@
 package play.res.reader
 
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
 import play.res.deser.ImmutableCollectionModule
 import play.util.json.Json
 import java.net.URL
@@ -13,7 +14,7 @@ interface Reader {
 
   companion object {
     @JvmStatic
-    val objectMapper = Json.mapper.copy()
+    val objectMapper = Json.configure(ObjectMapper())
       .configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE, true)
       .registerModule(ImmutableCollectionModule())
 

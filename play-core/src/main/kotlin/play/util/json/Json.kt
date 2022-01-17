@@ -11,6 +11,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.InputStream
 import java.lang.reflect.Type
 import java.net.URL
+import kotlin.reflect.javaType
+import kotlin.reflect.typeOf
 
 /**
  * Created by LiangZengle on 2020/2/15.
@@ -19,10 +21,12 @@ object Json {
   var mapper = configure(ObjectMapper())
     private set
 
+  @JvmStatic
   fun replaceDefaultMapper(newMapper: ObjectMapper) {
     mapper = newMapper
   }
 
+  @JvmStatic
   fun configure(mapper: ObjectMapper): ObjectMapper {
     return mapper.findAndRegisterModules()
       .registerModule(PrimitiveJdkCollectionModule())
@@ -124,6 +128,9 @@ object Json {
 
   @JvmStatic
   fun <T> convert(fromValue: Any, targetType: Type): T = mapper.convertValue(fromValue, targetType.toJavaType())
+
+  @JvmStatic
+  inline fun <reified T> convert(fromValue: Any): T = mapper.convertValue(fromValue, typeOf<T>().javaType.toJavaType())
 
   inline fun <reified E> to(content: String): E = mapper.readValue(content)
   inline fun <reified E> to(src: ByteArray): E = mapper.readValue(src)

@@ -35,6 +35,7 @@ dependencies {
   api(project(":play-mongodb"))
   api(project(":play-mvc"))
   api(project(":play-spring"))
+  api(project("::play-rsocket-rpc"))
 
   compileOnly(project(":play-codegen-annotations"))
   compileOnly(project(":play-codegen"))
@@ -57,5 +58,5 @@ kapt {
 
 modularCode {
   enabled = true
-  annotation = listOf("play.example.game.app.module.ModularCode")
+  annotation = "play.example.game.app.module.ModularCode"
 }

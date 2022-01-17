@@ -1,4 +1,4 @@
-package play.example.game.container.rpc
+package play.rsocket.rpc
 
 import com.alibaba.rsocket.RSocketService
 import com.alibaba.rsocket.spring.SpringRSocketService
@@ -16,13 +16,13 @@ abstract class AbstractRSocketServiceAnnotationProcessor(
 ) : BeanPostProcessor {
 
   @Throws(BeansException::class)
-  final override fun postProcessBeforeInitialization(bean: Any, beanName: String?): Any {
+  final override fun postProcessBeforeInitialization(bean: Any, beanName: String): Any? {
     scanRSocketServiceAnnotation(bean, beanName)
     return bean
   }
 
   @Throws(BeansException::class)
-  final override fun postProcessAfterInitialization(bean: Any, beanName: String?): Any {
+  final override fun postProcessAfterInitialization(bean: Any, beanName: String): Any? {
     return bean
   }
 

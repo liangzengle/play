@@ -1,8 +1,8 @@
 package play.example.rpc.test
 
 import org.springframework.stereotype.Component
-import play.example.common.rpc.RpcClient
 import play.example.rpc.api.RpcPlayerService
+import play.rsocket.rpc.RpcClient
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import javax.annotation.PostConstruct
@@ -30,7 +30,7 @@ class PlayerNameRequester(private val rpcClient: RpcClient) {
 //    }
 
     try {
-      val service = rpcClient.getService(RpcPlayerService::class, 1)
+      val service = rpcClient.getService(RpcPlayerService::class.java, 1.toString())
       val playerName = service.getPlayerName(8936832658046976).blockingGet()
       println("playerName1: $playerName")
     } catch (e: Exception) {
@@ -38,7 +38,7 @@ class PlayerNameRequester(private val rpcClient: RpcClient) {
     }
 
     try {
-      val service = rpcClient.getService(RpcPlayerService::class, 2)
+      val service = rpcClient.getService(RpcPlayerService::class.java, 2.toString())
       val playerName = service.getPlayerName(2).blockingGet()
       println("playerName2: $playerName")
     } catch (e: Exception) {

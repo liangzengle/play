@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import play.example.common.rpc.RpcClient
+import play.rsocket.rpc.RpcClient
 
 /**
  *
@@ -17,7 +17,7 @@ class RpcTestApp {
 
   @Bean
   fun rpcClient(upstreamManager: UpstreamManager): RpcClient {
-    return RpcClient(upstreamManager)
+    return RpcClient.create(upstreamManager)
   }
 }
 

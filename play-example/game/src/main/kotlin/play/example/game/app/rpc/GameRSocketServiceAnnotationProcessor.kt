@@ -2,14 +2,14 @@ package play.example.game.app.rpc
 
 import org.springframework.beans.factory.config.BeanPostProcessor
 import play.example.game.container.gs.domain.GameServerId
-import play.example.game.container.rpc.AbstractRSocketServiceAnnotationProcessor
-import play.example.game.container.rpc.ContainerRSocketServiceAnnotationProcessor
+import play.rsocket.rpc.AbstractRSocketServiceAnnotationProcessor
+import play.rsocket.rpc.RSocketServiceAnnotationProcessor
 
 /**
  * @author LiangZengle
  */
 class GameRSocketServiceAnnotationProcessor(
-  private val underlying: ContainerRSocketServiceAnnotationProcessor, gameServerId: GameServerId
+  private val underlying: RSocketServiceAnnotationProcessor, gameServerId: GameServerId
 ) : AbstractRSocketServiceAnnotationProcessor(gameServerId.toInt().toString(), ""), BeanPostProcessor {
 
   override fun addProvider(

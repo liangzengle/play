@@ -1,6 +1,5 @@
-package play.example.game.container.rpc
+package play.rsocket.rpc
 
-import com.alibaba.rsocket.metadata.GSVRoutingMetadata
 import com.alibaba.rsocket.rpc.LocalReactiveServiceCaller
 import com.alibaba.rsocket.rpc.ReactiveMethodHandler
 
@@ -9,6 +8,5 @@ import com.alibaba.rsocket.rpc.ReactiveMethodHandler
  * @author LiangZengle
  */
 interface GSVLocalReactiveServiceCaller : LocalReactiveServiceCaller {
-
-  fun getInvokeMethod(routing: GSVRoutingMetadata): ReactiveMethodHandler?
+  fun getInvokeMethod(group: String?, version: String?, serviceName: String, method: String): ReactiveMethodHandler?
 }
