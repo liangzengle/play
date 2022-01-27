@@ -1,6 +1,6 @@
 package play.example.game.app.module.reward.model
 
-data class TryRewardResult(val reward: Reward, val usedBagSize: Int, val changeCount: Int, val mailCount: Int) {
+data class TryRewardResult(val reward: Reward, val usedBagSize: Int, val changeCount: Long, val mailCount: Long) {
 
   val rewardCount = reward.num + changeCount - mailCount
 

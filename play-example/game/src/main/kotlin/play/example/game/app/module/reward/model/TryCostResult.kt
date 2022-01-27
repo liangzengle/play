@@ -5,14 +5,14 @@ abstract class TryCostResultSetLike {
   abstract fun asList(): List<TryCostResult>
 }
 
-data class TryCostResult(val cost: Reward, val changeCount: Int = 0) : TryCostResultSetLike() {
+data class TryCostResult(val cost: Reward, val changeCount: Long = 0) : TryCostResultSetLike() {
   val costCount = cost.num + changeCount
 
   override fun appendTo(results: MutableList<TryCostResult>) {
     results.add(this)
   }
 
-  override fun asList(): List<TryCostResult> = this.asList()
+  override fun asList(): List<TryCostResult> = listOf(this)
 }
 
 data class TryCostResultSet(val results: List<TryCostResult>, val logSource: Int) : TryCostResultSetLike() {

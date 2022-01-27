@@ -15,6 +15,7 @@ import play.example.game.app.module.reward.model.CostResultSet
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.control.Result2
+import play.util.getOrNull
 import play.util.time.Time.currentMillis
 import play.util.time.Time.isCurrentMonth
 import play.util.time.Time.isCurrentWeek
@@ -94,6 +95,10 @@ class PlayerService(
 
   fun getPlayerNameOrElse(playerId: Long, defaultValue: String): String {
     return if (isPlayerExists(playerId)) playerIdNameCache.getPlayerNameOrThrow(playerId) else defaultValue
+  }
+
+  fun getPlayerNameOrNull(playerId: Long): String? {
+    return playerIdNameCache.getPlayerName(playerId).getOrNull()
   }
 
   /**

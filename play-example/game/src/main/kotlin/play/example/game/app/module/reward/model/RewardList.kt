@@ -57,7 +57,9 @@ class RewardList private constructor(
 
     @JvmName("of")
     @JvmStatic
-    operator fun invoke(reward: Reward): RewardList = RewardList(ImmutableList.of(reward))
+    operator fun invoke(reward: Reward): RewardList {
+      return if (reward.num > 0) RewardList(ImmutableList.of(reward)) else Empty
+    }
 
     @JvmName("of")
     @JvmStatic

@@ -10,8 +10,8 @@ import play.util.json.JsonAbstractType
 
 @JsonAbstractType(RawRewardTypeResolver::class)
 abstract class RawReward(type: RewardType, num: String) {
-  private val count = try {
-    val value = num.toInt()
+  private val count: Long = try {
+    val value = num.toLong()
     require(value >= 0) { "num >= 0" }
     value
   } catch (e: NumberFormatException) {
@@ -25,7 +25,7 @@ abstract class RawReward(type: RewardType, num: String) {
   abstract val type: RewardType
   protected abstract val num: String
 
-  fun getCount(args: Map<String, Any>): Int = if (count >= 0) count else Eval.eval(num, args).getIntOrThrow()
+  fun getCount(args: Map<String, Any>): Long = if (count >= 0) count else Eval.eval(num, args).getLongOrThrow()
 
   abstract fun toReward(args: Map<String, Any>): Reward
 }

@@ -4,10 +4,11 @@ import jakarta.validation.constraints.Min
 import play.example.game.app.module.item.res.ItemResource
 import play.example.game.app.module.reward.json.RewardTypeResolver
 import play.res.validation.constraints.ReferTo
+import play.util.json.Json
 import play.util.json.JsonAbstractType
 
 @JsonAbstractType(RewardTypeResolver::class)
-abstract class Reward(type: RewardType, num: Int) {
+abstract class Reward(@JvmField val type: RewardType, @JvmField @field:Min(0) val num: Long) {
   init {
     require(num >= 0) { "num($num) >= 0" }
     require(javaClass == type.rewardClass) { "奖励类型不匹配${javaClass.simpleName}$type" }
@@ -15,41 +16,36 @@ abstract class Reward(type: RewardType, num: Int) {
 
   fun toRewardList(): RewardList = RewardList(this)
 
-  abstract val type: RewardType
+  operator fun plus(count: Long) = copy(Math.addExact(num, count))
 
-  abstract val num: Int
+  operator fun minus(count: Long) = copy(Math.subtractExact(num, count))
 
-  operator fun plus(count: Int) = copy(Math.addExact(num, count))
+  operator fun times(count: Long) = copy(Math.multiplyExact(num, count))
 
-  operator fun minus(count: Int) = copy(Math.subtractExact(num, count))
+  operator fun times(count: Double) = copy((num * count).toLong())
 
-  operator fun times(count: Int) = copy(Math.multiplyExact(num, count))
+  operator fun div(count: Long) = copy(Math.addExact(num, count))
 
-  operator fun times(count: Double) = copy((num * count).toInt())
+  operator fun div(count: Double) = copy((num / count).toLong())
 
-  operator fun div(count: Int) = copy(Math.addExact(num, count))
-
-  operator fun div(count: Double) = copy((num / count).toInt())
-
-  abstract fun copy(num: Int = this.num): Reward
+  abstract fun copy(num: Long = this.num): Reward
 
   abstract fun canMerge(other: Reward, isCost: Boolean = false): Boolean
+
+  override fun toString(): String {
+    return Json.stringify(this)
+  }
 }
 
 object NonReward : Reward(RewardType.None, 0) {
-  override val type: RewardType
-    get() = RewardType.None
-  override val num: Int
-    get() = 0
-
-  override fun copy(num: Int): Reward {
+  override fun copy(num: Long): Reward {
     return this
   }
 
   override fun canMerge(other: Reward, isCost: Boolean): Boolean = false
 }
 
-abstract class ItemLikeReward(type: RewardType, num: Int) : Reward(type, num) {
+abstract class ItemLikeReward(type: RewardType, num: Long) : Reward(type, num) {
   abstract val cfgId: Int
 
   override fun canMerge(other: Reward, isCost: Boolean): Boolean {
@@ -57,15 +53,14 @@ abstract class ItemLikeReward(type: RewardType, num: Int) : Reward(type, num) {
   }
 }
 
-data class CurrencyReward(override val type: RewardType, @field:Min(0) override val num: Int) : Reward(type, num) {
-  override fun copy(num: Int): CurrencyReward = CurrencyReward(type, num)
+class CurrencyReward(type: RewardType, num: Long) : Reward(type, num) {
+  override fun copy(num: Long): CurrencyReward = CurrencyReward(type, num)
   override fun canMerge(other: Reward, isCost: Boolean): Boolean = type == other.type
 }
 
-data class ItemReward(
+class ItemReward(
   @field:Min(1) @ReferTo(ItemResource::class) override val cfgId: Int,
-  @field:Min(0) override val num: Int
+  num: Long
 ) : ItemLikeReward(RewardType.Item, num) {
-  override val type: RewardType get() = RewardType.Item
-  override fun copy(num: Int): ItemReward = ItemReward(cfgId, num)
+  override fun copy(num: Long): ItemReward = ItemReward(cfgId, num)
 }

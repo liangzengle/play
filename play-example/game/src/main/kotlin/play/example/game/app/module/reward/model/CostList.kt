@@ -10,9 +10,7 @@ import play.example.game.app.module.reward.RewardHelper
 import play.util.json.Json
 
 class CostList private constructor(
-  @field:Valid
-  @field:JsonValue
-  private val costs: ImmutableList<Cost>
+  @field:Valid @field:JsonValue private val costs: ImmutableList<Cost>
 ) {
   companion object {
     @JvmStatic
@@ -57,12 +55,14 @@ class CostList private constructor(
 
     @JvmName("of")
     @JvmStatic
-    operator fun invoke(cost: Cost): CostList = CostList(ImmutableList.of(cost))
+    operator fun invoke(cost: Cost): CostList {
+      return if (cost.num > 0) CostList(ImmutableList.of(cost)) else Empty
+    }
 
     @JvmName("of")
     @JvmStatic
     operator fun invoke(costs: List<Cost>): CostList =
-      CostList(ImmutableList.copyOf(Lists.transform(RewardHelper.mergeCost(costs)) { Cost(it!!) }))
+      CostList(ImmutableList.copyOf(RewardHelper.mergeCost(costs)))
   }
 
   operator fun plus(that: CostList): CostList {

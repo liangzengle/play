@@ -2,10 +2,10 @@ package play.example.game.app.module.reward.model
 
 abstract class RewardOrCostResult {
   abstract val rewardType: RewardType
-  abstract val originalCount: Int
-  abstract val actualCount: Int
+  abstract val originalCount: Long
+  abstract val actualCount: Long
   abstract val mailReward: Reward?
-  abstract val mailCount: Int
+  abstract val mailCount: Long
 }
 
 abstract class RewardResult(val tryResult: TryRewardResult) : RewardOrCostResult() {
@@ -27,7 +27,7 @@ abstract class CostResult(val tryResult: TryCostResult) : RewardOrCostResult() {
   override val originalCount get() = -tryResult.cost.num
   override val actualCount get() = -tryResult.costCount
   override val mailReward: Reward? = null
-  override val mailCount = 0
+  override val mailCount = 0L
 }
 
 class CurrencyCostResult(tryResult: TryCostResult, val currentValue: Long) : CostResult(tryResult)

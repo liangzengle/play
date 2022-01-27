@@ -1,6 +1,7 @@
 package play.example.game.app.module.reward
 
 import com.google.common.collect.Collections2
+import com.google.common.collect.Lists
 import play.example.game.app.module.reward.model.Cost
 import play.example.game.app.module.reward.model.Reward
 
@@ -16,16 +17,24 @@ object RewardHelper {
   }
 
   @JvmStatic
-  fun mergeCost(costs: Collection<Cost>): List<Reward> {
-    return merge(Collections2.transform(costs) { it!!.reward }, true)
+  fun mergeCost(costs: Collection<Cost>): List<Cost> {
+    return Lists.transform(merge(Collections2.transform(costs) { it!!.reward }, true), ::Cost)
   }
 
   @JvmStatic
   private fun merge(rewards: Collection<Reward>, isCost: Boolean): List<Reward> {
-    val size = rewards.size
-    return when (rewards.size) {
+    return when (val size = rewards.size) {
       0 -> emptyList()
-      1 -> if (rewards is List) rewards else listOf(rewards.first())
+      1 -> {
+        val reward = rewards.first()
+        if (reward.num <= 0) {
+          emptyList()
+        } else if (rewards is List) {
+          rewards
+        } else {
+          listOf(reward)
+        }
+      }
       else -> {
         val merged = ArrayList<Reward>(size)
         for (r in rewards) {

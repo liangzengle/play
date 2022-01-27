@@ -10,11 +10,11 @@ class GoldRewardProcessor : CurrencyRewardProcessor(RewardType.Gold) {
     TODO("Not yet implemented")
   }
 
-  override fun addValue(self: Self, add: Int): Long {
+  override fun addValue(self: Self, add: Long): Long {
     TODO("Not yet implemented")
   }
 
-  override fun reduceValue(self: Self, reduce: Int): Long {
+  override fun reduceValue(self: Self, reduce: Long): Long {
     TODO("Not yet implemented")
   }
 

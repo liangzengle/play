@@ -47,9 +47,9 @@ abstract class CurrencyRewardProcessor(rewardType: RewardType) : RewardProcessor
     return CurrencyCostResult(tryCostResult, newValue)
   }
 
-  protected open fun addition(self: Self, original: Int, logSource: Int): Int = 0
+  protected open fun addition(self: Self, original: Long, logSource: Int): Long = 0
   protected abstract fun getValue(self: Self): Long
-  protected abstract fun addValue(self: Self, add: Int): Long
-  protected abstract fun reduceValue(self: Self, reduce: Int): Long
+  protected abstract fun addValue(self: Self, add: Long): Long
+  protected abstract fun reduceValue(self: Self, reduce: Long): Long
   abstract fun notEnoughErrorCode(): Int
 }
