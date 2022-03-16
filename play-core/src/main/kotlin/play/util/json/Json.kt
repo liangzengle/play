@@ -130,6 +130,9 @@ object Json {
   fun <T> convert(fromValue: Any, targetType: Type): T = mapper.convertValue(fromValue, targetType.toJavaType())
 
   @JvmStatic
+  fun <T> convert(fromValue: Any, targetType: JavaType): T = mapper.convertValue(fromValue, targetType.toJavaType())
+
+  @JvmStatic
   inline fun <reified T> convert(fromValue: Any): T = mapper.convertValue(fromValue, typeOf<T>().javaType.toJavaType())
 
   inline fun <reified E> to(content: String): E = mapper.readValue(content)
@@ -142,4 +145,6 @@ object Json {
   fun <T : Any> T.toJsonString(): String = stringify(this)
 
   fun Type.toJavaType(): JavaType = mapper.typeFactory.constructType(this)
+
+  fun typeFactory() = mapper.typeFactory
 }

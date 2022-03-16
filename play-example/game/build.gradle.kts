@@ -58,5 +58,5 @@ kapt {
 
 modularCode {
   enabled = true
-  annotation = "play.example.game.app.module.ModularCode"
+  annotation = listOf("play.example.game.app.module.ModularCode")
 }
