@@ -4,7 +4,7 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.mvc.Cmd
 import play.mvc.Controller
 import play.mvc.MsgId

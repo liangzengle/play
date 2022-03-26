@@ -1,7 +1,8 @@
-package play.codegen
+package play.codegen.kapt
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import play.codegen.*
 import java.io.PrintWriter
 import java.io.StringWriter
 import javax.annotation.processing.*

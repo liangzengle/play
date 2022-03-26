@@ -1,6 +1,6 @@
 package play.example.game.app.module.playertask.handler
 
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.playertask.domain.PlayerTaskTargetType
 import play.example.game.app.module.task.event.TaskEvent
 import play.example.game.app.module.task.handler.DomainTaskTargetHandler

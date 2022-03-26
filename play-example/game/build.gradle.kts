@@ -5,6 +5,7 @@ plugins {
   id("play.modular-code") version "0.1"
   id("org.jetbrains.kotlin.plugin.serialization") version Versions.Kotlin
   application
+  id("com.google.devtools.ksp") version Versions.Ksp
 }
 
 application {
@@ -22,7 +23,7 @@ task("createStartScripts", CreateStartScripts::class) {
 }
 
 repositories {
-  mavenLocal()
+//  mavenLocal()
   maven("https://maven.aliyun.com/repository/public/")
   mavenCentral()
   maven("file://$rootDir/repository")
@@ -39,7 +40,8 @@ dependencies {
 
   compileOnly(project(":play-codegen-annotations"))
   compileOnly(project(":play-codegen"))
-  kapt(project(":play-codegen"))
+//  kapt(project(":play-codegen"))
+  ksp(project(":play-codegen"))
 
   kapt(Deps.Hibernate.ValidatorApt)
 
@@ -50,13 +52,20 @@ dependencies {
 
 kapt {
   arguments {
-    arg("controller.user-class", "play.example.game.app.module.player.Self")
-    arg("controller.manager.package", "play.example.game.app")
     arg("entityCache.specialized", "false")
   }
 }
 
 modularCode {
   enabled = true
-  annotation = "play.example.game.app.module.ModularCode"
+  annotation = listOf("play.example.game.app.module.ModularCode")
+}
+
+kotlin {
+  sourceSets.main {
+    kotlin.srcDir("build/generated/ksp/main/kotlin")
+  }
+  sourceSets.test {
+    kotlin.srcDir("build/generated/ksp/test/kotlin")
+  }
 }

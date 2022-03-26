@@ -4,7 +4,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
-import akka.actor.typed.javadsl.TimerScheduler
 import play.akka.AbstractTypedActor
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.event.*
@@ -17,15 +16,12 @@ import play.mvc.Response
 
 class PlayerActor(
   context: ActorContext<Command>,
-  private val timer: TimerScheduler<Command>,
-  playerId: Long,
+  private val me: PlayerManager.Self,
   private val eventDispatcher: PlayerEventDispatcher,
   private val playerService: PlayerService,
   private val requestHandler: PlayerRequestHandler,
   private val taskEventReceiver: PlayerTaskEventReceiver
 ) : AbstractTypedActor<PlayerActor.Command>(context) {
-
-  private val me = Self(playerId)
 
   private var session: Session? = null
 
@@ -89,16 +85,14 @@ class PlayerActor(
 
   companion object {
     fun create(
-      id: Long,
+      self: PlayerManager.Self,
       eventDispatcher: PlayerEventDispatcher,
       playerService: PlayerService,
       requestHandler: PlayerRequestHandler,
       taskEventReceiver: PlayerTaskEventReceiver
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
-        Behaviors.withTimers { timer ->
-          PlayerActor(ctx, timer, id, eventDispatcher, playerService, requestHandler, taskEventReceiver)
-        }
+        PlayerActor(ctx, self, eventDispatcher, playerService, requestHandler, taskEventReceiver)
       }
     }
   }

@@ -72,3 +72,8 @@ internal fun String.uncapitalize() = this.replaceFirstChar { it.lowercaseChar() 
 internal fun toParamStr(parameters: List<VariableElement>): String {
   return parameters.joinToString(separator = ", ") { it.simpleName }
 }
+
+internal inline fun <reified T> qualifiedName() = T::class.qualifiedName!!
+
+internal fun String.capitalize2() = replaceFirstChar { it.uppercaseChar() }
+internal fun String.uncapitalize2() = replaceFirstChar { it.lowercaseChar() }

@@ -8,6 +8,7 @@ import play.example.game.app.module.player.entity.PlayerEntityCache
 import play.example.game.app.module.player.entity.PlayerInfoEntity
 import play.example.game.app.module.player.entity.PlayerInfoEntityCache
 import play.example.game.app.module.player.event.*
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.message.PlayerDTO
 import play.example.game.app.module.player.scheduling.PlayerScheduler
 import play.example.game.app.module.reward.model.Cost

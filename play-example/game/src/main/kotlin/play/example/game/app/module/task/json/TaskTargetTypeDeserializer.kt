@@ -8,6 +8,6 @@ import play.example.game.app.module.task.domain.TaskTargetTypes
 
 object TaskTargetTypeDeserializer : StdDeserializer<TaskTargetType>(TaskTargetType::class.java) {
   override fun deserialize(p: JsonParser, ctxt: DeserializationContext): TaskTargetType {
-    return TaskTargetTypes.valueOf(p.text)
+    return TaskTargetTypes.getByNameOrThrow(p.text)
   }
 }

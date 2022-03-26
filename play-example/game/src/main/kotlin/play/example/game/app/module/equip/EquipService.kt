@@ -2,7 +2,7 @@ package play.example.game.app.module.equip
 
 import org.springframework.stereotype.Component
 import play.example.common.StatusCode
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.util.control.Result2
 import play.util.control.ok
 

@@ -1,6 +1,6 @@
 package play.example.game.app.module.reward.processor
 
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.reward.model.*
 import play.util.control.Result2
 import play.util.control.err

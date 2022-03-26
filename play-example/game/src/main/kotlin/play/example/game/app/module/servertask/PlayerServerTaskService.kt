@@ -1,7 +1,7 @@
 package play.example.game.app.module.servertask
 
 import org.springframework.stereotype.Component
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.reward.RewardService
 import play.example.game.app.module.reward.model.RewardResultSet
 import play.example.game.app.module.servertask.domain.ServerTaskErrorCode

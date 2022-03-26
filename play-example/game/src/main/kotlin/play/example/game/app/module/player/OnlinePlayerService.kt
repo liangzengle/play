@@ -29,14 +29,14 @@ class OnlinePlayerService(private val scheduler: Scheduler) {
     scheduler.scheduleWithFixedDelay(expireAfterLogout, ::cleanUp)
   }
 
-  fun login(self: Self, loginProto: LoginParams) {
+  fun login(self: PlayerManager.Self, loginProto: LoginParams) {
     val prev = offlinePlayers.remove(self.id)
     val onlinePlayer = prev ?: OnlinePlayer(self.id, loginProto)
     onlinePlayer.logoutTime = 0
     onlinePlayers[self.id] = onlinePlayer
   }
 
-  fun logout(self: Self) {
+  fun logout(self: PlayerManager.Self) {
     val playerId = self.id
     val p = onlinePlayers.remove(playerId)
     p.logoutTime = currentMillis()

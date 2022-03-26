@@ -5,7 +5,7 @@ import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.OnlinePlayerService
 import play.example.game.app.module.player.PlayerManager
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.task.event.TaskEvent
 import java.util.function.LongFunction
 

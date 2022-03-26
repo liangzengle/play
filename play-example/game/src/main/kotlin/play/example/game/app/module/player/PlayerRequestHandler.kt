@@ -1,9 +1,9 @@
 package play.example.game.app.module.player
 
+import RequestDispatcher
 import akka.actor.typed.ActorRef
 import org.springframework.stereotype.Component
 import play.example.common.StatusCode
-import play.example.game.app.ControllerInvokerManager
 import play.example.game.container.net.Session
 import play.mvc.*
 import play.util.control.getCause
@@ -16,7 +16,7 @@ import play.util.logging.getLogger
  * @author LiangZengle
  */
 @Component
-class PlayerRequestHandler(private val controllerInvokerManager: ControllerInvokerManager) {
+class PlayerRequestHandler(private val requestDispatcher: RequestDispatcher) {
 
   private val logger = getLogger()
 
@@ -40,25 +40,12 @@ class PlayerRequestHandler(private val controllerInvokerManager: ControllerInvok
     return null
   }
 
-  fun handle(req: AbstractPlayerRequest) {
-    handle(req.playerId, req.request)
-  }
-
-  fun handle(playerId: Long, request: Request) {
+  fun handle(commander: RequestCommander, request: Request) {
     try {
-      val result = controllerInvokerManager.invoke(playerId, request)
-      onResult(playerId, request, result)
+      val result = requestDispatcher.invoke(commander, request)
+      onResult(commander.id, request, result)
     } catch (e: Exception) {
-      onFailure(playerId, request, e)
-    }
-  }
-
-  fun handle(self: Self, request: Request) {
-    try {
-      val result = controllerInvokerManager.invoke(self, request)
-      onResult(self.id, request, result)
-    } catch (e: Exception) {
-      onFailure(self.id, request, e)
+      onFailure(commander.id, request, e)
     }
   }
 
@@ -89,7 +76,7 @@ class PlayerRequestHandler(private val controllerInvokerManager: ControllerInvok
   }
 
   private fun onFailure(playerId: Long, request: Request, e: Throwable) {
-    logger.error(e) { "Player($playerId) ${controllerInvokerManager.formatToString(request)}" }
+    logger.error(e) { "Player($playerId) ${requestDispatcher.formatToString(request)}" }
     write(playerId, Response(request.header, StatusCode.Failure.getErrorCode()))
     if (e.isFatal()) throw e
   }

@@ -1,6 +1,6 @@
 package play.example.game.app.module.item
 
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.container.command.Arg
 import play.example.game.container.command.Command
 import play.example.game.container.command.CommandModule

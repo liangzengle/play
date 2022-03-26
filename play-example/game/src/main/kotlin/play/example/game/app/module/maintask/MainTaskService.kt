@@ -7,7 +7,7 @@ import play.example.game.app.module.maintask.entity.MainTaskEntityCache
 import play.example.game.app.module.maintask.entity.PlayerMainTask
 import play.example.game.app.module.maintask.res.MainTaskResource
 import play.example.game.app.module.maintask.res.MainTaskResourceSet
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.playertask.AbstractPlayerTaskService
 import play.example.game.app.module.playertask.PlayerTaskTargetHandlerProvider
 import play.example.game.app.module.playertask.message.TaskInfo

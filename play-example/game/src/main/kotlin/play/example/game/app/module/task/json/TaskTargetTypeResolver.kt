@@ -9,7 +9,7 @@ import play.util.json.AbstractTypeResolver
 class TaskTargetTypeResolver : AbstractTypeResolver<TaskTarget>() {
   override fun resolve(node: JsonNode): Class<out TaskTarget> {
     val typeNode = node.get("type")
-    val targetType = TaskTargetTypes.valueOf(typeNode.textValue())
+    val targetType = TaskTargetTypes.getByNameOrThrow(typeNode.textValue())
     if (targetType == CommonTaskTargetType.None) {
       throw IllegalStateException("错误的奖励类型(Reward): $node")
     }

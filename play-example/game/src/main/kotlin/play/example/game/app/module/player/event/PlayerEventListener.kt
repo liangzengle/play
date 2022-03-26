@@ -1,7 +1,7 @@
 package play.example.game.app.module.player.event
 
 import com.google.common.collect.ImmutableMap
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 
 interface PlayerEventListener {
 

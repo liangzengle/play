@@ -59,9 +59,9 @@ interface Grouped<G> {
 }
 
 /**
- * 组内唯一key
+ * 分组的且有组内唯一key
  */
-interface GroupedUniqueKey<G, K : Comparable<K>> : Grouped<G> {
+interface GroupedWithUniqueKey<G, K : Comparable<K>> : Grouped<G> {
   /**
    * 组内唯一key
    */

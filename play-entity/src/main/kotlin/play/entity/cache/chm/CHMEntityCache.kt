@@ -61,7 +61,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
         return
       }
       val cacheSpec = entityClass.getAnnotation(CacheSpec::class.java)
-      expireEvaluator = if (cacheSpec.neverExpire) NeverExpireEvaluator else {
+      expireEvaluator = if (cacheSpec != null && cacheSpec.neverExpire) NeverExpireEvaluator else {
         when (val expireEvaluator = cacheSpec?.expireEvaluator) {
           null -> DefaultExpireEvaluator
           DefaultExpireEvaluator::class -> DefaultExpireEvaluator
@@ -123,22 +123,22 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     val cache = getCache()
     val accessTimeThreshold = currentMillis() - expireAfterAccess
     cache.values.asSequence().filter {
-        it.lastAccessTime() <= accessTimeThreshold && (it.isEmpty() || expireEvaluator.canExpire(
-          it.asNonEmpty().peekEntity()
-        ))
-      }.forEach {
-        cache.computeIfPresent(it.id()) { _, v ->
-          if (v.lastAccessTime() > accessTimeThreshold) {
-            v
-          } else {
-            if (v is NonEmpty<ID, E>) {
-              v.setExpired()
-              persistOnExpired(v.peekEntity())
-            }
-            null
+      it.lastAccessTime() <= accessTimeThreshold && (it.isEmpty() || expireEvaluator.canExpire(
+        it.asNonEmpty().peekEntity()
+      ))
+    }.forEach {
+      cache.computeIfPresent(it.id()) { _, v ->
+        if (v.lastAccessTime() > accessTimeThreshold) {
+          v
+        } else {
+          if (v is NonEmpty<ID, E>) {
+            v.setExpired()
+            persistOnExpired(v.peekEntity())
           }
+          null
         }
       }
+    }
   }
 
   private fun persistOnExpired(e: E) {

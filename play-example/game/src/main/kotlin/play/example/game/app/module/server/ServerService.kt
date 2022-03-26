@@ -17,7 +17,6 @@ import play.example.game.app.module.server.entity.ServerEntityCache
 import play.example.game.app.module.server.event.ServerOpenEvent
 import play.example.game.app.module.server.event.ServerOpenPlayerEvent
 import play.example.game.app.module.server.res.ServerConfig
-import play.inject.SpringPlayInjector
 import play.spring.OrderedSmartInitializingSingleton
 import play.util.classOf
 import play.util.max
@@ -64,7 +63,7 @@ class ServerService(
 
   fun isServerIdValid(serverId: Int) = serverIds.contains(serverId)
 
-  fun isPlatformValid(platform: Platform) = conf.platformIds.contains(platform.getId())
+  fun isPlatformValid(platform: Platform) = conf.platformIds.contains(platform.id().toByte())
 
   fun getServerOpenDays(toDate: LocalDate = currentDate()): Int {
     val openDate = serverEntityCache.getOrThrow(serverId).getOpenDate()

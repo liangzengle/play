@@ -1,7 +1,7 @@
 package play.example.game.app.module.playertask
 
 import org.springframework.stereotype.Component
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.task.TaskEventBus
 import play.example.game.app.module.task.entity.AbstractTask
 import play.example.game.app.module.task.event.TaskEvent

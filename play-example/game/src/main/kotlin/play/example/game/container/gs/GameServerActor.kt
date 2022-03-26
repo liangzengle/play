@@ -1,5 +1,6 @@
 package play.example.game.container.gs
 
+import RequestDispatcher
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
@@ -17,7 +18,7 @@ import play.akka.AbstractTypedActor
 import play.akka.stoppedBehavior
 import play.db.DatabaseNameProvider
 import play.example.game.app.GameApp
-import play.example.game.app.module.platform.domain.Platform
+import play.example.game.app.module.platform.domain.Platforms
 import play.example.game.app.module.server.res.ServerConfig
 import play.example.game.container.gs.domain.GameServerId
 import play.example.game.container.gs.logging.ActorMDC
@@ -130,16 +131,17 @@ class GameServerActor(
     val platformNames = listOf("Dev")
     val platformIdArray = ByteArray(platformNames.size)
     for (i in platformNames.indices) {
-      platformIdArray[i] = Platform.getOrThrow(platformNames[i]).getId()
+      platformIdArray[i] = Platforms.getOrThrow(platformNames[i]).toByte()
     }
     val serverConfig = ServerConfig(serverId.toShort(), Bytes.asList(*platformIdArray))
 
     springApplication.addInitializers(
       ApplicationContextInitializer<ConfigurableApplicationContext> {
         it.unsafeCast<BeanDefinitionRegistry>().apply {
-          registerBeanDefinition("gameServerActor", rootBeanDefinition(typeOf<ActorRef<Command>>(), self))
-          registerBeanDefinition("scheduler", rootBeanDefinition(typeOf<Scheduler>(), managedScheduler))
-          registerBeanDefinition("taskScheduler", rootBeanDefinition(typeOf<TaskScheduler>(), taskScheduler))
+          registerBeanDefinition("requestDispatcher", beanDefinition(typeOf<RequestDispatcher>()))
+          registerBeanDefinition("gameServerActor", beanDefinition(typeOf<ActorRef<Command>>(), self))
+          registerBeanDefinition("scheduler", beanDefinition(typeOf<Scheduler>(), managedScheduler))
+          registerBeanDefinition("taskScheduler", beanDefinition(typeOf<TaskScheduler>(), taskScheduler))
         }
         it.beanFactory.apply {
           registerSingleton("actorMdc", actorMdc)

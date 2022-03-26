@@ -4,7 +4,7 @@ import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
 import org.springframework.stereotype.Component
 import play.example.common.StatusCode
 import play.example.game.app.module.mail.MailService
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.reward.exception.RewardProcessorNotFoundException
 import play.example.game.app.module.reward.model.*
 import play.example.game.app.module.reward.processor.RewardProcessor
