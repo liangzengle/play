@@ -98,7 +98,7 @@ class MemoryRepository : Repository {
     initial: R1,
     folder: (R1, ResultMap) -> R1
   ): Future<R> {
-    return Future.failed(UnsupportedOperationException())
+    return Future.successful(initial)
   }
 
   override fun <K, ID : ObjId, E : ObjIdEntity<ID>> listMultiIds(
@@ -106,8 +106,8 @@ class MemoryRepository : Repository {
     keyName: String,
     keyValue: K
   ): Future<List<ID>> {
-  val result= getMap(entityClass).values.asSequence().map { it.unsafeCast<E>() }
-    .filter { it.multiKey<K>() == keyValue }.map { it.id }.toImmutableList()
+    val result = getMap(entityClass).values.asSequence().map { it.unsafeCast<E>() }
+      .filter { it.multiKey<K>() == keyValue }.map { it.id }.toImmutableList()
     return Future.successful(result)
   }
 }

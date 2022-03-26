@@ -1,10 +1,13 @@
 package play.example.game.app
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import play.db.Repository
+import play.db.memory.MemoryRepository
 import play.entity.PlayEntityCacheConfiguration
 import play.entity.cache.DefaultEntityCachePersistFailOver
 import play.entity.cache.EntityCachePersistFailOver
@@ -39,5 +42,11 @@ class GameApp {
   @Bean
   fun entityCachePersistFailOver(gameServerId: GameServerId): EntityCachePersistFailOver {
     return DefaultEntityCachePersistFailOver("entity_back_up/${gameServerId.toInt()}")
+  }
+
+  @Bean
+  @ConditionalOnProperty(prefix = "play", name = ["db.repository"], havingValue = "memory")
+  fun repository(): Repository {
+    return MemoryRepository()
   }
 }
