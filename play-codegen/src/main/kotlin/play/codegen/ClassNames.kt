@@ -65,9 +65,9 @@ internal val SingletonResource = ClassName.bestGuess("play.res.SingletonResource
 
 internal val classOf = MemberName("play.util", "classOf")
 
-internal val Result2 = ClassName.bestGuess("play.util.control.Result2-Deprecated")
+internal val Result2 = ClassName.bestGuess("play.util.control.Result2")
 
-internal val IdEnum = ClassName.bestGuess("play.util.enumration.IdEnum")
+internal val IdEnum = ClassName.bestGuess("play.util.enumeration.IdEnum")
 
 internal val IntIntMaps = ClassName.bestGuess("org.eclipse.collections.impl.factory.primitive.IntIntMaps")
 internal val IntIntMap = ClassName.bestGuess("org.eclipse.collections.impl.factory.primitive.IntIntMap")

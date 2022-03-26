@@ -1,6 +1,7 @@
 package play.example.game.app.module.player
 
 import org.springframework.stereotype.Component
+import play.example.game.app.module.player.PlayerManager.*
 import play.example.game.app.module.player.condition.PlayerCondition
 import play.example.game.app.module.player.condition.PlayerConditionService
 import play.example.game.app.module.reward.RewardService

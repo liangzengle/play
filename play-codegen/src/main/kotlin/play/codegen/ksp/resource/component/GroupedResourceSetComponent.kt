@@ -16,9 +16,6 @@ import play.codegen.ksp.*
 class GroupedResourceSetComponent(private val classDeclaration: KSClassDeclaration, private val resolver: Resolver) {
 
   fun apply(classBuilder: TypeSpec.Builder) {
-    val groupedClass = resolver.getClassDeclaration(Grouped.canonicalName)
-    val groupedWithUniqueKey = resolver.getClassDeclaration(GroupedWithUniqueKey.canonicalName)
-
     val groupIdType: TypeName
     val uniqueKeyType: TypeName?
     if (resolver.isAssignable(GroupedWithUniqueKey.canonicalName, classDeclaration)) {

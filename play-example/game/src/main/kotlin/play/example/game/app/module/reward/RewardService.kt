@@ -7,6 +7,7 @@ import play.example.game.app.module.mail.MailService
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.reward.exception.RewardProcessorNotFoundException
 import play.example.game.app.module.reward.model.*
+import play.example.game.app.module.reward.model.TransformedResult.*
 import play.example.game.app.module.reward.processor.RewardProcessor
 import play.util.collection.toImmutableEnumMap
 import play.util.control.Result2
@@ -17,8 +18,7 @@ import play.util.logging.getLogger
 
 @Component
 class RewardService(
-  private val mailService: MailService,
-  processorList: List<RewardProcessor<Reward>>
+  private val mailService: MailService, processorList: List<RewardProcessor<Reward>>
 ) {
   private val logger = getLogger()
 
@@ -71,7 +71,6 @@ class RewardService(
     return if (errorCode == 0) ok(TryRewardResultSet(resultList, bagFullStrategy, logSource)) else err(errorCode)
   }
 
-  @Suppress("MapGetWithNotNullAssertionOperator")
   fun execReward(self: Self, tryResultSet: TryRewardResultSet): RewardResultSet {
     if (tryResultSet.results.isEmpty()) {
       return RewardResultSet(emptyList())
@@ -169,12 +168,14 @@ class RewardService(
   }
 
   private fun transform(self: Self, merged: List<Reward>): List<Reward> {
-    val indexToTransformed = IntObjectMaps.mutable.empty<List<Reward>>()
+    val indexToTransformed = IntObjectMaps.mutable.empty<TransformedResult>()
     for (i in merged.indices) {
       val reward = merged[i]
       val processor = processors[reward.type] ?: continue
-      val transformed = processor.transform(self, reward) ?: continue
-      indexToTransformed.put(i, transformed)
+      val transformed = processor.transform(self, reward)
+      if (transformed != Unchanged) {
+        indexToTransformed.put(i, transformed)
+      }
     }
     if (indexToTransformed.isEmpty) {
       return merged
@@ -184,11 +185,16 @@ class RewardService(
       val transformed = indexToTransformed.get(i)
       if (transformed == null) {
         result.add(merged[i])
-      } else if (transformed.isNotEmpty()) {
-        result.addAll(transformed)
+        continue
+      }
+      when (transformed) {
+        is Single -> result.add(transformed.reward)
+        is None -> continue
+        is Multi -> result.addAll(transformed.rewardList)
+        is Unchanged -> result.add(merged[i])
       }
     }
-    return result
+    return RewardHelper.mergeReward(result)
   }
 
   private fun log(self: Self, results: List<RewardOrCostResult>, logSource: Int) {

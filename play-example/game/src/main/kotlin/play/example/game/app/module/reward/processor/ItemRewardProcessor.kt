@@ -16,10 +16,10 @@ import play.util.control.ok
 @Component
 class ItemRewardProcessor : RewardProcessor<ItemReward>(RewardType.Item) {
 
-  override fun transform(self: Self, reward: ItemReward): List<Reward>? {
+  override fun transform(self: Self, reward: ItemReward): TransformedResult {
     val itemCfg = ItemResourceSet.getOrThrow(reward.cfgId)
     if (itemCfg.type == ItemType.Currency) {
-      return listOf(CurrencyReward(RewardTypes.getOrThrow(itemCfg.subtype), reward.num))
+      return TransformedResult.Single(CurrencyReward(RewardTypes.getOrThrow(itemCfg.subtype), reward.num))
     }
     return super.transform(self, reward)
   }

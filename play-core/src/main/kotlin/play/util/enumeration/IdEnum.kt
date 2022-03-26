@@ -1,4 +1,4 @@
-package play.util.enumration
+package play.util.enumeration
 
 /**
  * Created by liang on 2020/6/27.

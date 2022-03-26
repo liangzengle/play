@@ -1,6 +1,6 @@
 package play.res.validation.constraints
 
-import play.util.enumration.IdEnum
+import play.util.enumeration.IdEnum
 import kotlin.reflect.KClass
 
 /**

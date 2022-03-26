@@ -6,7 +6,7 @@ import play.example.game.app.module.reward.res.CurrencyRawReward
 import play.example.game.app.module.reward.res.ItemRawReward
 import play.example.game.app.module.reward.res.NonRawReward
 import play.example.game.app.module.reward.res.RawReward
-import play.util.enumration.IdEnum
+import play.util.enumeration.IdEnum
 
 @EnumOps
 enum class RewardType(

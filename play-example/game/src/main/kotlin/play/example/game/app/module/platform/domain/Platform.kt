@@ -2,7 +2,7 @@ package play.example.game.app.module.platform.domain
 
 import play.codegen.EnumId
 import play.codegen.EnumOps
-import play.util.enumration.IdEnum
+import play.util.enumeration.IdEnum
 
 @EnumOps
 enum class Platform(@JvmField @field:EnumId val id: Int) : IdEnum {

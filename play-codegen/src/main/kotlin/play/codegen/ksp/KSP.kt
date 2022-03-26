@@ -145,8 +145,6 @@ fun KSName?.contentEquals(content: String): Boolean {
 }
 
 fun KSClassDeclaration.getTypeArg(resolver: Resolver, superClassName: String, index: Int): TypeName {
-  val superClassDeclaration = resolver.getClassDeclaration(superClassName)
-  val starProjectedSuperClassDeclaration = superClassDeclaration.asStarProjectedType()
   val superType =
     getAllSuperTypes()
       .firstOrNull { it.toClassName().canonicalName == superClassName }

@@ -2,7 +2,7 @@ package play.res.validation.validator
 
 import play.res.ResourceSetProvider
 import play.res.validation.constraints.Enumerated
-import play.util.enumration.IdEnum
+import play.util.enumeration.IdEnum
 
 class EnumeratedValidator : ResourceValidator() {
   override fun validate(resourceSetProvider: ResourceSetProvider, errors: MutableCollection<String>) {

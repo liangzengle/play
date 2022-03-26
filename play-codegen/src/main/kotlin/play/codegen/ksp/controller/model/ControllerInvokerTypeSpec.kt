@@ -56,11 +56,7 @@ class ControllerInvokerTypeSpec(
       val cmd = func.cmd
       code.beginControlFlow("%L -> ", cmd)
       for (parameter in func.parameters) {
-        val parameterType = try {
-          parameter.type.toTypeName2()
-        } catch (e: Exception) {
-          throw IllegalStateException("${func.simpleName.asString()}的参数${parameter.name?.asString()}的类型不正确", e)
-        }
+        val parameterType = parameter.type.toTypeName2()
         if (parameterType == Request) {
           continue
         }

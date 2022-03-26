@@ -13,8 +13,8 @@ abstract class RewardProcessor<T : Reward>(val rewardType: RewardType) {
    * @param reward
    * @return null-不需要转换, 其他-转换后的奖励
    */
-  open fun transform(self: Self, reward: T): List<Reward>? {
-    return null
+  open fun transform(self: Self, reward: T): TransformedResult {
+    return TransformedResult.Unchanged
   }
 
   /**
