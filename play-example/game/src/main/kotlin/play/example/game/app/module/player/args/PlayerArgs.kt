@@ -1,6 +1,6 @@
 package play.example.game.app.module.player.args
 
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 
 class PlayerArgs(private val self: Self, private val argProviders: Map<String, PlayerArgProvider>) : Map<String, Int> {
   private val cache = HashMap<String, Int>(4)

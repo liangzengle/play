@@ -25,7 +25,7 @@ class PlayerController(
   fun login(): RequestResult<PlayerDTO> = throw UnsupportedOperationException()
 
   @Cmd(3)
-  fun ping(self: Self, msg: String): RequestResult<String> = ok("world!").toRequestResult()
+  fun ping(self: PlayerManager.Self, msg: String): RequestResult<String> = ok("world!").toRequestResult()
 
   /**
    * 推送消息

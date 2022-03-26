@@ -5,6 +5,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
+import play.Env
 import play.akka.AbstractTypedActor
 import play.akka.send
 import play.akka.withResumeSupervisor
@@ -19,8 +20,10 @@ import play.example.game.app.module.playertask.PlayerTaskEventReceiver
 import play.example.game.container.gs.logging.ActorMDC
 import play.example.game.container.net.Session
 import play.mvc.Request
+import play.mvc.RequestCommander
 import play.mvc.Response
 import play.util.exception.NoStackTraceException
+import play.util.reflect.Reflect
 import play.util.unsafeCast
 
 class PlayerManager(
@@ -107,7 +110,7 @@ class PlayerManager(
           PlayerActor.Command::class.java,
           actorMdc.staticMdc,
           actorMdc.mdcPerMessage(),
-          PlayerActor.create(id, eventDispatcher, playerService, requestHandler, taskEventReceiver)
+          PlayerActor.create(Self(id), eventDispatcher, playerService, requestHandler, taskEventReceiver)
         )
       ),
       actorName
@@ -158,4 +161,6 @@ class PlayerManager(
   ) : Command
 
   object NewDayStart : Command, PlayerActor.Command
+
+  inner class Self(override val id: Long) : RequestCommander()
 }

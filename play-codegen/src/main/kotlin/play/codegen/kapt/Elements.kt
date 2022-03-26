@@ -1,4 +1,4 @@
-package play.codegen
+package play.codegen.kapt
 
 import javax.lang.model.element.*
 import javax.lang.model.type.DeclaredType

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component
 import play.example.game.app.module.hero.entity.PlayerHeroEntity
 import play.example.game.app.module.hero.entity.PlayerHeroEntityCache
 import play.example.game.app.module.hero.entity.PlayerHeroId
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 
 /**
  *

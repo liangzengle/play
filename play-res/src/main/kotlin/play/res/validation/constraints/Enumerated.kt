@@ -10,4 +10,4 @@ import kotlin.reflect.KClass
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
-annotation class Enumerated<T>(val value: KClass<out Enum<*>>) where T : Enum<*>, T : IdEnum<*>
+annotation class Enumerated<T>(val value: KClass<out Enum<*>>) where T : Enum<*>, T : IdEnum

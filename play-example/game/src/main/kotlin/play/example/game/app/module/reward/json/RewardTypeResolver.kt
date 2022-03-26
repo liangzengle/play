@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
 import play.example.game.app.module.reward.model.Reward
 import play.example.game.app.module.reward.model.RewardType
+import play.example.game.app.module.reward.model.RewardTypes
 import play.example.game.app.module.reward.res.RawReward
 import play.util.json.AbstractTypeResolver
 
@@ -33,7 +34,7 @@ class RewardTypeResolver : AbstractTypeResolver<Reward>() {
 private fun getRewardType(node: JsonNode): RewardType {
   val typeNode = node.get("type")
   val rewardType = if (typeNode.isInt) {
-    RewardType.getOrThrow(typeNode.intValue())
+    RewardTypes.getOrThrow(typeNode.intValue())
   } else {
     RewardType.valueOf(typeNode.textValue())
   }

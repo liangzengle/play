@@ -17,7 +17,7 @@ class ResourceGroupImpl<T : AbstractResource, K : Comparable<K>>(
   private val indexMap: IndexMap<K>?
 
   init {
-    val uniqueKeyClass = GroupedUniqueKey::class.java
+    val uniqueKeyClass = GroupedWithUniqueKey::class.java
     val keyType: KClass<*>? = if (uniqueKeyClass.isAssignableFrom(resourceClass)) {
       (Reflect.getTypeArg(resourceClass.asSubclass(uniqueKeyClass), uniqueKeyClass, 1) as Class<*>).kotlin
     } else null
@@ -27,7 +27,7 @@ class ResourceGroupImpl<T : AbstractResource, K : Comparable<K>>(
         Int::class -> NavigableIntMap(list) { it.id }
         Long::class -> NavigableLongMap(list) { it.id.toLong() }
         else -> NavigableRefMap(list) {
-          it.unsafeCast<GroupedUniqueKey<*, *>>().keyInGroup().unsafeCast<Comparable<K>>()
+          it.unsafeCast<GroupedWithUniqueKey<*, *>>().keyInGroup().unsafeCast<Comparable<K>>()
         }
       }.unsafeCast()
       navigator = ResourceSetNavigatorImpl(map)
@@ -38,7 +38,7 @@ class ResourceGroupImpl<T : AbstractResource, K : Comparable<K>>(
         else -> IndexMap.RefKey()
       }.unsafeCast()
       for (i in list.indices) {
-        val key = list[i].unsafeCast<GroupedUniqueKey<*, K>>().keyInGroup()
+        val key = list[i].unsafeCast<GroupedWithUniqueKey<*, K>>().keyInGroup()
         indexMap.put(key, i)
       }
       this.indexMap = indexMap

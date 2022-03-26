@@ -2,6 +2,9 @@ package play.codegen
 
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.MemberName
+import com.squareup.kotlinpoet.TypeName
+
+internal fun ClassName.toNullable(): TypeName = this.copy(nullable = true)
 
 internal val Component = ClassName.bestGuess("org.springframework.stereotype.Component")
 internal val Autowired = ClassName.bestGuess("org.springframework.beans.factory.annotation.Autowired")
@@ -10,17 +13,6 @@ internal val Inject = ClassName.bestGuess("javax.inject.Inject")
 internal val Singleton = ClassName.bestGuess("javax.inject.Singleton")
 internal val Named = ClassName.bestGuess("javax.inject.Named")
 
-internal val Provides = ClassName.bestGuess("com.google.inject.Provides")
-internal val GoogleInjectModule = ClassName.bestGuess("com.google.inject.Module")
-internal val AbstractModule = ClassName.bestGuess("com.google.inject.AbstractModule")
-
-internal val GuiceModule = ClassName.bestGuess("play.inject.guice.GuiceModule")
-internal val GeneratedMultiBindModule = ClassName.bestGuess("play.inject.guice.GeneratedMultiBindModule")
-internal val EnableMultiBinding = ClassName.bestGuess("play.inject.guice.EnableMultiBinding")
-internal val MultiBindListProvider = ClassName.bestGuess("play.inject.guice.MultiBindListProvider")
-internal val MultiBindSetProvider = ClassName.bestGuess("play.inject.guice.MultiBindSetProvider")
-internal val PlayInjector = ClassName.bestGuess("play.inject.Injector")
-
 internal val Controller = ClassName.bestGuess("play.mvc.Controller")
 internal val AbstractController = ClassName.bestGuess("play.mvc.AbstractController")
 internal val Request = ClassName.bestGuess("play.mvc.Request")
@@ -28,6 +20,7 @@ internal val RequestResult = ClassName.bestGuess("play.mvc.RequestResult")
 internal val PlayerRequest = ClassName.bestGuess("play.mvc.PlayerRequest")
 internal val AbstractPlayerRequest = ClassName.bestGuess("play.mvc.AbstractPlayerRequest")
 internal val GeneratePlayerRequestMessage = ClassName.bestGuess("play.mvc.GeneratePlayerRequestMessage")
+internal val RequestCommander = ClassName.bestGuess("play.mvc.RequestCommander")
 
 // internal val NotPlayerThread = ClassName.bestGuess("play.mvc.NotPlayerThread")
 internal val Cmd = ClassName.bestGuess("play.mvc.Cmd")
@@ -58,7 +51,7 @@ internal val Ignore = ClassName.bestGuess("play.res.Ignore")
 internal val UniqueKey = ClassName.bestGuess("play.res.UniqueKey")
 internal val ComparableUniqueKey = ClassName.bestGuess("play.res.ComparableUniqueKey")
 internal val Grouped = ClassName.bestGuess("play.res.Grouped")
-internal val GroupedUniqueKey = ClassName.bestGuess("play.res.GroupedUniqueKey")
+internal val GroupedWithUniqueKey = ClassName.bestGuess("play.res.GroupedWithUniqueKey")
 internal val ExtensionKey = ClassName.bestGuess("play.res.ExtensionKey")
 internal val DelegatingResourceSet = ClassName.bestGuess("play.res.DelegatingResourceSet")
 internal val ResourceSet = ClassName.bestGuess("play.res.ResourceSet")
@@ -70,6 +63,12 @@ internal val ExtensionResourceSet = ClassName.bestGuess("play.res.ExtensionResou
 internal val SingletonResourceSet = ClassName.bestGuess("play.res.SingletonResourceSet")
 internal val SingletonResource = ClassName.bestGuess("play.res.SingletonResource")
 
-val classOf = MemberName("play.util", "classOf")
+internal val classOf = MemberName("play.util", "classOf")
 
-val Result2 = ClassName.bestGuess("play.util.control.Result2-Deprecated")
+internal val Result2 = ClassName.bestGuess("play.util.control.Result2-Deprecated")
+
+internal val IdEnum = ClassName.bestGuess("play.util.enumration.IdEnum")
+
+internal val IntIntMaps = ClassName.bestGuess("org.eclipse.collections.impl.factory.primitive.IntIntMaps")
+internal val IntIntMap = ClassName.bestGuess("org.eclipse.collections.impl.factory.primitive.IntIntMap")
+

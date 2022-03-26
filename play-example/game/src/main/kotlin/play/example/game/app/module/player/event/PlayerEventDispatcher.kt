@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableListMultimap
 import com.google.common.collect.ImmutableMap
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.stereotype.Component
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.inject.PlayInjector
 import play.spring.OrderedSmartInitializingSingleton
 import play.util.exception.NoStackTraceException

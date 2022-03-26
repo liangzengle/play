@@ -13,7 +13,7 @@ internal object ResourceHelper {
     Comparator.comparing<AbstractResource, Comparable<Comparable<*>>> {
       it.unsafeCast<UniqueKey<*>>().key().unsafeCast()
     }
-  
+
   fun isSingletonResource(clazz: Class<*>): Boolean {
     return clazz.isAnnotationPresent(SingletonResource::class.java) || isConfig(clazz)
   }
@@ -49,7 +49,7 @@ internal object ResourceHelper {
         checkUniqueKey(resourceClass, elems, errors)
       }
 
-      val hasGroupUniqueKey = GroupedUniqueKey::class.java.isAssignableFrom(resourceClass)
+      val hasGroupUniqueKey = GroupedWithUniqueKey::class.java.isAssignableFrom(resourceClass)
       if (hasGroupUniqueKey) {
         checkUniqueKeyInGroup(resourceClass, elems, errors)
       }
@@ -104,7 +104,7 @@ internal object ResourceHelper {
     errors: MutableCollection<String>
   ) {
     elems.asSequence()
-      .map { it.unsafeCast<GroupedUniqueKey<Any, *>>() }
+      .map { it.unsafeCast<GroupedWithUniqueKey<Any, *>>() }
       .groupBy { it.groupBy() }
       .forEach { (groupId, group) ->
         val treeSet = TreeSet<Comparable<*>>()

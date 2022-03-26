@@ -4,6 +4,7 @@ package play.spring
 
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.ListableBeanFactory
+import org.springframework.beans.factory.config.BeanDefinition
 import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.beans.factory.support.RootBeanDefinition
 import org.springframework.context.ConfigurableApplicationContext
@@ -21,20 +22,28 @@ fun KType.toResolvableType() = ResolvableType.forType(this.javaType)
 fun ResolvableType.getRawClassNotNull(): Class<*> = checkNotNull(rawClass) { "rawClass is null: $this" }
 
 fun <T : Any> BeanDefinitionRegistry.registerBeanDefinition(beanName: String, kType: KType, instance: T) {
-  registerBeanDefinition(beanName, rootBeanDefinition(kType.toResolvableType(), instance))
+  registerBeanDefinition(beanName, beanDefinition(kType.toResolvableType(), instance))
 }
 
-fun <T : Any> rootBeanDefinition(resolvableType: ResolvableType, instance: T): RootBeanDefinition {
+fun <T : Any> beanDefinition(resolvableType: ResolvableType, instance: T): RootBeanDefinition {
   val rawClass = resolvableType.getRawClassNotNull()
   require(rawClass.isAssignableFrom(instance.javaClass))
   return RootBeanDefinition(rawClass.unsafeCast()) { instance }
 }
 
-fun <T : Any> rootBeanDefinition(kType: KType, instance: T): RootBeanDefinition {
+fun <T : Any> beanDefinition(kType: KType, instance: T): RootBeanDefinition {
   val resolvableType = kType.toResolvableType()
   val rawClass = resolvableType.getRawClassNotNull()
   require(rawClass.isAssignableFrom(instance.javaClass)) { "type doesn't match: $rawClass vs ${instance.javaClass}" }
   val definition = RootBeanDefinition(rawClass.unsafeCast()) { instance }
+  definition.setTargetType(resolvableType)
+  return definition
+}
+
+fun beanDefinition(kType: KType): BeanDefinition {
+  val resolvableType = kType.toResolvableType()
+  val rawClass = resolvableType.getRawClassNotNull()
+  val definition = RootBeanDefinition(rawClass)
   definition.setTargetType(resolvableType)
   return definition
 }

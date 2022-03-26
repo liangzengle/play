@@ -7,7 +7,7 @@ import play.example.game.app.module.common.res.CommonSettingConf
 import play.example.game.app.module.mail.entity.*
 import play.example.game.app.module.mail.event.PlayerMailEvent
 import play.example.game.app.module.mail.res.MailResourceSet
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.condition.PlayerConditionService
 import play.example.game.app.module.player.event.*
 import play.example.game.app.module.reward.RawRewardConverter

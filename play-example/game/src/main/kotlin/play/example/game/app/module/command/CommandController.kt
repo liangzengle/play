@@ -6,7 +6,7 @@ import play.example.game.app.module.ModuleId
 import play.example.game.app.module.command.entity.CommandId
 import play.example.game.app.module.command.entity.CommandStatisticsEntityCache
 import play.example.game.app.module.command.message.CommandModuleList
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.container.command.CommandDescriptor
 import play.example.game.container.command.CommandModuleDescriptor
 import play.example.game.container.command.CommandResult

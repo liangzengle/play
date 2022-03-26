@@ -13,7 +13,7 @@ import play.example.common.akka.ActorConfigurationSupport
 import play.example.common.akka.AkkaConfiguration
 import play.example.common.akka.GuardianBehavior
 import play.example.common.net.NettyServerConfiguration
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.container.command.CommandManager
 import play.example.game.container.login.LoginDispatcherActor
 import play.example.game.container.net.SessionManager

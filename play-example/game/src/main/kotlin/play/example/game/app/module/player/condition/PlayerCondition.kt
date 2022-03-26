@@ -2,7 +2,7 @@ package play.example.game.app.module.player.condition
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.ObjectNode
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.event.PlayerEvent
 import play.example.game.app.module.player.event.PlayerEventReceiveBuilder
 import play.util.json.AbstractTypeResolver

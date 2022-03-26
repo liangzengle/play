@@ -1,7 +1,7 @@
 package play.example.game.app.module.reward
 
 import org.springframework.stereotype.Component
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.args.PlayerArgProvider
 import play.example.game.app.module.player.args.PlayerArgs
 import play.example.game.app.module.reward.model.Reward

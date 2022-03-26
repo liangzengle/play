@@ -15,7 +15,7 @@ import play.example.game.app.module.account.entity.Account
 import play.example.game.app.module.account.entity.AccountEntityCache
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.platform.PlatformServiceProvider
-import play.example.game.app.module.platform.domain.Platform
+import play.example.game.app.module.platform.domain.Platforms
 import play.example.game.app.module.player.PlayerEntityCacheInitializer
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerService
@@ -103,7 +103,7 @@ class AccountManager(
 
   private fun getOrCreateAccount(params: LoginParams): Result2<Long> {
     val platformName = params.platform
-    val platform = Platform.getOrNull(platformName)
+    val platform = Platforms.getOrNull(platformName)
     val serverId = params.serverId.toShort()
     if (serverId.toInt() != params.serverId) {
       return AccountErrorCode.ParamErr
@@ -128,11 +128,11 @@ class AccountManager(
       return ok(id)
     }
     // 账号不存在，新注册用户
-    val maybeId = accountIdCache.nextId(platform.getId(), serverId)
+    val maybeId = accountIdCache.nextId(platform.toByte(), serverId)
     if (maybeId.isEmpty) {
       return AccountErrorCode.IdExhausted
     }
-    val account = platformService.newAccount(maybeId.asLong, platform.getId(), serverId, params.account, params)
+    val account = platformService.newAccount(maybeId.asLong, platform.toByte(), serverId, params.account, params)
     accountIdCache.add(accountId, account.id)
     createAsync(account)
     return ok(maybeId.asLong)

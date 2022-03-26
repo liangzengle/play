@@ -2,7 +2,7 @@ package play.example.game.app.module.player.scheduling
 
 import org.jctools.maps.NonBlockingHashMapLong
 import org.springframework.stereotype.Component
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.event.PlayerEvent
 import play.example.game.app.module.player.event.PlayerEventBus
 import play.scheduling.Cancellable

@@ -10,7 +10,7 @@ class EnumeratedValidator : ResourceValidator() {
       val enumerated = clazz.getAnnotation(Enumerated::class.java) ?: continue
       val enumClass = enumerated.value.java
       val enumConstants = enumClass.enumConstants
-      val idSet = enumConstants.asSequence().filterIsInstance<IdEnum<*>>().map { it.id }.toSet()
+      val idSet = enumConstants.asSequence().filterIsInstance<IdEnum>().map { it.id() }.toSet()
       for (resource in resourceSet.list()) {
         val id = resource.id
         if (!idSet.contains(id)) {

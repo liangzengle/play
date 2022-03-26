@@ -1,5 +1,6 @@
 package play.example.game.app.module.guild
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
@@ -19,6 +20,7 @@ import play.example.game.app.module.player.PlayerRequestHandler
 import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.reward.model.CostResultSet
 import play.mvc.PlayerRequest
+import play.mvc.RequestCommander
 import play.mvc.RequestResult
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
@@ -48,6 +50,8 @@ class GuildManager(
       }
   }
 
+  private val token = Token(self)
+
   /**
    * 创建工会中，只处理CreateGuildCommand消息，其他消息先stash
    */
@@ -70,7 +74,7 @@ class GuildManager(
    * @return Behavior<Command>
    */
   private fun onRequest(req: GuildPlayerRequest) {
-    requestHandler.handle(req)
+    requestHandler.handle(Commander(req.playerId, token), req.request)
   }
 
   private fun joinGuild(cmd: JoinGuildRequest) {
@@ -182,4 +186,8 @@ class GuildManager(
     val result: Result<Result2<CostResultSet>>,
     val promise: PlayPromise<Result2<GuildInfo>>
   ) : Command
+
+  inner class Token constructor(val guildManager: ActorRef<Command>)
+
+  inner class Commander(override val id: Long, val token: GuildManager.Token) : RequestCommander()
 }

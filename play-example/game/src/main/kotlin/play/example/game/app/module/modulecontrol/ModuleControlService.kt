@@ -6,7 +6,7 @@ import play.example.game.app.module.modulecontrol.entity.PlayerModuleControlEnti
 import play.example.game.app.module.modulecontrol.event.PlayerModuleOpenEvent
 import play.example.game.app.module.modulecontrol.res.ModuleOpenResource
 import play.example.game.app.module.modulecontrol.res.ModuleOpenResourceSet
-import play.example.game.app.module.player.Self
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.condition.PlayerConditionService
 import play.example.game.app.module.player.condition.listenConditionEvents
 import play.example.game.app.module.player.event.*

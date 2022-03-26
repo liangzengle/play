@@ -14,7 +14,7 @@ import play.res.*
  */
 @ResourcePath("Item")
 class ItemResource : AbstractResource(), ItemLikeResource, ExtensionKey<ItemResourceExtension>, UniqueKey<String>,
-  GroupedUniqueKey<ItemType, Int> {
+  GroupedWithUniqueKey<ItemType, Int> {
   override val name: String = ""
 
   private val desc = ""
