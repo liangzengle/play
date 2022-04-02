@@ -14,11 +14,18 @@ class ManagedScheduler(private val underlying: Scheduler) : Scheduler, AutoClose
   private val schedules: MutableMap<Any, Canceller<*>> =
     Caffeine.newBuilder().weakKeys().build<Any, Canceller<*>>().asMap()
 
+  private var closed = false
+
   init {
     Cleaners.register(this, Action(schedules))
   }
 
+  @Synchronized
   override fun close() {
+    if (closed) {
+      return
+    }
+    closed = true
     Action.clean(schedules, "close")
   }
 

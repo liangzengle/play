@@ -119,6 +119,7 @@ class GameServerActor(
       .parent(parentApplicationContext)
       .sources(classOf<GameApp>())
       .contextFactory(PlayNonWebApplicationContextFactory())
+      .registerShutdownHook(false)
       .build()
     val conf = parentApplicationContext.getInstance<Config>()
     val dbNamePattern = conf.getString("play.db.name-pattern")

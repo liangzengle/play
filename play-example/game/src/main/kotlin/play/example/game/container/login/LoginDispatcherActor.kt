@@ -12,6 +12,7 @@ import play.example.game.container.net.SessionManager
 import play.example.game.container.net.UnhandledRequest
 import play.mvc.MessageCodec
 import play.mvc.Request
+import play.util.concurrent.PlayPromise
 
 /**
  * 登录消息按服id分发
@@ -26,6 +27,8 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
     @JvmField val receiver: ActorRef<UnhandledLoginRequest>
   ) : Command
 
+  class UnregisterLoginReceiver(val serverId: Int, val promise: PlayPromise<Unit>) : Command
+
   private val receivers = ArrayList<RegisterLoginReceiver>(1)
 
   init {
@@ -38,11 +41,18 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
     return newReceiveBuilder()
       .accept(::handle)
       .accept(::register)
+      .accept(::unregister)
       .build()
   }
 
   private fun register(cmd: RegisterLoginReceiver) {
     receivers.add(cmd)
+  }
+
+  private fun unregister(cmd: UnregisterLoginReceiver) {
+    val serverId = cmd.serverId
+    receivers.removeIf { it.serverIds.contains(serverId) }
+    cmd.promise.success(Unit)
   }
 
   private fun handle(req: UnhandledLoginRequest) {

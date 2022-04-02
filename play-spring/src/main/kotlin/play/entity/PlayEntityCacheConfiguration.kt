@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import play.ShutdownCoordinator
 import play.entity.cache.*
 import play.inject.PlayInjector
 import play.scheduling.Scheduler
@@ -42,10 +41,9 @@ class PlayEntityCacheConfiguration {
   @ConditionalOnMissingBean
   fun entityCacheManager(
     factory: EntityCacheFactory,
-    shutdownCoordinator: ShutdownCoordinator,
     injector: PlayInjector,
     persistFailOver: EntityCachePersistFailOver
   ): EntityCacheManager {
-    return EntityCacheManagerImpl(factory, shutdownCoordinator, injector, persistFailOver)
+    return EntityCacheManagerImpl(factory, injector, persistFailOver)
   }
 }

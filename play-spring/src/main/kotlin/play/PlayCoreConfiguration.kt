@@ -43,12 +43,6 @@ class PlayCoreConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  fun shutdownCoordinator(): ShutdownCoordinator {
-    return DefaultShutdownCoordinator()
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
   fun classScanner(conf: Config): ClassScanner {
     val jarsToScan = conf.getStringList("play.reflection.jars-to-scan")
     val packagesToScan = conf.getStringList("play.reflection.packages-to-scan")

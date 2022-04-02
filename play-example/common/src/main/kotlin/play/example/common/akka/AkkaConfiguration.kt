@@ -6,13 +6,12 @@ import akka.actor.typed.javadsl.Behaviors
 import com.typesafe.config.Config
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import play.ShutdownCoordinator
-import play.example.common.akka.scheduling.AkkaScheduler
+import play.GracefullyShutdown
 import play.example.common.akka.scheduling.ActorScheduler
-import play.scala.await
+import play.example.common.akka.scheduling.AkkaScheduler
+import play.scala.toPlay
 import play.scheduling.Scheduler
 import java.time.Clock
-import java.time.Duration
 
 /**
  *
@@ -22,11 +21,15 @@ import java.time.Duration
 class AkkaConfiguration : ActorConfigurationSupport {
 
   @Bean
-  fun actorSystem(conf: Config, shutdownCoordinator: ShutdownCoordinator): ActorSystem<GuardianBehavior.Command> {
+  fun actorSystem(conf: Config, shutdown: GracefullyShutdown): ActorSystem<GuardianBehavior.Command> {
     val system = ActorSystem.create(GuardianBehavior.behavior, conf.getString("play.actor-system-name"))
-    shutdownCoordinator.addShutdownTask("Shutdown Actor System", system) {
+    shutdown.addTask(
+      GracefullyShutdown.PHASE_SHUTDOWN_ACTOR_SYSTEM,
+      GracefullyShutdown.PHASE_SHUTDOWN_ACTOR_SYSTEM,
+      system
+    ) {
       it.terminate()
-      it.whenTerminated().await(Duration.ofMinutes(1))
+      it.whenTerminated().toPlay()
     }
     return system
   }

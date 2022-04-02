@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration
 import play.example.common.akka.ActorConfigurationSupport
 import play.example.common.akka.GuardianBehavior
 import play.example.game.container.db.ContainerRepositoryProvider
+import play.example.game.container.login.LoginDispatcherActor
+import play.example.game.container.net.SessionManager
 
 /**
  *
@@ -20,13 +22,33 @@ class GameServerManagerConfiguration : ActorConfigurationSupport {
   @Bean
   fun gameServerManager(
     actorSystem: ActorSystem<GuardianBehavior.Command>,
+    loginDispatcher: ActorRef<LoginDispatcherActor.Command>,
     applicationContext: ConfigurableApplicationContext,
     containerRepositoryProvider: ContainerRepositoryProvider
   ): ActorRef<GameServerManager.Command> {
     return spawn(
       actorSystem,
-      Behaviors.setup { ctx -> GameServerManager(ctx, applicationContext, containerRepositoryProvider) },
+      Behaviors.setup { ctx ->
+        GameServerManager(
+          ctx,
+          loginDispatcher,
+          applicationContext,
+          containerRepositoryProvider
+        )
+      },
       "gs"
+    )
+  }
+
+  @Bean
+  fun loginDispatcher(
+    actorSystem: ActorSystem<GuardianBehavior.Command>,
+    sessionManager: ActorRef<SessionManager.Command>
+  ): ActorRef<LoginDispatcherActor.Command> {
+    return spawn(
+      actorSystem,
+      Behaviors.setup { ctx -> LoginDispatcherActor(ctx, sessionManager) },
+      "LoginDispatcherActor"
     )
   }
 }

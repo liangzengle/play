@@ -3,11 +3,15 @@ package play.example.game
 import akka.actor.typed.ActorRef
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.apache.logging.log4j.LogManager
+import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.boot.Banner
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
+import play.DefaultGracefullyShutdown
+import play.GracefullyShutdown
 import play.Log
 import play.SystemProps
 import play.example.game.container.ContainerApp
@@ -15,11 +19,16 @@ import play.example.game.container.gs.GameServerManager
 import play.net.netty.NettyServer
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
+import play.spring.beanDefinition
+import play.spring.closeAndWait
 import play.spring.getInstance
 import play.spring.getInstances
 import play.util.concurrent.LoggingUncaughtExceptionHandler
+import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.reflect.ClassScanner
+import play.util.unsafeCast
+import kotlin.reflect.typeOf
 import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.minutes
 
@@ -54,25 +63,39 @@ object App {
       val springApplication = SpringApplicationBuilder()
         .bannerMode(Banner.Mode.OFF)
         .sources(ContainerApp::class.java)
+        .registerShutdownHook(false)
         .build()
 
-      springApplication.addInitializers(
-        ApplicationContextInitializer<ConfigurableApplicationContext> {
-          it.beanFactory.apply {
-            registerSingleton("config", config)
-            registerSingleton("resourceManager", resourceManager)
-            registerSingleton("classScanner", classScanner)
-          }
-        })
+      val phaseMap = GracefullyShutdown.phaseFromConfig(config.getConfig("play.shutdown"))
+      val gracefullyShutdown = DefaultGracefullyShutdown("App", phaseMap, true, LogManager::shutdown)
+
+      springApplication.addInitializers(ApplicationContextInitializer<ConfigurableApplicationContext> {
+        it.unsafeCast<BeanDefinitionRegistry>().apply {
+          registerBeanDefinition(
+            "gracefullyShutdown", beanDefinition(typeOf<GracefullyShutdown>(), gracefullyShutdown)
+          )
+        }
+        it.beanFactory.apply {
+          registerSingleton("config", config)
+          registerSingleton("resourceManager", resourceManager)
+          registerSingleton("classScanner", classScanner)
+          registerSingleton("gracefullyShutdown", gracefullyShutdown)
+        }
+      })
       val applicationContext = springApplication.run()
+
+      gracefullyShutdown.addTask(
+        GracefullyShutdown.PHASE_SHUTDOWN_APPLICATION_CONTEXT,
+        GracefullyShutdown.PHASE_SHUTDOWN_APPLICATION_CONTEXT,
+        applicationContext
+      ) { PlayFuture { it.closeAndWait() } }
 
       // 注册配置监听器
       resourceManager.registerReloadListeners(applicationContext.getInstances<ResourceReloadListener>())
 
       // 初始化游戏服
       val initPromise = PlayPromise.make<Void>()
-      applicationContext.getInstance<ActorRef<GameServerManager.Command>>()
-        .tell(GameServerManager.Init(initPromise))
+      applicationContext.getInstance<ActorRef<GameServerManager.Command>>().tell(GameServerManager.Init(initPromise))
       // 阻塞等待初始化完成
       initPromise.future.await(5.minutes)
 

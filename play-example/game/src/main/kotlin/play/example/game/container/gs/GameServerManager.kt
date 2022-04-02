@@ -15,11 +15,11 @@ import play.akka.stoppedBehavior
 import play.example.game.container.db.ContainerRepositoryProvider
 import play.example.game.container.gs.entity.GameServerEntity
 import play.example.game.container.gs.logging.ActorMDC
+import play.example.game.container.login.LoginDispatcherActor
 import play.spring.getInstance
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.control.getCause
-import play.util.forEach
 import play.util.unsafeCast
 import scala.concurrent.Promise
 import kotlin.concurrent.thread
@@ -32,6 +32,7 @@ import kotlin.time.Duration.Companion.seconds
  */
 class GameServerManager(
   context: ActorContext<Command>,
+  private val loginDispatcher: ActorRef<LoginDispatcherActor.Command>,
   private val parentApplicationContext: ConfigurableApplicationContext,
   private val containerRepositoryProvider: ContainerRepositoryProvider
 ) : AbstractTypedActor<GameServerManager.Command>(context) {
@@ -167,9 +168,10 @@ class GameServerManager(
   }
 
   private fun closeGameServer(cmd: CloseGameServer) {
-    context.getChild(cmd.serverId.toString())
-      .forEach {
-        it.unsafeCast<ActorRef<GameServerActor.Command>>().tell(GameServerActor.Stop)
-      }
+    val promise = PlayPromise.make<Unit>()
+    loginDispatcher.tell(LoginDispatcherActor.UnregisterLoginReceiver(cmd.serverId, promise))
+    promise.future.onComplete {
+      it.unsafeCast<ActorRef<GameServerActor.Command>>().tell(GameServerActor.Stop)
+    }
   }
 }

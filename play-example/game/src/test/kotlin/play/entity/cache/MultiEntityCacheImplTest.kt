@@ -2,8 +2,6 @@ package play.entity.cache
 
 import com.typesafe.config.ConfigFactory
 import org.junit.jupiter.api.Test
-
-import play.DefaultShutdownCoordinator
 import play.db.memory.MemoryRepository
 import play.entity.cache.chm.CHMEntityCacheFactory
 import play.inject.NOOPPlayInjector
@@ -37,12 +35,16 @@ internal class MultiEntityCacheImplTest {
     ForkJoinPool.commonPool(),
     cacheConfig
   )
-  private val shutdownCoordinator = DefaultShutdownCoordinator()
   private val entityCacheManager =
-    EntityCacheManagerImpl(entityCacheFactory, shutdownCoordinator, NOOPPlayInjector, NOOPEntityCachePersistFailOver)
+    EntityCacheManagerImpl(entityCacheFactory, NOOPPlayInjector, NOOPEntityCachePersistFailOver)
 
   private val entityCache = entityCacheManager.get(MyEntity::class.java)
-  private val partitionEntityCache = MultiEntityCacheImpl<Long, MyObjId, MyEntity>(entityCache, memoryRepository, scheduler, DefaultMultiCacheExpireEvaluator.unsafeCast())
+  private val partitionEntityCache = MultiEntityCacheImpl<Long, MyObjId, MyEntity>(
+    entityCache,
+    memoryRepository,
+    scheduler,
+    DefaultMultiCacheExpireEvaluator.unsafeCast()
+  )
 
   @Test
   fun getMulti() {

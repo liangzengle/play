@@ -1,8 +1,6 @@
 package play.entity.cache
 
 import mu.KLogging
-import play.Orders
-import play.ShutdownCoordinator
 import play.entity.Entity
 import play.entity.IntIdEntity
 import play.entity.LongIdEntity
@@ -38,7 +36,6 @@ abstract class EntityCacheManager {
 
 class EntityCacheManagerImpl constructor(
   private val factory: EntityCacheFactory,
-  shutdownCoordinator: ShutdownCoordinator,
   injector: PlayInjector,
   private val persistFailOver: EntityCachePersistFailOver
 ) : EntityCacheManager(), AutoCloseable {
@@ -53,11 +50,9 @@ class EntityCacheManagerImpl constructor(
   init {
     logger.info { "Using ${factory.javaClass.simpleName}" }
     logger.info { "Using ${persistFailOver.javaClass.simpleName}" }
-    shutdownCoordinator.addShutdownTask("缓存数据入库", Orders.Lowest, this) {
-      it.close()
-    }
   }
 
+  @Synchronized
   override fun close() {
     if (closed) {
       return
@@ -75,7 +70,7 @@ class EntityCacheManagerImpl constructor(
         }
       }
     }
-    logger.info { "缓存入库执行完毕" }
+    logger.info { "EntityCache flushed on close." }
   }
 
   override fun getAllCaches(): Iterable<EntityCache<*, *>> {

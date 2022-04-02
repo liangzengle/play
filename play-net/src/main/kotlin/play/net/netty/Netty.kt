@@ -20,9 +20,13 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.util.concurrent.DefaultThreadFactory
+import io.netty.util.concurrent.Future
 import play.util.EmptyByteArray
+import play.util.concurrent.PlayFuture
+import play.util.unsafeCastOrNull
 import java.net.InetSocketAddress
 import java.net.SocketAddress
+import java.util.concurrent.CompletableFuture
 
 /**
  * Created by LiangZengle on 2020/2/20.
@@ -118,4 +122,20 @@ fun createChannelFactory(epollPreferred: Boolean = true): ChannelFactory<SocketC
       NioSocketChannel()
     }
   }
+}
+
+fun <T> Future<T>.toCompletableFuture(): CompletableFuture<T> {
+  val future = CompletableFuture<T>()
+  this.addListener {
+    if (it.isSuccess) {
+      future.complete(it.now.unsafeCastOrNull())
+    } else {
+      future.completeExceptionally(it.cause())
+    }
+  }
+  return future
+}
+
+fun <T> Future<T>.toPlay(): PlayFuture<T> {
+  return PlayFuture(toCompletableFuture())
 }
