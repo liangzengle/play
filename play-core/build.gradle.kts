@@ -18,4 +18,5 @@ dependencies {
   api(Deps.Caffeine)
   api(Deps.Micrometer)
   api(Deps.UnsafeAccessor)
+  ksp(Deps.AutoServiceKsp)
 }

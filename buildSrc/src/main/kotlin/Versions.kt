@@ -4,6 +4,7 @@ object Versions {
   const val Asm = "9.2"
   const val AsyncHttpClient = "2.12.3"
   const val AutoService = "1.0.1"
+  const val AutoServiceKsp = "1.0.0"
   const val Bson4Jackson = "2.13.0"
   const val ByteBuddy = "1.12.6"
   const val Caffeine = "3.0.4"

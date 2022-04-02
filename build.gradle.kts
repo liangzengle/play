@@ -1,6 +1,6 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.jetbrains.kotlin.gradle.tasks.*
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
   repositories {
@@ -20,6 +20,7 @@ buildscript {
 
 plugins {
   `java-library`
+  id("com.google.devtools.ksp") version Versions.Ksp apply false
 }
 
 subprojects {
@@ -34,6 +35,7 @@ subprojects {
   apply(plugin = "org.jlleitschuh.gradle.ktlint-idea")
   apply(plugin = "kotlin-spring")
   apply(plugin = "project-report")
+  apply(plugin = "com.google.devtools.ksp")
 
   configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
     debug.set(true)
@@ -44,14 +46,12 @@ subprojects {
   version = "1.0-SNAPSHOT"
 
   val api by configurations
-  val kapt by configurations
   val testImplementation by configurations
 
   dependencies {
     api(Deps.Kotlin.Jvm)
     api(Deps.Kotlin.Reflect)
     api(Deps.AutoService)
-    kapt(Deps.AutoService)
 
     testImplementation(Deps.Junit.JupiterEngine)
     testImplementation(Deps.Junit.JupiterApi)

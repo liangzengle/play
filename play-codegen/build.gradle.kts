@@ -7,6 +7,7 @@ dependencies {
   implementation(Deps.KotlinPoet.Metadata)
   implementation(Deps.KotlinPoet.Ksp)
   implementation(Deps.Ksp)
+  ksp(Deps.AutoServiceKsp)
 }
 
 tasks.withType<KotlinCompile> {

@@ -5,7 +5,6 @@ plugins {
   id("play.modular-code") version "0.1"
   id("org.jetbrains.kotlin.plugin.serialization") version Versions.Kotlin
   application
-  id("com.google.devtools.ksp") version Versions.Ksp
 }
 
 application {
@@ -40,8 +39,8 @@ dependencies {
 
   compileOnly(project(":play-codegen-annotations"))
   compileOnly(project(":play-codegen"))
-//  kapt(project(":play-codegen"))
   ksp(project(":play-codegen"))
+  ksp(Deps.AutoServiceKsp)
 
   kapt(Deps.Hibernate.ValidatorApt)
 

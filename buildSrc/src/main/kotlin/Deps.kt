@@ -102,6 +102,8 @@ object Deps {
 
   const val AutoService = "com.google.auto.service:auto-service:${Versions.AutoService}"
 
+  const val AutoServiceKsp = "dev.zacsweers.autoservice:auto-service-ksp:${Versions.AutoServiceKsp}"
+
   const val ByteBuddy = "net.bytebuddy:byte-buddy:${Versions.ByteBuddy}"
 
   const val Caffeine = "com.github.ben-manes.caffeine:caffeine:${Versions.Caffeine}"

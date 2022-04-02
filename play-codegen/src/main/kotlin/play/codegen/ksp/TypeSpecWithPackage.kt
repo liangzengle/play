@@ -15,7 +15,7 @@ class TypeSpecWithPackage(private val typeSpec: TypeSpec, private val pkg: Strin
   fun getTypeSpec() = typeSpec
 
   override fun equals(other: Any?): Boolean {
-    return other == this || other is TypeSpecWithPackage && other.qualifiedName == this.qualifiedName
+    return other === this || other is TypeSpecWithPackage && other.qualifiedName == this.qualifiedName
   }
 
   override fun hashCode(): Int {

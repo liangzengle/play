@@ -1,5 +1,6 @@
 package play.codegen.ksp
 
+import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
@@ -33,7 +34,7 @@ abstract class AbstractSymbolProcessor(
 
   protected fun write(fileSpec: FileSpec) {
     try {
-      fileSpec.writeTo(codeGenerator, false)
+      fileSpec.writeTo(codeGenerator, Dependencies.ALL_FILES)
     } catch (e: Exception) {
       throw IllegalStateException("Failed to write file: ${fileSpec.name}", e)
     }
