@@ -88,9 +88,12 @@ object Deps {
 
   object SpringBoot {
     const val Starter = "org.springframework.boot:spring-boot-starter:${Versions.SpringBoot}"
+    const val StarterWebflux = "org.springframework.boot:spring-boot-starter-webflux:${Versions.SpringBoot}"
+    const val StarterActuator = "org.springframework.boot:spring-boot-starter-actuator:${Versions.SpringBoot}"
   }
 
   object AlibabaRsocket {
+    val Core = "com.alibaba.rsocket:alibaba-rsocket-core:${Versions.AlibabaRsocket}"
     val Broker = "com.alibaba.rsocket:alibaba-broker-spring-boot-starter:${Versions.AlibabaRsocket}"
     val Client = "com.alibaba.rsocket:alibaba-rsocket-spring-boot-starter:${Versions.AlibabaRsocket}"
   }
@@ -132,6 +135,8 @@ object Deps {
   const val Logback = "ch.qos.logback:logback-classic:${Versions.Logback}"
 
   const val Micrometer = "io.micrometer:micrometer-core:${Versions.Micrometer}"
+
+  const val Rxjava3 = "io.reactivex.rxjava3:rxjava:${Versions.Rxjava3}"
 
   const val TsConfig = "com.typesafe:config:${Versions.TsConfig}"
 
