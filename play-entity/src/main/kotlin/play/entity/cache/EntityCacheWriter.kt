@@ -16,5 +16,5 @@ interface EntityCacheWriter {
 
   fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<out Any>
 
-  fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any)
+  fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any): Future<out Any>
 }

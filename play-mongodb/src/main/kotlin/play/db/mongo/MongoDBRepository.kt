@@ -9,6 +9,7 @@ import com.mongodb.reactivestreams.client.MongoClient
 import com.mongodb.reactivestreams.client.MongoCollection
 import org.bson.Document
 import org.bson.conversions.Bson
+import org.reactivestreams.FlowAdapters
 import play.db.Repository
 import play.db.ResultMap
 import play.db.TableNameResolver
@@ -18,8 +19,7 @@ import play.entity.EntityHelper
 import play.entity.ObjId
 import play.entity.ObjIdEntity
 import play.util.*
-import play.util.concurrent.Future
-import play.util.concurrent.Promise
+import play.util.concurrent.*
 import play.util.json.Json
 import java.lang.reflect.Type
 import java.util.*
@@ -35,7 +35,8 @@ class MongoDBRepository constructor(
 
   private val unorderedBulkWrite = BulkWriteOptions().ordered(false)
   private val insertOneOptions = InsertOneOptions()
-  private val updateOptions = UpdateOptions().upsert(true)
+
+  //  private val updateOptions = UpdateOptions().upsert(true)
   private val replaceOptions = ReplaceOptions().upsert(true)
   private val deleteOptions = DeleteOptions()
 
@@ -52,23 +53,17 @@ class MongoDBRepository constructor(
   }
 
   override fun insert(entity: Entity<*>): Future<InsertOneResult> {
-    val promise = Promise.make<InsertOneResult>()
-    getCollection(entity).insertOne(entity, insertOneOptions).subscribe(ForOneSubscriber(promise))
-    return promise.future
+    val publisher = getCollection(entity).insertOne(entity, insertOneOptions)
+    return FlowAdapters.toFlowPublisher(publisher).subscribeOne()
   }
 
   override fun update(entity: Entity<*>): Future<UpdateResult> {
-    val promise = Promise.make<UpdateResult>()
-    getCollection(entity).replaceOne(Filters.eq(entity.id()), entity, replaceOptions)
-      .subscribe(ForOneSubscriber(promise))
-    return promise.future
+    return insertOrUpdate(entity)
   }
 
   override fun insertOrUpdate(entity: Entity<*>): Future<UpdateResult> {
-    val promise = Promise.make<UpdateResult>()
-    getCollection(entity).replaceOne(Filters.eq(entity.id()), entity, replaceOptions)
-      .subscribe(ForOneSubscriber(promise))
-    return promise.future
+    val publisher = getCollection(entity).replaceOne(Filters.eq(entity.id()), entity, replaceOptions)
+    return FlowAdapters.toFlowPublisher(publisher).subscribeOne()
   }
 
   override fun delete(entity: Entity<*>): Future<DeleteResult> {
@@ -76,10 +71,8 @@ class MongoDBRepository constructor(
   }
 
   override fun <ID, E : Entity<ID>> deleteById(id: ID, entityClass: Class<E>): Future<DeleteResult> {
-    val promise = Promise.make<DeleteResult>()
-    getCollection(entityClass).deleteOne(Filters.eq(id), deleteOptions)
-      .subscribe(ForOneSubscriber(promise))
-    return promise.future
+    val publisher = getCollection(entityClass).deleteOne(Filters.eq(id), deleteOptions)
+    return FlowAdapters.toFlowPublisher(publisher).subscribeOne()
   }
 
   override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<BulkWriteResult> {
@@ -87,15 +80,19 @@ class MongoDBRepository constructor(
       return Future.successful(BulkWriteResult.acknowledged(0, 0, 0, 0, emptyList(), emptyList()))
     }
     // mongo driver will divide into small groups when a group exceeds the limit, which is 100,000 in MongoDB 3.6
-    val promise = Promise.make<BulkWriteResult>()
     val writeModels = entities.map { ReplaceOneModel(Filters.eq(it.id()), it, replaceOptions) }
-    getCollection(entities.first().javaClass).bulkWrite(writeModels, unorderedBulkWrite)
-      .subscribe(ForOneSubscriber(promise))
-    return promise.future
+    val publisher = getCollection(entities.first().javaClass).bulkWrite(writeModels, unorderedBulkWrite)
+    return FlowAdapters.toFlowPublisher(publisher).subscribeOne()
   }
 
-  override fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any) {
-    getCollection(entityClass).updateOne(Filters.eq(ID, id), Updates.set(field, value))
+  override fun <ID, E : Entity<ID>> update(
+    entityClass: Class<E>,
+    id: ID,
+    field: String,
+    value: Any
+  ): Future<UpdateResult> {
+    val publisher = getCollection(entityClass).updateOne(Filters.eq(ID, id), Updates.set(field, value))
+    return FlowAdapters.toFlowPublisher(publisher).subscribeOne()
   }
 
   override fun <ID, E : Entity<ID>, R, R1 : R> fold(entityClass: Class<E>, initial: R1, f: (R1, E) -> R1): Future<R> {
@@ -112,16 +109,13 @@ class MongoDBRepository constructor(
   }
 
   override fun <ID, E : Entity<ID>> findById(entityClass: Class<E>, id: ID): Future<Optional<E>> {
-    val promise = Promise.make<E?>()
-    getCollection(entityClass).find(Filters.eq(id)).subscribe(NullableForOneSubscriber(promise))
-    return promise.future.map { it.toOptional() }
+    val publisher = getCollection(entityClass).find(Filters.eq(id))
+    return FlowAdapters.toFlowPublisher(publisher).subscribeOneOptional()
   }
 
   override fun <ID, E : Entity<ID>> loadAll(ids: Iterable<ID>, entityClass: Class<E>): Future<List<E>> {
-    val promise = Promise.make<List<E>>()
-    getCollection(entityClass).find(Filters.`in`(ID, ids))
-      .subscribe(FoldSubscriber(promise, LinkedList()) { list, e -> list.add(e); list })
-    return promise.future
+    val publisher = getCollection(entityClass).find(Filters.`in`(ID, ids))
+    return FlowAdapters.toFlowPublisher(publisher).subscribeToList()
   }
 
   override fun <K, ID : ObjId, E : ObjIdEntity<ID>> listMultiIds(
@@ -146,9 +140,8 @@ class MongoDBRepository constructor(
   }
 
   override fun <ID, E : Entity<ID>> listAll(entityClass: Class<E>): Future<List<E>> {
-    val promise = Promise.make<List<E>>()
-    getCollection(entityClass).find().subscribe(FoldSubscriber(promise, LinkedList()) { list, e -> list.add(e); list })
-    return promise.future
+    val publisher = getCollection(entityClass).find()
+    return FlowAdapters.toFlowPublisher(publisher).subscribeToList()
   }
 
   @CheckReturnValue
@@ -160,13 +153,11 @@ class MongoDBRepository constructor(
     initial: R1,
     folder: (R1, E) -> R1
   ): Future<R> {
-    val promise = Promise.make<R>()
     val publisher = getCollection(entityClass).find()
     where.forEach { publisher.filter(it) }
     order.forEach { publisher.sort(it) }
     limit.forEach { publisher.limit(it) }
-    publisher.subscribe(FoldSubscriber(promise, initial, folder))
-    return promise.future
+    return FlowAdapters.toFlowPublisher(publisher).subscribeInto(initial, folder)
   }
 
   @CheckReturnValue
@@ -179,20 +170,18 @@ class MongoDBRepository constructor(
     initial: R1,
     folder: (R1, ResultMap) -> R1
   ): Future<R> {
-    val promise = Promise.make<R>()
     val publisher = getRawCollection(entityClass).find()
     val includeFields = if (fields.contains(ID)) fields else fields.toMutableList().apply { add((ID)) }
     publisher.projection(Projections.include(includeFields))
     where.forEach { publisher.filter(it) }
     order.forEach { publisher.sort(it) }
     limit.forEach { publisher.limit(it) }
-    publisher.subscribe(FoldSubscriber(promise, initial) { r, doc ->
+    return FlowAdapters.toFlowPublisher(publisher).subscribeInto(initial) { r, doc ->
       if (doc.containsKey(ID) && !doc.containsKey("id")) {
         doc["id"] = doc[ID]
       }
       folder(r, ResultMap(doc))
-    })
-    return promise.future
+    }
   }
 
   override fun <ID, E : Entity<ID>> listIds(entityClass: Class<E>): Future<List<ID>> {
@@ -207,21 +196,12 @@ class MongoDBRepository constructor(
     c: C1,
     accumulator: (C1, ID) -> C1
   ): Future<C> {
-    val promise = Promise.make<C>()
     val idType = EntityHelper.getIdType(entityClass)
-    getRawCollection(entityClass)
-      .find()
-      .projection(Projections.include(ID))
-      .subscribe(
-        FoldSubscriber(
-          promise,
-          c
-        ) { list, doc ->
-          val id = convertToID<ID>(doc[ID]!!, idType)
-          accumulator(list, id)
-        }
-      )
-    return promise.future
+    val publisher = getRawCollection(entityClass).find().projection(Projections.include(ID))
+    return FlowAdapters.toFlowPublisher(publisher).subscribeInto(c) { list, doc ->
+      val id = convertToID<ID>(doc[ID]!!, idType)
+      accumulator(list, id)
+    }
   }
 
   private fun <ID> convertToID(obj: Any, idType: Type): ID {
@@ -232,8 +212,6 @@ class MongoDBRepository constructor(
   }
 
   override fun runCommand(cmd: Bson): Future<Document> {
-    val promise = Promise.make<Document>()
-    db.runCommand(cmd).subscribe(ForOneSubscriber(promise))
-    return promise.future
+    return FlowAdapters.toFlowPublisher(db.runCommand(cmd)).subscribeOne()
   }
 }
