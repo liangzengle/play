@@ -21,7 +21,6 @@ import play.example.game.container.command.CommandService
 import play.example.game.container.gs.domain.GameServerId
 import play.inject.PlayInjector
 import play.inject.SpringPlayInjector
-import play.mongodb.PlayMongoRepositoryConfiguration
 import play.scheduling.Scheduler
 import play.util.concurrent.PlayFuture
 
@@ -30,7 +29,7 @@ import play.util.concurrent.PlayFuture
  * @author LiangZengle
  */
 @SpringBootApplication
-@Import(value = [PlayMongoRepositoryConfiguration::class, PlayEntityCacheConfiguration::class])
+@Import(value = [PlayEntityCacheConfiguration::class])
 @EnableGuavaEventBus
 @Configuration(proxyBeanMethods = false)
 class GameApp {

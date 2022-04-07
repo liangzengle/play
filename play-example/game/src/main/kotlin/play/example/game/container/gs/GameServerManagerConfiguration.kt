@@ -6,9 +6,9 @@ import akka.actor.typed.javadsl.Behaviors
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import play.db.Repository
 import play.example.common.akka.ActorConfigurationSupport
 import play.example.common.akka.GuardianBehavior
-import play.example.game.container.db.ContainerRepositoryProvider
 import play.example.game.container.login.LoginDispatcherActor
 import play.example.game.container.net.SessionManager
 
@@ -24,7 +24,7 @@ class GameServerManagerConfiguration : ActorConfigurationSupport {
     actorSystem: ActorSystem<GuardianBehavior.Command>,
     loginDispatcher: ActorRef<LoginDispatcherActor.Command>,
     applicationContext: ConfigurableApplicationContext,
-    containerRepositoryProvider: ContainerRepositoryProvider
+    repository: Repository
   ): ActorRef<GameServerManager.Command> {
     return spawn(
       actorSystem,
@@ -33,7 +33,7 @@ class GameServerManagerConfiguration : ActorConfigurationSupport {
           ctx,
           loginDispatcher,
           applicationContext,
-          containerRepositoryProvider
+          repository
         )
       },
       "gs"

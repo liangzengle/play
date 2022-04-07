@@ -11,7 +11,7 @@ import play.example.common.net.NettyServerConfiguration
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.container.command.CommandManager
 import play.http.EnableHttpClient
-import play.mongodb.PlayMongoConfiguration
+import play.mongodb.PlayMongoClientConfiguration
 import play.rsocket.rpc.RSocketRpcConfiguration
 import play.util.reflect.ClassScanner
 
@@ -26,7 +26,7 @@ import play.util.reflect.ClassScanner
   value = [
     PlayCoreConfiguration::class,
     PlayDBConfiguration::class,
-    PlayMongoConfiguration::class,
+    PlayMongoClientConfiguration::class,
     NettyServerConfiguration::class,
     AkkaConfiguration::class,
     RSocketRpcConfiguration::class

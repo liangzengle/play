@@ -32,6 +32,8 @@ dependencies {
   api(project(":play-example-common"))
   api(project(":play-example-rpc-api"))
   api(project(":play-net"))
+  api(project(":play-entity"))
+  api(project(":play-db"))
   api(project(":play-mongodb"))
   api(project(":play-mvc"))
   api(project(":play-spring"))

@@ -14,6 +14,7 @@ import play.DefaultGracefullyShutdown
 import play.GracefullyShutdown
 import play.Log
 import play.SystemProps
+import play.db.DatabaseNameProvider
 import play.example.game.container.ContainerApp
 import play.example.game.container.gs.GameServerManager
 import play.net.netty.NettyServer
@@ -69,6 +70,9 @@ object App {
       val phaseMap = GracefullyShutdown.phaseFromConfig(config.getConfig("play.shutdown"))
       val gracefullyShutdown = DefaultGracefullyShutdown("App", phaseMap, true, LogManager::shutdown)
 
+      val dbName = config.getString("play.container.db")
+      val databaseNameProvider = DatabaseNameProvider { dbName }
+
       springApplication.addInitializers(ApplicationContextInitializer<ConfigurableApplicationContext> {
         it.unsafeCast<BeanDefinitionRegistry>().apply {
           registerBeanDefinition(
@@ -77,6 +81,7 @@ object App {
         }
         it.beanFactory.apply {
           registerSingleton("config", config)
+          registerSingleton("databaseNameProvider", databaseNameProvider)
           registerSingleton("resourceManager", resourceManager)
           registerSingleton("classScanner", classScanner)
           registerSingleton("gracefullyShutdown", gracefullyShutdown)

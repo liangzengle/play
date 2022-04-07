@@ -4,6 +4,7 @@ import com.mongodb.reactivestreams.client.MongoClient
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import play.db.DatabaseNameProvider
@@ -20,10 +21,12 @@ import play.util.reflect.ClassScanner
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(Mongo::class)
-class PlayMongoRepositoryConfiguration {
+@ConditionalOnProperty(prefix = "play.repository", name = ["type"], havingValue = "mongodb")
+class PlayMongoRepositoryAutoConfiguration {
 
   @Bean
   fun mongoDBRepositoryIndexCustomizer(): MongoDBRepositoryCustomizer {
+    // fixme: mongodb indexes initialization
     return MongoDBRepositoryCustomizer { repository, classScanner ->
       val entityClasses = classScanner.getInstantiatableSubclasses(Entity::class.java)
       Mongo.ensureIndexes(repository, entityClasses)
@@ -31,7 +34,6 @@ class PlayMongoRepositoryConfiguration {
   }
 
   @Bean
-  @ConditionalOnMissingBean(Repository::class)
   fun repository(
     tableNameResolver: TableNameResolver,
     databaseNameProvider: DatabaseNameProvider,

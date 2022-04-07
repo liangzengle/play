@@ -10,3 +10,5 @@ spring:
     include:
       - rpc
       - db
+
+#logging.level.root: DEBUG

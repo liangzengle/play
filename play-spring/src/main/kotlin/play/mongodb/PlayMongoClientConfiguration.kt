@@ -12,6 +12,7 @@ import io.netty.util.concurrent.DefaultThreadFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import play.GracefullyShutdown
@@ -24,12 +25,14 @@ import play.net.netty.toPlay
  */
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnClass(Mongo::class)
-class PlayMongoConfiguration {
+@ConditionalOnProperty(prefix = "play.repository", name = ["type"], havingValue = "mongodb")
+class PlayMongoClientConfiguration {
 
   @Bean("dbExecutor")
+  @org.springframework.context.annotation.Lazy
   fun dbExecutor(config: Config, shutdown: GracefullyShutdown): EventLoopGroup {
     val nThread = config.getInt("play.mongodb.client-threads")
-    val threadFactory = DefaultThreadFactory("mongo")
+    val threadFactory = DefaultThreadFactory("mongodb-client")
     val executor = if (Epoll.isAvailable()) {
       EpollEventLoopGroup(nThread, threadFactory)
     } else {

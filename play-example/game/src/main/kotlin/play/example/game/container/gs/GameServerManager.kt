@@ -12,7 +12,7 @@ import org.springframework.context.ConfigurableApplicationContext
 import play.akka.AbstractTypedActor
 import play.akka.sameBehavior
 import play.akka.stoppedBehavior
-import play.example.game.container.db.ContainerRepositoryProvider
+import play.db.Repository
 import play.example.game.container.gs.entity.GameServerEntity
 import play.example.game.container.gs.logging.ActorMDC
 import play.example.game.container.login.LoginDispatcherActor
@@ -34,7 +34,7 @@ class GameServerManager(
   context: ActorContext<Command>,
   private val loginDispatcher: ActorRef<LoginDispatcherActor.Command>,
   private val parentApplicationContext: ConfigurableApplicationContext,
-  private val containerRepositoryProvider: ContainerRepositoryProvider
+  private val repository: Repository,
 ) : AbstractTypedActor<GameServerManager.Command>(context) {
   interface Command
   class Init(val promise: PlayPromise<Void>) : Command
@@ -63,7 +63,6 @@ class GameServerManager(
   }
 
   private fun init(cmd: Init) {
-    val repository = containerRepositoryProvider.get()
     val future = repository
       .listIds(GameServerEntity::class.java)
       .flatMap { serverIds ->
@@ -112,7 +111,7 @@ class GameServerManager(
     }
 
     if (!gameServerIds.contains(serverId)) {
-      containerRepositoryProvider.get()
+      repository
         .insert(GameServerEntity(serverId))
         .onComplete(
           {

@@ -1,3 +1,2 @@
-play:
-  db:
-    repository: memory
+play.repository.type: memory
+#play.repository.type: mongodb
