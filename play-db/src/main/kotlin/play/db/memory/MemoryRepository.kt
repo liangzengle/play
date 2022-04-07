@@ -25,7 +25,7 @@ class MemoryRepository : Repository {
   override fun insert(entity: Entity<*>): Future<out Any> {
     val prev = getMap(entity.javaClass).putIfAbsent(entity.id(), entity)
     if (prev != null) {
-      throw IllegalStateException("${entity.javaClass.simpleName}(${entity.id()})已经存在")
+      throw IllegalStateException("${entity.javaClass.simpleName}(${entity.id()}) already exists")
     }
     return Future.successful(1)
   }
@@ -34,7 +34,8 @@ class MemoryRepository : Repository {
     return Future.successful(Unit)
   }
 
-  override fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any) {
+  override fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any): Future<out Any> {
+    return Future.successful(Unit)
   }
 
   override fun insertOrUpdate(entity: Entity<*>): Future<out Any> {

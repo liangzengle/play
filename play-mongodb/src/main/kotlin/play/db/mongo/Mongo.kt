@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.mongodb.MongoClientSettings
 import com.mongodb.MongoCredential
+import com.mongodb.client.model.IndexModel
 import com.mongodb.client.model.IndexOptions
 import com.mongodb.connection.netty.NettyStreamFactoryFactory
 import com.typesafe.config.Config
@@ -16,7 +17,9 @@ import io.netty.channel.EventLoopGroup
 import io.netty.channel.epoll.EpollEventLoopGroup
 import io.netty.channel.epoll.EpollSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
+import mu.KLogging
 import org.bson.codecs.configuration.CodecRegistries
+import org.reactivestreams.FlowAdapters
 import play.db.mongo.codec.EntityCodecProvider
 import play.db.mongo.codec.MongoIntIdMixIn
 import play.db.mongo.codec.MongoLongIdMixIn
@@ -25,10 +28,15 @@ import play.entity.Entity
 import play.entity.IntIdEntity
 import play.entity.LongIdEntity
 import play.entity.ObjIdEntity
+import play.util.concurrent.Future
+import play.util.concurrent.subscribeOne
+import play.util.concurrent.subscribeOneNullable
+import play.util.control.getCause
 import play.util.json.Json
 import java.util.concurrent.TimeUnit
 
-object Mongo {
+object Mongo : KLogging() {
+
   const val ID = "_id"
 
   fun newClientSettings(conf: Config, eventLoopGroup: EventLoopGroup): MongoClientSettings {
@@ -72,26 +80,54 @@ object Mongo {
     return builder.build()
   }
 
-  fun ensureIndexes(repository: MongoDBRepository, entityClasses: List<Class<Entity<*>>>) {
-    entityClasses.parallelStream().forEach { entityClass ->
-      val indexes = entityClass.getAnnotationsByType(Index::class.java)
-      for (index in indexes) {
-        if (index.fields.isEmpty()) continue
-        val fields = index.fields.copyOf()
-        for (i in fields.indices) {
-          val field = fields[i]
-          if (field.startsWith("id.")) {
-            fields[i] = field.replaceRange(0..2, "_id.")
+  fun ensureIndexes(repository: MongoDBRepository, entityClasses: Collection<Class<Entity<*>>>) {
+    repository.listCollectionNames().onSuccess { collectionNames ->
+      for (entityClass in entityClasses) {
+        if (!entityClass.isAnnotationPresent(Index::class.java)) {
+          continue
+        }
+        val indexModels = entityClass.getAnnotationsByType(Index::class.java).map(::toIndexModel)
+        if (indexModels.isEmpty()) {
+          continue
+        }
+        val collectionName = repository.getCollectionName(entityClass)
+        val createCollectionFuture = if (collectionNames.contains(collectionName)) {
+          Future.successful(Unit)
+        } else {
+          repository.createCollection(entityClass)
+        }
+        createCollectionFuture.flatMap {
+          FlowAdapters.toFlowPublisher(repository.getCollection(entityClass).createIndexes(indexModels))
+            .subscribeOneNullable()
+            .flatMap {
+              FlowAdapters.toFlowPublisher(repository.getCollection(entityClass).listIndexes()).subscribeOne()
+            }
+        }.onComplete {
+          if (it.isSuccess) {
+            logger.debug { "Indexes created for ${entityClass.simpleName}: ${it.getOrThrow()}" }
+          } else {
+            logger.error(it.getCause()) { "Index create failed: ${entityClass.simpleName}" }
           }
         }
-        val opts = IndexOptions()
-        opts.unique(index.unique)
-        opts.sparse(index.sparse)
-        val indexBson = index.type.parse(fields)
-        val collection = repository.getCollection(entityClass)
-        collection.createIndex(indexBson, opts)
       }
     }
   }
 
+  private fun toIndexModel(index: Index): IndexModel {
+    if (index.fields.isEmpty()) {
+      throw IllegalArgumentException("Index must have at least one field")
+    }
+    val fields = index.fields.copyOf()
+    for (i in fields.indices) {
+      val field = fields[i]
+      if (field.startsWith("id.")) {
+        fields[i] = field.replaceRange(0..2, "_id.")
+      }
+    }
+    val opts = IndexOptions()
+    opts.unique(index.unique)
+    opts.sparse(index.sparse)
+    val indexBson = index.type.parse(fields)
+    return IndexModel(indexBson, opts)
+  }
 }

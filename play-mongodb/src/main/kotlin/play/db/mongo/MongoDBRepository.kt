@@ -45,7 +45,17 @@ class MongoDBRepository constructor(
   }
 
   internal fun <T : Entity<*>> getCollection(clazz: Class<T>): MongoCollection<T> {
-    return db.getCollection(tableNameResolver.resolve(clazz), clazz)
+    return db.getCollection(getCollectionName(clazz), clazz)
+  }
+
+  internal fun getCollectionName(clazz: Class<*>) = tableNameResolver.resolve(clazz)
+
+  fun listCollectionNames(): Future<MutableSet<String>> {
+    return FlowAdapters.toFlowPublisher(db.listCollectionNames()).subscribeToCollection(hashSetOf())
+  }
+
+  internal fun <T : Entity<*>> createCollection(clazz: Class<T>): Future<*> {
+    return FlowAdapters.toFlowPublisher(db.createCollection(getCollectionName(clazz))).subscribeOneNullable()
   }
 
   private fun getRawCollection(clazz: Class<*>): MongoCollection<Document> {

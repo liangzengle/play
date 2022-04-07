@@ -1,7 +1,6 @@
 package play.mongodb
 
 import play.db.mongo.MongoDBRepository
-import play.util.reflect.ClassScanner
 
 /**
  *
@@ -9,5 +8,5 @@ import play.util.reflect.ClassScanner
  */
 fun interface MongoDBRepositoryCustomizer {
 
-  fun customize(repository: MongoDBRepository, classScanner: ClassScanner)
+  fun customize(repository: MongoDBRepository)
 }

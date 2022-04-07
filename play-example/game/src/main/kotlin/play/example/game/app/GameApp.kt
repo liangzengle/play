@@ -2,15 +2,14 @@ package play.example.game.app
 
 import com.typesafe.config.Config
 import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import play.DefaultGracefullyShutdown
 import play.GracefullyShutdown
-import play.db.Repository
-import play.db.memory.MemoryRepository
+import play.db.mongo.Mongo
+import play.entity.Entity
 import play.entity.PlayEntityCacheConfiguration
 import play.entity.cache.DefaultEntityCachePersistFailOver
 import play.entity.cache.EntityCacheManager
@@ -21,8 +20,10 @@ import play.example.game.container.command.CommandService
 import play.example.game.container.gs.domain.GameServerId
 import play.inject.PlayInjector
 import play.inject.SpringPlayInjector
+import play.mongodb.MongoDBRepositoryCustomizer
 import play.scheduling.Scheduler
 import play.util.concurrent.PlayFuture
+import play.util.reflect.ClassScanner
 
 /**
  *
@@ -50,9 +51,13 @@ class GameApp {
   }
 
   @Bean
-  @ConditionalOnProperty(prefix = "play", name = ["db.repository"], havingValue = "memory")
-  fun repository(): Repository {
-    return MemoryRepository()
+  fun mongoDBIndexCreator(classScanner: ClassScanner): MongoDBRepositoryCustomizer {
+    return MongoDBRepositoryCustomizer { repository ->
+      val entityClasses = classScanner.getInstantiatableSubclassInfoList(Entity::class.java)
+        .filter { it.packageName.startsWith(this.javaClass.packageName) }
+        .loadClasses(Entity::class.java)
+      Mongo.ensureIndexes(repository, entityClasses)
+    }
   }
 
   /**

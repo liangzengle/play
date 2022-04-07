@@ -148,7 +148,7 @@ class GameServerActor(
           registerSingleton("actorMdc", actorMdc)
           registerSingleton("gameServerId", GameServerId(serverId))
           registerSingleton("serverConfig", serverConfig)
-          registerSingleton("dbNameProvider", DatabaseNameProvider { dbName })
+          registerSingleton("databaseNameProvider", DatabaseNameProvider { dbName })
         }
       }
     )
