@@ -28,7 +28,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   private val executor: Executor,
   private val settings: AbstractEntityCacheFactory.Settings,
   private val initializerProvider: EntityInitializerProvider
-) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID> {
+) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID>, EntityCacheInternalApi {
   companion object : KLogging()
 
   private var initialized = false
@@ -324,6 +324,8 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
       .plus(persistingEntities.values.asSequence()).toList()
     return entityCacheWriter.batchInsertOrUpdate(entities) as Future<Unit>
   }
+
+  override fun expireEvaluator(): ExpireEvaluator = expireEvaluator
 
   override fun initWithEmptyValue(id: ID) {
     val prev = getCache().putIfAbsent(id, CacheObj(id))

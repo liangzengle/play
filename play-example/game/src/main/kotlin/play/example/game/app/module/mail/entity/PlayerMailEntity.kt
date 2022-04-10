@@ -1,10 +1,11 @@
 package play.example.game.app.module.mail.entity
 
+import play.entity.cache.MultiEntityCacheKey
 import play.example.game.app.module.player.entity.AbstractPlayerMultiEntity
 import play.example.game.app.module.player.entity.PlayerObjId
 import play.example.game.app.module.reward.model.Reward
 
-data class PlayerMailId(override val playerId: Long, val mailId: Int) : PlayerObjId()
+data class PlayerMailId(@MultiEntityCacheKey override val playerId: Long, val mailId: Int) : PlayerObjId()
 
 class PlayerMailEntity(
   id: PlayerMailId,

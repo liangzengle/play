@@ -22,7 +22,6 @@ class HeroService @Autowired constructor(
   }
 
   fun listHeroEntities(self: Self): List<PlayerHeroEntity> {
-    // TODO
-    return emptyList()
+    return heroEntityCache.getMulti(self.id)
   }
 }

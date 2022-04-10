@@ -134,7 +134,8 @@ class MongoDBRepository constructor(
     keyValue: K
   ): Future<List<ID>> {
     val idType = EntityHelper.getIdType(entityClass)
-    val where = Filters.and(Filters.eq("$ID.$keyName", keyValue), Filters.ne(Entity.DELETED, true))
+    val fieldName = if (keyName.startsWith("id.")) "_$keyName" else keyName
+    val where = Filters.and(Filters.eq(fieldName, keyValue), Filters.ne(Entity.DELETED, true))
     return fold(
       entityClass,
       listOf(ID),

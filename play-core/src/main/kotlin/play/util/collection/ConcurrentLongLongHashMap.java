@@ -576,6 +576,12 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
         return values = new ValuesView(this);
     }
 
+    @NotNull
+    @Override
+    public Iterable<Entry> entries() {
+        return entrySet();
+    }
+
     /**
      * Returns a string representation of this map.  The string
      * representation consists of a list of key-value mappings (in no

@@ -39,6 +39,8 @@ interface ConcurrentLongLongMap : Iterable<ConcurrentLongLongMap.Entry> {
 
   fun values(): LongIterable
 
+  fun entries(): Iterable<Entry>
+
   fun clear()
 
   interface Entry {
