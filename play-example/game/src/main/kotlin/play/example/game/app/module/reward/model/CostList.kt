@@ -3,6 +3,7 @@ package play.example.game.app.module.reward.model
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Lists
 import jakarta.validation.Valid
@@ -22,7 +23,7 @@ class CostList private constructor(
       if (jsonNode.isEmpty) {
         return Empty
       }
-      val costs = Json.convert<ImmutableList<Cost>>(jsonNode)
+      val costs = Json.convert(jsonNode, jacksonTypeRef<ImmutableList<Cost>>())
       return CostList(costs)
     }
 

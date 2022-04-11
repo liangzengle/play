@@ -2,6 +2,7 @@ package play.util.ranking.primitive
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
 import play.util.json.Json
 import play.util.ranking.RankingHelper
@@ -91,11 +92,11 @@ class RankingListLong<E : RankingElementLong>(
     @JsonCreator
     private fun fromJson(node: ObjectNode): RankingListLong<RankingElementLong> {
       val rankTypeNode = node.get("rankType")
-      val rankingType = Json.convert<RankingType<RankingElementLong>>(rankTypeNode)
+      val rankingType = Json.convert(rankTypeNode, jacksonTypeRef<RankingType<RankingElementLong>>())
       val elementsNode = node.get("elements")
       val specification = rankingType.specification()
       val elementList = Json.convert<List<RankingElementLong>>(
-        elementsNode, Json.typeFactory().constructCollectionLikeType(List::class.java, specification.elementType())
+        elementsNode, Json.typeFactory().constructCollectionType(List::class.java, specification.elementType())
       )
       val elements = TreeSet(specification.comparator())
       elements.addAll(elementList)

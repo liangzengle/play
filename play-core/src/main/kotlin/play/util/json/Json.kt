@@ -3,32 +3,43 @@ package play.util.json
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.PropertyAccessor
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.InputStream
 import java.lang.reflect.Type
 import java.net.URL
+import java.util.*
+import kotlin.reflect.KType
 import kotlin.reflect.javaType
-import kotlin.reflect.typeOf
 
 /**
  * Created by LiangZengle on 2020/2/15.
  */
 object Json {
-  var mapper = configure(ObjectMapper())
-    private set
+  private val mapper = configure(ObjectMapper())
 
   @JvmStatic
-  fun replaceDefaultMapper(newMapper: ObjectMapper) {
-    mapper = newMapper
-  }
+  fun copyObjectMapper() = mapper.copy()
+
+  @JvmStatic
+  fun reader() = mapper.reader()
+
+  @JvmStatic
+  fun writer() = mapper.writer()
+
+  @JvmStatic
+  fun jsonFactory() = mapper.factory
+
+  @JvmStatic
+  fun typeFactory() = mapper.typeFactory
 
   @JvmStatic
   fun configure(mapper: ObjectMapper): ObjectMapper {
-    return mapper.findAndRegisterModules()
+    mapper.findAndRegisterModules()
       .registerModule(PrimitiveJdkCollectionModule())
       .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -39,64 +50,101 @@ object Json {
       .setVisibility(PropertyAccessor.GETTER, Visibility.NONE)
       .setVisibility(PropertyAccessor.IS_GETTER, Visibility.NONE)
       .setVisibility(PropertyAccessor.SETTER, Visibility.NONE)
+
+    ServiceLoader.load(ObjectMapperConfigurator::class.java).forEach {
+      it.configure(mapper)
+    }
+    return mapper
   }
 
   @JvmStatic
-  fun <E> toObject(content: String, type: Class<E>): E {
+  fun String.toJsonParser(): JsonParser = mapper.createParser(this)
+
+  @JvmStatic
+  fun ByteArray.toJsonParser(): JsonParser = mapper.createParser(this)
+
+  @JvmStatic
+  fun URL.toJsonParser(): JsonParser = mapper.createParser(this)
+
+  @JvmStatic
+  fun InputStream.toJsonParser(): JsonParser = mapper.createParser(this)
+
+  @JvmStatic
+  fun Type.toJavaType(): JavaType = mapper.typeFactory.constructType(this)
+
+  @JvmStatic
+  fun KType.toJavaType(): JavaType = mapper.typeFactory.constructType(this.javaType)
+
+  @JvmStatic
+  fun TypeReference<*>.toJavaType(): JavaType = mapper.typeFactory.constructType(this)
+
+  @JvmStatic
+  fun <T> convert(fromValue: Any, toValueType: Class<T>): T = mapper.convertValue(fromValue, toValueType)
+
+  @JvmStatic
+  fun <T> convert(fromValue: Any, targetType: Type): T = mapper.convertValue(fromValue, targetType.toJavaType())
+
+  @JvmStatic
+  fun <T> convert(fromValue: Any, targetType: JavaType): T = mapper.convertValue(fromValue, targetType)
+
+  @JvmStatic
+  fun <T> convert(fromValue: Any, targetType: TypeReference<T>): T = mapper.convertValue(fromValue, targetType)
+
+  @JvmStatic
+  fun <T> convert(fromValue: Any, type: KType): T = convert(fromValue, type.toJavaType())
+
+  @JvmStatic
+  fun <T> toObject(content: String, type: Class<T>): T {
     return mapper.readValue(content, type)
   }
 
   @JvmStatic
-  fun <E> toObject(content: String, type: Type): E {
-    return mapper.readValue(content, mapper.typeFactory.constructType(type))
+  fun <T> toObject(parser: JsonParser, type: Class<T>): T {
+    return mapper.readValue(parser, type)
   }
 
   @JvmStatic
-  fun <E> toList(content: String, elemType: Class<E>): List<E> {
-    val type = mapper.typeFactory.constructCollectionLikeType(List::class.java, elemType)
+  fun <T> toObject(content: String, type: Type): T {
+    return mapper.readValue(content, type.toJavaType())
+  }
+
+  @JvmStatic
+  fun <T> toObject(content: String, type: KType): T {
+    return mapper.readValue(content, type.toJavaType())
+  }
+
+  @JvmStatic
+  fun <T> toObject(content: String, type: TypeReference<T>): T {
     return mapper.readValue(content, type)
   }
 
   @JvmStatic
-  fun <E> toList(src: ByteArray, elemType: Class<E>): List<E> {
-    val type = mapper.typeFactory.constructCollectionLikeType(List::class.java, elemType)
-    return mapper.readValue(src, type)
-  }
-
-  @JvmStatic
-  fun <E> toList(src: URL, elemType: Class<E>): List<E> {
-    val type = mapper.typeFactory.constructCollectionLikeType(List::class.java, elemType)
-    return mapper.readValue(src, type)
-  }
-
-  @JvmStatic
-  fun <E> toList(src: InputStream, elemType: Class<E>): List<E> {
-    val type = mapper.typeFactory.constructCollectionLikeType(List::class.java, elemType)
-    return mapper.readValue(src, type)
-  }
-
-  @JvmStatic
-  fun <E> toSet(content: String, elemType: Class<E>): Set<E> {
-    val type = mapper.typeFactory.constructCollectionLikeType(Set::class.java, elemType)
+  fun <T> toObject(content: String, type: JavaType): T {
     return mapper.readValue(content, type)
   }
 
   @JvmStatic
-  fun <E> toSet(src: ByteArray, elemType: Class<E>): Set<E> {
-    val type = mapper.typeFactory.constructCollectionLikeType(Set::class.java, elemType)
-    return mapper.readValue(src, type)
+  fun <T> toList(parser: JsonParser, elemType: Class<T>): List<T> {
+    val type = mapper.typeFactory.constructCollectionType(List::class.java, elemType)
+    return mapper.readValue(parser, type)
   }
 
   @JvmStatic
-  fun <E> toSet(src: URL, elemType: Class<E>): Set<E> {
-    val type = mapper.typeFactory.constructCollectionLikeType(Set::class.java, elemType)
-    return mapper.readValue(src, type)
+  fun <T> toList(content: String, elemType: Class<T>): List<T> {
+    val type = mapper.typeFactory.constructCollectionType(List::class.java, elemType)
+    return mapper.readValue(content, type)
   }
 
   @JvmStatic
-  fun <E> toSet(src: InputStream, elemType: Class<E>): Set<E> {
-    val type = mapper.typeFactory.constructCollectionLikeType(Set::class.java, elemType)
-    return mapper.readValue(src, type)
+  fun <T> toSet(content: String, elemType: Class<T>): Set<T> {
+    val type = mapper.typeFactory.constructCollectionType(Set::class.java, elemType)
+    return mapper.readValue(content, type)
+  }
+
+  @JvmStatic
+  fun <T> toSet(parser: JsonParser, elemType: Class<T>): Set<T> {
+    val type = mapper.typeFactory.constructCollectionType(Set::class.java, elemType)
+    return mapper.readValue(parser, type)
   }
 
   @JvmStatic
@@ -106,45 +154,14 @@ object Json {
   }
 
   @JvmStatic
-  fun <K, V> toMap(src: ByteArray, keyType: Class<K>, valueType: Class<V>): Map<K, V> {
+  fun <K, V> toMap(parse: JsonParser, keyType: Class<K>, valueType: Class<V>): Map<K, V> {
     val type = mapper.typeFactory.constructMapType(Map::class.java, keyType, valueType)
-    return mapper.readValue(src, type)
+    return mapper.readValue(parse, type)
   }
-
-  @JvmStatic
-  fun <K, V> toMap(src: URL, keyType: Class<K>, valueType: Class<V>): Map<K, V> {
-    val type = mapper.typeFactory.constructMapType(Map::class.java, keyType, valueType)
-    return mapper.readValue(src, type)
-  }
-
-  @JvmStatic
-  fun <K, V> toMap(src: InputStream, keyType: Class<K>, valueType: Class<V>): Map<K, V> {
-    val type = mapper.typeFactory.constructMapType(Map::class.java, keyType, valueType)
-    return mapper.readValue(src, type)
-  }
-
-  @JvmStatic
-  fun <T> convert(fromValue: Any, toValueType: Class<T>): T = mapper.convertValue(fromValue, toValueType)
-
-  @JvmStatic
-  fun <T> convert(fromValue: Any, targetType: Type): T = mapper.convertValue(fromValue, targetType.toJavaType())
-
-  @JvmStatic
-  fun <T> convert(fromValue: Any, targetType: JavaType): T = mapper.convertValue(fromValue, targetType.toJavaType())
-
-  @JvmStatic
-  inline fun <reified T> convert(fromValue: Any): T = mapper.convertValue(fromValue, typeOf<T>().javaType.toJavaType())
-
-  inline fun <reified E> to(content: String): E = mapper.readValue(content)
-  inline fun <reified E> to(src: ByteArray): E = mapper.readValue(src)
-  inline fun <reified E> to(src: URL): E = mapper.readValue(src)
-  inline fun <reified E> to(src: InputStream): E = mapper.readValue(src)
 
   fun stringify(value: Any): String = mapper.writeValueAsString(value)
 
-  fun <T : Any> T.toJsonString(): String = stringify(this)
+  fun toJsonByteArray(value: Any): ByteArray = mapper.writeValueAsBytes(value)
 
-  fun Type.toJavaType(): JavaType = mapper.typeFactory.constructType(this)
-
-  fun typeFactory() = mapper.typeFactory
+  fun toJsonString(value: Any): String = stringify(value)
 }

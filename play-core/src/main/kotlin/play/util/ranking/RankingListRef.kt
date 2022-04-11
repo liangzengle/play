@@ -2,6 +2,7 @@ package play.util.ranking
 
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import play.util.json.Json
 import play.util.unsafeCast
 import java.util.*
@@ -80,11 +81,11 @@ class RankingListRef<ID, E : RankingElement<ID>>(rankingType: RankingType<E>, pr
     @JsonCreator
     private fun fromJson(node: ObjectNode): RankingListRef<Any, RankingElement<Any>> {
       val rankTypeNode = node.get("rankType")
-      val rankingType = Json.convert<RankingType<RankingElement<Any>>>(rankTypeNode)
+      val rankingType = Json.convert(rankTypeNode, jacksonTypeRef<RankingType<RankingElement<Any>>>())
       val elementsNode = node.get("elements")
       val specification = rankingType.specification()
       val elementList = Json.convert<List<RankingElement<Any>>>(
-        elementsNode, Json.typeFactory().constructCollectionLikeType(List::class.java, specification.elementType())
+        elementsNode, Json.typeFactory().constructCollectionType(List::class.java, specification.elementType())
       )
       val elements = TreeSet(specification.comparator().unsafeCast<Comparator<RankingElement<Any>>>())
       elements.addAll(elementList)

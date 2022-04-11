@@ -36,7 +36,7 @@ class GameRSocketRpcConfiguration {
     customizers: ObjectProvider<RSocketRequesterSupportCustomizer>,
     gameServerId: GameServerId
   ): RSocketRequesterSupport {
-    val propertiesCopy = Json.to<RSocketProperties>(Json.stringify(properties))
+    val propertiesCopy = Json.convert(properties, RSocketProperties::class.java)
     propertiesCopy.group = gameServerId.toInt().toString()
     val builder = RSocketRequesterSupportBuilderImpl(propertiesCopy, EnvironmentProperties(environment), socketAcceptor)
     customizers.orderedStream().forEach { it.customize(builder) }
