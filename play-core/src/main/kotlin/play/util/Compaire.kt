@@ -25,3 +25,7 @@ inline infix fun Long.min(b: Long): Long = coerceAtMost(b)
 inline infix fun Float.min(b: Float): Float = coerceAtMost(b)
 
 inline infix fun Double.min(b: Double): Double = coerceAtMost(b)
+
+inline infix fun <T : Comparable<T>> T.min(b: T): T = if (b < this) b else this
+
+inline infix fun <T : Comparable<T>> T.max(b: T): T = if (b > this) b else this

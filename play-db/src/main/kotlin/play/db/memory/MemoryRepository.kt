@@ -5,9 +5,9 @@ import play.db.ResultMap
 import play.entity.Entity
 import play.entity.ObjId
 import play.entity.ObjIdEntity
-import play.entity.cache.multiKey
 import play.util.collection.toImmutableList
 import play.util.concurrent.Future
+import play.util.reflect.Reflect
 import play.util.unsafeCast
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -107,8 +107,15 @@ class MemoryRepository : Repository {
     keyName: String,
     keyValue: K
   ): Future<List<ID>> {
-    val result = getMap(entityClass).values.asSequence().map { it.unsafeCast<E>() }
-      .filter { it.multiKey<K>() == keyValue }.map { it.id }.toImmutableList()
+    val map = getMap(entityClass)
+    if (map.isEmpty()) {
+      return Future.successful(emptyList())
+    }
+    val result = map.values.asSequence()
+      .map { it.unsafeCast<E>() }
+      .filter { Reflect.getFieldValue<Any>(it.id.javaClass.getDeclaredField(keyName), it.id) == keyValue }
+      .map { it.id }
+      .toImmutableList()
     return Future.successful(result)
   }
 }

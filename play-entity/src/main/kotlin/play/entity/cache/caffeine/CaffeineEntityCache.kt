@@ -32,7 +32,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   private val executor: Executor,
   private val settings: AbstractEntityCacheFactory.Settings,
   private val initializerProvider: EntityInitializerProvider
-) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID> {
+) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID>, EntityCacheInternalApi {
 
   companion object : KLogging()
 
@@ -69,13 +69,13 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
         return
       }
       val cacheSpec = entityClass.getAnnotation(CacheSpec::class.java)
-      expireEvaluator = if (cacheSpec.neverExpire) NeverExpireEvaluator else {
+      expireEvaluator = if (cacheSpec != null && cacheSpec.neverExpire) NeverExpireEvaluator else {
         when (val expireEvaluator = cacheSpec?.expireEvaluator) {
           null -> DefaultExpireEvaluator
           DefaultExpireEvaluator::class -> DefaultExpireEvaluator
           NeverExpireEvaluator::class -> NeverExpireEvaluator
           else -> injector.getInstance(expireEvaluator.java)
-          }
+        }
       }
       val isNeverExpire = expireEvaluator == NeverExpireEvaluator
       evictShelter = if (isNeverExpire) null else ConcurrentHashMap()
@@ -293,6 +293,8 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
       .toList()
     return entityCacheWriter.batchInsertOrUpdate(entities) as Future<Unit>
   }
+
+  override fun expireEvaluator(): ExpireEvaluator = expireEvaluator
 
   override fun initWithEmptyValue(id: ID) {
     val prev = getCache().asMap().putIfAbsent(id, CacheObj.empty())

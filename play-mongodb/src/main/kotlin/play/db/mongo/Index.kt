@@ -3,7 +3,6 @@ package play.db.mongo
 import com.mongodb.client.model.Indexes
 import org.bson.BsonDocument
 import org.bson.conversions.Bson
-import java.lang.annotation.Inherited
 
 /**
  *
@@ -12,7 +11,6 @@ import java.lang.annotation.Inherited
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 @Repeatable
-@Inherited
 annotation class Index(
   val fields: Array<String>,
   val unique: Boolean,

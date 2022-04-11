@@ -1,68 +1,102 @@
 package play.entity.cache
 
-import com.github.benmanes.caffeine.cache.Caffeine
-import play.entity.EntityHelper
+import org.eclipse.collections.impl.factory.primitive.IntLists
+import org.eclipse.collections.impl.factory.primitive.LongLists
 import play.entity.ObjId
 import play.entity.ObjIdEntity
 import play.scheduling.Scheduler
 import play.util.collection.ConcurrentHashSet
-import play.util.reflect.Reflect
+import play.util.collection.ConcurrentIntObjectMap
+import play.util.collection.ConcurrentLongObjectMap
+import play.util.getOrNull
+import play.util.max
+import play.util.min
+import play.util.unsafeCast
 import java.time.Duration
+import java.util.function.ToIntFunction
+import java.util.function.ToLongFunction
 import kotlin.time.Duration.Companion.seconds
 
 interface MultiEntityCache<K, ID : ObjId, E : ObjIdEntity<ID>> : EntityCache<ID, E> {
-  fun getMulti(key: K): Collection<E>
+  fun getMulti(key: K): List<E>
 }
 
-class MultiEntityCacheImpl<K, ID : ObjId, E : ObjIdEntity<ID>>(
+class MultiEntityCacheLong<ID : ObjId, E : ObjIdEntity<ID>>(
+  private val keyName: String,
+  private val keyMapper: ToLongFunction<E>,
   private val entityCache: EntityCache<ID, E>,
   private val entityCacheLoader: EntityCacheLoader,
-  private val scheduler: Scheduler,
-  private val expireEvaluator: MultiCacheExpireEvaluator<E, K>?
-) : MultiEntityCache<K, ID, E>, EntityCache<ID, E> by entityCache {
+  scheduler: Scheduler,
+  keepAlive: Duration
+) : MultiEntityCache<Long, ID, E>, EntityCache<ID, E> by entityCache {
 
-  private val multiKeyAccessor = EntityCacheHelper.getMultiKeyAccessor<K>(
-    Reflect.getRawClass<ID>(EntityHelper.getIdType(entityClass))
-  )
-
-  private val multiIdCache =
-    Caffeine.newBuilder().expireAfterAccess(Duration.ofMinutes(10)).build<K, MutableSet<ID>> { key ->
-      val keyName = multiKeyAccessor.getKeyName()
-      val loadIds = entityCacheLoader.listMultiIds(entityClass, keyName, key).blockingGet(5.seconds)
-      val idSet = getCachedEntities()
-        .filter { it.multiKey() == key }
-        .map { it.id }
-        .toCollection(ConcurrentHashSet())
-      idSet.addAll(loadIds)
-      idSet
-    }
+  private val cache = ConcurrentLongObjectMap<MutableSet<ID>>()
 
   init {
-    if (expireEvaluator != null) {
-      scheduler.scheduleWithFixedDelay(Duration.ofMinutes(5), ::keepAlive)
+    require(EntityCacheInternalApi::class.java.isInstance(entityCache)) { "${entityCache.javaClass} must implement EntityCacheInternalApi" }
+    if (EntityCacheHelper.isNeverExpire(entityClass)) {
+      val interval = Duration.ZERO max (keepAlive.dividedBy(2) min keepAlive)
+      require(interval > Duration.ZERO) { "interval must be positive" }
+      scheduler.scheduleWithFixedDelay(interval, ::evict)
     }
   }
 
-  private fun keepAlive() {
-    val expireEvaluator = this.expireEvaluator ?: return
-    for (key in multiIdCache.asMap().keys) {
-      if (!expireEvaluator.canExpire(key)) {
-        multiIdCache.getIfPresent(key)
+  private fun expireEvaluator(): ExpireEvaluator {
+    return entityCache.unsafeCast<EntityCacheInternalApi>().expireEvaluator()
+  }
+
+  private fun evict() {
+    fun canExpire(key: Long): Boolean {
+      for (id in getIds(key)) {
+        val entity = entityCache.getCached(id).getOrNull() ?: continue
+        if (!expireEvaluator().canExpire(entity)) {
+          return false
+        }
+      }
+      return true
+    }
+
+    val toBeEvict = LongLists.mutable.empty()
+    for (entry in cache) {
+      val key = entry.key
+      val value = entry.value
+      if (value.isEmpty() || canExpire(key)) {
+        toBeEvict.add(entry.key)
+      }
+    }
+    for (i in 0 until toBeEvict.size()) {
+      val key = toBeEvict.get(i)
+      cache.computeIfPresent(key) { k, v ->
+        if (v.isEmpty() || canExpire(k)) {
+          null
+        } else {
+          v
+        }
       }
     }
   }
 
-  private fun getIds(multiKey: K): MutableSet<ID> {
-    return multiIdCache.get(multiKey)!!
+  private fun getIds(key: Long): MutableSet<ID> {
+    val set = cache[key]
+    if (set != null) {
+      return set
+    }
+    return cache.computeIfAbsent(key) { k ->
+      val loadIds = entityCacheLoader.listMultiIds(entityClass, keyName, k).blockingGet(10.seconds)
+      val idSet =
+        getCachedEntities().filter { keyMapper.applyAsLong(it) == k }.map { it.id }.toCollection(ConcurrentHashSet())
+      idSet.addAll(loadIds)
+      idSet
+    }
   }
 
-  override fun getMulti(key: K): List<E> {
-    val idSet = multiIdCache.get(key)!!
+  override fun getMulti(key: Long): List<E> {
+    val idSet = getIds(key)
     return getAll(idSet)
   }
 
   override fun create(e: E): E {
-    val idSet = getIds(e.multiKey())
+    val idSet = getIds(keyMapper.applyAsLong(e))
     val entity = entityCache.create(e)
     idSet.add(entity.id)
     return entity
@@ -71,24 +105,124 @@ class MultiEntityCacheImpl<K, ID : ObjId, E : ObjIdEntity<ID>>(
   override fun getOrCreate(id: ID, creation: (ID) -> E): E {
     return entityCache.getOrCreate(id) { k ->
       val entity = creation(k)
-      getIds(entity.multiKey()).add(entity.id)
+      getIds(keyMapper.applyAsLong(entity)).add(entity.id)
       entity
     }
   }
 
   override fun delete(e: E) {
-    val idSet = getIds(e.multiKey())
+    val idSet = getIds(keyMapper.applyAsLong(e))
     entityCache.delete(e)
     idSet.remove(e.id)
   }
 
   override fun delete(id: ID) {
     val entity = getOrNull(id) ?: return
-    val idSet = getIds(entity.multiKey())
+    val idSet = getIds(keyMapper.applyAsLong(entity))
     entityCache.delete(id)
     idSet.remove(id)
   }
+}
 
-  @Suppress("NOTHING_TO_INLINE")
-  private inline fun E.multiKey(): K = multiKeyAccessor.getValue(this)
+class MultiEntityCacheInt<ID : ObjId, E : ObjIdEntity<ID>>(
+  private val keyName: String,
+  private val keyMapper: ToIntFunction<E>,
+  private val entityCache: EntityCache<ID, E>,
+  private val entityCacheLoader: EntityCacheLoader,
+  scheduler: Scheduler,
+  keepAlive: Duration
+) : MultiEntityCache<Int, ID, E>, EntityCache<ID, E> by entityCache {
+
+  private val cache = ConcurrentIntObjectMap<MutableSet<ID>>()
+
+  init {
+    require(EntityCacheInternalApi::class.java.isInstance(entityCache)) { "${entityCache.javaClass} must implement EntityCacheInternalApi" }
+    if (!EntityCacheHelper.isNeverExpire(entityClass)) {
+      val interval = Duration.ZERO max (keepAlive.dividedBy(2) min keepAlive)
+      require(interval > Duration.ZERO) { "interval must be positive" }
+      scheduler.scheduleWithFixedDelay(interval, ::evict)
+    }
+  }
+
+  private fun expireEvaluator(): ExpireEvaluator {
+    return entityCache.unsafeCast<EntityCacheInternalApi>().expireEvaluator()
+  }
+
+  private fun evict() {
+    fun canExpire(key: Int): Boolean {
+      for (id in getIds(key)) {
+        val entity = entityCache.getCached(id).getOrNull() ?: continue
+        if (!expireEvaluator().canExpire(entity)) {
+          return false
+        }
+      }
+      return true
+    }
+
+    val toBeEvict = IntLists.mutable.empty()
+    for (entry in cache) {
+      val key = entry.key
+      val value = entry.value
+      if (value.isEmpty() || canExpire(key)) {
+        toBeEvict.add(entry.key)
+      }
+    }
+    for (i in 0 until toBeEvict.size()) {
+      val key = toBeEvict.get(i)
+      cache.computeIfPresent(key) { k, v ->
+        if (v.isEmpty() || canExpire(k)) {
+          null
+        } else {
+          v
+        }
+      }
+    }
+  }
+
+  private fun getIds(key: Int): MutableSet<ID> {
+    val set = cache[key]
+    if (set != null) {
+      return set
+    }
+    return cache.computeIfAbsent(key) { k ->
+      val loadIds = entityCacheLoader.listMultiIds(entityClass, keyName, k).blockingGet(10.seconds)
+      val idSet =
+        getCachedEntities().filter { keyMapper.applyAsInt(it) == k }.map { it.id }.toCollection(ConcurrentHashSet())
+      idSet.addAll(loadIds)
+      idSet
+    }
+  }
+
+  override fun getMulti(key: Int): List<E> {
+    val idSet = getIds(key)
+    return getAll(idSet)
+  }
+
+  override fun create(e: E): E {
+    val idSet = getIds(keyMapper.applyAsInt(e))
+    val entity = entityCache.create(e)
+    idSet.add(entity.id)
+    return entity
+  }
+
+  override fun getOrCreate(id: ID, creation: (ID) -> E): E {
+    return entityCache.getOrCreate(id) { k ->
+      val entity = creation(k)
+      getIds(keyMapper.applyAsInt(entity)).add(entity.id)
+      entity
+    }
+  }
+
+  override fun delete(e: E) {
+    val idSet = getIds(keyMapper.applyAsInt(e))
+    entityCache.delete(e)
+    idSet.remove(e.id)
+  }
+
+  override fun delete(id: ID) {
+    val entity = getOrNull(id) ?: return
+    val idSet = getIds(keyMapper.applyAsInt(entity))
+    entityCache.delete(id)
+    idSet.remove(id)
+  }
 }

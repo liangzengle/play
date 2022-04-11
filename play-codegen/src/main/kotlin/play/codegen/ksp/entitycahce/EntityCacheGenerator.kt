@@ -12,7 +12,7 @@ import play.codegen.ksp.*
 class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSymbolProcessor(environment) {
 
   companion object {
-    private const val ENTITY_CACHE_SPECIALIZED_OPTION_NAME = "entityCache.specialized"
+    private const val DELEGATEE = "delegatee"
   }
 
   private val entityCacheTypeSpecSet = hashSetOf<TypeSpecWithPackage>()
@@ -47,8 +47,7 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
   }
 
   private fun generate(
-    entityClassDeclaration: KSClassDeclaration,
-    idClassDeclaration: KSClassDeclaration
+    entityClassDeclaration: KSClassDeclaration, idClassDeclaration: KSClassDeclaration
   ): TypeSpecWithPackage {
     val entityClass = entityClassDeclaration.toClassName()
     val idClass = idClassDeclaration.toClassName()
@@ -57,72 +56,70 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     val injectAnnotation = guessIocInjectAnnotation(resolver)
     val classBuilder =
       TypeSpec.classBuilder(getCacheClassName(entityClassDeclaration)).addAnnotations(singletonAnnotations)
-        .primaryConstructor(
-          FunSpec.constructorBuilder().addAnnotation(injectAnnotation).addParameter("cacheManager", EntityCacheManager)
-            .build()
-        )
-    val enableSpecializedEntityCache = options[ENTITY_CACHE_SPECIALIZED_OPTION_NAME] == "true"
-    val primitiveEntityCacheType = if (enableSpecializedEntityCache) {
-      when (idClassDeclaration) {
-        resolver.builtIns.intType -> EntityCacheInt.parameterizedBy(entityClass)
-        resolver.builtIns.longType -> EntityCacheLong.parameterizedBy(entityClass)
-        else -> null
-      }
-    } else null
 
-    if (primitiveEntityCacheType == null) {
-      classBuilder.addSuperinterface(
-        EntityCache.parameterizedBy(idClass).plusParameter(entityClass),
-        CodeBlock.of("cacheManager.get(%T::class.java)", entityClass)
-      )
-      classBuilder.addProperty(
-        PropertySpec.builder(
-          "delegatee", EntityCache.parameterizedBy(idClass).plusParameter(entityClass), KModifier.PRIVATE
-        ).initializer(CodeBlock.of("cacheManager.get(%T::class.java)", entityClass)).build()
-      )
+    val multiEntityCacheKeySpec =
+      getMultiEntityCacheKeySpec(idClassDeclaration, "id") ?: getMultiEntityCacheKeySpec(entityClassDeclaration, "")
 
-      classBuilder.addFunction(
-        FunSpec.builder("unsafeOps")
-          .addAnnotation(AnnotationSpec.builder(Suppress::class).addMember("%S", "UNCHECKED_CAST").build())
-          .addStatement(
-            "return delegatee as %T", UnsafeEntityCacheOps.parameterizedBy(idClass)
-          ).build()
-      )
+    val superInterfaceTypeName = if (multiEntityCacheKeySpec == null) {
+      EntityCache.parameterizedBy(idClass, entityClass)
     } else {
-      classBuilder.addSuperinterface(
-        primitiveEntityCacheType,
-        CodeBlock.of("cacheManager.get(%T::class.java) as %T", entityClass, primitiveEntityCacheType)
-      ).addAnnotation(
-        AnnotationSpec.builder(Suppress::class).addMember("%S", "UNCHECKED_CAST").build()
-      )
-      classBuilder.addProperty(
-        PropertySpec.builder(
-          "delegatee", primitiveEntityCacheType, KModifier.PRIVATE
-        ).initializer(
-          CodeBlock.of("cacheManager.get(%T::class.java) as %T", entityClass, primitiveEntityCacheType)
-        ).build()
-      )
-
-      classBuilder.addFunction(
-        FunSpec.builder("unsafeOps").addStatement(
-          "return delegatee as %T", UnsafeEntityCacheOps.parameterizedBy(idClass)
-        ).build()
-      )
+      MultiEntityCache.parameterizedBy(multiEntityCacheKeySpec.keyType, idClass, entityClass)
     }
-    classBuilder.addFunction(
-      FunSpec.builder("unwrap").addStatement("return delegatee").build()
+
+    classBuilder.primaryConstructor(
+      FunSpec.constructorBuilder().addParameter(DELEGATEE, superInterfaceTypeName).build()
+    )
+    classBuilder.addProperty(
+      PropertySpec.builder(DELEGATEE, superInterfaceTypeName, KModifier.PRIVATE).initializer(DELEGATEE).build()
     )
 
-    val ctor = buildConstructor(entityClassDeclaration)
-    if (ctor != null) {
-      classBuilder.addFunction(ctor)
+    classBuilder.addSuperinterface(superInterfaceTypeName, CodeBlock.of(DELEGATEE, entityClass))
+
+    classBuilder.addFunction(
+      if (multiEntityCacheKeySpec == null) {
+        FunSpec.constructorBuilder()
+          .addAnnotation(injectAnnotation)
+          .addParameter("entityCacheManager", EntityCacheManager)
+          .callThisConstructor(CodeBlock.of("entityCacheManager.get(%T::class.java)", entityClass))
+          .build()
+      } else {
+        FunSpec.constructorBuilder()
+          .addAnnotation(injectAnnotation)
+          .addParameter("entityCacheManager", EntityCacheManager)
+          .addParameter("entityCacheLoader", EntityCacheLoader)
+          .addParameter("scheduler", Scheduler)
+          .callThisConstructor(
+            CodeBlock.of(
+              "%T(%S, { it.%L }, entityCacheManager.get(%T::class.java), entityCacheLoader, scheduler, %T.ofMinutes(30))",
+              multiEntityCacheKeySpec.cacheImplClassName,
+              multiEntityCacheKeySpec.keyName,
+              multiEntityCacheKeySpec.keyName,
+              entityClass,
+              JavaDuration
+            )
+          )
+          .build()
+      }
+    )
+
+    classBuilder.addFunction(
+      FunSpec.builder("unsafeOps")
+        .addAnnotation(AnnotationSpec.builder(Suppress::class).addMember("%S", "UNCHECKED_CAST").build()).addStatement(
+          "return %L as %T", DELEGATEE, UnsafeEntityCacheOps.parameterizedBy(idClass)
+        ).build()
+    )
+
+
+    val getOrCreate = getOrCreate(entityClassDeclaration)
+    if (getOrCreate != null) {
+      classBuilder.addFunction(getOrCreate)
     }
     val typeSpec = classBuilder.build()
 
     return TypeSpecWithPackage(typeSpec, entityClass.packageName)
   }
 
-  private fun buildConstructor(entityClassDeclaration: KSClassDeclaration): FunSpec? {
+  private fun getOrCreate(entityClassDeclaration: KSClassDeclaration): FunSpec? {
     val entityClass = entityClassDeclaration.toClassName()
     val constructor = entityClassDeclaration.primaryConstructor ?: return null
     val parameters = constructor.parameters
@@ -154,4 +151,26 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
       simpleName + "EntityCache"
     }
   }
+
+  private fun getMultiEntityCacheKeySpec(
+    classDeclaration: KSClassDeclaration,
+    prefix: String
+  ): MultiEntityCacheKeySpec? {
+    return classDeclaration.getAllProperties().firstOrNull {
+      it.isAnnotationPresent(MultiEntityCacheKey)
+    }?.let {
+      val keyName = if (prefix.isEmpty()) it.simpleName.asString() else "$prefix.${it.simpleName.asString()}"
+      when (val keyType = it.type.resolve().toClassName()) {
+        LONG -> MultiEntityCacheKeySpec(keyName, keyType, MultiEntityCacheLong)
+        INT -> MultiEntityCacheKeySpec(keyName, keyType, MultiEntityCacheInt)
+        else -> null
+      }
+    }
+  }
+
+  private class MultiEntityCacheKeySpec(
+    val keyName: String,
+    val keyType: ClassName,
+    val cacheImplClassName: ClassName
+  )
 }

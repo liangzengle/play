@@ -6,6 +6,10 @@ import com.squareup.kotlinpoet.TypeName
 
 internal fun ClassName.toNullable(): TypeName = this.copy(nullable = true)
 
+internal val JavaDuration = ClassName.bestGuess("java.time.Duration")
+
+internal val Scheduler = ClassName.bestGuess("play.scheduling.Scheduler")
+
 internal val Component = ClassName.bestGuess("org.springframework.stereotype.Component")
 internal val Autowired = ClassName.bestGuess("org.springframework.beans.factory.annotation.Autowired")
 
@@ -44,6 +48,11 @@ internal val EntityCache = ClassName.bestGuess("play.entity.cache.EntityCache")
 internal val EntityCacheInt = ClassName.bestGuess("play.entity.cache.EntityCacheInt")
 internal val EntityCacheLong = ClassName.bestGuess("play.entity.cache.EntityCacheLong")
 internal val UnsafeEntityCacheOps = ClassName.bestGuess("play.entity.cache.UnsafeEntityCacheOps")
+internal val MultiEntityCacheKey = ClassName.bestGuess("play.entity.cache.MultiEntityCacheKey")
+internal val MultiEntityCache = ClassName.bestGuess("play.entity.cache.MultiEntityCache")
+internal val MultiEntityCacheInt = ClassName.bestGuess("play.entity.cache.MultiEntityCacheInt")
+internal val MultiEntityCacheLong = ClassName.bestGuess("play.entity.cache.MultiEntityCacheLong")
+internal val EntityCacheLoader = ClassName.bestGuess("play.entity.cache.EntityCacheLoader")
 
 internal val AbstractResource = ClassName.bestGuess("play.res.AbstractResource")
 internal val AbstractConfig = ClassName.bestGuess("play.res.AbstractConfig")

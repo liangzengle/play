@@ -28,6 +28,7 @@ import play.entity.Entity
 import play.entity.IntIdEntity
 import play.entity.LongIdEntity
 import play.entity.ObjIdEntity
+import play.entity.cache.MultiEntityCacheKey
 import play.util.concurrent.Future
 import play.util.concurrent.subscribeOne
 import play.util.concurrent.subscribeOneNullable
@@ -85,7 +86,8 @@ object Mongo : KLogging() {
         if (!entityClass.isAnnotationPresent(Index::class.java)) {
           continue
         }
-        val indexModels = entityClass.getAnnotationsByType(Index::class.java).map(::toIndexModel)
+        val indexModels = (entityClass.getAnnotationsByType(Index::class.java).asSequence().map(::toIndexModel) +
+          getMultiEntityCacheKeyIndex(entityClass)).toList()
         if (indexModels.isEmpty()) {
           continue
         }
@@ -110,6 +112,23 @@ object Mongo : KLogging() {
         }
       }
     }
+  }
+
+  private fun getMultiEntityCacheKeyIndex(entityClass: Class<*>): IndexModel? {
+    return getMultiEntityCacheKeyIndex(entityClass.getField("id").type, ID)
+      ?: getMultiEntityCacheKeyIndex(entityClass, "")
+  }
+
+  private fun getMultiEntityCacheKeyIndex(clazz: Class<*>, prefix: String): IndexModel? {
+    return clazz.declaredFields.asSequence()
+      .firstOrNull { it.isAnnotationPresent(MultiEntityCacheKey::class.java) }
+      ?.let {
+        val fields = if (prefix.isEmpty()) arrayOf(it.name) else arrayOf("${prefix}.${it.name}")
+        val opts = IndexOptions()
+        opts.unique(false)
+        val indexBson = Index.Type.AEC.parse(fields)
+        IndexModel(indexBson, opts)
+      }
   }
 
   private fun toIndexModel(index: Index): IndexModel {

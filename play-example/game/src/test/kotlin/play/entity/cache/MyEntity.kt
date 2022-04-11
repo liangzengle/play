@@ -13,4 +13,4 @@ class MyEntity(id: MyObjId) :
   constructor(playerId: Long, itemId: Int) : this(MyObjId(playerId, itemId))
 }
 
-data class MyObjId(@JvmField @MultiKey val playerId: Long, val itemId: Int) : ObjId()
+data class MyObjId(@MultiEntityCacheKey val playerId: Long, val itemId: Int) : ObjId()
