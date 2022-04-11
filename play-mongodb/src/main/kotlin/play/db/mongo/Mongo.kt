@@ -39,11 +39,11 @@ object Mongo : KLogging() {
 
   const val ID = "_id"
 
-  fun newClientSettings(conf: Config, eventLoopGroup: EventLoopGroup): MongoClientSettings {
-    return newClientSettingsBuilder(conf, eventLoopGroup).build()
+  fun newClientSettings(conf: Config): MongoClientSettings {
+    return newClientSettingsBuilder(conf).build()
   }
 
-  fun newClientSettingsBuilder(conf: Config, eventLoopGroup: EventLoopGroup): MongoClientSettings.Builder {
+  fun newClientSettingsBuilder(conf: Config): MongoClientSettings.Builder {
     val builder = MongoClientSettings.builder()
     if (conf.getBoolean("auth")) {
       val user = conf.getString("username")
@@ -65,12 +65,11 @@ object Mongo : KLogging() {
     builder.applyToConnectionPoolSettings {
       it.maxSize(nThread).maxWaitTime(10, TimeUnit.SECONDS)
     }
-    builder.streamFactoryFactory(newNettyStreamFactory(eventLoopGroup))
     builder.codecRegistry(codecRegistry)
     return builder
   }
 
-  private fun newNettyStreamFactory(eventLoopGroup: EventLoopGroup): NettyStreamFactoryFactory {
+  fun newNettyStreamFactory(eventLoopGroup: EventLoopGroup): NettyStreamFactoryFactory {
     val builder = NettyStreamFactoryFactory.builder()
     if (eventLoopGroup is EpollEventLoopGroup) {
       builder.eventLoopGroup(eventLoopGroup).socketChannelClass(EpollSocketChannel::class.java)

@@ -9,6 +9,7 @@ import io.netty.channel.epoll.Epoll
 import io.netty.channel.epoll.EpollEventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.util.concurrent.DefaultThreadFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -52,10 +53,14 @@ class PlayMongoClientConfiguration {
   @ConditionalOnMissingBean
   fun mongoClientSettings(
     config: Config,
-    @Qualifier("dbExecutor") eventLoopGroup: EventLoopGroup
+    @Qualifier("dbExecutor") eventLoopGroup: EventLoopGroup,
+    customizers: ObjectProvider<MongoClientSettingsCustomizer>
   ): MongoClientSettings {
     val conf = config.getConfig("play.mongodb")
-    return Mongo.newClientSettings(conf, eventLoopGroup)
+    val builder = Mongo.newClientSettingsBuilder(conf)
+    builder.streamFactoryFactory(Mongo.newNettyStreamFactory(eventLoopGroup))
+    customizers.forEach { it.customize(builder) }
+    return builder.build()
   }
 
   @Bean(destroyMethod = "close")
