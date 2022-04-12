@@ -7,6 +7,8 @@ plugins {
   application
 }
 
+apply(plugin = "kotlin-kapt")
+
 application {
   mainClass.set("play.example.game.AppKt")
 }
@@ -28,6 +30,8 @@ repositories {
   maven("file://$rootDir/repository")
 }
 
+val kapt by configurations
+
 dependencies {
   api(project(":play-example-common"))
   api(project(":play-example-rpc-api"))
@@ -44,17 +48,11 @@ dependencies {
   ksp(project(":play-codegen"))
   ksp(Deps.AutoServiceKsp)
 
+  compileOnly(Deps.Hibernate.ValidatorApt)
   kapt(Deps.Hibernate.ValidatorApt)
 
   testImplementation(Deps.KotlinPoet.Poet)
   testImplementation(Deps.KotlinPoet.Metadata)
-}
-
-
-kapt {
-  arguments {
-    arg("entityCache.specialized", "false")
-  }
 }
 
 modularCode {

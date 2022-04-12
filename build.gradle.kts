@@ -31,7 +31,6 @@ subprojects {
   }
   apply(plugin = "java")
   apply(plugin = "kotlin")
-  apply(plugin = "org.jetbrains.kotlin.kapt")
   apply(plugin = "org.jlleitschuh.gradle.ktlint-idea")
   apply(plugin = "kotlin-spring")
   apply(plugin = "project-report")
