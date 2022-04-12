@@ -5,6 +5,7 @@ object Versions {
   const val AsyncHttpClient = "2.12.3"
   const val AutoService = "1.0.1"
   const val AutoServiceKsp = "1.0.0"
+  const val Brave = "5.13.8"
   const val Bson4Jackson = "2.13.1"
   const val ByteBuddy = "1.12.8"
   const val Caffeine = "3.0.6"

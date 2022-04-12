@@ -1,10 +1,10 @@
-rsocket.disabled: true
+rsocket.disabled: false
 
 server:
   port: 9990
 
 rsocket:
-  brokers: tcp://127:0:0:1:9999
+  brokers: tcp://127.0.0.1:9999
   port: 9991
   jwt-token: your_token_here
 

@@ -11,21 +11,4 @@ dependencies {
   api(Deps.SpringBoot.Starter) {
     exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
   }
-
-  api(Deps.SpringBoot.StarterWebflux) {
-    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-  }
-
-  api(Deps.SpringBoot.StarterActuator) {
-    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-  }
-
-  api(Deps.AlibabaRsocket.Core)
-  api(Deps.AlibabaRsocket.Client) {
-    exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
-  }
-
-  implementation(Deps.ByteBuddy)
-
-  api("org.springframework:spring-messaging:5.3.13")
 }

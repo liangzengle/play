@@ -1,9 +1,16 @@
 object Deps {
+
   object Akka {
     private const val Version = Versions.Akka
     const val Actor = "com.typesafe.akka:akka-actor-typed_2.13:$Version"
     const val Cluster = "com.typesafe.akka:akka-cluster-typed_2.13:$Version"
     const val SerializationJackson = "com.typesafe.akka:akka-serialization-jackson_2.13:$Version"
+  }
+
+  object AlibabaRsocket {
+    val Core = "com.alibaba.rsocket:alibaba-rsocket-core:${Versions.AlibabaRsocket}"
+    val Broker = "com.alibaba.rsocket:alibaba-broker-spring-boot-starter:${Versions.AlibabaRsocket}"
+    val Client = "com.alibaba.rsocket:alibaba-rsocket-spring-boot-starter:${Versions.AlibabaRsocket}"
   }
 
   object Hibernate {
@@ -92,13 +99,6 @@ object Deps {
     const val StarterActuator = "org.springframework.boot:spring-boot-starter-actuator:${Versions.SpringBoot}"
   }
 
-  object AlibabaRsocket {
-    val Core = "com.alibaba.rsocket:alibaba-rsocket-core:${Versions.AlibabaRsocket}"
-    val Broker = "com.alibaba.rsocket:alibaba-broker-spring-boot-starter:${Versions.AlibabaRsocket}"
-    val Client = "com.alibaba.rsocket:alibaba-rsocket-spring-boot-starter:${Versions.AlibabaRsocket}"
-  }
-
-
   const val Asm = "org.ow2.asm:asm:${Versions.Asm}"
 
   const val AsyncHttpClient = "org.asynchttpclient:async-http-client:${Versions.AsyncHttpClient}"
@@ -106,6 +106,8 @@ object Deps {
   const val AutoService = "com.google.auto.service:auto-service:${Versions.AutoService}"
 
   const val AutoServiceKsp = "dev.zacsweers.autoservice:auto-service-ksp:${Versions.AutoServiceKsp}"
+
+  const val Brave = "io.zipkin.brave:brave:${Versions.Brave}"
 
   const val ByteBuddy = "net.bytebuddy:byte-buddy:${Versions.ByteBuddy}"
 

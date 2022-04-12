@@ -26,7 +26,7 @@ class RpcClient private constructor(
     private val serviceHandle: VarHandle
 
     init {
-      val lookup = MethodHandles.lookup()
+      val lookup = MethodHandles.privateLookupIn(RSocketRemoteServiceBuilder::class.java, MethodHandles.lookup())
       groupHandle = lookup.findVarHandle(RSocketRemoteServiceBuilder::class.java, "group", String::class.java)
       versionHandle = lookup.findVarHandle(RSocketRemoteServiceBuilder::class.java, "version", String::class.java)
       serviceHandle = lookup.findVarHandle(RSocketRemoteServiceBuilder::class.java, "service", String::class.java)
