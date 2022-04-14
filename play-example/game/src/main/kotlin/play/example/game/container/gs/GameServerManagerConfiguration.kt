@@ -22,7 +22,6 @@ class GameServerManagerConfiguration : ActorConfigurationSupport {
   @Bean
   fun gameServerManager(
     actorSystem: ActorSystem<GuardianBehavior.Command>,
-    loginDispatcher: ActorRef<LoginDispatcherActor.Command>,
     applicationContext: ConfigurableApplicationContext,
     repository: Repository
   ): ActorRef<GameServerManager.Command> {
@@ -31,12 +30,11 @@ class GameServerManagerConfiguration : ActorConfigurationSupport {
       Behaviors.setup { ctx ->
         GameServerManager(
           ctx,
-          loginDispatcher,
           applicationContext,
           repository
         )
       },
-      "gs"
+      "GameServerManager"
     )
   }
 

@@ -27,7 +27,7 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
     @JvmField val receiver: ActorRef<UnhandledLoginRequest>
   ) : Command
 
-  class UnregisterLoginReceiver(val serverId: Int, val promise: PlayPromise<Unit>) : Command
+  private class UnregisterLoginReceiver(val receiver: ActorRef<UnhandledLoginRequest>) : Command
 
   private val receivers = ArrayList<RegisterLoginReceiver>(1)
 
@@ -46,13 +46,12 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
   }
 
   private fun register(cmd: RegisterLoginReceiver) {
+    context.watchWith(cmd.receiver, UnregisterLoginReceiver(cmd.receiver))
     receivers.add(cmd)
   }
 
   private fun unregister(cmd: UnregisterLoginReceiver) {
-    val serverId = cmd.serverId
-    receivers.removeIf { it.serverIds.contains(serverId) }
-    cmd.promise.success(Unit)
+    receivers.removeIf { it.receiver === cmd.receiver }
   }
 
   private fun handle(req: UnhandledLoginRequest) {

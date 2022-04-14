@@ -24,15 +24,16 @@ import play.example.game.container.gs.domain.GameServerId
 import play.example.game.container.gs.logging.ActorMDC
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
+import play.scala.toPlay
 import play.scheduling.ManagedScheduler
 import play.scheduling.Scheduler
 import play.scheduling.SpringTaskScheduler
 import play.spring.*
 import play.util.classOf
 import play.util.concurrent.PlayPromise
+import play.util.concurrent.Promise
 import play.util.logging.withMDC
 import play.util.unsafeCast
-import scala.concurrent.Promise
 import kotlin.reflect.typeOf
 
 /**
@@ -55,7 +56,7 @@ class GameServerActor(
   ) : Command
 
   class Start(val promise: Promise<Unit>) : Command
-  object Stop : Command
+  class Stop(val promise: Promise<Unit>) : Command
   private class StartResult(val ex: Throwable?) : Command
 
   private lateinit var applicationContext: ConfigurableApplicationContext
@@ -67,10 +68,6 @@ class GameServerActor(
       .accept(::stop)
       .acceptSignal(::postStop)
       .build()
-  }
-
-  private fun waitingStart(): Receive<Command> {
-    return newReceiveBuilder().accept(::start).build()
   }
 
   private fun starting(): Receive<Command> {
@@ -108,7 +105,7 @@ class GameServerActor(
     val future = future {
       withMDC(actorMdc.staticMdc, ::startApplicationContext)
     }
-    cmd.promise.completeWith(future)
+    cmd.promise.completeWith(future.toPlay())
     future.pipToSelf { StartResult(it.exceptionOrNull()) }
     return starting()
   }
@@ -160,6 +157,7 @@ class GameServerActor(
 
   private fun stop(cmd: Stop): Behavior<Command> {
     log.info("Stop game server: {}", serverId)
+    cmd.promise.success(Unit)
     return stoppedBehavior()
   }
 

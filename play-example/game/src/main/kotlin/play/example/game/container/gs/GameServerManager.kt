@@ -15,13 +15,11 @@ import play.akka.stoppedBehavior
 import play.db.Repository
 import play.example.game.container.gs.entity.GameServerEntity
 import play.example.game.container.gs.logging.ActorMDC
-import play.example.game.container.login.LoginDispatcherActor
 import play.spring.getInstance
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.control.getCause
 import play.util.unsafeCast
-import scala.concurrent.Promise
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.seconds
@@ -32,7 +30,6 @@ import kotlin.time.Duration.Companion.seconds
  */
 class GameServerManager(
   context: ActorContext<Command>,
-  private val loginDispatcher: ActorRef<LoginDispatcherActor.Command>,
   private val parentApplicationContext: ConfigurableApplicationContext,
   private val repository: Repository,
 ) : AbstractTypedActor<GameServerManager.Command>(context) {
@@ -42,7 +39,7 @@ class GameServerManager(
   data class CreateGameServer(val serverId: Int, val promise: PlayPromise<Int>) : Command
   private class GameServerStartResult(val serverId: Int, val result: Result<Unit>) : Command
   data class StartGameServer(val serverId: Int, val promise: PlayPromise<Int>) : Command
-  data class CloseGameServer(val serverId: Int) : Command
+  data class CloseGameServer(val serverId: Int, val promise: PlayPromise<Int>) : Command
 
   private var gameServerIds = IntArrayList()
 
@@ -157,9 +154,9 @@ class GameServerManager(
     )
     val app = context.spawn(behavior, serverId.toString())
     val promise = cmd.promise
-    val startPromise = Promise.apply<Unit>()
+    val startPromise = PlayPromise.make<Unit>()
     app.tell(GameServerActor.Start(startPromise))
-    startPromise.future()
+    startPromise.future
       .onComplete {
         self.tell(GameServerStartResult(serverId, it))
         promise.complete(it.map { serverId })
@@ -167,10 +164,17 @@ class GameServerManager(
   }
 
   private fun closeGameServer(cmd: CloseGameServer) {
-    val promise = PlayPromise.make<Unit>()
-    loginDispatcher.tell(LoginDispatcherActor.UnregisterLoginReceiver(cmd.serverId, promise))
-    promise.future.onComplete {
-      it.unsafeCast<ActorRef<GameServerActor.Command>>().tell(GameServerActor.Stop)
+    val serverId = cmd.serverId
+    val promise = cmd.promise
+
+    val maybeChild = context.getChild(serverId.toString())
+    if (maybeChild.isEmpty) {
+      promise.success(-1)
+      return
     }
+    val child = maybeChild.get().unsafeCast<ActorRef<GameServerActor.Command>>()
+    val stopPromise = PlayPromise.make<Unit>()
+    child.tell(GameServerActor.Stop(stopPromise))
+    promise.completeWith(stopPromise.future.map { serverId })
   }
 }

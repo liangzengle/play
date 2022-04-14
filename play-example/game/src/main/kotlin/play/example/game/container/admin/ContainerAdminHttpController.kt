@@ -25,9 +25,17 @@ class ContainerAdminHttpController @Autowired constructor(
     return promise.future.map { ok("""{"code": $it}""") }.toHttpResult()
   }
 
+  @Route("/start")
+  fun start(serverId: Int): HttpResult {
+    val promise = PlayPromise.make<Int>()
+    gameServerManager.tell(GameServerManager.StartGameServer(serverId, promise))
+    return promise.future.map { ok("""{"code": $it}""") }.toHttpResult()
+  }
+
   @Route("/close")
   fun close(serverId: Int): HttpResult {
-    gameServerManager.tell(GameServerManager.CloseGameServer(serverId))
-    return ok("""{"code": 0}""")
+    val promise = PlayPromise.make<Int>()
+    gameServerManager.tell(GameServerManager.CloseGameServer(serverId, promise))
+    return promise.future.map { ok("""{"code": $it}""") }.toHttpResult()
   }
 }
