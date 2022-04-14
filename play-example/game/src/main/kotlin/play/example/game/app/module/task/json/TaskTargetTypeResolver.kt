@@ -1,18 +1,15 @@
 package play.example.game.app.module.task.json
 
 import com.fasterxml.jackson.databind.JsonNode
-import play.example.game.app.module.task.domain.CommonTaskTargetType
 import play.example.game.app.module.task.domain.TaskTargetTypes
 import play.example.game.app.module.task.target.TaskTarget
 import play.util.json.AbstractTypeResolver
 
 class TaskTargetTypeResolver : AbstractTypeResolver<TaskTarget>() {
   override fun resolve(node: JsonNode): Class<out TaskTarget> {
-    val typeNode = node.get("type")
-    val targetType = TaskTargetTypes.getByNameOrThrow(typeNode.textValue())
-    if (targetType == CommonTaskTargetType.None) {
-      throw IllegalStateException("错误的奖励类型(Reward): $node")
-    }
+    val targetType =  node.get("type")?.textValue()?.let {
+      TaskTargetTypes.getByNameOrNull(it)
+    } ?: throw IllegalArgumentException("错误的任务目标类型: $node")
     return targetType.taskTargetClass
   }
 

@@ -8,7 +8,6 @@ import play.example.game.app.module.task.domain.TaskTargetType
 import play.example.game.app.module.task.entity.AbstractTask
 import play.example.game.app.module.task.entity.TaskStatus
 import play.example.game.app.module.task.event.TaskEvent
-import play.example.game.app.module.task.event.adpater.TaskEventAdapters
 import play.example.game.app.module.task.handler.DomainTaskTargetHandler
 import play.example.game.app.module.task.res.AbstractTaskResource
 import play.example.game.app.module.task.res.AbstractTaskResourceExtension
@@ -25,9 +24,7 @@ import java.util.*
  * @author LiangZengle
  */
 @Suppress("MemberVisibilityCanBePrivate")
-abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : AbstractTaskResource>(
-  protected val commonTaskHandlerProvider: CommonTaskHandlerProvider
-) {
+abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : AbstractTaskResource, Event: TaskEvent> {
 
   protected val logger = getLogger()
 
@@ -36,7 +33,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    *
    * @param targetType 任务目标类型
    */
-  protected abstract fun getHandlerOrNull(targetType: TaskTargetType): DomainTaskTargetHandler<T, TaskTarget, TaskEvent>?
+  protected abstract fun getHandlerOrNull(targetType: TaskTargetType): DomainTaskTargetHandler<T, TaskTarget, Event>?
 
   protected abstract fun getResourceExtension(): AbstractTaskResourceExtension<TaskConfig>?
 
@@ -51,13 +48,12 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param owner 任务归属者
    * @param taskEvent 任务事件
    */
-  fun onEvent(owner: T, taskEvent: TaskEvent) {
+  fun onEvent(owner: T, taskEvent: Event) {
     if (!isInterested(taskEvent.type)) {
       return
     }
-    val commonHandler = commonTaskHandlerProvider.getHandlerOrNull(taskEvent.type)
-    val domainHandler = getHandlerOrNull(taskEvent.type)
-    if (commonHandler == null && domainHandler == null) {
+    val targetHandler = getHandlerOrNull(taskEvent.type)
+    if (targetHandler == null) {
       logger.error { "找不到任务目标处理器：${taskEvent.type}" }
       return
     }
@@ -79,8 +75,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
           continue
         }
         val progress = task.getProgress(i)
-        val change = domainHandler?.onEvent(owner, target, taskEvent, progress, taskConf)
-          ?: commonHandler?.onEvent(target, taskEvent, progress, taskConf) ?: 0
+        val change = targetHandler.onEvent(owner, target, taskEvent, progress, taskConf)
         if (change == 0) {
           continue
         }
@@ -99,13 +94,6 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
     }
     if (changedTasks.isNotEmpty()) {
       onTaskChanged(owner, changedTasks)
-    }
-
-    val adaptedEvents = TaskEventAdapters.adapt(taskEvent)
-    if (adaptedEvents.isNotEmpty()) {
-      for (adaptedEvent in adaptedEvents) {
-        onEvent(owner, adaptedEvent)
-      }
     }
   }
 

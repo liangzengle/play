@@ -7,4 +7,7 @@ import play.example.game.app.module.task.domain.TaskTargetType
  *
  * @property type 对应的目标类型
  */
-abstract class TaskEvent(val type: TaskTargetType)
+interface TaskEvent {
+  val type: TaskTargetType
+}
+

@@ -3,9 +3,9 @@ package play.example.game.app.module.player.event
 import play.example.common.scheduling.ScheduledEvent
 import play.example.game.app.module.player.PlayerActor
 import play.example.game.app.module.player.PlayerManager
+import play.example.game.app.module.playertask.event.AbstractPlayerTaskEvent
 import play.example.game.app.module.reward.model.Cost
 import play.example.game.app.module.reward.model.CostResultSet
-import play.example.game.app.module.task.event.TaskEvent
 import play.util.concurrent.PlayPromise
 import play.util.concurrent.Promise
 import play.util.control.Result2
@@ -31,7 +31,7 @@ data class PlayerExecCost(
   override val promise: PlayPromise<Result2<CostResultSet>>
 ) : PromisedPlayerEvent<Result2<CostResultSet>>
 
-data class PlayerTaskEvent(override val playerId: Long, val taskEvent: TaskEvent) : PlayerEvent
+data class PlayerTaskEvent(override val playerId: Long, val taskEvent: AbstractPlayerTaskEvent) : PlayerEvent
 
 data class PlayerRequestEvent(override val playerId: Long, val message: PlayerActor.RequestCommand) : PlayerEvent
 

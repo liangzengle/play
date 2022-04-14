@@ -1,4 +1,4 @@
-package play.example.game.app.module.task.event
+package play.example.game.app.module.playertask.event
 
 import play.example.game.app.module.playertask.domain.PlayerTaskTargetType
 
@@ -8,4 +8,4 @@ import play.example.game.app.module.playertask.domain.PlayerTaskTargetType
  * @property currentLv 当前等级
  * @author LiangZengle
  */
-data class PlayerLevelTaskEvent(val currentLv: Int) : TaskEvent(PlayerTaskTargetType.PlayerLevel)
+data class PlayerLevelTaskEvent(val currentLv: Int) : AbstractPlayerTaskEvent(PlayerTaskTargetType.PlayerLevel)

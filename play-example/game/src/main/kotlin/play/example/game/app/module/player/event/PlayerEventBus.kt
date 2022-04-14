@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component
 import play.example.game.app.module.player.OnlinePlayerService
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerManager.Self
-import play.example.game.app.module.task.event.TaskEvent
+import play.example.game.app.module.playertask.event.AbstractPlayerTaskEvent
 import java.util.function.LongFunction
 
 @Component
@@ -25,11 +25,11 @@ class PlayerEventBus(
     _playerManager!!.tell(event)
   }
 
-  fun post(playerId: Long, event: TaskEvent) {
+  fun post(playerId: Long, event: AbstractPlayerTaskEvent) {
     post(PlayerTaskEvent(playerId, event))
   }
 
-  fun post(self: Self, event: TaskEvent) {
+  fun post(self: Self, event: AbstractPlayerTaskEvent) {
     post(self.id, event)
   }
 

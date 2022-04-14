@@ -1,10 +1,10 @@
 package play.example.game.app.module.playertask
 
 import play.example.game.app.module.player.PlayerManager.Self
+import play.example.game.app.module.playertask.event.AbstractPlayerTaskEvent
 import play.example.game.app.module.reward.RewardService
 import play.example.game.app.module.reward.model.RewardResultSet
 import play.example.game.app.module.task.AbstractTaskService
-import play.example.game.app.module.task.CommonTaskHandlerProvider
 import play.example.game.app.module.task.domain.TaskTargetType
 import play.example.game.app.module.task.entity.AbstractTask
 import play.example.game.app.module.task.res.AbstractTaskResource
@@ -17,10 +17,9 @@ import play.util.control.Result2
  */
 @Suppress("MemberVisibilityCanBePrivate")
 abstract class AbstractPlayerTaskService<Task : AbstractTask, TaskConfig : AbstractTaskResource>(
-  commonTaskHandlerProvider: CommonTaskHandlerProvider,
   protected val targetHandlerProvider: PlayerTaskTargetHandlerProvider,
   protected val rewardService: RewardService
-) : AbstractTaskService<Self, Task, TaskConfig>(commonTaskHandlerProvider) {
+) : AbstractTaskService<Self, Task, TaskConfig, AbstractPlayerTaskEvent>() {
 
   /**
    * 获取目标处理器

@@ -12,7 +12,6 @@ import play.example.game.app.module.playertask.AbstractPlayerTaskService
 import play.example.game.app.module.playertask.PlayerTaskTargetHandlerProvider
 import play.example.game.app.module.playertask.message.TaskInfo
 import play.example.game.app.module.reward.RewardService
-import play.example.game.app.module.task.CommonTaskHandlerProvider
 import play.example.game.app.module.task.domain.TaskErrorCode
 import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.event.TaskEvent
@@ -25,11 +24,9 @@ import play.util.filterOrNull
 @Component
 public class MainTaskService(
   private val mainTaskEntityCache: MainTaskEntityCache,
-  commonTaskHandlerProvider: CommonTaskHandlerProvider,
   targetHandlerProvider: PlayerTaskTargetHandlerProvider,
   rewardService: RewardService
 ) : AbstractPlayerTaskService<PlayerMainTask, MainTaskResource>(
-  commonTaskHandlerProvider,
   targetHandlerProvider,
   rewardService
 ) {

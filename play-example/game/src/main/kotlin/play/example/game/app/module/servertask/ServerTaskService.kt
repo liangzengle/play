@@ -9,11 +9,11 @@ import play.example.game.app.module.servertask.domain.ServerTaskLogSource
 import play.example.game.app.module.servertask.entity.ServerTask
 import play.example.game.app.module.servertask.entity.ServerTaskEntity
 import play.example.game.app.module.servertask.entity.ServerTaskEntityCache
+import play.example.game.app.module.servertask.event.ServerTaskEvent
 import play.example.game.app.module.servertask.handler.ServerTaskTargetHandler
 import play.example.game.app.module.servertask.res.ServerTaskResource
 import play.example.game.app.module.servertask.res.ServerTaskResourceSet
 import play.example.game.app.module.task.AbstractTaskService
-import play.example.game.app.module.task.CommonTaskHandlerProvider
 import play.example.game.app.module.task.domain.TaskErrorCode
 import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.domain.TaskTargetType
@@ -31,12 +31,11 @@ import java.util.*
  */
 @Component
 public class ServerTaskService @Autowired constructor(
-  commonTaskHandlerProvider: CommonTaskHandlerProvider,
   private val serverTaskEntityCache: ServerTaskEntityCache,
   private val serverId: GameServerId
-) : AbstractTaskService<ServerTaskEntity, ServerTask, ServerTaskResource>(commonTaskHandlerProvider) {
+) : AbstractTaskService<ServerTaskEntity, ServerTask, ServerTaskResource, ServerTaskEvent>() {
 
-  override fun getHandlerOrNull(targetType: TaskTargetType): ServerTaskTargetHandler<TaskTarget, TaskEvent>? {
+  override fun getHandlerOrNull(targetType: TaskTargetType): ServerTaskTargetHandler<TaskTarget, ServerTaskEvent>? {
     return null
   }
 
@@ -112,7 +111,7 @@ public class ServerTaskService @Autowired constructor(
     }
   }
 
-  fun onEvent(event: TaskEvent) {
+  fun onEvent(event: ServerTaskEvent) {
     for (entity in serverTaskEntityCache.getCachedEntities()) {
       onEvent(entity, event)
     }

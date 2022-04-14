@@ -4,7 +4,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.Behaviors
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import play.example.game.app.module.task.TaskEventBus
 import play.example.game.container.gs.GameServerScopeConfiguration
 
 @Configuration(proxyBeanMethods = false)
@@ -12,11 +11,10 @@ class ServerTaskSpringConfiguration : GameServerScopeConfiguration() {
 
   @Bean
   fun serverTaskManager(
-    taskService: ServerTaskService,
-    taskEventBus: TaskEventBus
+    taskService: ServerTaskService
   ): ActorRef<ServerTaskManager.Command> {
     return spawn("ServerTaskManager") {
-      Behaviors.setup { ctx -> ServerTaskManager(ctx, taskService, taskEventBus) }
+      Behaviors.setup { ctx -> ServerTaskManager(ctx, taskService) }
     }
   }
 }
