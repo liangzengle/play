@@ -6,6 +6,7 @@ import play.util.concurrent.PlayFuture
 import play.util.unsafeCast
 import java.time.Duration
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import kotlin.concurrent.thread
@@ -33,6 +34,7 @@ interface GracefullyShutdown {
   companion object {
 
     const val PHASE_START = "shutdown-start"
+    const val PHASE_SHUTDOWN_NETWORK_SERVICE = "shutdown-network-service"
     const val PHASE_SHUTDOWN_NETWORK_ACCEPTOR = "shutdown-network-acceptor"
     const val PHASE_SHUTDOWN_NETWORK_WORKER = "shutdown-network-worker"
     const val PHASE_SHUTDOWN_ACTOR_SYSTEM = "shutdown-actor-system"
@@ -42,7 +44,7 @@ interface GracefullyShutdown {
     const val PHASE_FLUSH_ENTITY_CACHE = "flush-entity-cache"
 
     @JvmStatic
-    fun phaseFromConfig(config: Config): Map<String, Phase> {
+    fun phaseFromConfig(config: Config): Phases {
       val defaultPhaseTimeout = config.getString("default-phase-timeout")
       val defaultPhaseConfig = ConfigFactory.parseString(
         """
@@ -53,30 +55,13 @@ interface GracefullyShutdown {
         """.trimMargin()
       )
       val phasesConfig = config.getConfig("phases")
-      return phasesConfig.root().keys.asSequence().map { k ->
+      val phaseMap = phasesConfig.root().keys.asSequence().map { k ->
         val c = phasesConfig.getConfig(k).withFallback(defaultPhaseConfig)
         val timeout = c.getDuration("timeout")
         val dependsOn = c.getStringList("depends-on")
         k to Phase(k, timeout, dependsOn.toSet())
       }.toMap()
-    }
-
-    @JvmStatic
-    fun isDependsOn(phaseName1: String, phaseName2: String, allPhaseMap: Map<String, Phase>): Boolean {
-      val thisPhase = allPhaseMap[phaseName1] ?: return false
-      val thatPhase = allPhaseMap[phaseName2] ?: return false
-      if (thisPhase.dependsOn.isEmpty()) {
-        return false
-      }
-      if (thisPhase.dependsOn.contains(thatPhase.name)) {
-        return true
-      }
-      for (dependsOn in thisPhase.dependsOn) {
-        if (isDependsOn(dependsOn, phaseName2, allPhaseMap)) {
-          return true
-        }
-      }
-      return false
+      return Phases(phaseMap)
     }
 
     @JvmStatic
@@ -111,20 +96,27 @@ interface GracefullyShutdown {
   }
 
   data class Phase(val name: String, val timeout: Duration, val dependsOn: Set<String>)
+
+  class Phases(private val phases: Map<String, Phase>) {
+    val sortedPhases: List<String> = topologicalSort(phases)
+    fun asMap(): Map<String, Phase> = phases
+  }
 }
 
 class DefaultGracefullyShutdown(
   private val applicationName: String,
-  private val phaseMap: Map<String, GracefullyShutdown.Phase>,
+  private val phases: GracefullyShutdown.Phases,
   runByJvmShutdownHook: Boolean,
   private val postShutdownAction: (() -> Unit)?
 ) : GracefullyShutdown {
 
+  private val phaseMap get() = phases.asMap()
+
   private val knownPhases = (phaseMap.keys.asSequence() + phaseMap.values.asSequence().flatMap { it.dependsOn }).toSet()
 
-  private val orderedPhases = GracefullyShutdown.topologicalSort(phaseMap)
+  private val orderedPhases get() = phases.sortedPhases
 
-  private val phaseTasks = hashMapOf<String, MutableList<Task<Any>>>()
+  private val phaseTasks = ConcurrentHashMap<String, List<Task<Any>>>()
 
   private var performed = false
 
@@ -179,10 +171,7 @@ class DefaultGracefullyShutdown(
   override fun <T : Any> addTask(phase: String, name: String, ref: T, task: (T) -> PlayFuture<*>) {
     require(knownPhases.contains(phase)) { "Unknown phase [$phase]" }
     require(name.isNotEmpty()) { "Task name must not be empty" }
-    phaseTasks.merge(phase, Collections.singletonList(Task(name, ref, task).unsafeCast())) { old, new ->
-      old.addAll(new)
-      old
-    }
+    phaseTasks.merge(phase, listOf(Task(name, ref, task).unsafeCast())) { old, new -> old + new }
   }
 
   private class Task<T : Any>(val name: String, val ref: T, val action: (T) -> PlayFuture<*>)

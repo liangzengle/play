@@ -4,8 +4,8 @@ import akka.actor.typed.ActorRef
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.apache.logging.log4j.LogManager
-import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.boot.Banner
+import org.springframework.boot.SpringApplication
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextInitializer
@@ -19,17 +19,13 @@ import play.example.game.container.ContainerApp
 import play.example.game.container.gs.GameServerManager
 import play.net.netty.NettyServer
 import play.res.ResourceManager
-import play.res.ResourceReloadListener
-import play.spring.beanDefinition
 import play.spring.closeAndWait
 import play.spring.getInstance
-import play.spring.getInstances
+import play.util.concurrent.Future
 import play.util.concurrent.LoggingUncaughtExceptionHandler
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.reflect.ClassScanner
-import play.util.unsafeCast
-import kotlin.reflect.typeOf
 import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.minutes
 
@@ -44,69 +40,16 @@ object App {
   }
 
   @JvmStatic
-  lateinit var classScanner: ClassScanner
-    private set
-
-  @JvmStatic
   fun main(args: Array<String>) {
     Log.info { "App starting" }
 
-    val config = loadConfig(null)
-    val classScanner = newClassScanner(config)
-    App.classScanner = classScanner
-
     try {
-      // 初始化策划配置
-      val resourceManager = ResourceManager(config.getString("play.res.path"), classScanner)
-      resourceManager.init()
-
-      // 启动Spring
-      val springApplication = SpringApplicationBuilder()
-        .bannerMode(Banner.Mode.OFF)
-        .sources(ContainerApp::class.java)
-        .registerShutdownHook(false)
-        .build()
-
-      val phaseMap = GracefullyShutdown.phaseFromConfig(config.getConfig("play.shutdown"))
-      val gracefullyShutdown = DefaultGracefullyShutdown("App", phaseMap, true, LogManager::shutdown)
-
-      val dbName = config.getString("play.container.db")
-      val databaseNameProvider = DatabaseNameProvider { dbName }
-
-      springApplication.addInitializers(ApplicationContextInitializer<ConfigurableApplicationContext> {
-        it.unsafeCast<BeanDefinitionRegistry>().apply {
-          registerBeanDefinition(
-            "gracefullyShutdown", beanDefinition(typeOf<GracefullyShutdown>(), gracefullyShutdown)
-          )
-        }
-        it.beanFactory.apply {
-          registerSingleton("config", config)
-          registerSingleton("databaseNameProvider", databaseNameProvider)
-          registerSingleton("resourceManager", resourceManager)
-          registerSingleton("classScanner", classScanner)
-          registerSingleton("gracefullyShutdown", gracefullyShutdown)
-        }
-      })
-      val applicationContext = springApplication.run()
-
-      gracefullyShutdown.addTask(
-        GracefullyShutdown.PHASE_SHUTDOWN_APPLICATION_CONTEXT,
-        GracefullyShutdown.PHASE_SHUTDOWN_APPLICATION_CONTEXT,
-        applicationContext
-      ) { PlayFuture { it.closeAndWait() } }
-
-      // 注册配置监听器
-      resourceManager.registerReloadListeners(applicationContext.getInstances<ResourceReloadListener>())
-
+      // 启动Spring容器
+      val applicationContext = startSpringApplication(args)
       // 初始化游戏服
-      val initPromise = PlayPromise.make<Void>()
-      applicationContext.getInstance<ActorRef<GameServerManager.Command>>().tell(GameServerManager.Init(initPromise))
-      // 阻塞等待初始化完成
-      initPromise.future.await(5.minutes)
-
+      startGameServers(applicationContext).await(5.minutes)
       // 开启网络服务
-      startNettyServer(applicationContext, "gameSocketServer")
-      startNettyServer(applicationContext, "adminHttpServer")
+      startNetworkService(applicationContext)
 
       Log.info { "App started" }
     } catch (e: Throwable) {
@@ -114,6 +57,57 @@ object App {
       e.printStackTrace()
       exitProcess(-1)
     }
+  }
+
+  private fun startGameServers(ctx: ApplicationContext): Future<*> {
+    val initPromise = PlayPromise.make<Any?>()
+    ctx.getInstance<ActorRef<GameServerManager.Command>>().tell(GameServerManager.Init(initPromise))
+    return initPromise.future
+  }
+
+  private fun startSpringApplication(
+    args: Array<String>
+  ): ApplicationContext {
+    val springApplication = buildSpringApplication()
+    val applicationContext = springApplication.run(*args)
+    applicationContext.getBean(GracefullyShutdown::class.java)
+      .addTask(
+        GracefullyShutdown.PHASE_SHUTDOWN_APPLICATION_CONTEXT,
+        "shutdown Spring Application Context",
+        applicationContext
+      ) { PlayFuture { it.closeAndWait() } }
+    return applicationContext
+  }
+
+  private fun buildSpringApplication(): SpringApplication {
+    val config = loadConfig(null)
+    val classScanner = newClassScanner(config)
+    val resourceManager = ResourceManager(config.getString("play.res.path"), classScanner)
+    val phases = GracefullyShutdown.phaseFromConfig(config.getConfig("play.shutdown"))
+    val shutdown = DefaultGracefullyShutdown("App", phases, true, LogManager::shutdown)
+    val dbName = config.getString("play.container.db")
+    val databaseNameProvider = DatabaseNameProvider { dbName }
+
+    resourceManager.init()
+
+    // 启动Spring
+    val springApplication = SpringApplicationBuilder()
+      .bannerMode(Banner.Mode.OFF)
+      .sources(ContainerApp::class.java)
+      .registerShutdownHook(false)
+      .build()
+
+    springApplication.addInitializers(ApplicationContextInitializer<ConfigurableApplicationContext> {
+      it.beanFactory.apply {
+        registerSingleton("config", config)
+        registerSingleton("databaseNameProvider", databaseNameProvider)
+        registerSingleton("resourceManager", resourceManager)
+        registerSingleton("classScanner", classScanner)
+        registerSingleton("shutdownPhases", phases)
+        registerSingleton("gracefullyShutdown", shutdown)
+      }
+    })
+    return springApplication
   }
 
   private fun newClassScanner(conf: Config): ClassScanner {
@@ -130,7 +124,23 @@ object App {
     return config
   }
 
-  private fun startNettyServer(applicationContext: ApplicationContext, name: String) {
-    applicationContext.getInstance<NettyServer>(name).start()
+  private fun startNetworkService(applicationContext: ApplicationContext) {
+    val adminHttpServer = applicationContext.getInstance<NettyServer>("adminHttpServer")
+    val gameSocketServer = applicationContext.getInstance<NettyServer>("gameSocketServer")
+    val shutdown = applicationContext.getInstance<GracefullyShutdown>()
+    shutdown.addTask(
+      GracefullyShutdown.PHASE_SHUTDOWN_NETWORK_SERVICE,
+      "shutdown game socket server",
+      gameSocketServer
+    ) { it.stopAsync() }
+
+    shutdown.addTask(
+      GracefullyShutdown.PHASE_SHUTDOWN_NETWORK_SERVICE,
+      "shutdown admin http server",
+      adminHttpServer
+    ) { it.stopAsync() }
+
+    adminHttpServer.start()
+    gameSocketServer.start()
   }
 }

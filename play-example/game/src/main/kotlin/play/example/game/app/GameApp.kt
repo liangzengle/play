@@ -65,9 +65,12 @@ class GameApp {
    */
   @Bean(destroyMethod = "run")
   fun gracefullyShutdown(
-    config: Config, scheduler: Scheduler, entityCacheManager: EntityCacheManager, gameServerId: GameServerId
+    config: Config,
+    scheduler: Scheduler,
+    entityCacheManager: EntityCacheManager,
+    gameServerId: GameServerId,
+    phases: GracefullyShutdown.Phases
   ): GracefullyShutdown {
-    val phases = GracefullyShutdown.phaseFromConfig(config.getConfig("play.shutdown"))
     val shutdown = DefaultGracefullyShutdown("GameApp(${gameServerId.toInt()})", phases, false, null)
     shutdown.addTask(
       GracefullyShutdown.PHASE_SHUTDOWN_SCHEDULER, GracefullyShutdown.PHASE_SHUTDOWN_SCHEDULER, scheduler
