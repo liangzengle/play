@@ -1,4 +1,4 @@
-rsocket.disabled: false
+rsocket.disabled: true
 
 server:
   port: 9990
