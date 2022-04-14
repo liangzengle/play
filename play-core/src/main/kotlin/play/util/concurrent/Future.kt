@@ -386,7 +386,7 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
     }
 
     @JvmStatic
-    fun allOf(futures: Collection<Future<*>>): Future<Void> {
+    fun allOf(futures: Collection<Future<*>>): Future<*> {
       val futureArray = arrayOfNulls<CompletableFuture<*>>(futures.size)
       futures.forEachIndexed { i, f ->
         futureArray[i] = f.cf

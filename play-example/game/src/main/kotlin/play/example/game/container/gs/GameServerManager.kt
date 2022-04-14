@@ -37,8 +37,8 @@ class GameServerManager(
   private val repository: Repository,
 ) : AbstractTypedActor<GameServerManager.Command>(context) {
   interface Command
-  class Init(val promise: PlayPromise<Void>) : Command
-  private class InitResult(val result: Result<Void>) : Command
+  class Init(val promise: PlayPromise<Any?>) : Command
+  private class InitResult(val result: Result<*>) : Command
   data class CreateGameServer(val serverId: Int, val promise: PlayPromise<Int>) : Command
   private class GameServerStartResult(val serverId: Int, val result: Result<Unit>) : Command
   data class StartGameServer(val serverId: Int, val promise: PlayPromise<Int>) : Command
