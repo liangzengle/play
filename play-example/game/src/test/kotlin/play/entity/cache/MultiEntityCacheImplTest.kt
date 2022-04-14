@@ -33,20 +33,17 @@ internal class MultiEntityCacheImplTest {
   private val entityCacheManager =
     EntityCacheManagerImpl(entityCacheFactory, NOOPPlayInjector, NOOPEntityCachePersistFailOver)
 
-  private val entityCache = entityCacheManager.get(MyEntity::class.java)
-  private val partitionEntityCache = MultiEntityCacheLong(
-    "playerId", { it.playerId }, entityCache, memoryRepository, scheduler, Duration.ofSeconds(10)
-  )
+  private val entityCache = MyEntityCache(entityCacheManager, memoryRepository, scheduler)
 
   @Test
   fun getMulti() {
     for (playerId in 1..10L) {
       for (i in 1..10) {
-        partitionEntityCache.getOrCreate(MyObjId(playerId, i), ::MyEntity)
+        entityCache.getOrCreate(MyObjId(playerId, i), ::MyEntity)
       }
     }
     for (playerId in 1..10L) {
-      val partitionEntities = partitionEntityCache.getMulti(playerId)
+      val partitionEntities = entityCache.getMulti(playerId)
       println("$playerId: $partitionEntities")
     }
   }
