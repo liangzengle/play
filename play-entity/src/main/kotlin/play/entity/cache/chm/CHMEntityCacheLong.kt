@@ -1,13 +1,18 @@
 package play.entity.cache.chm
 
-import com.google.common.collect.Maps
 import mu.KLogging
-import play.entity.Entity
+import org.eclipse.collections.api.map.primitive.LongObjectMap
+import org.eclipse.collections.impl.factory.primitive.LongLists
+import org.eclipse.collections.impl.factory.primitive.LongObjectMaps
+import org.eclipse.collectionx.toJava
+import play.entity.LongIdEntity
 import play.entity.cache.*
 import play.inject.PlayInjector
 import play.scheduling.Scheduler
+import play.util.collection.ConcurrentLongObjectMap
 import play.util.concurrent.Future
 import play.util.control.getCause
+import play.util.function.LongToObjFunction
 import play.util.getOrNull
 import play.util.json.Json
 import play.util.time.Time.currentMillis
@@ -15,12 +20,10 @@ import play.util.toOptional
 import play.util.unsafeCast
 import java.time.Duration
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 
-class CHMEntityCache<ID : Any, E : Entity<ID>>(
+class CHMEntityCacheLong<E : LongIdEntity>(
   override val entityClass: Class<E>,
   private val entityCacheWriter: EntityCacheWriter,
   private val entityCacheLoader: EntityCacheLoader,
@@ -29,24 +32,24 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   private val executor: Executor,
   private val settings: EntityCacheFactory.Settings,
   private val initializerProvider: EntityInitializerProvider
-) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID>, EntityCacheInternalApi {
+) : EntityCache<Long, E>, UnsafeEntityCacheOps<Long>, EntityCacheInternalApi {
   companion object : KLogging()
 
   private var initialized = false
 
-  private var _cache: ConcurrentMap<ID, CacheObj<ID, E>>? = null
+  private var _cache: ConcurrentLongObjectMap<CacheObj<E>>? = null
 
   private lateinit var initializer: EntityInitializer<E>
 
   private lateinit var expireEvaluator: ExpireEvaluator
 
-  private val persistingEntities: ConcurrentMap<ID, E> = ConcurrentHashMap()
+  private val persistingEntities = ConcurrentLongObjectMap<E>()
 
   private val isImmutable = entityClass.isAnnotationPresent(ImmutableEntity::class.java)
 
   private val isResident = EntityCacheHelper.isResident(entityClass)
 
-  private fun getCache(): ConcurrentMap<ID, CacheObj<ID, E>> {
+  private fun getCache(): ConcurrentLongObjectMap<CacheObj<E>> {
     val cache = _cache
     if (cache != null) {
       return cache
@@ -69,13 +72,13 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
 
       EntityCacheHelper.reportMissingInitialCacheSize(entityClass)
       val initialCacheSize = EntityCacheHelper.getInitialSizeOrDefault(entityClass, settings.initialSize)
-      val cache = ConcurrentHashMap<ID, CacheObj<ID, E>>(initialCacheSize)
+      val cache = ConcurrentLongObjectMap<CacheObj<E>>(initialCacheSize)
       val isLoadAllOnInit = cacheSpec.loadAllOnInit
       if (isLoadAllOnInit) {
         logger.debug { "Loading all [${entityClass.simpleName}]" }
         entityCacheLoader.loadAll(entityClass, cache) { c, e ->
           initializer.initialize(e)
-          c[e.id()] = NonEmpty(e)
+          c[e.id] = NonEmpty(e)
           c
         }.await()
         logger.debug { "Loaded ${cache.size} [${entityClass.simpleName}] into cache." }
@@ -103,7 +106,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   private fun scheduledPersist() {
     val now = currentMillis()
     val persistTimeThreshold = now - settings.persistInterval.toMillis()
-    val entities = getCache().values.asSequence().filterIsInstance<NonEmpty<ID, E>>()
+    val entities = getCache().values.asSequence().filterIsInstance<NonEmpty<E>>()
       .filter { it.lastAccessTime() < persistTimeThreshold }
       .map {
         it.lastPersistTime = now
@@ -126,7 +129,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
         if (v.lastAccessTime() > accessTimeThreshold) {
           v
         } else {
-          if (v is NonEmpty<ID, E>) {
+          if (v is NonEmpty<E>) {
             v.setExpired()
             persistOnExpired(v.peekEntity())
           }
@@ -140,7 +143,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     if (e.isDeleted()) {
       return
     }
-    val id = e.id()
+    val id = e.id
     persistingEntities[id] = e
     entityCacheWriter.insertOrUpdate(e).onComplete { result ->
       if (result.isSuccess) {
@@ -156,7 +159,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     }
   }
 
-  private fun load(id: ID): E? {
+  private fun load(id: Long): E? {
     if (isResident) {
       return null
     }
@@ -178,15 +181,15 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     }
   }
 
-  private fun computeIfAbsent(id: ID, loader: ((ID) -> E?)?): E? {
+  private fun computeIfAbsent(id: Long, loader: LongToObjFunction<E?>?): E? {
     return computeIfAbsent(id, null, loader)
   }
 
-  private fun computeIfAbsent(id: ID, loadOnEmpty: ((ID) -> E)?, loadOnAbsent: ((ID) -> E?)?): E? {
+  private fun computeIfAbsent(id: Long, loadOnEmpty: LongToObjFunction<E>?, loadOnAbsent: LongToObjFunction<E?>?): E? {
     val cache = getCache()
     var cacheObj = cache[id]
     if (cacheObj != null) {
-      if (cacheObj is NonEmpty<ID, E>) {
+      if (cacheObj is NonEmpty<E>) {
         val entity = cacheObj.accessEntity()
         if (!cacheObj.isExpired() ||
           cache.putIfAbsent(id, NonEmpty(entity)) == null /* 这一刻刚好过期了，但是还没有从数据库重新加载，可以直接使用 */) {
@@ -210,41 +213,41 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     return if (cacheObj is NonEmpty) cacheObj.accessEntity() else null
   }
 
-  override fun get(id: ID): Optional<E> {
+  override fun get(id: Long): Optional<E> {
     return getOrNull(id).toOptional()
   }
 
-  override fun getOrNull(id: ID): E? {
+  override fun getOrNull(id: Long): E? {
     return computeIfAbsent(id, ::load)
   }
 
-  override fun getOrThrow(id: ID): E {
+  override fun getOrThrow(id: Long): E {
     return getOrNull(id) ?: throw NoSuchElementException("${entityClass.simpleName}($id)")
   }
 
-  override fun getOrCreate(id: ID, creation: (ID) -> E): E {
+  override fun getOrCreate(id: Long, creation: (Long) -> E): E {
     return computeIfAbsent(id, { k -> createEntity(k, creation) }, { k -> load(k) ?: createEntity(k, creation) })
       ?: error("won't happen")
   }
 
-  private fun createEntity(id: ID, creation: (ID) -> E): E {
+  private fun createEntity(id: Long, creation: LongToObjFunction<E>): E {
     val entity = creation(id)
     initializer.initialize(entity)
     entityCacheWriter.insert(entity)
     return entity
   }
 
-  override fun getCached(id: ID): Optional<E> {
+  override fun getCached(id: Long): Optional<E> {
     return computeIfAbsent(id, null).toOptional()
   }
 
   override fun getCachedEntities(): Sequence<E> {
-    return getCache().values.asSequence().filterIsInstance<NonEmpty<ID, E>>().map { it.peekEntity() }
+    return getCache().values.asSequence().filterIsInstance<NonEmpty<E>>().map { it.peekEntity() }
   }
 
-  override fun getAll(ids: Iterable<ID>): List<E> {
+  override fun getAll(ids: Iterable<Long>): List<E> {
     val result = arrayListOf<E>()
-    val missing = arrayListOf<ID>()
+    val missing = LongLists.mutable.empty()
     for (id in ids) {
       val entity = getOrNull(id)
       if (entity != null) {
@@ -253,15 +256,15 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
         missing.add(id)
       }
     }
-    if (missing.isEmpty()) {
+    if (missing.isEmpty) {
       return result
     }
-    val loaded = entityCacheLoader.loadAll(missing, entityClass).blockingGet(Duration.ofSeconds(5))
+    val loaded = entityCacheLoader.loadAll(missing.toJava(), entityClass).blockingGet(Duration.ofSeconds(5))
     for (entity in loaded) {
       if (entity.isDeleted()) {
         continue
       }
-      val e = computeIfAbsent(entity.id(), null) { entity }
+      val e = computeIfAbsent(entity.id, null) { entity }
       if (e != null) {
         result.add(e)
       }
@@ -270,18 +273,18 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun create(e: E): E {
-    val that = getOrCreate(e.id()) { e }
+    val that = getOrCreate(e.id) { e }
     if (e !== that) {
-      throw EntityExistsException(e.javaClass, e.id())
+      throw EntityExistsException(e.javaClass, e.id)
     }
     return e
   }
 
   override fun delete(e: E) {
-    delete(e.id())
+    delete(e.id)
   }
 
-  override fun delete(id: ID) {
+  override fun delete(id: Long) {
     val cache = getCache()
     cache.compute(id) { k, v ->
       persistingEntities.remove(k)
@@ -297,7 +300,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     return getCache().size
   }
 
-  override fun isCached(id: ID): Boolean {
+  override fun isCached(id: Long): Boolean {
     return getCache().containsKey(id)
   }
 
@@ -306,7 +309,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun dump(): String {
-    return Json.stringify(copyToMap().values)
+    return Json.stringify(copyToMap().values())
   }
 
   @Suppress("UNCHECKED_CAST")
@@ -314,7 +317,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     if (!initialized) {
       return Future.successful(Unit)
     }
-    val entities = getCache().values.asSequence().filterIsInstance<NonEmpty<ID, E>>()
+    val entities = getCache().values.asSequence().filterIsInstance<NonEmpty<E>>()
       .filter { !(isImmutable && it.lastPersistTime != 0L) }.map { it.peekEntity() }
       .plus(persistingEntities.values.asSequence()).toList()
     return entityCacheWriter.batchInsertOrUpdate(entities) as Future<Unit>
@@ -322,36 +325,37 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
 
   override fun expireEvaluator(): ExpireEvaluator = expireEvaluator
 
-  override fun initWithEmptyValue(id: ID) {
+  override fun initWithEmptyValue(id: Long) {
     val prev = getCache().putIfAbsent(id, Empty(id))
     if (prev?.isNotEmpty() == false) {
       logger.warn { "初始化为空值失败, Entity已经存在: $prev" }
     }
   }
 
-  private fun deleteFromDB(id: ID) {
+  private fun deleteFromDB(id: Long) {
     entityCacheWriter.deleteById(id, entityClass).onFailure {
       // TODO what to do if failed
       logger.error(it) { "${entityClass.simpleName}($id)删除失败" }
     }
   }
 
-  private fun copyToMap(): Map<ID, E> {
+  private fun copyToMap(): LongObjectMap<E> {
     val cache = getCache()
-    val result = Maps.newHashMapWithExpectedSize<ID, E>(cache.size + persistingEntities.size)
+    val result = LongObjectMaps.mutable.withInitialCapacity<E>(cache.size)
     for (entity in persistingEntities.values) {
-      result[entity.id()] = entity
+      result.put(entity.id, entity)
     }
     for (obj in cache.values) {
-      if (obj is NonEmpty<ID, E>) {
-        result[obj.id()] = obj.peekEntity()
+      if (obj is NonEmpty<E>) {
+        val entity = obj.peekEntity()
+        result.put(entity.id, entity)
       }
     }
     return result
   }
 
-  private sealed class CacheObj<ID : Any, E : Entity<ID>> {
-    abstract fun id(): ID
+  private sealed class CacheObj<E : LongIdEntity> {
+    abstract fun id(): Long
 
     abstract fun isEmpty(): Boolean
 
@@ -359,28 +363,28 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
 
     abstract fun lastAccessTime(): Long
 
-    fun asEmpty(): Empty<ID, E> = this.unsafeCast()
+    fun asEmpty(): Empty<E> = this.unsafeCast()
 
-    fun asNonEmpty(): NonEmpty<ID, E> = this.unsafeCast()
+    fun asNonEmpty(): NonEmpty<E> = this.unsafeCast()
   }
 
-  private class Empty<ID : Any, E : Entity<ID>>(val id: ID, private val createTime: Long) : CacheObj<ID, E>() {
-    constructor(id: ID) : this(id, currentMillis())
+  private class Empty<E : LongIdEntity>(val id: Long, private val createTime: Long) : CacheObj<E>() {
+    constructor(id: Long) : this(id, currentMillis())
 
     override fun isEmpty(): Boolean = true
 
     override fun lastAccessTime(): Long = createTime
 
-    override fun id(): ID = id
+    override fun id(): Long = id
 
     override fun toString(): String {
       return "Empty($id)"
     }
   }
 
-  private class NonEmpty<ID : Any, E : Entity<ID>>(
+  private class NonEmpty<E : LongIdEntity>(
     private val entity: E, @field:Volatile private var lastAccessTime: Long
-  ) : CacheObj<ID, E>() {
+  ) : CacheObj<E>() {
 
     constructor(entity: E) : this(entity, currentMillis())
 
@@ -408,14 +412,14 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
 
     fun peekEntity(): E = entity
 
-    override fun id(): ID = entity.id()
+    override fun id(): Long = entity.id
 
     override fun toString(): String {
       return entity.toString()
     }
 
     companion object {
-      private val ExpiredUpdater: AtomicIntegerFieldUpdater<NonEmpty<*, *>> =
+      private val ExpiredUpdater: AtomicIntegerFieldUpdater<NonEmpty<*>> =
         AtomicIntegerFieldUpdater.newUpdater(NonEmpty::class.java, "expired")
     }
   }

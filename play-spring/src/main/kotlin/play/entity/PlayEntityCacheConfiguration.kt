@@ -6,9 +6,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import play.entity.cache.*
+import play.entity.cache.chm.CHMEntityCacheFactory
 import play.inject.PlayInjector
 import play.scheduling.Scheduler
-import play.util.reflect.Reflect
 import java.util.concurrent.Executor
 
 /**
@@ -29,8 +29,8 @@ class PlayEntityCacheConfiguration {
     config: Config
   ): EntityCacheFactory {
     val conf = config.getConfig("play.entity.cache")
-    val factory = conf.getString("factory")
-    return Reflect.newInstance(factory, writer, loader, injector, scheduler, executor, conf)
+    val settings = EntityCacheFactory.Settings.parseFromConfig(conf)
+    return CHMEntityCacheFactory(writer, loader, injector, scheduler, executor, settings)
   }
 
   @Bean

@@ -5,7 +5,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
-import play.Env
 import play.akka.AbstractTypedActor
 import play.akka.send
 import play.akka.withResumeSupervisor
@@ -23,7 +22,6 @@ import play.mvc.Request
 import play.mvc.RequestCommander
 import play.mvc.Response
 import play.util.exception.NoStackTraceException
-import play.util.reflect.Reflect
 import play.util.unsafeCast
 
 class PlayerManager(

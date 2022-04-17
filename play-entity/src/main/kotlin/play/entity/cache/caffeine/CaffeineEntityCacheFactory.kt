@@ -17,8 +17,8 @@ class CaffeineEntityCacheFactory constructor(
   private val injector: PlayInjector,
   private val scheduler: Scheduler,
   private val executor: Executor,
-  cacheConf: Config
-) : AbstractEntityCacheFactory(cacheConf) {
+  private val settings: EntityCacheFactory.Settings
+) : EntityCacheFactory {
 
   override fun <ID : Any, E : Entity<ID>> create(
     entityClass: Class<E>,

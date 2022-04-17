@@ -30,7 +30,7 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
   private val injector: PlayInjector,
   private val scheduler: Scheduler,
   private val executor: Executor,
-  private val settings: AbstractEntityCacheFactory.Settings,
+  private val settings: EntityCacheFactory.Settings,
   private val initializerProvider: EntityInitializerProvider
 ) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID>, EntityCacheInternalApi {
 
@@ -68,15 +68,8 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
       if (initialized) {
         return
       }
-      val cacheSpec = entityClass.getAnnotation(CacheSpec::class.java)
-      expireEvaluator = if (cacheSpec != null && cacheSpec.neverExpire) NeverExpireEvaluator else {
-        when (val expireEvaluator = cacheSpec?.expireEvaluator) {
-          null -> DefaultExpireEvaluator
-          DefaultExpireEvaluator::class -> DefaultExpireEvaluator
-          NeverExpireEvaluator::class -> NeverExpireEvaluator
-          else -> injector.getInstance(expireEvaluator.java)
-        }
-      }
+      val cacheSpec = EntityCacheHelper.getCacheSpec(entityClass)
+      expireEvaluator = EntityCacheHelper.getExpireEvaluator(entityClass, injector)
       val isNeverExpire = expireEvaluator == NeverExpireEvaluator
       evictShelter = if (isNeverExpire) null else ConcurrentHashMap()
       initializer = initializerProvider.get(entityClass)
@@ -88,21 +81,21 @@ internal class CaffeineEntityCache<ID : Any, E : Entity<ID>>(
       builder.initialCapacity(initialCacheSize)
       if (!isNeverExpire) {
         val duration =
-          if ((cacheSpec?.expireAfterAccess ?: 0) > 0) Duration.ofSeconds(cacheSpec.expireAfterAccess.toLong())
+          if (cacheSpec.expireAfterAccess > 0) Duration.ofSeconds(cacheSpec.expireAfterAccess.toLong())
           else settings.expireAfterAccess
         builder.expireAfterAccess(duration)
       }
       builder.evictionListener(CacheEvictListener())
       builder.removalListener(CacheRemovalListener())
       val cache: Cache<ID, CacheObj<ID, E>> = builder.build()
-      val isLoadAllOnInit = cacheSpec?.loadAllOnInit ?: false
+      val isLoadAllOnInit = cacheSpec.loadAllOnInit
       if (isLoadAllOnInit) {
         logger.info { "Loading all [${entityClass.simpleName}]" }
         entityCacheLoader.loadAll(entityClass, cache) { c, e ->
           initializer.initialize(e)
           c.put(e.id(), CacheObj(e))
           c
-        }.await(Duration.ofSeconds(5))
+        }.await()
         logger.info { "Loaded ${cache.estimatedSize()} [${entityClass.simpleName}] into cache." }
       }
       this.cache = cache

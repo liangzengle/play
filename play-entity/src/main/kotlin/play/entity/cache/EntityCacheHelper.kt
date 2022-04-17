@@ -2,12 +2,15 @@ package play.entity.cache
 
 import mu.KLogging
 import play.entity.Entity
+import play.inject.PlayInjector
 
 /**
  *
  * @author LiangZengle
  */
 object EntityCacheHelper : KLogging() {
+
+  private val DefaultCacheSpec = CacheSpec()
 
   @JvmStatic
   fun getInitialSizeOrDefault(entityClass: Class<*>, default: Int): Int {
@@ -32,8 +35,31 @@ object EntityCacheHelper : KLogging() {
   }
   
   @JvmStatic
-  internal fun isNeverExpire(entityClass: Class<out Entity<*>>): Boolean {
-    val cacheSpec = entityClass.getAnnotation(CacheSpec::class.java)
-    return cacheSpec == null || cacheSpec.neverExpire || cacheSpec.expireEvaluator == NeverExpireEvaluator::class
+  fun isNeverExpire(entityClass: Class<out Entity<*>>): Boolean {
+    val cacheSpec = getCacheSpec(entityClass)
+    return cacheSpec.neverExpire || cacheSpec.expireEvaluator == NeverExpireEvaluator::class
+  }
+
+  @JvmStatic
+  fun getCacheSpec(entityClass: Class<out Entity<*>>): CacheSpec {
+    return entityClass.getAnnotation(CacheSpec::class.java) ?: DefaultCacheSpec
+  }
+
+  @JvmStatic
+  fun isResident(entityClass: Class<out Entity<*>>): Boolean {
+    val cacheSpec = getCacheSpec(entityClass)
+    return cacheSpec.loadAllOnInit && isNeverExpire(entityClass)
+  }
+
+  @JvmStatic
+  fun getExpireEvaluator(entityClass: Class<out Entity<*>>, injector: PlayInjector): ExpireEvaluator {
+    val cacheSpec = getCacheSpec(entityClass)
+    return if (cacheSpec.neverExpire) NeverExpireEvaluator else {
+      when (val expireEvaluator = cacheSpec.expireEvaluator) {
+        DefaultExpireEvaluator::class -> DefaultExpireEvaluator
+        NeverExpireEvaluator::class -> NeverExpireEvaluator
+        else -> injector.getInstance(expireEvaluator.java)
+      }
+    }
   }
 }

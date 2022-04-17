@@ -7,7 +7,6 @@ import play.entity.cache.chm.CHMEntityCacheFactory
 import play.inject.NOOPPlayInjector
 import play.scheduling.DefaultScheduler
 import java.time.Clock
-import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.ForkJoinPool
 
@@ -28,7 +27,12 @@ internal class MultiEntityCacheImplTest {
     """.trimMargin()
   )
   private val entityCacheFactory = CHMEntityCacheFactory(
-    memoryRepository, memoryRepository, NOOPPlayInjector, scheduler, ForkJoinPool.commonPool(), cacheConfig
+    memoryRepository,
+    memoryRepository,
+    NOOPPlayInjector,
+    scheduler,
+    ForkJoinPool.commonPool(),
+    EntityCacheFactory.Settings.parseFromConfig(cacheConfig)
   )
   private val entityCacheManager =
     EntityCacheManagerImpl(entityCacheFactory, NOOPPlayInjector, NOOPEntityCachePersistFailOver)
