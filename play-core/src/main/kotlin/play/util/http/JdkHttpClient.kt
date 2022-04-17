@@ -140,7 +140,7 @@ class JdkHttpClient constructor(
     return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
       .toFuture()
       .andThen { v, e -> logResponse(requestNo, request, v, e) }
-      .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.statusCode()) })
+      .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.uri().toString(), it.statusCode()) })
       .map { it.body() ?: "" }
   }
 
@@ -153,7 +153,7 @@ class JdkHttpClient constructor(
     return client.sendAsync(request, bodyHandler)
       .toFuture()
       .andThen { v, e -> logResponse(requestNo, request, v, e) }
-      .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.statusCode()) })
+      .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.uri().toString(), it.statusCode()) })
   }
 
   private fun logRequest(requestNo: Long, request: HttpRequest) {

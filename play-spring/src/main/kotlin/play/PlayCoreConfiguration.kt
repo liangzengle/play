@@ -14,6 +14,7 @@ import play.scheduling.Scheduler
 import play.util.concurrent.CommonPool
 import play.util.concurrent.threadFactory
 import play.util.reflect.ClassScanner
+import play.util.reflect.ClassgraphClassScanner
 import java.time.Clock
 import java.util.concurrent.*
 
@@ -46,7 +47,7 @@ class PlayCoreConfiguration {
   fun classScanner(conf: Config): ClassScanner {
     val jarsToScan = conf.getStringList("play.reflection.jars-to-scan")
     val packagesToScan = conf.getStringList("play.reflection.packages-to-scan")
-    return ClassScanner(CommonPool, jarsToScan, packagesToScan)
+    return ClassgraphClassScanner(CommonPool, jarsToScan, packagesToScan)
   }
 
   @Bean

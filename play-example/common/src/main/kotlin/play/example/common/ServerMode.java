@@ -27,12 +27,9 @@ public enum ServerMode {
 
     @Override
     public String toString() {
-        switch (this) {
-            case Game:
-                return "game";
-            case Scene:
-                return "scene";
-        }
-        throw new Error("should not happen");
+        return switch (this) {
+            case Game -> "game";
+            case Scene -> "scene";
+        };
     }
 }

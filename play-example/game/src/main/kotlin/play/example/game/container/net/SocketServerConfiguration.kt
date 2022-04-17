@@ -6,8 +6,8 @@ import com.typesafe.config.Config
 import io.netty.handler.flush.FlushConsolidationHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import play.example.common.akka.ActorConfigurationSupport
-import play.example.common.akka.GuardianBehavior
+import play.akka.ActorConfigurationSupport
+import play.akka.GuardianBehavior
 import play.example.game.container.net.codec.RequestDecoder
 import play.example.game.container.net.codec.ResponseEncoder
 import play.example.game.container.net.handler.RequestIdValidator

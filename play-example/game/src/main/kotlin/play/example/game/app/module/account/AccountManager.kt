@@ -139,12 +139,13 @@ class AccountManager(
   }
 
   private fun createAsync(account: Account) {
-    accountCache.unsafeOps().initWithEmptyValue(account.id)
+    val unsafeOps = accountCache.unsafeOps()
+    unsafeOps.initWithEmptyValue(account.id)
     accountCache.create(account)
     Log.info { "账号创建成功: $account" }
     val id = account.id
     future {
-      playerEntityCacheInitializer.initWithEmptyValue(id)
+      playerEntityCacheInitializer.initWithEmptyValue(id, unsafeOps)
     }.onComplete {
       if (it.isSuccess) {
         Log.info { "玩家实体缓存初始化完成: $id" }

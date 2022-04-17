@@ -2,6 +2,7 @@ package play.res.validation.validator
 
 import play.res.ResourceSetProvider
 import play.res.validation.constraints.Enumerated
+import play.util.enumeration.Enums
 import play.util.enumeration.IdEnum
 
 class EnumeratedValidator : ResourceValidator() {
@@ -9,8 +10,7 @@ class EnumeratedValidator : ResourceValidator() {
     for ((clazz, resourceSet) in resourceSetProvider.resourceSetMap) {
       val enumerated = clazz.getAnnotation(Enumerated::class.java) ?: continue
       val enumClass = enumerated.value.java
-      val enumConstants = enumClass.enumConstants
-      val idSet = enumConstants.asSequence().filterIsInstance<IdEnum>().map { it.id() }.toSet()
+      val idSet = Enums.iterator(enumClass).asSequence().filterIsInstance<IdEnum>().map { it.id() }.toSet()
       for (resource in resourceSet.list()) {
         val id = resource.id
         if (!idSet.contains(id)) {

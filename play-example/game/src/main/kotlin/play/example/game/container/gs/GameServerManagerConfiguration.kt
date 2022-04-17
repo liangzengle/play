@@ -7,8 +7,8 @@ import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import play.db.Repository
-import play.example.common.akka.ActorConfigurationSupport
-import play.example.common.akka.GuardianBehavior
+import play.akka.ActorConfigurationSupport
+import play.akka.GuardianBehavior
 import play.example.game.container.login.LoginDispatcherActor
 import play.example.game.container.net.SessionManager
 

@@ -28,9 +28,9 @@ class CommandInvoker(private val method: Method, commanderType: Class<*>) {
       val parameter = parameters[i]
       val arg: String =
         if (args.size <= i) {
-          val defaultValue = parameter.getAnnotation(Arg::class.java)?.defaultValue
+          val defaultValue = parameter.getAnnotation(Param::class.java)?.defaultValue
           if (defaultValue.isNullOrEmpty()) {
-            throw CommandArgMissingException("缺少第${paramIdx}个参数: $this $args")
+            throw CommandParamMissingException("缺少第${paramIdx}个参数: $this $args")
           }
           defaultValue
         } else {
@@ -39,7 +39,7 @@ class CommandInvoker(private val method: Method, commanderType: Class<*>) {
       try {
         params[paramIdx] = parameterConverters[i].convert(parameter, arg)
       } catch (e: IllegalArgumentException) {
-        throw CommandIllegalArgException("第${i + 1}个参数错误: $this $args")
+        throw CommandParamIllegalException("第${i + 1}个参数错误: $this $args")
       }
     }
     return Reflect.invokeMethod(method, target, *params)

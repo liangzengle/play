@@ -7,11 +7,11 @@ data class CommandDescriptor(
   val module: String,
   val name: String,
   val desc: String,
-  val args: List<CommandArgDescriptor>
+  val params: List<CommandParamDescriptor>
 )
 
 @Serializable
-data class CommandArgDescriptor(val name: String, val desc: String, val defaultValue: String)
+data class CommandParamDescriptor(val name: String, val desc: String, val defaultValue: String)
 
 @Serializable
 data class CommandModuleDescriptor(val name: String, val label: String, val commands: List<CommandDescriptor>)

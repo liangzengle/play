@@ -1,5 +1,7 @@
 package play.util.ranking.primitive
 
+import org.eclipse.collections.api.map.primitive.IntObjectMap
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
 import play.util.ranking.*
 
 class RankingElementLongAdapter(val underlying: RankingElementLong) : RankingElement<Long>() {
@@ -55,5 +57,9 @@ internal class RankingListLongAdapter(private val underlying: RankingListLong<Ra
 
   override fun <T> toList(transformer: (Int, RankingElementLongAdapter) -> T): List<T> {
     return underlying.toList { rank, element -> transformer(rank, RankingElementLongAdapter(element)) }
+  }
+
+  override fun toRankMap(): IntObjectMap<RankingElementLongAdapter> {
+    return IntObjectMaps.immutable.from(underlying.toRankMap().keyValuesView(), {it.one}, {RankingElementLongAdapter(it.two)})
   }
 }

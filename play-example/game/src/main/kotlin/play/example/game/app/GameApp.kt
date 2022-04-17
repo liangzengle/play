@@ -23,7 +23,7 @@ import play.inject.SpringPlayInjector
 import play.mongodb.MongoDBRepositoryCustomizer
 import play.scheduling.Scheduler
 import play.util.concurrent.PlayFuture
-import play.util.reflect.ClassScanner
+import play.util.reflect.ClassgraphClassScanner
 
 /**
  *
@@ -51,7 +51,7 @@ class GameApp {
   }
 
   @Bean
-  fun mongoDBIndexCreator(classScanner: ClassScanner): MongoDBRepositoryCustomizer {
+  fun mongoDBIndexCreator(classScanner: ClassgraphClassScanner): MongoDBRepositoryCustomizer {
     return MongoDBRepositoryCustomizer { repository ->
       val entityClasses = classScanner.getInstantiatableSubclassInfoList(Entity::class.java)
         .filter { it.packageName.startsWith(this.javaClass.packageName) }

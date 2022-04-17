@@ -1,19 +1,17 @@
 package play.example.game.app.module.account
 
+import mu.KLogging
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap
 import org.eclipse.collections.impl.factory.primitive.IntLongMaps
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.db.QueryService
-import play.example.common.id.GameUIDGenerator
 import play.example.game.app.module.account.domain.AccountId
 import play.example.game.app.module.account.entity.Account
 import play.example.game.app.module.platform.PlatformServiceProvider
 import play.util.collection.ConcurrentObjectLongMap
 import play.util.max
-import play.util.primitive.high16
-import play.util.primitive.low16
 import play.util.primitive.toInt
 import java.util.*
 import kotlin.time.Duration.Companion.seconds
@@ -23,8 +21,10 @@ class AccountIdCache @Autowired constructor(
   queryService: QueryService,
   platformServiceProvider: PlatformServiceProvider
 ) {
+  companion object : KLogging()
+
   private val accountIdToId: ConcurrentObjectLongMap<AccountId>
-  private val idGenerators: MutableIntObjectMap<GameUIDGenerator>
+  private val idGenerators: MutableIntObjectMap<AccountIdGenerator>
 
   init {
     accountIdToId = queryService.fold(Account::class.java, ConcurrentObjectLongMap<AccountId>()) { map, account ->
@@ -40,10 +40,11 @@ class AccountIdCache @Autowired constructor(
       maxIds.updateValue(key, id) { it max id }
     }
 
-    val idGeneratorMap = IntObjectHashMap<GameUIDGenerator>(maxIds.keyValuesView().size())
+    val idGeneratorMap = IntObjectHashMap<AccountIdGenerator>(maxIds.keyValuesView().size())
     for (e in maxIds.keyValuesView()) {
       val key = e.one
-      val value = GameUIDGenerator(e.one.high16().toInt(), e.one.low16().toInt(), OptionalLong.of(e.two))
+      val sequence = AccountIdGenerator.extractSequence(e.two)
+      val value = AccountIdGenerator(e.one, sequence)
       idGeneratorMap.put(key, value)
     }
     idGenerators = idGeneratorMap
@@ -52,13 +53,15 @@ class AccountIdCache @Autowired constructor(
   fun nextId(platformId: Byte, serverId: Short): OptionalLong {
     val key = toInt(platformId.toShort(), serverId)
     val idGenerator = idGenerators.getIfAbsentPut(key) {
-      GameUIDGenerator(
-        platformId.toInt(),
-        serverId.toInt(),
-        OptionalLong.empty()
-      )
+      AccountIdGenerator(toInt(platformId.toShort(), serverId), 0)
     }
-    return idGenerator.next()
+    return try {
+      val nextId = idGenerator.nextId()
+      OptionalLong.of(nextId)
+    } catch (e: Exception) {
+      logger.error(e) { "Can not generate id" }
+      OptionalLong.empty()
+    }
   }
 
   fun getOrNull(accountId: AccountId): Long? {

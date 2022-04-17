@@ -3,7 +3,7 @@ package play.example.game.app.module.player
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.db.QueryService
-import play.example.common.id.GameUIDGenerator
+import play.example.game.app.module.account.AccountIdGenerator
 import play.example.game.app.module.player.entity.PlayerInfoEntity
 import play.example.game.app.module.player.exception.PlayerNotExistsException
 import play.util.collection.ConcurrentIntObjectMap
@@ -42,14 +42,14 @@ class PlayerIdNameCache @Autowired constructor(queryService: QueryService) {
   ) {
     val prevName = idToName.putIfAbsent(playerId, playerName)
     assert(prevName == null)
-    val serverId = GameUIDGenerator.getServerId(playerId).toInt()
+    val serverId = AccountIdGenerator.extractNodeId(playerId)
     val nameToId = serverToNameToId.computeIfAbsent(serverId) { ConcurrentObjectLongMap(1024) }
     val prevId = nameToId.putIfAbsent(playerName, playerId)
     assert(prevId == null)
   }
 
   fun isPlayerNameAvailable(id: Long, name: String): Boolean {
-    val serverId = GameUIDGenerator.getServerId(id).toInt()
+    val serverId = AccountIdGenerator.extractNodeId(id)
     return !(serverToNameToId[serverId]?.containsKey(name) ?: false)
   }
 

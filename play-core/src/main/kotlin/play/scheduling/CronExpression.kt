@@ -2,7 +2,6 @@ package play.scheduling
 
 import play.Log
 import play.SystemProps
-import play.util.ClassUtil
 import play.util.reflect.Reflect
 import java.time.LocalDateTime
 import javax.annotation.Nonnull
@@ -11,14 +10,12 @@ import javax.annotation.Nullable
 interface CronExpression {
 
   companion object {
-    private val factory: Factory
+    private val factory: Factory =
+      SystemProps.getOrNull("play.cron.expression.factory")?.let { Reflect.getKotlinObjectOrNewInstance(it) }
+        ?: CronSequenceGeneratorFactory
 
     init {
-      val qualifiedName =
-        SystemProps.getOrDefault("cron.expression.factory", CronSequenceGeneratorFactory::class.qualifiedName)
-      val factoryType = ClassUtil.loadClass<Factory>(qualifiedName)
-      factory = Reflect.newInstance(factoryType)
-      Log.debug { "Using $qualifiedName" }
+      Log.debug { "CronExpression.Factory: ${factory.javaClass.simpleName}" }
     }
 
     @JvmStatic
@@ -36,9 +33,4 @@ interface CronExpression {
 
   @Nonnull
   fun nextFireTime(from: LocalDateTime): LocalDateTime
-}
-
-fun main() {
-  val factoryType = ClassUtil.loadClass<CronExpression.Factory>("play.scheduling.CronSequenceGeneratorFactory")
-  println(factoryType)
 }

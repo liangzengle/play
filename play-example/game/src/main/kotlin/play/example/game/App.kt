@@ -25,7 +25,7 @@ import play.util.concurrent.Future
 import play.util.concurrent.LoggingUncaughtExceptionHandler
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
-import play.util.reflect.ClassScanner
+import play.util.reflect.ClassgraphClassScanner
 import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.minutes
 
@@ -110,10 +110,10 @@ object App {
     return springApplication
   }
 
-  private fun newClassScanner(conf: Config): ClassScanner {
+  private fun newClassScanner(conf: Config): ClassgraphClassScanner {
     val jarsToScan = conf.getStringList("play.reflection.jars-to-scan")
     val packagesToScan = conf.getStringList("play.reflection.packages-to-scan")
-    return ClassScanner(jarsToScan, packagesToScan)
+    return ClassgraphClassScanner(jarsToScan, packagesToScan)
   }
 
   private fun loadConfig(priorityConf: Config?): Config {

@@ -10,7 +10,7 @@ inline fun Int?.toOptional(): OptionalInt = if (this == null) OptionalInt.empty(
 
 inline fun Long?.toOptional(): OptionalLong = if (this == null) OptionalLong.empty() else OptionalLong.of(this)
 
-inline fun <T> empty(): Optional<T> = Optional.empty<T>()
+inline fun <T : Any> empty(): Optional<T> = Optional.empty<T>()
 inline fun emptyInt() = OptionalInt.empty()
 inline fun emptyLong() = OptionalLong.empty()
 
@@ -64,9 +64,9 @@ inline fun OptionalDouble.flatMap(f: (Double) -> OptionalDouble): OptionalDouble
 
 inline fun <T> Optional<T>.getOrNull(): T? = if (isPresent) get() else null
 
-inline fun <T> Optional<T>.contains(expect: T): Boolean = if (isPresent) expect == get() else false
+inline fun <T> Optional<T>.contains(expect: T): Boolean = isPresent && expect == get()
 
-inline fun <T> Optional<T>.exists(test: (T) -> Boolean): Boolean = if (isPresent) test(get()) else false
+inline fun <T> Optional<T>.exists(test: (T) -> Boolean): Boolean = isPresent && test(get())
 
 inline fun <T> Optional<T>.forEach(f: (T) -> Unit) {
   if (isPresent) f(get())

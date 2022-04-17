@@ -8,7 +8,7 @@ fun <T> HttpResponse<T>.getOrNull(): T? = body()
 
 fun <T> HttpResponse<T>.getOrThrow(): T {
   if (!isSuccess()) {
-    throw UnsuccessfulStatusCodeException(statusCode())
+    throw UnsuccessfulStatusCodeException(uri().toString(), statusCode())
   }
   return body() ?: throw NoSuchElementException()
 }

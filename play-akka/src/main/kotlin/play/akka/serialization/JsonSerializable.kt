@@ -1,4 +1,4 @@
-package play.example.common.akka.serialization
+package play.akka.serialization
 
 /**
  *

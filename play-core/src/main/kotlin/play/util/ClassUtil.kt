@@ -44,7 +44,7 @@ object ClassUtil {
 
   @JvmStatic
   fun <T> loadClass(qualifiedName: String): Class<out T> {
-    return loadClass(qualifiedName, javaClass.classLoader)
+    return loadClass(qualifiedName, Thread.currentThread().contextClassLoader)
   }
 
   @JvmStatic
@@ -54,7 +54,7 @@ object ClassUtil {
 
   @JvmStatic
   fun <T> loadClass(qualifiedName: String, initialize: Boolean): Class<out T> {
-    return loadClass<T>(qualifiedName, initialize, javaClass.classLoader).unsafeCast()
+    return loadClass<T>(qualifiedName, initialize, Thread.currentThread().contextClassLoader).unsafeCast()
   }
 
   @JvmStatic

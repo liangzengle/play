@@ -6,15 +6,15 @@ import akka.actor.typed.Terminated
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
-import com.google.common.collect.ImmutableList
 import io.netty.channel.Channel
+import org.eclipse.collections.api.factory.Lists
 import play.akka.AbstractTypedActor
 import play.net.netty.getHostAndPort
 
 class SessionManager(context: ActorContext<Command>) :
   AbstractTypedActor<SessionManager.Command>(context) {
 
-  private var unhandledRequestReceivers = emptyList<ActorRef<UnhandledRequest>>()
+  private var unhandledRequestReceivers = Lists.immutable.empty<ActorRef<UnhandledRequest>>()
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
@@ -26,18 +26,14 @@ class SessionManager(context: ActorContext<Command>) :
 
   @Suppress("UnstableApiUsage")
   private fun registerUnhandledRequestReceiver(cmd: RegisterUnhandledRequestReceiver) {
-    unhandledRequestReceivers = ImmutableList
-      .builderWithExpectedSize<ActorRef<UnhandledRequest>>(unhandledRequestReceivers.size + 1)
-      .addAll(unhandledRequestReceivers)
-      .add(cmd.receiver)
-      .build()
+    unhandledRequestReceivers = unhandledRequestReceivers.newWith(cmd.receiver)
   }
 
   @Suppress("UnstableApiUsage")
   private fun createSession(cmd: CreateSession) {
     val hostAndPort = cmd.ch.remoteAddress().getHostAndPort()
     val session =
-      context.spawn(SessionActor.create(cmd.ch, unhandledRequestReceivers), hostAndPort.toString())
+      context.spawn(SessionActor.create(cmd.ch, unhandledRequestReceivers.castToList()), hostAndPort.toString())
     sessionCount += 1
     context.watch(session)
   }

@@ -1,10 +1,10 @@
 package play.util.el
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import org.mvel2.MVEL
 import org.mvel2.integration.VariableResolverFactory
 import play.util.unsafeCast
 import java.io.Serializable
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  *
@@ -12,16 +12,16 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object Eval {
 
-  private val compiledExpressions = ConcurrentHashMap<String, Serializable>()
+  private val compiledExpressions = Caffeine.newBuilder().softValues().build<String, Serializable>()
 
-  private fun compile(expr: String): Serializable {
-    return compiledExpressions.computeIfAbsent(expr, MVEL::compileExpression)
+  fun compile(expr: String): Serializable {
+    return compiledExpressions.get(expr, MVEL::compileExpression)
   }
 
   /**
    * 获取缓存的公式数量
    */
-  fun cachedExprCount() = compiledExpressions.size
+  fun cachedExprCount() = compiledExpressions.estimatedSize()
 
   /**
    * 没有变量的公式求值
@@ -30,18 +30,18 @@ object Eval {
    * @return Result
    */
   fun eval(expr: String): Result {
-    return eval(expr, emptyMap())
+    return Result(kotlin.Result.runCatching { MVEL.executeExpression(compile(expr), null as? Map<*, *>?) })
   }
 
   /**
    * 公式求值
    *
    * @param expr 公式
-   * @param args 变量值
+   * @param vars 变量值
    * @return Result
    */
-  fun eval(expr: String, args: Map<String, Any>): Result {
-    return eval(expr, args, Math)
+  fun eval(expr: String, vars: Map<String, Any>): Result {
+    return Result(kotlin.Result.runCatching { MVEL.executeExpression(compile(expr), null, vars) })
   }
 
   /**
@@ -52,19 +52,19 @@ object Eval {
    * @return Result
    */
   fun eval(expr: String, ctx: Any): Result {
-    return eval(expr, emptyMap(), ctx)
+    return Result(kotlin.Result.runCatching { MVEL.executeExpression(compile(expr), ctx, null as? Map<*, *>?) })
   }
 
   /**
    * 公式求值
    *
    * @param expr 公式
-   * @param args 变量值
+   * @param vars 变量值
    * @param ctx 上下文（提供所需的函数）
    * @return Result
    */
-  fun eval(expr: String, args: Map<String, Any>, ctx: Any?): Result {
-    return Result(kotlin.Result.runCatching { MVEL.executeExpression(compile(expr), ctx, args) })
+  fun eval(expr: String, vars: Map<String, Any>, ctx: Any): Result {
+    return Result(kotlin.Result.runCatching { MVEL.executeExpression(compile(expr), ctx, vars) })
   }
 
   /**
@@ -94,11 +94,11 @@ object Eval {
    * 公式求值
    *
    * @param expr 公式
-   * @param args 变量值列表，依次对应变量: n1, n2, ...
+   * @param vars 变量值列表，依次对应变量: n1, n2, ...
    * @return Result
    */
-  fun evalWithArgs(expr: String, vararg args: Any): Result {
-    return eval(expr, ArgMap(args))
+  fun evalWithVars(expr: String, vararg vars: Any): Result {
+    return Result(kotlin.Result.runCatching { MVEL.executeExpression(compile(expr), VarMap(vars)) })
   }
 
   class Result(private val result: kotlin.Result<Any>) {
@@ -125,15 +125,15 @@ object Eval {
     }
   }
 
-  private class ArgMap(private val args: Array<out Any>) : Map<String, Any> {
+  private class VarMap(private val vars: Array<out Any>) : Map<String, Any> {
     override val entries: Set<Map.Entry<String, Any>>
       get() = throw UnsupportedOperationException()
     override val keys: Set<String>
       get() = throw UnsupportedOperationException()
     override val size: Int
-      get() = args.size
+      get() = vars.size
     override val values: Collection<Any>
-      get() = args.asList()
+      get() = throw UnsupportedOperationException()
 
     override fun containsKey(key: String): Boolean {
       return get(key) != null
@@ -161,9 +161,9 @@ object Eval {
           }
         }
       }
-      return args.getOrNull(n - 1)
+      return vars.getOrNull(n - 1)
     }
 
-    override fun isEmpty(): Boolean = args.isEmpty()
+    override fun isEmpty(): Boolean = vars.isEmpty()
   }
 }

@@ -1,5 +1,6 @@
 package play.example.game.app.admin
 
+import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.example.game.container.admin.ContainerAdminHttpActionManager
@@ -8,12 +9,11 @@ import play.net.http.HttpActionManager
 
 @Component
 class AdminHttpActionManager @Autowired constructor(
-  gameServerId: GameServerId,
-  container: ContainerAdminHttpActionManager
-) : HttpActionManager() {
+  private val gameServerId: GameServerId,
+  private val container: ContainerAdminHttpActionManager
+) : HttpActionManager(), SmartInitializingSingleton {
 
-  init {
-    @Suppress("LeakingThis")
+  override fun afterSingletonsInstantiated() {
     container.registerActionManager(gameServerId.toInt(), this)
   }
 }

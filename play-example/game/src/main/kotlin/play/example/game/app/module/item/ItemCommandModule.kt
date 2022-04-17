@@ -1,9 +1,9 @@
 package play.example.game.app.module.item
 
 import play.example.game.app.module.player.PlayerManager.Self
-import play.example.game.container.command.Arg
 import play.example.game.container.command.Command
 import play.example.game.container.command.CommandModule
+import play.example.game.container.command.Param
 
 /**
  * 物品GM
@@ -13,6 +13,6 @@ import play.example.game.container.command.CommandModule
 class ItemCommandModule {
 
   @Command(desc = "添加物品")
-  private fun addItem(self: Self, @Arg("物品id") itemId: Int, @Arg("数量", "1") num: Int) {
+  private fun addItem(self: Self, @Param("物品id") itemId: Int, @Param("数量", "1") num: Int) {
   }
 }

@@ -3,6 +3,8 @@ package play.util.ranking
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
+import org.eclipse.collections.api.map.primitive.IntObjectMap
+import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
 import play.util.json.Json
 import play.util.unsafeCast
 import java.util.*
@@ -74,6 +76,11 @@ class RankingListRef<ID, E : RankingElement<ID>>(rankingType: RankingType<E>, pr
   override fun <T> toList(transformer: (Int, E) -> T): List<T> {
     updateElementsRank()
     return elements.asSequence().map { transformer(it._rank, it) }.toList()
+  }
+
+  override fun toRankMap(): IntObjectMap<E> {
+    updateElementsRank()
+    return RankingHelper.toRankMap(elements) { it._rank }
   }
 
   companion object {

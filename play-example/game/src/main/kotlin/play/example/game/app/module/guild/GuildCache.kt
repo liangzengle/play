@@ -3,9 +3,8 @@ package play.example.game.app.module.guild
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import play.example.common.id.GameUIDGenerator
+import play.example.common.id.UIDGenerator
 import play.example.game.app.module.guild.entity.GuildEntityCache
-import play.example.game.app.module.server.res.ServerConfig
 import play.spring.OrderedSmartInitializingSingleton
 import play.util.collection.ConcurrentLongLongMap
 import java.util.*
@@ -13,13 +12,10 @@ import java.util.*
 @Component
 class GuildCache @Autowired constructor(
   private val guildEntityCache: GuildEntityCache,
-  private val serverConfig: ServerConfig
-) :
-  OrderedSmartInitializingSingleton {
+  private val idGenerator: UIDGenerator
+) : OrderedSmartInitializingSingleton {
 
   private lateinit var playerIdToGuildId: ConcurrentLongLongMap
-
-  private lateinit var guildIdGenerator: GameUIDGenerator
 
   override fun afterSingletonsInstantiated(beanFactory: BeanFactory) {
     playerIdToGuildId = guildEntityCache.getCachedEntities().fold(ConcurrentLongLongMap()) { r, entity ->
@@ -28,13 +24,10 @@ class GuildCache @Autowired constructor(
       }
       r
     }
-
-    guildIdGenerator = guildEntityCache.getCachedEntities().maxOfOrNull { it.id }?.let { GameUIDGenerator.fromId(it) }
-      ?: serverConfig.newIdGenerator()
   }
 
   fun genGuildId(): Long {
-    return guildIdGenerator.nextOrThrow()
+    return idGenerator.nextId()
   }
 
   fun hasGuild(playerId: Long) = playerIdToGuildId.containsKey(playerId)

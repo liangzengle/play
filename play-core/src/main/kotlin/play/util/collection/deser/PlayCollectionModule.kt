@@ -8,9 +8,8 @@ import com.fasterxml.jackson.databind.deser.std.PrimitiveArrayDeserializers
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.datatype.eclipsecollections.PackageVersion
 import com.google.auto.service.AutoService
-import play.util.collection.BitSet
-import play.util.collection.MutableEnumIntMap
-import play.util.collection.MutableEnumLongMap
+import play.util.collection.*
+import play.util.isAssignableFrom
 import play.util.unsafeCast
 
 /**
@@ -37,7 +36,7 @@ internal class PlayCollectionDeserializers : Deserializers.Base() {
     type: JavaType, config: DeserializationConfig?, beanDesc: BeanDescription?
   ): JsonDeserializer<*>? {
     if (type.rawClass == BitSet::class.java) {
-      return BitSetDeserializer()
+      return BitSetDeserializer
     }
     if (type.rawClass == MutableEnumIntMap::class.java) {
       return MutableEnumIntMapDeserializer(type.bindings.typeParameters[0].rawClass)
@@ -45,11 +44,17 @@ internal class PlayCollectionDeserializers : Deserializers.Base() {
     if (type.rawClass == MutableEnumLongMap::class.java) {
       return MutableEnumLongMapDeserializer(type.bindings.typeParameters[0].rawClass)
     }
+    if (isAssignableFrom<IntTuple>(type.rawClass)) {
+      return IntTupleDeserializer
+    }
+    if (isAssignableFrom<LongTuple>(type.rawClass)) {
+      return LongTupleDeserializer
+    }
     return null
   }
 }
 
-internal class BitSetDeserializer : StdDeserializer<BitSet>(BitSet::class.java) {
+internal object BitSetDeserializer : StdDeserializer<BitSet>(BitSet::class.java) {
   override fun deserialize(p: JsonParser, ctxt: DeserializationContext): BitSet {
     val array = PrimitiveArrayDeserializers.forType(Long::class.java).unsafeCast<JsonDeserializer<LongArray>>()
       .deserialize(p, ctxt)
@@ -72,6 +77,24 @@ internal class MutableEnumLongMapDeserializer(private val keyType: Class<*>) :
     val array = PrimitiveArrayDeserializers.forType(Long::class.java).unsafeCast<JsonDeserializer<LongArray>>()
       .deserialize(p, ctxt)
     return MutableEnumLongMap(keyType.unsafeCast<Class<out Enum<*>>>(), array)
+  }
+}
+
+internal object IntTupleDeserializer : StdDeserializer<IntTuple>(IntTuple::class.java) {
+  override fun deserialize(p: JsonParser, ctxt: DeserializationContext): IntTuple {
+    val array = PrimitiveArrayDeserializers.forType(Int::class.java)
+      .unsafeCast<JsonDeserializer<IntArray>>()
+      .deserialize(p, ctxt)
+    return IntTuple(*array)
+  }
+}
+
+internal object LongTupleDeserializer : StdDeserializer<LongTuple>(LongTuple::class.java) {
+  override fun deserialize(p: JsonParser, ctxt: DeserializationContext): LongTuple {
+    val array = PrimitiveArrayDeserializers.forType(Long::class.java)
+      .unsafeCast<JsonDeserializer<LongArray>>()
+      .deserialize(p, ctxt)
+    return LongTuple(*array)
   }
 }
 

@@ -1,4 +1,4 @@
-package play.example.common.akka
+package play.akka
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -7,8 +7,8 @@ import com.typesafe.config.Config
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import play.GracefullyShutdown
-import play.example.common.akka.scheduling.ActorScheduler
-import play.example.common.akka.scheduling.AkkaScheduler
+import play.akka.scheduling.ActorScheduler
+import play.akka.scheduling.AkkaScheduler
 import play.scala.toPlay
 import play.scheduling.Scheduler
 import java.time.Clock

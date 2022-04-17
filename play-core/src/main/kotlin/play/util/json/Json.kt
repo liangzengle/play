@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.PropertyAccessor
 import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.JavaType
@@ -22,6 +23,8 @@ import kotlin.reflect.javaType
 object Json {
   private val mapper = configure(ObjectMapper())
 
+  private val prettyWriter = mapper.writer().withDefaultPrettyPrinter()
+
   @JvmStatic
   fun copyObjectMapper() = mapper.copy()
 
@@ -30,6 +33,9 @@ object Json {
 
   @JvmStatic
   fun writer() = mapper.writer()
+
+  @JvmStatic
+  fun prettyWriter() = prettyWriter
 
   @JvmStatic
   fun jsonFactory() = mapper.factory
@@ -164,4 +170,62 @@ object Json {
   fun toJsonByteArray(value: Any): ByteArray = mapper.writeValueAsBytes(value)
 
   fun toJsonString(value: Any): String = stringify(value)
+
+  /**
+   * 获取指定字段的值，忽略子节点，如果不存在则返回null
+   *
+   * @param jsonObject json object的字符串
+   * @param fieldName 字段名
+   * @return
+   */
+  fun getFieldText(jsonObject: String, fieldName: String): String? {
+    return getFieldText(jsonObject, fieldName, true)
+  }
+
+  /**
+   * 获取指定字段的值，如果不存在则返回null
+   *
+   * @param jsonObject json object的字符串
+   * @param fieldName 字段名
+   * @param skipChildren 是否忽略子节点
+   * @return
+   */
+  fun getFieldText(jsonObject: String, fieldName: String, skipChildren: Boolean): String? {
+    jsonFactory().createParser(jsonObject).use {
+      while (it.nextToken() != null) {
+        if (it.currentToken == JsonToken.FIELD_NAME) {
+          it.nextToken()
+          if (it.currentName == fieldName) {
+            return it.text
+          } else if (skipChildren) {
+            it.skipChildren()
+          }
+        }
+      }
+    }
+    return null
+  }
+
+  fun getElementText(jsonArray: String, index: Int): String? {
+    jsonFactory().createParser(jsonArray).use {
+      var i = 0
+      var started = false
+      while (it.nextToken() != null) {
+        if (!started) {
+          started = it.currentToken == JsonToken.START_ARRAY
+          continue
+        }
+        if (i == index) {
+          val startIndex = it.currentLocation.charOffset - 1
+          it.skipChildren()
+          val endIndex = it.currentLocation.charOffset
+          return jsonArray.substring(startIndex.toInt(), endIndex.toInt())
+        } else {
+          i++
+          it.skipChildren()
+        }
+      }
+    }
+    return null
+  }
 }

@@ -6,7 +6,6 @@ import play.entity.cache.UnsafeEntityCacheOps
 import play.example.game.app.module.player.entity.AbstractPlayerEntity
 import play.util.collection.toImmutableList
 import play.util.isAssignableFrom
-import play.util.reflect.ClassScanner
 
 /**
  * 玩家实体数据缓存初始化
@@ -14,10 +13,7 @@ import play.util.reflect.ClassScanner
  * @author LiangZengle
  */
 @Component
-class PlayerEntityCacheInitializer(
-  classScanner: ClassScanner,
-  entityCacheManager: EntityCacheManager
-) {
+class PlayerEntityCacheInitializer(entityCacheManager: EntityCacheManager) {
 
   /**
    * 实现了[UnsafeEntityCacheOps]接口的所有玩家实体类缓存
@@ -32,11 +28,18 @@ class PlayerEntityCacheInitializer(
    * 玩家注册时，将所有的玩家实体数据缓存置为空值，以减少1次无意义的数据库查询
    */
   fun initWithEmptyValue(id: Long) {
+    return initWithEmptyValue(id, null)
+  }
+
+  fun initWithEmptyValue(id: Long, except: UnsafeEntityCacheOps<*>?) {
     @Suppress("RedundantNullableReturnType")
     val boxedId: Long? = id
     val entityCaches = playerEntityCaches
     for (i in entityCaches.indices) {
-      entityCaches[i].initWithEmptyValue(boxedId!!)
+      val entityCache = entityCaches[i]
+      if (entityCache !== except) {
+        entityCache.initWithEmptyValue(boxedId!!)
+      }
     }
   }
 }

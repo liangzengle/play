@@ -1,4 +1,4 @@
-package play.example.common.akka.scheduling
+package play.akka.scheduling
 
 import akka.actor.typed.Scheduler
 import play.scheduling.AbstractScheduler

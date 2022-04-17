@@ -18,6 +18,12 @@ dependencies {
     codegenImplementation Deps.KotlinPoetDeprecated
 }
 
+configurations.all {
+    exclude group: 'org.springframework.boot', module: 'spring-boot-starter-webflux'
+    exclude group: 'org.springframework.boot', module: 'spring-boot-starter-actuator'
+    exclude group: 'com.alibaba.rsocket', module: '*'
+}
+
 task generateCaches(type: JavaExec) {
     main = 'play.example.robot.codegen.Generator'
     classpath = sourceSets.codegen.runtimeClasspath

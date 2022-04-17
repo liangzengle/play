@@ -19,6 +19,8 @@ class RobotPlayer(val account: String, private val eventLoop: EventLoop) {
 
   var name: String = ""
 
+  var serverId: Int = 1
+
   private lateinit var client: RobotClient
 
   private lateinit var requester: Requester

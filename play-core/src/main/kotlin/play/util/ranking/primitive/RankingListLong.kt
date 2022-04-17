@@ -3,6 +3,7 @@ package play.util.ranking.primitive
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
+import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
 import play.util.json.Json
 import play.util.ranking.RankingHelper
@@ -73,18 +74,22 @@ class RankingListLong<E : RankingElementLong>(
     }
   }
 
+  fun toGeneric(): RankingList<Long, RankingElementLongAdapter> {
+    return RankingListLongAdapter(this.unsafeCast())
+  }
+
   fun <T> subRank(fromRankInclusive: Int, toRankInclusive: Int, transformer: (Int, E) -> T): List<T> {
     updateElementsRank()
     return RankingHelper.subRank<E, T>(elements, fromRankInclusive, toRankInclusive, { it._rank }, transformer)
   }
 
-  fun toGeneric(): RankingList<Long, RankingElementLongAdapter> {
-    return RankingListLongAdapter(this.unsafeCast())
-  }
-
   fun <T> toList(transformer: (Int, E) -> T): List<T> {
     updateElementsRank()
     return elements.asSequence().map { transformer(it._rank, it) }.toList()
+  }
+
+  fun toRankMap(): IntObjectMap<E> {
+    return RankingHelper.toRankMap(elements) { it._rank }
   }
 
   companion object {

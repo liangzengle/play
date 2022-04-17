@@ -19,7 +19,7 @@ annotation class Command(val name: String = "", val desc: String)
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.VALUE_PARAMETER)
-annotation class Arg(val desc: String, val defaultValue: String = "")
+annotation class Param(val desc: String, val defaultValue: String = "")
 
 
 /**

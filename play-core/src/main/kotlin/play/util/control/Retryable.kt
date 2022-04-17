@@ -1,12 +1,11 @@
 package play.util.control
 
+import mu.KLogging
 import play.scheduling.Scheduler
-import play.util.logging.getLogger
-import play.util.primitive.toIntChecked
+import play.util.concurrent.Future
+import play.util.concurrent.PlayFuture
 import java.util.concurrent.Executor
-import java.util.concurrent.atomic.AtomicLongFieldUpdater
-import kotlin.time.Duration
-import kotlin.time.DurationUnit
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 
 /**
  * 失败重试
@@ -19,76 +18,38 @@ import kotlin.time.DurationUnit
 class Retryable(
   val name: String,
   private val attempts: Int,
-  private val intervalMillis: Int,
+  private val intervalMillis: Long,
   private val scheduler: Scheduler,
   private val executor: Executor,
-  private val task: () -> Boolean
-) : Runnable {
-
-  constructor(
-    name: String,
-    attempts: Int,
-    interval: Duration,
-    scheduler: Scheduler,
-    executor: Executor,
-    task: () -> Boolean
-  ) : this(
-    name,
-    attempts,
-    interval.toInt(DurationUnit.MILLISECONDS),
-    scheduler,
-    executor,
-    task
-  )
-
-  constructor(
-    name: String,
-    attempts: Int,
-    interval: java.time.Duration,
-    scheduler: Scheduler,
-    executor: Executor,
-    task: () -> Boolean
-  ) : this(
-    name,
-    attempts,
-    interval.toMillis().toIntChecked(),
-    scheduler,
-    executor,
-    task
-  )
+  private val task: () -> PlayFuture<Any?>
+) {
 
   init {
-    require(intervalMillis > 0) { "`attemptInterval`" }
-    require(attempts >= -1) { "`attempts`" }
+    require(intervalMillis > 0) { "illegal intervalMillis: $intervalMillis" }
+    require(attempts >= -1) { "illegal attempts: $attempts" }
   }
 
   @Volatile
+  private var state = STATE_INIT
+
   private var attempted = -1L
 
-  override fun run() {
-    val attempted = this.attempted
-    if (attempted == -1L) {
-      throw IllegalStateException("$this not started, call `start` instead.")
-    }
-    var succeed = false
-    try {
-      succeed = task()
+  private fun run() {
+    val future: PlayFuture<Any?> = try {
+      task()
     } catch (e: Exception) {
       logger.warn(e) { "[$this] attempt failed" }
-    } finally {
-      val nowAttempted = attempted + 1
-      if (!AttemptedUpdater.compareAndSet(this, attempted, nowAttempted)) {
-        val e = ConcurrentModificationException("should not happen")
-        logger.error(e) { "[$this] is running concurrently" }
-        throw e
-      }
-      if (succeed) {
-        logger.info { "[$this] succeeded: attempted $nowAttempted" }
+      PlayFuture.failed(e)
+    }
+    future.onComplete {
+      attempted++
+      if (it.isSuccess) {
+        logger.info { "[$this] succeeded: attempted $attempted" }
       } else {
-        if (attempts == -1 || attempts > nowAttempted) {
+        if (attempts == -1 || attempts > attempted) {
           schedule(intervalMillis)
         } else {
-          logger.info { "[$this] give up: attempts $attempts, attempted $nowAttempted" }
+          logger.warn { "[$this] give up: attempts $attempts, attempted $attempted" }
         }
       }
     }
@@ -102,33 +63,45 @@ class Retryable(
     if (attempts == 0) {
       return
     }
-    if (!AttemptedUpdater.compareAndSet(this, -1, 0)) {
+    if (!StateUpdater.compareAndSet(this, STATE_INIT, STATE_STARTED)) {
       throw IllegalStateException("[$this] started.")
     }
     val delay = if (runImmediately) 0 else intervalMillis
     schedule(delay)
   }
 
-  private fun schedule(delayMillis: Int) {
-    scheduler.schedule(java.time.Duration.ofMillis(delayMillis.toLong()), executor, this::run)
+  private fun schedule(delayMillis: Long) {
+    scheduler.schedule(java.time.Duration.ofMillis(delayMillis), executor, this::run)
   }
 
   override fun toString(): String {
     return "Retry $name $attempts times every ${intervalMillis}ms"
   }
 
-  companion object {
-    private val logger = getLogger()
+  companion object : KLogging() {
+
+    private const val STATE_INIT = 0
+    private const val STATE_STARTED = 1
 
     @JvmStatic
-    private val AttemptedUpdater = AtomicLongFieldUpdater.newUpdater(Retryable::class.java, "attempted")
+    private val StateUpdater = AtomicIntegerFieldUpdater.newUpdater(Retryable::class.java, "state")
 
     fun forever(
       name: String,
-      intervalMillis: Int,
+      intervalMillis: Long,
       scheduler: Scheduler,
       executor: Executor,
       task: () -> Boolean
+    ): Retryable = Retryable(name, -1, intervalMillis, scheduler, executor) {
+      Future.successful(task())
+    }
+
+    fun foreverAsync(
+      name: String,
+      intervalMillis: Long,
+      scheduler: Scheduler,
+      executor: Executor,
+      task: () -> PlayFuture<Any?>
     ): Retryable = Retryable(name, -1, intervalMillis, scheduler, executor, task)
   }
 }

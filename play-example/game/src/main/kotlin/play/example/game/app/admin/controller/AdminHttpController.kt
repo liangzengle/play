@@ -3,10 +3,11 @@ package play.example.game.app.admin.controller
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.example.game.app.admin.AdminHttpActionManager
+import play.example.game.container.gs.domain.GameServerId
 import play.net.http.*
 
 @Component
-class AdminHttpController @Autowired constructor(actionManager: AdminHttpActionManager) :
+class AdminHttpController @Autowired constructor(actionManager: AdminHttpActionManager, private val gameServerId: GameServerId) :
   AbstractHttpController(actionManager) {
 
   @Get("/get")
@@ -22,5 +23,10 @@ class AdminHttpController @Autowired constructor(actionManager: AdminHttpActionM
   @Get("/get/{itemId}/name")
   fun httpGetVariable(httpRequest: AbstractHttpRequest, itemId: Int): HttpResult {
     return ok("name=$itemId")
+  }
+
+  @Get("/server/info")
+  fun httpGetVariable(): HttpResult {
+    return ok(gameServerId.toString())
   }
 }

@@ -1,6 +1,6 @@
 package play.scheduling
 
-internal class CronSequenceGeneratorFactory : CronExpression.Factory {
+internal object CronSequenceGeneratorFactory : CronExpression.Factory {
   override fun parse(cron: String): CronExpression {
     return CronSequenceGenerator(cron)
   }

@@ -17,6 +17,7 @@ import org.springframework.scheduling.TaskScheduler
 import play.akka.AbstractTypedActor
 import play.akka.stoppedBehavior
 import play.db.DatabaseNameProvider
+import play.example.common.id.UIDGenerator
 import play.example.game.app.GameApp
 import play.example.game.app.module.platform.domain.Platforms
 import play.example.game.app.module.server.res.ServerConfig
@@ -136,16 +137,17 @@ class GameServerActor(
     springApplication.addInitializers(
       ApplicationContextInitializer<ConfigurableApplicationContext> {
         it.unsafeCast<BeanDefinitionRegistry>().apply {
-          registerBeanDefinition("requestDispatcher", beanDefinition(typeOf<RequestDispatcher>()))
           registerBeanDefinition("gameServerActor", beanDefinition(typeOf<ActorRef<Command>>(), self))
-          registerBeanDefinition("scheduler", beanDefinition(typeOf<Scheduler>(), managedScheduler))
-          registerBeanDefinition("taskScheduler", beanDefinition(typeOf<TaskScheduler>(), taskScheduler))
+          registerBeanDefinition("requestDispatcher", beanDefinition(typeOf<RequestDispatcher>()))
         }
         it.beanFactory.apply {
           registerSingleton("actorMdc", actorMdc)
           registerSingleton("gameServerId", GameServerId(serverId))
           registerSingleton("serverConfig", serverConfig)
           registerSingleton("databaseNameProvider", DatabaseNameProvider { dbName })
+          registerSingleton("uidGenerator", UIDGenerator(serverId))
+          registerSingleton("taskScheduler", taskScheduler)
+          registerSingleton("scheduler", managedScheduler)
         }
       }
     )

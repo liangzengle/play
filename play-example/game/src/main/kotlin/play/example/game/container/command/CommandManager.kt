@@ -57,11 +57,11 @@ class CommandManager constructor(
     return CommandDescriptor(module, getCommandName(method), desc, args)
   }
 
-  private fun toDescriptor(parameter: Parameter): CommandArgDescriptor {
-    val arg = parameter.getAnnotation(Arg::class.java)
+  private fun toDescriptor(parameter: Parameter): CommandParamDescriptor {
+    val param = parameter.getAnnotation(Param::class.java)
     val name = parameter.name
-    val desc = arg?.desc ?: ""
-    val defaultValue = arg?.defaultValue ?: ""
-    return CommandArgDescriptor(name, desc, defaultValue)
+    val desc = param?.desc ?: ""
+    val defaultValue = param?.defaultValue ?: ""
+    return CommandParamDescriptor(name, desc, defaultValue)
   }
 }

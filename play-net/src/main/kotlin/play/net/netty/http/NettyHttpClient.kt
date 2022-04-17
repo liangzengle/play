@@ -69,7 +69,7 @@ class NettyHttpClient(private val name: String, private val async: AsyncHttpClie
           if (HttpStatusCode.isSuccess(response.statusCode)) {
             promise.success(response.responseBody ?: "")
           } else {
-            promise.failure(UnsuccessfulStatusCodeException(response.statusCode))
+            promise.failure(UnsuccessfulStatusCodeException(response.uri.toString(), response.statusCode))
           }
         }
       },

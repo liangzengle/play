@@ -7,7 +7,7 @@ import play.util.emptyInt
 import java.util.*
 import javax.annotation.CheckReturnValue
 
-interface ParameterizedQueryService<P> : QueryService {
+interface ParameterizedQueryService<P: Any> : QueryService {
 
   fun <ID, E : Entity<ID>> query(
     entityClass: Class<E>,

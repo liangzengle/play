@@ -130,21 +130,28 @@ abstract class NettyHttpServerHandler(protected val actionManager: HttpActionMan
     values.add(value)
   }
 
-  protected fun onException(ctx: ChannelHandlerContext, request: BasicNettyHttpRequest, exception: Throwable) {
+  private fun onException(ctx: ChannelHandlerContext, request: BasicNettyHttpRequest, exception: Throwable) {
     if (exception.isFatal()) {
       throw exception
     }
     val result = when (exception) {
       is HttpRequestParameterException -> HttpResult.notFount()
-      else -> HttpResult.internalServerError()
+      else -> {
+        val message = exception.message
+        if (!message.isNullOrEmpty()) {
+          HttpResult.internalServerError().copy(body = HttpEntity.Strict(message))
+        } else {
+          HttpResult.internalServerError()
+        }
+      }
     }
-    writeResponse(ctx, request, result, exception.javaClass.name + ": " + exception.message)
+    writeResponse(ctx, request, result, "${exception.javaClass.simpleName}: ${exception.message}")
     if (exception !is HttpRequestParameterException) {
       logger.error(exception.message, exception)
     }
   }
 
-  protected fun writeResponse(
+  private fun writeResponse(
     ctx: ChannelHandlerContext,
     request: BasicNettyHttpRequest,
     result: HttpResult.Strict,

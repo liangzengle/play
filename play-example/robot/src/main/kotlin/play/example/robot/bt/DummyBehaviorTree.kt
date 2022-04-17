@@ -17,7 +17,7 @@ class DummyBehaviorTree {
   private lateinit var accountModule: AccountModule
 
   fun run(player: RobotPlayer) {
-    val params = LoginParams("Dev", 1, player.account)
+    val params = LoginParams("Dev", player.serverId, player.account)
     accountModule.loginReq(player, params)
   }
 

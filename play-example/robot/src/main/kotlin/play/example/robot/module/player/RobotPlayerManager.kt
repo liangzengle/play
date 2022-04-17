@@ -21,13 +21,14 @@ import kotlin.concurrent.thread
  * @author LiangZengle
  */
 @Component
-class RobotPlayerManager @Autowired constructor(private val bt: DummyBehaviorTree) : SmartInitializingSingleton {
+class RobotPlayerManager @Autowired constructor(private val bt: DummyBehaviorTree) {
 
-  override fun afterSingletonsInstantiated() {
+  fun init() {
     val conf = ConfigFactory.load()
     val host = conf.getString("server.host")
     val port = conf.getInt("server.port")
     val num = conf.getInt("robot.num")
+    val serverIds = conf.getIntList("server.ids")
 
     val netEventLoop = createEventLoopGroup("robot-client", 8)
     val robotEventLoop = createEventLoopGroup("robot-executor", 8, false)
@@ -43,6 +44,7 @@ class RobotPlayerManager @Autowired constructor(private val bt: DummyBehaviorTre
 
     for (i in 1..num) {
       val robotPlayer = RobotPlayer(i.toString(), robotEventLoop.next())
+      robotPlayer.serverId = serverIds[i % serverIds.size]
       val nettyClient = NettyClient("robot-$i", b, mapOf(RobotPlayer.AttrKey to robotPlayer))
       val client = RobotClient(nettyClient)
       robotPlayer.setClient(client)

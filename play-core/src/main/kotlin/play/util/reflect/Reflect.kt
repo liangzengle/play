@@ -60,6 +60,16 @@ object Reflect {
   }
 
   @JvmStatic
+  fun <T> loadClass(fqcn: String): Class<T> {
+    return Class.forName(fqcn).unsafeCast()
+  }
+
+  @JvmStatic
+  fun <T> loadClass(fqcn: String, initialize: Boolean, classLoader: ClassLoader): Class<T> {
+    return Class.forName(fqcn, initialize, classLoader).unsafeCast()
+  }
+
+  @JvmStatic
   fun <T : Any> getKotlinObjectOrNull(clazz: Class<T>): T? {
     return clazz.kotlin.objectInstance
   }
@@ -112,6 +122,12 @@ object Reflect {
 
   inline fun <reified T> newInstance(fqcn: String, vararg args: Any?): T {
     return newInstanceWithArgs(T::class.java, fqcn, *args)
+  }
+
+  @JvmStatic
+  fun <T : Any> getKotlinObjectOrNewInstance(fqcn: String): T {
+    val clazz = loadClass<T>(fqcn)
+    return getKotlinObjectOrNull(clazz) ?: newInstance(clazz)
   }
 
   @JvmStatic

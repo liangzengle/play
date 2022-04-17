@@ -8,7 +8,7 @@ import akka.actor.typed.javadsl.Receive
 import play.akka.AbstractTypedActor
 import play.akka.send
 import play.akka.withResumeSupervisor
-import play.example.common.akka.scheduling.ActorScheduler
+import play.akka.scheduling.ActorScheduler
 import play.example.common.scheduling.Cron
 import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.domain.PlayerErrorCode
@@ -25,14 +25,14 @@ import play.util.exception.NoStackTraceException
 import play.util.unsafeCast
 
 class PlayerManager(
-  context: ActorContext<Command>,
-  private val eventDispatcher: PlayerEventDispatcher,
-  private val playerIdNameCache: PlayerIdNameCache,
-  private val playerService: PlayerService,
-  private val requestHandler: PlayerRequestHandler,
-  actorScheduler: ActorRef<ActorScheduler.Command>,
-  private val taskEventReceiver: PlayerTaskEventReceiver,
-  private val actorMdc: ActorMDC
+    context: ActorContext<Command>,
+    private val eventDispatcher: PlayerEventDispatcher,
+    private val playerIdNameCache: PlayerIdNameCache,
+    private val playerService: PlayerService,
+    private val requestHandler: PlayerRequestHandler,
+    actorScheduler: ActorRef<ActorScheduler.Command>,
+    private val taskEventReceiver: PlayerTaskEventReceiver,
+    private val actorMdc: ActorMDC
 ) : AbstractTypedActor<PlayerManager.Command>(context) {
 
   init {
@@ -117,13 +117,13 @@ class PlayerManager(
 
   companion object {
     fun create(
-      eventDispatcher: PlayerEventDispatcher,
-      playerIdNameCache: PlayerIdNameCache,
-      playerService: PlayerService,
-      requestHandler: PlayerRequestHandler,
-      actorScheduler: ActorRef<ActorScheduler.Command>,
-      taskEventReceiver: PlayerTaskEventReceiver,
-      actorMdc: ActorMDC
+        eventDispatcher: PlayerEventDispatcher,
+        playerIdNameCache: PlayerIdNameCache,
+        playerService: PlayerService,
+        requestHandler: PlayerRequestHandler,
+        actorScheduler: ActorRef<ActorScheduler.Command>,
+        taskEventReceiver: PlayerTaskEventReceiver,
+        actorMdc: ActorMDC
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
         PlayerManager(

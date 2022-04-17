@@ -10,7 +10,7 @@ import play.mvc.Controller
 import play.mvc.MsgId
 import play.mvc.Push
 import play.util.concurrent.CommonPool
-import play.util.reflect.ClassScanner
+import play.util.reflect.ClassgraphClassScanner
 import java.io.File
 import java.lang.reflect.Field
 import java.lang.reflect.Method
@@ -35,7 +35,7 @@ object Generator {
     val dispatchCodeBlock = CodeBlock.builder()
     dispatchCodeBlock.beginControlFlow("when(response.header.msgId.toInt())")
     val autowiredNotRequired = AnnotationSpec.builder(Autowired::class).addMember("%L", "required = false").build()
-    ClassScanner(CommonPool, emptyList(), listOf("play.example")).scanResult.use {
+    ClassgraphClassScanner(CommonPool, emptyList(), listOf("play.example")).scanResult.use {
       it.getClassesWithAnnotation(Controller::class.java.name)
         .forEach { classInfo ->
           val controller = classInfo.getAnnotationInfo(Controller::class.java.name)

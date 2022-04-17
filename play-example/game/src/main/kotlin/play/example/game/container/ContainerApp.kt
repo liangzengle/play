@@ -5,8 +5,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import play.PlayCoreConfiguration
+import play.akka.EnableAkka
 import play.db.PlayDBConfiguration
-import play.example.common.akka.AkkaConfiguration
 import play.example.common.net.NettyServerConfiguration
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.container.command.CommandManager
@@ -22,13 +22,13 @@ import play.util.reflect.ClassScanner
 @SpringBootApplication
 @Configuration(proxyBeanMethods = false)
 @EnableHttpClient
+@EnableAkka
 @Import(
   value = [
     PlayCoreConfiguration::class,
     PlayDBConfiguration::class,
     PlayMongoClientConfiguration::class,
     NettyServerConfiguration::class,
-    AkkaConfiguration::class,
     RSocketRpcConfiguration::class
   ]
 )

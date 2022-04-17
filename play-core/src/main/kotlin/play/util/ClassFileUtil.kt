@@ -22,7 +22,7 @@ object ClassFileUtil {
 
   fun getClassFile(clazz: Class<*>): ByteArray {
     val path = clazz.name.replace('.', '/') + ".class"
-    return clazz.classLoader.getResourceAsStream(path).readAllBytes()
+    return clazz.classLoader.getResourceAsStream(path)!!.readAllBytes()
   }
 
   fun getClassFiles(classes: Collection<Class<*>>): Map<Class<*>, ByteArray> {

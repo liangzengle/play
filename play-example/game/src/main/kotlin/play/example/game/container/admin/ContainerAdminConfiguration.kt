@@ -25,7 +25,7 @@ class ContainerAdminConfiguration {
   ): NettyServer {
     val host = conf.getString("play.admin.host")
     val port = conf.getInt("play.admin.port")
-    val maxContentLength = conf.getMemorySize("play.admin.content-length-max").toBytes().toIntSaturated()
+    val maxContentLength = conf.getMemorySize("play.admin.max-content-length").toBytes().toIntSaturated()
     return serverBuilder
       .host(host)
       .port(port)

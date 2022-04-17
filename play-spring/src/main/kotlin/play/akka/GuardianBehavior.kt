@@ -1,4 +1,4 @@
-package play.example.common.akka
+package play.akka
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior

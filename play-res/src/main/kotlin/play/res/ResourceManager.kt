@@ -10,7 +10,7 @@ import play.util.collection.*
 import play.util.createInstance
 import play.util.io.FileMonitor
 import play.util.isAbstract
-import play.util.reflect.ClassScanner
+import play.util.reflect.ClassgraphClassScanner
 import play.util.reflect.isAnnotationPresent
 import play.util.unsafeCast
 import java.io.File
@@ -36,7 +36,7 @@ class ResourceManager(
 
   companion object {
     @JvmName("create")
-    operator fun invoke(path: String, classScanner: ClassScanner): ResourceManager {
+    operator fun invoke(path: String, classScanner: ClassgraphClassScanner): ResourceManager {
       val urlResolver = ResourceUrlResolver.forPath(path)
       val resourceReader = JsonResourceReader(urlResolver)
       val configReader = ConfigReader()
