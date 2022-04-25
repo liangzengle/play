@@ -12,7 +12,6 @@ import play.example.game.container.net.SessionManager
 import play.example.game.container.net.UnhandledRequest
 import play.mvc.MessageCodec
 import play.mvc.Request
-import play.util.concurrent.PlayPromise
 
 /**
  * 登录消息按服id分发
@@ -28,6 +27,8 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
   ) : Command
 
   private class UnregisterLoginReceiver(val receiver: ActorRef<UnhandledLoginRequest>) : Command
+
+  private val loginParamCodec = MessageCodec.newCodec(LoginParams::class)
 
   private val receivers = ArrayList<RegisterLoginReceiver>(1)
 
@@ -64,7 +65,7 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
   private fun dispatch(req: UnhandledLoginRequest) {
     try {
       val requestBody = req.request.body
-      val params = MessageCodec.decode<LoginParams>(requestBody.bytes)
+      val params = loginParamCodec.decode(requestBody.bytes)
       val serverId = params.serverId
       for (i in receivers.indices) {
         val cmd = receivers[i]

@@ -12,6 +12,8 @@ import play.net.netty.copyToArray
  * @author LiangZengle
  */
 class RequestDecoder(maxFrameLength: Int) : LengthFieldBasedFrameDecoder(maxFrameLength, 0, 4, 0, 4) {
+  private val codec = MessageCodec.newCodec(RequestBody::class)
+
   override fun decode(ctx: ChannelHandlerContext, `in`: ByteBuf?): Any? {
     val msg = super.decode(ctx, `in`)
     if (msg !is ByteBuf) {
@@ -21,7 +23,7 @@ class RequestDecoder(maxFrameLength: Int) : LengthFieldBasedFrameDecoder(maxFram
     try {
       val msgId = msg.readInt()
       val sequenceNo = msg.readInt()
-      val requestBody = MessageCodec.decode<RequestBody>(msg.copyToArray())
+      val requestBody = codec.decode(msg.copyToArray())
       request = Request(Header(MsgId(msgId), sequenceNo), requestBody)
     } finally {
       ReferenceCountUtil.release(msg)

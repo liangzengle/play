@@ -3,5 +3,5 @@ plugins {
 }
 dependencies {
     api( project(":play-core"))
-    api(Deps.KotlinxSerializationProtobuf)
+    api(Deps.Kotlinx.Serialization.Protobuf)
 }

@@ -19,4 +19,5 @@ dependencies {
   api(Deps.Micrometer)
   api(Deps.UnsafeAccessor)
   ksp(Deps.AutoServiceKsp)
+  compileOnly(Deps.Kotlinx.Serialization.Protobuf)
 }

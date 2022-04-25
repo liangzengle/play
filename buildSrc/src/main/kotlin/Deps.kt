@@ -62,6 +62,13 @@ object Deps {
   @Deprecated("")
   const val KotlinPoetDeprecated = "com.squareup:kotlinpoet:${Versions.KotlinPoet}"
 
+  object Kotlinx {
+    object Serialization {
+      const val Core = "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:${Versions.KotlinxSerialization}"
+      const val Protobuf = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf-jvm:${Versions.KotlinxSerialization}"
+    }
+  }
+
   object Log4j {
     private const val Version = Versions.Log4j
     const val Api = "org.apache.logging.log4j:log4j-api:$Version"
@@ -126,9 +133,6 @@ object Deps {
   const val Jctools = "org.jctools:jctools-core:${Versions.Jctools}"
 
   const val KotlinLogging = "io.github.microutils:kotlin-logging-jvm:${Versions.KotlinLogging}"
-
-  const val KotlinxSerializationProtobuf =
-    "org.jetbrains.kotlinx:kotlinx-serialization-protobuf-jvm:${Versions.KotlinxSerialization}"
 
   const val Ksp = "com.google.devtools.ksp:symbol-processing-api:${Versions.Ksp}"
 
