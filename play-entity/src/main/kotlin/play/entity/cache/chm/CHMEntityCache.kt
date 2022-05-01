@@ -29,11 +29,12 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   private val executor: Executor,
   private val settings: EntityCacheFactory.Settings,
   private val initializerProvider: EntityInitializerProvider
-) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID>, EntityCacheInternalApi {
+) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID>, EntityCacheInternalApi<E> {
   companion object : KLogging()
 
   private var initialized = false
 
+  // intended non-volatile, I think it's fine in the scenario
   private var _cache: ConcurrentMap<ID, CacheObj<ID, E>>? = null
 
   private lateinit var initializer: EntityInitializer<E>
@@ -213,7 +214,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     return computeIfAbsent(id, null).toOptional()
   }
 
-  override fun getCachedEntities(): Sequence<E> {
+  override fun getAllCached(): Sequence<E> {
     return getCache().values.asSequence().filterIsInstance<NonEmpty<ID, E>>().map { it.peekEntity() }
   }
 
@@ -257,10 +258,10 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun delete(id: ID) {
-    getCache().compute(id) { _, _ ->
-      entityCacheWriter.deleteById(id, entityClass).onFailure {
-        logger.error(it) { "Delete entity failed: ${entityClass.simpleName}($id)" }
-        retryDelete(id)
+    getCache().compute(id) { k, _ ->
+      entityCacheWriter.deleteById(k, entityClass).onFailure {
+        logger.error(it) { "Delete entity failed: ${entityClass.simpleName}($k)" }
+        retryDelete(k)
       }
       Empty()
     }
@@ -307,7 +308,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   }
 
   override fun dump(): String {
-    return Json.prettyWriter().writeValueAsString(getCachedEntities().toList())
+    return Json.prettyWriter().writeValueAsString(getAllCached().toList())
   }
 
   @Suppress("UNCHECKED_CAST")
@@ -329,7 +330,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   override fun initWithEmptyValue(id: ID) {
     val prev = getCache().putIfAbsent(id, Empty())
     if (prev != null) {
-      logger.warn { "初始化为空值失败, Entity已经存在: $prev" }
+      logger.debug { "初始化为空值失败, Entity已经存在: $prev" }
     }
   }
 

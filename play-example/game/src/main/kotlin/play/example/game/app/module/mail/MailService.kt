@@ -40,7 +40,7 @@ class MailService(
   }
 
   private fun deleteExpiredPublicMails() {
-    val expiredMails = publicMailCache.getCachedEntities().filter(::isExpired).toList()
+    val expiredMails = publicMailCache.getAll().filter(::isExpired).toList()
     if (expiredMails.isNotEmpty()) {
       expiredMails.forEach(publicMailCache::delete)
       // TODO log
@@ -52,7 +52,7 @@ class MailService(
   }
 
   private fun checkMailBox(self: Self) {
-    publicMailCache.getCachedEntities()
+    publicMailCache.getAll()
       .filter {
         !it.isReceived(self.id) && playerConditionService.check(self, it.receiveConditions).isOk()
       }

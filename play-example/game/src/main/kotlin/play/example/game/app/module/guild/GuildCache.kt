@@ -18,7 +18,7 @@ class GuildCache @Autowired constructor(
   private lateinit var playerIdToGuildId: ConcurrentLongLongMap
 
   override fun afterSingletonsInstantiated(beanFactory: BeanFactory) {
-    playerIdToGuildId = guildEntityCache.getCachedEntities().fold(ConcurrentLongLongMap()) { r, entity ->
+    playerIdToGuildId = guildEntityCache.getAll().fold(ConcurrentLongLongMap()) { r, entity ->
       for (member in entity.members) {
         r.put(member, entity.id)
       }

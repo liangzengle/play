@@ -95,6 +95,12 @@ fun KSAnnotated.getAnnotation(className: ClassName): KSAnnotation {
   }.first()
 }
 
+fun KSAnnotated.getAnnotationOrNull(className: ClassName): KSAnnotation? {
+  return annotations.filter {
+    it.shortName.getShortName() == className.simpleName && it.annotationType.resolve().declaration.qualifiedName?.asString() == className.canonicalName
+  }.firstOrNull()
+}
+
 @Suppress("UNCHECKED_CAST")
 fun <T> KSAnnotation.getValue(name: String): T {
   for (argument in arguments) {

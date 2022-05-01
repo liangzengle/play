@@ -3,6 +3,7 @@ package play.codegen.ksp.entitycahce
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSType
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -104,11 +105,24 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
 
     classBuilder.addFunction(
       FunSpec.builder("unsafeOps")
-        .addAnnotation(AnnotationSpec.builder(Suppress::class).addMember("%S", "UNCHECKED_CAST").build()).addStatement(
+        .addAnnotation(AnnotationSpec.builder(Suppress::class).addMember("%S", "UNCHECKED_CAST").build())
+        .addStatement(
           "return %L as %T", DELEGATEE, UnsafeEntityCacheOps.parameterizedBy(idClass)
         ).build()
     )
 
+    if (isResident(entityClassDeclaration)) {
+      classBuilder.addFunction(
+        FunSpec.builder("getAll")
+          .addAnnotation(AnnotationSpec.builder(Suppress::class).addMember("%S", "UNCHECKED_CAST").build())
+          .addStatement(
+            "return (%L as %T).getAllCached()",
+            DELEGATEE,
+            EntityCacheInternalApi.parameterizedBy(entityClass)
+          )
+          .build()
+      )
+    }
 
     val getOrCreate = getOrCreate(entityClassDeclaration)
     if (getOrCreate != null) {
@@ -166,6 +180,16 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
         else -> null
       }
     }
+  }
+
+  private fun isResident(entityClassDeclaration: KSClassDeclaration): Boolean {
+    val cacheSpec = entityClassDeclaration.getAnnotationOrNull(CacheSpec)
+    val loadAllOnInit = cacheSpec?.getValue<Boolean>("loadAllOnInit") ?: false
+    if (!loadAllOnInit) {
+      return false
+    }
+    return cacheSpec?.getValue<Boolean>("neverExpire") == true
+      || cacheSpec?.getValue<KSType>("expireEvaluator")?.toClassName() == NeverExpireEvaluator
   }
 
   private class MultiEntityCacheKeySpec(

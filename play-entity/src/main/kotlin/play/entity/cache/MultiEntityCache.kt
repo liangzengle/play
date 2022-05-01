@@ -41,15 +41,16 @@ class MultiEntityCacheLong<ID : ObjId, E : ObjIdEntity<ID>>(
     }
   }
 
-  private fun expireEvaluator(): ExpireEvaluator {
-    return entityCache.unsafeCast<EntityCacheInternalApi>().expireEvaluator()
+  private fun internalApi(): EntityCacheInternalApi<E> {
+    return entityCache.unsafeCast()
   }
 
   private fun evict() {
     fun canExpire(key: Long): Boolean {
+      val expireEvaluator = internalApi().expireEvaluator()
       for (id in getIds(key)) {
         val entity = entityCache.getCached(id).getOrNull() ?: continue
-        if (!expireEvaluator().canExpire(entity)) {
+        if (!expireEvaluator.canExpire(entity)) {
           return false
         }
       }
@@ -83,8 +84,11 @@ class MultiEntityCacheLong<ID : ObjId, E : ObjIdEntity<ID>>(
     }
     return cache.computeIfAbsent(key) { k ->
       val loadIds = entityCacheLoader.listMultiIds(entityClass, keyName, k).blockingGet(10.seconds)
-      val idSet =
-        getCachedEntities().filter { keyMapper.applyAsLong(it) == k }.map { it.id }.toCollection(ConcurrentHashSet())
+      val idSet = internalApi()
+        .getAllCached()
+        .filter { keyMapper.applyAsLong(it) == k }
+        .map { it.id }
+        .toCollection(ConcurrentHashSet())
       idSet.addAll(loadIds)
       idSet
     }
@@ -144,15 +148,16 @@ class MultiEntityCacheInt<ID : ObjId, E : ObjIdEntity<ID>>(
     }
   }
 
-  private fun expireEvaluator(): ExpireEvaluator {
-    return entityCache.unsafeCast<EntityCacheInternalApi>().expireEvaluator()
+  private fun internalApi(): EntityCacheInternalApi<E> {
+    return entityCache.unsafeCast()
   }
 
   private fun evict() {
     fun canExpire(key: Int): Boolean {
+      val expireEvaluator = internalApi().expireEvaluator()
       for (id in getIds(key)) {
         val entity = entityCache.getCached(id).getOrNull() ?: continue
-        if (!expireEvaluator().canExpire(entity)) {
+        if (!expireEvaluator.canExpire(entity)) {
           return false
         }
       }
@@ -186,8 +191,11 @@ class MultiEntityCacheInt<ID : ObjId, E : ObjIdEntity<ID>>(
     }
     return cache.computeIfAbsent(key) { k ->
       val loadIds = entityCacheLoader.listMultiIds(entityClass, keyName, k).blockingGet(10.seconds)
-      val idSet =
-        getCachedEntities().filter { keyMapper.applyAsInt(it) == k }.map { it.id }.toCollection(ConcurrentHashSet())
+      val idSet = internalApi()
+        .getAllCached()
+        .filter { keyMapper.applyAsInt(it) == k }
+        .map { it.id }
+        .toCollection(ConcurrentHashSet())
       idSet.addAll(loadIds)
       idSet
     }

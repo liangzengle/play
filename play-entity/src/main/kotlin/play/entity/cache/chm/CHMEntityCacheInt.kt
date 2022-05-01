@@ -29,11 +29,12 @@ class CHMEntityCacheInt<E : IntIdEntity>(
   private val executor: Executor,
   private val settings: EntityCacheFactory.Settings,
   private val initializerProvider: EntityInitializerProvider
-) : EntityCache<Int, E>, UnsafeEntityCacheOps<Int>, EntityCacheInternalApi {
+) : EntityCache<Int, E>, UnsafeEntityCacheOps<Int>, EntityCacheInternalApi<E> {
   companion object : KLogging()
 
   private var initialized = false
 
+  // intended non-volatile, I think it's fine in the scenario
   private var _cache: ConcurrentIntObjectMap<CacheObj<E>>? = null
 
   private lateinit var initializer: EntityInitializer<E>
@@ -109,7 +110,7 @@ class CHMEntityCacheInt<E : IntIdEntity>(
         val cache = getCache()
         val now = currentMillis()
         for (entity in entities) {
-          val obj = cache[entity.id()]
+          val obj = cache[entity.id]
           if (obj is NonEmpty<E>) {
             obj.lastPersistTime = now
           }
@@ -213,7 +214,7 @@ class CHMEntityCacheInt<E : IntIdEntity>(
     return computeIfAbsent(id, null).toOptional()
   }
 
-  override fun getCachedEntities(): Sequence<E> {
+  override fun getAllCached(): Sequence<E> {
     return getCache().values.asSequence().filterIsInstance<NonEmpty<E>>().map { it.peekEntity() }
   }
 
@@ -307,7 +308,7 @@ class CHMEntityCacheInt<E : IntIdEntity>(
   }
 
   override fun dump(): String {
-    return Json.prettyWriter().writeValueAsString(getCachedEntities().toList())
+    return Json.prettyWriter().writeValueAsString(getAllCached().toList())
   }
 
   @Suppress("UNCHECKED_CAST")
@@ -329,7 +330,7 @@ class CHMEntityCacheInt<E : IntIdEntity>(
   override fun initWithEmptyValue(id: Int) {
     val prev = getCache().putIfAbsent(id, Empty())
     if (prev != null) {
-      logger.warn { "初始化为空值失败, Entity已经存在: $prev" }
+      logger.debug { "初始化为空值失败, Entity已经存在: $prev" }
     }
   }
 

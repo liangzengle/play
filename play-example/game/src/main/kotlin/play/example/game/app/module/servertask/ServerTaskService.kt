@@ -78,7 +78,7 @@ public class ServerTaskService @Autowired constructor(
    * 检测新的任务
    */
   fun checkNewTask() {
-    for (entity in serverTaskEntityCache.getCachedEntities()) {
+    for (entity in serverTaskEntityCache.getAll()) {
       if (ServerTaskResourceSet.size() != entity.tasks.size()) {
         for (serverTaskResource in ServerTaskResourceSet.list()) {
           if (entity.tasks.containsKey(serverTaskResource.id)) {
@@ -93,7 +93,7 @@ public class ServerTaskService @Autowired constructor(
    * 检测由于配置变化导致的任务完成
    */
   fun checkShouldFinished() {
-    for (entity in serverTaskEntityCache.getCachedEntities()) {
+    for (entity in serverTaskEntityCache.getAll()) {
       val changed = LinkedList<ServerTask>()
       for (serverTask in entity.tasks.values()) {
         if (!serverTask.isInProgress()) {
@@ -112,7 +112,7 @@ public class ServerTaskService @Autowired constructor(
   }
 
   fun onEvent(event: ServerTaskEvent) {
-    for (entity in serverTaskEntityCache.getCachedEntities()) {
+    for (entity in serverTaskEntityCache.getAll()) {
       onEvent(entity, event)
     }
   }

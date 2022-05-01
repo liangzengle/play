@@ -40,13 +40,6 @@ interface EntityCache<ID : Any, E : Entity<ID>> {
   fun getCached(id: ID): Optional<E>
 
   /**
-   * 获取当前缓存中的所有实体
-   *
-   * @return 缓存中所有实体的集合(不可修改)
-   */
-  fun getCachedEntities(): Sequence<E>
-
-  /**
    * 从缓存中获取实体对，如果不存在则从数据库中加载
    */
   fun getAll(ids: Iterable<ID>): List<E>
