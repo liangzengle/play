@@ -111,9 +111,10 @@ class MemoryRepository : Repository {
     if (map.isEmpty()) {
       return Future.successful(emptyList())
     }
+    val fieldName = keyName.substringAfterLast('.')
     val result = map.values.asSequence()
       .map { it.unsafeCast<E>() }
-      .filter { Reflect.getFieldValue<Any>(it.id.javaClass.getDeclaredField(keyName), it.id) == keyValue }
+      .filter { Reflect.getFieldValue<Any>(it.id.javaClass.getDeclaredField(fieldName), it.id) == keyValue }
       .map { it.id }
       .toImmutableList()
     return Future.successful(result)
