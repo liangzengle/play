@@ -108,16 +108,34 @@ class CHMEntityCacheLong<E : LongIdEntity>(
       .map { it.peekEntity() }
       .toList()
     if (entities.isNotEmpty()) {
-      entityCacheWriter.batchInsertOrUpdate(entities).onSuccess {
-        val cache = getCache()
-        val now = currentMillis()
-        for (entity in entities) {
-          val obj = cache[entity.id]
-          if (obj is NonEmpty<E>) {
-            obj.lastPersistTime = now
-          }
+      batchPersist(entities)
+    }
+  }
+
+  private fun batchPersist(entities: Collection<E>) {
+    entityCacheWriter.batchInsertOrUpdate(entities)
+      .onSuccess { entities.forEach(::onPersistSucceeded) }
+      .onFailure { e ->
+        logger.error(e) { "[${entityClass.simpleName}] batch upsert failed, fallback to one by one" }
+        entities.forEach(::singlePersist)
+      }
+  }
+
+  private fun singlePersist(entity: E) {
+    entityCacheWriter.insertOrUpdate(entity)
+      .onSuccess { onPersistSucceeded(entity) }
+      .onFailure { e ->
+        logger.error(e) {
+          "${entityClass.simpleName}(${entity.id}) upsert failed: ${Json.stringify(entity)}"
         }
       }
+  }
+
+  private fun onPersistSucceeded(entity: E) {
+    val cache = getCache()
+    val obj = cache[entity.id]
+    if (obj is NonEmpty<E>) {
+      obj.lastPersistTime = currentMillis()
     }
   }
 
