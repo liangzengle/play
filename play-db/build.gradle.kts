@@ -1,3 +1,3 @@
 dependencies {
-    api(project(":play-entity"))
+  api(project(":play-entity"))
 }

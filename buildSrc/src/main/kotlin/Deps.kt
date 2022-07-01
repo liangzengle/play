@@ -89,6 +89,10 @@ object Deps {
     const val Handler = "io.netty:netty-handler:$Version"
   }
 
+  object Reactor {
+    const val Core = "io.projectreactor:reactor-core:${Versions.Reactor}"
+  }
+
   object Slf4j {
     private const val Version = Versions.Slf4j
     const val Api = "org.slf4j:slf4j-api:$Version"

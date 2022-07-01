@@ -21,11 +21,11 @@ class PlayerIdNameCache @Autowired constructor(queryService: QueryService) {
   init {
     val idToName = ConcurrentLongObjectMap<String>()
     val serverToNameToId = ConcurrentIntObjectMap<ConcurrentObjectLongMap<String>>()
-    queryService.foreach(PlayerInfoEntity::class.java, listOf("name")) { result ->
+    queryService.query(PlayerInfoEntity::class.java, listOf("name")).doOnNext { result ->
       val id = result.getLong("id")
       val name = result.getString("name")
       add(id, name, idToName, serverToNameToId)
-    }.await(Duration.ofSeconds(5))
+    }.blockLast(Duration.ofSeconds(5))
     this.idToName = idToName
     this.serverToNameToId = serverToNameToId
   }

@@ -3,6 +3,7 @@ package play.example.game.app.module.mail
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.stereotype.Component
 import play.Log
+import play.example.common.id.UIDGenerator
 import play.example.game.app.module.common.res.CommonSettingConf
 import play.example.game.app.module.mail.entity.*
 import play.example.game.app.module.mail.event.PlayerMailEvent
@@ -15,16 +16,15 @@ import play.example.game.app.module.reward.model.Reward
 import play.example.game.container.net.Session
 import play.spring.OrderedSmartInitializingSingleton
 import play.util.time.Time.currentMillis
-import java.util.function.Predicate
 
 @Component
 class MailService(
   private val publicMailCache: PublicMailEntityCache,
-  private val playerMailIdEntityCache: PlayerMailIdEntityCache,
   private val playerMailCache: PlayerMailEntityCache,
   private val eventBus: PlayerEventBus,
   private val rawRewardConvert: RawRewardConverter,
-  private val playerConditionService: PlayerConditionService
+  private val playerConditionService: PlayerConditionService,
+  private val uidGenerator: UIDGenerator
 ) : PlayerEventListener, OrderedSmartInitializingSingleton {
   private val mailCountMax = 100
 
@@ -71,12 +71,10 @@ class MailService(
   private fun sendMail(self: Self, event: PlayerMailEvent) = sendMail(self, event.mail)
 
   fun sendMail(self: Self, mail: Mail) {
-    val playerMailIdEntity = playerMailIdEntityCache.getOrCreate(self.id)
-    val mailId = playerMailIdEntity.nextMailId()
-    val id = PlayerMailId(self.id, mailId)
-    val mailEntity = PlayerMailEntity(id, mail.title, mail.content, mail.rewards, mail.logSource, 0, mail.createTime)
+    val id = uidGenerator.nextId()
+    val mailEntity =
+      PlayerMailEntity(id, self.id, mail.title, mail.content, mail.rewards, mail.logSource, 0, mail.createTime)
     playerMailCache.create(mailEntity)
-    playerMailIdEntity.add(mailId)
 
     Session.write(self.id, MailModule.newMailPush(1))
 
@@ -85,28 +83,25 @@ class MailService(
   }
 
   private fun forceDeleteTrashMails(self: Self) {
-    val playerMailIdEntity = playerMailIdEntityCache.getOrCreate(self.id)
     var deleteCount = 0
-    fun delete(canRemove: Predicate<PlayerMailEntity>): Int {
-      val ids = playerMailIdEntity.getMailIds().collect { PlayerMailId(self.id, it) }
-      val allMails = playerMailCache.getAll(ids)
-      var n = 0
-      for (mail in allMails) {
-        if (canRemove.test(mail)) {
+    if (playerMailCache.getIndexSize(self.id) >= mailCountMax) {
+      val mails = playerMailCache.getByIndex(self.id)
+      for (mail in mails) {
+        if (mail.isRead() && (!mail.hasReward() || mail.isRewarded())) {
           playerMailCache.delete(mail)
-          playerMailIdEntity.remove(mail.id.mailId)
-          n++
-          // TODO log
+          deleteCount++
         }
       }
-      return n
     }
 
-    if (playerMailIdEntity.count() > mailCountMax) {
-      deleteCount += delete { it.isRead() && !it.hasReward() }
-    }
-    if (playerMailIdEntity.count() > mailCountMax) {
-      deleteCount += delete { !it.hasReward() }
+    if (playerMailCache.getIndexSize(self.id) >= mailCountMax) {
+      val mails = playerMailCache.getByIndex(self.id)
+      for (mail in mails) {
+        if (!mail.hasReward()) {
+          playerMailCache.delete(mail)
+          deleteCount++
+        }
+      }
     }
 
     if (deleteCount > 0) {

@@ -24,8 +24,8 @@ import play.util.primitive.toIntSaturated
 import play.util.time.Time.betweenDays
 import play.util.time.Time.currentDate
 import play.util.time.Time.currentDateTime
+import java.time.Duration
 import java.time.LocalDate
-import kotlin.time.Duration.Companion.seconds
 
 @Component
 class ServerService(
@@ -42,9 +42,9 @@ class ServerService(
   private val serverId = conf.serverId.toInt()
 
   init {
-    val serverIds: MutableIntSet =
-      queryService.collectId(classOf<ServerEntity>(), IntSets.mutable.empty()) { set, id -> set.apply { add(id) } }
-        .blockingGet(5.seconds)
+    val serverIds: MutableIntSet = queryService.queryIds(classOf<ServerEntity>())
+      .collect({ IntSets.mutable.empty() }, { set, id -> set.apply { add(id) } })
+      .block(Duration.ofSeconds(5))!!
     if (serverIds.isEmpty) {
       serverIds.add(serverId)
     } else if (!serverIds.contains(serverId)) {

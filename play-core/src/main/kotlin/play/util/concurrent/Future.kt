@@ -40,11 +40,11 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
    * @return a new Future
    */
   fun rejectIf(shouldReject: (T) -> Boolean): Future<T> {
-    return rejectIf(shouldReject) { NoSuchElementException("<rejected>") }
+    return rejectIf(shouldReject) { NoSuchElementException(REJECTED) }
   }
 
   fun rejectIf(ec: Executor, shouldReject: (T) -> Boolean): Future<T> {
-    return rejectIf(ec, shouldReject) { NoSuchElementException("<rejected>") }
+    return rejectIf(ec, shouldReject) { NoSuchElementException(REJECTED) }
   }
 
   fun rejectIf(shouldReject: (T) -> Boolean, mapper: (T) -> Throwable): Future<T> {
@@ -56,11 +56,11 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
   }
 
   fun rejectIfNot(rejectExcept: (T) -> Boolean): Future<T> {
-    return rejectIfNot(rejectExcept) { NoSuchElementException("<rejected>") }
+    return rejectIfNot(rejectExcept) { NoSuchElementException(REJECTED) }
   }
 
   fun rejectIfNot(ec: Executor, rejectExcept: (T) -> Boolean): Future<T> {
-    return rejectIfNot(ec, rejectExcept) { NoSuchElementException("<rejected>") }
+    return rejectIfNot(ec, rejectExcept) { NoSuchElementException(REJECTED) }
   }
 
   fun rejectIfNot(rejectExcept: (T) -> Boolean, mapper: (T) -> Throwable): Future<T> {
@@ -338,6 +338,8 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
   }
 
   companion object {
+    private const val REJECTED = "<rejected>"
+
     @JvmStatic
     private val DefaultValueIfAbsent = Any()
 
@@ -363,7 +365,7 @@ value class Future<T>(private val cf: CompletableFuture<T>) {
     }
 
     @Suppress("NOTHING_TO_INLINE")
-    inline fun <T> CompletableFuture<T>.toFuture(): Future<T> = Future(this)
+    inline fun <T> CompletableFuture<T>.toPlay(): Future<T> = Future(this)
 
     @JvmStatic
     fun <T> failed(cause: Throwable): Future<T> {

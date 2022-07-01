@@ -1,27 +1,20 @@
 package play.entity.cache
 
 import play.entity.Entity
-import play.entity.ObjId
-import play.entity.ObjIdEntity
-import play.util.concurrent.Future
-import java.util.*
-import javax.annotation.CheckReturnValue
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 
 interface EntityCacheLoader {
 
-  @CheckReturnValue
-  fun <ID, E : Entity<ID>> loadById(id: ID, entityClass: Class<E>): Future<Optional<E>>
+  fun <ID, E : Entity<ID>> loadById(entityClass: Class<E>, id: ID): Mono<E>
 
-  @CheckReturnValue
-  fun <ID, E : Entity<ID>> loadAll(ids: Iterable<ID>, entityClass: Class<E>): Future<List<E>>
+  fun <ID, E : Entity<ID>> loadAll(entityClass: Class<E>, ids: Iterable<ID>): Flux<E>
 
-  @CheckReturnValue
-  fun <ID, E : Entity<ID>, C, C1 : C> loadAll(entityClass: Class<E>, initial: C1, f: (C1, E) -> C1): Future<C>
+  fun <ID, E : Entity<ID>> loadAll(entityClass: Class<E>): Flux<E>
 
-  @CheckReturnValue
-  fun <K, ID : ObjId, E : ObjIdEntity<ID>> listMultiIds(
+  fun <IDX, ID : Any, E : Entity<ID>> loadIdsByIndex(
     entityClass: Class<E>,
-    keyName: String,
-    keyValue: K
-  ): Future<List<ID>>
+    indexName: String,
+    indexValue: IDX
+  ): Flux<ID>
 }

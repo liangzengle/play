@@ -1,20 +1,20 @@
 package play.util.http
 
+import org.reactivestreams.FlowAdapters
 import org.slf4j.LoggerFactory
 import play.util.concurrent.Future
-import play.util.concurrent.Future.Companion.toFuture
+import play.util.concurrent.Future.Companion.toPlay
 import play.util.logging.Logger
 import play.util.mkStringTo
+import reactor.core.publisher.Flux
 import java.net.URI
 import java.net.URLEncoder
 import java.net.http.HttpConnectTimeoutException
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.net.http.HttpTimeoutException
-import java.nio.ByteBuffer
 import java.time.Duration
 import java.util.concurrent.CompletionException
-import java.util.concurrent.Flow
 import java.util.concurrent.atomic.AtomicLong
 
 typealias JHttpClient = java.net.http.HttpClient
@@ -39,6 +39,7 @@ class JdkHttpClient constructor(
   fun toJava(): JHttpClient = client
 
   override fun close() {
+    // nothing to do
   }
 
   override fun toString(): String {
@@ -138,7 +139,7 @@ class JdkHttpClient constructor(
     val requestNo = counter.incrementAndGet()
     logRequest(requestNo, request)
     return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-      .toFuture()
+      .toPlay()
       .andThen { v, e -> logResponse(requestNo, request, v, e) }
       .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.uri().toString(), it.statusCode()) })
       .map { it.body() ?: "" }
@@ -151,37 +152,26 @@ class JdkHttpClient constructor(
     val requestNo = counter.incrementAndGet()
     logRequest(requestNo, request)
     return client.sendAsync(request, bodyHandler)
-      .toFuture()
+      .toPlay()
       .andThen { v, e -> logResponse(requestNo, request, v, e) }
       .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.uri().toString(), it.statusCode()) })
   }
 
   private fun logRequest(requestNo: Long, request: HttpRequest) {
     request.bodyPublisher().ifPresentOrElse(
-      {
-        it.subscribe(
-          object : Flow.Subscriber<ByteBuffer?> {
-            override fun onComplete() {
-            }
-
-            override fun onSubscribe(subscription: Flow.Subscription) {
-              subscription.request(1)
-            }
-
-            override fun onNext(item: ByteBuffer?) {
-              val content = item?.asReadOnlyBuffer()?.let { buffer ->
-                val byteArray = ByteArray(buffer.remaining())
-                buffer.get(byteArray)
-                String(byteArray, Charsets.UTF_8)
-              } ?: ""
-              logger.info { "[$requestNo] sending http request: $request $content" }
-            }
-
-            override fun onError(throwable: Throwable) {
-              logger.error(throwable) { "[$requestNo] error occurred when subscribing http request: $request" }
-            }
+      { publisher ->
+        Flux.from(FlowAdapters.toPublisher(publisher))
+          .doOnNext {
+            val content = it?.asReadOnlyBuffer()?.let { buffer ->
+              val byteArray = ByteArray(buffer.remaining())
+              buffer.get(byteArray)
+              String(byteArray, Charsets.UTF_8)
+            } ?: ""
+            logger.info { "[$requestNo] sending http request: $request $content" }
           }
-        )
+          .doOnError {
+            logger.error(it) { "[$requestNo] observing http request error: $request" }
+          }
       },
       { logger.info { "[$requestNo] sending http request: $request" } }
     )

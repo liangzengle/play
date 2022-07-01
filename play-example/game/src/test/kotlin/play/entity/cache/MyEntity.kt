@@ -1,16 +1,9 @@
 package play.entity.cache
 
-import play.entity.ObjId
-import play.entity.ObjIdEntity
+import play.entity.LongIdEntity
 
 /**
  *
  * @author LiangZengle
  */
-class MyEntity(id: MyObjId) :
-  ObjIdEntity<MyObjId>(id) {
-
-  constructor(playerId: Long, itemId: Int) : this(MyObjId(playerId, itemId))
-}
-
-data class MyObjId(@MultiEntityCacheKey val playerId: Long, val itemId: Int) : ObjId()
+class MyEntity(id: Long, @CacheIndex val playerId: Long) : LongIdEntity(id)

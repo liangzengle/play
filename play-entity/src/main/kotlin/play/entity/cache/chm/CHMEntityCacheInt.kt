@@ -1,6 +1,8 @@
 package play.entity.cache.chm
 
 import mu.KLogging
+import org.eclipse.collections.impl.factory.primitive.IntLists
+import org.eclipse.collectionx.toJava
 import play.entity.IntIdEntity
 import play.entity.cache.*
 import play.inject.PlayInjector
@@ -72,11 +74,13 @@ class CHMEntityCacheInt<E : IntIdEntity>(
       val isLoadAllOnInit = cacheSpec.loadAllOnInit
       if (isLoadAllOnInit) {
         logger.debug { "Loading all [${entityClass.simpleName}]" }
-        entityCacheLoader.loadAll(entityClass, cache) { c, e ->
-          initializer.initialize(e)
-          c[e.id] = NonEmpty(e)
-          c
-        }.await()
+        entityCacheLoader.loadAll(entityClass).collect(
+          { cache },
+          { c, e ->
+            initializer.initialize(e)
+            c[e.id] = NonEmpty(e)
+          }
+        ).block()
         logger.debug { "Loaded ${cache.size} [${entityClass.simpleName}] into cache." }
       }
       this._cache = cache
@@ -112,8 +116,8 @@ class CHMEntityCacheInt<E : IntIdEntity>(
 
   private fun batchPersist(entities: Collection<E>) {
     entityCacheWriter.batchInsertOrUpdate(entities)
-      .onSuccess { entities.forEach(::onPersistSucceeded) }
-      .onFailure { e ->
+      .doOnSuccess { entities.forEach(::onPersistSucceeded) }
+      .doOnError { e ->
         logger.error(e) { "[${entityClass.simpleName}] batch upsert failed, fallback to one by one" }
         entities.forEach(::singlePersist)
       }
@@ -121,8 +125,8 @@ class CHMEntityCacheInt<E : IntIdEntity>(
 
   private fun singlePersist(entity: E) {
     entityCacheWriter.insertOrUpdate(entity)
-      .onSuccess { onPersistSucceeded(entity) }
-      .onFailure { e ->
+      .doOnSuccess { onPersistSucceeded(entity) }
+      .doOnError { e ->
         logger.error(e) {
           "${entityClass.simpleName}(${entity.id}) upsert failed: ${Json.stringify(entity)}"
         }
@@ -157,9 +161,9 @@ class CHMEntityCacheInt<E : IntIdEntity>(
     if (isResident) {
       return null
     }
-    val f = entityCacheLoader.loadById(id, entityClass)
+    val f = entityCacheLoader.loadById(entityClass, id)
     try {
-      val entity: E = f.blockingGet(settings.loadTimeout).getOrNull() ?: return null
+      val entity: E = f.blockOptional(settings.loadTimeout).getOrNull() ?: return null
       if (entity.isDeleted()) {
         entityCacheWriter.deleteById(id, entityClass)
         return null
@@ -236,9 +240,9 @@ class CHMEntityCacheInt<E : IntIdEntity>(
     return getCache().values.asSequence().filterIsInstance<NonEmpty<E>>().map { it.peekEntity() }
   }
 
-  override fun getAll(ids: Iterable<Int>): List<E> {
-    val result = arrayListOf<E>()
-    val missing = arrayListOf<Int>()
+  override fun getAll(ids: Collection<Int>): List<E> {
+    val result = ArrayList<E>(ids.size)
+    val missing = IntLists.mutable.empty()
     for (id in ids) {
       val entity = getOrNull(id)
       if (entity != null) {
@@ -247,10 +251,11 @@ class CHMEntityCacheInt<E : IntIdEntity>(
         missing.add(id)
       }
     }
-    if (missing.isEmpty()) {
+    if (missing.isEmpty) {
       return result
     }
-    val loaded = entityCacheLoader.loadAll(missing, entityClass).blockingGet(Duration.ofSeconds(5))
+    val loaded = entityCacheLoader.loadAll(entityClass, missing.toJava()).collectList()
+      .blockOptional(Duration.ofSeconds(10)).orElse(Collections.emptyList())
     for (entity in loaded) {
       if (entity.isDeleted()) {
         continue
@@ -277,7 +282,7 @@ class CHMEntityCacheInt<E : IntIdEntity>(
 
   override fun delete(id: Int) {
     getCache().compute(id) { _, _ ->
-      entityCacheWriter.deleteById(id, entityClass).onFailure {
+      entityCacheWriter.deleteById(id, entityClass).doOnError {
         logger.error(it) { "Delete entity failed: ${entityClass.simpleName}($id)" }
         retryDelete(id)
       }
@@ -340,7 +345,7 @@ class CHMEntityCacheInt<E : IntIdEntity>(
       .filterNot { isImmutable && it.lastPersistTime != 0L }
       .map { it.peekEntity() }
       .toList()
-    return entityCacheWriter.batchInsertOrUpdate(entities) as Future<Unit>
+    return Future(entityCacheWriter.batchInsertOrUpdate(entities).toFuture()) as Future<Unit>
   }
 
   override fun expireEvaluator(): ExpireEvaluator = expireEvaluator

@@ -1,17 +1,18 @@
 package play.db.memory
 
+import com.fasterxml.jackson.databind.JsonNode
 import play.db.Repository
 import play.db.ResultMap
 import play.entity.Entity
-import play.entity.ObjId
-import play.entity.ObjIdEntity
 import play.util.collection.toImmutableList
-import play.util.concurrent.Future
+import play.util.json.Json
 import play.util.reflect.Reflect
 import play.util.unsafeCast
-import java.util.*
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
+import kotlin.streams.asStream
 
 @Suppress("UNCHECKED_CAST")
 class MemoryRepository : Repository {
@@ -22,101 +23,107 @@ class MemoryRepository : Repository {
     return map ?: caches.computeIfAbsent(entityClass) { ConcurrentHashMap() }
   }
 
-  override fun insert(entity: Entity<*>): Future<out Any> {
+  override fun insert(entity: Entity<*>): Mono<Void> {
     val prev = getMap(entity.javaClass).putIfAbsent(entity.id(), entity)
     if (prev != null) {
       throw IllegalStateException("${entity.javaClass.simpleName}(${entity.id()}) already exists")
     }
-    return Future.successful(1)
+    return Mono.empty()
   }
 
-  override fun update(entity: Entity<*>): Future<out Any> {
-    return Future.successful(Unit)
+  override fun update(entity: Entity<*>): Mono<Void> {
+    return Mono.empty()
   }
 
-  override fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any): Future<out Any> {
-    return Future.successful(Unit)
+  override fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any): Mono<Void> {
+    return Mono.empty()
   }
 
-  override fun insertOrUpdate(entity: Entity<*>): Future<out Any> {
-    getMap(entity.javaClass).putIfAbsent(entity.id(), entity)
-    return Future.successful(Unit)
+  override fun insertOrUpdate(entity: Entity<*>): Mono<Void> {
+    getMap(entity.javaClass).put(entity.id(), entity)
+    return Mono.empty()
   }
 
-  override fun delete(entity: Entity<*>): Future<out Any> {
+  override fun delete(entity: Entity<*>): Mono<Void> {
     getMap(entity.javaClass).remove(entity.id())
-    return Future.successful(Unit)
+    return Mono.empty()
   }
 
-  override fun <ID, E : Entity<ID>> deleteById(id: ID, entityClass: Class<E>): Future<out Any> {
+  override fun <ID, E : Entity<ID>> deleteById(id: ID, entityClass: Class<E>): Mono<Void> {
     getMap(entityClass).remove(id)
-    return Future.successful(Unit)
+    return Mono.empty()
   }
 
-  override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<out Any> {
-    return Future.successful(Unit)
+  override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Mono<Void> {
+    entities.forEach(::insertOrUpdate)
+    return Mono.empty()
   }
 
-  override fun <ID, E : Entity<ID>> loadAll(ids: Iterable<ID>, entityClass: Class<E>): Future<List<E>> {
+  override fun <ID, E : Entity<ID>> loadAll(entityClass: Class<E>, ids: Iterable<ID>): Flux<E> {
     val map = getMap(entityClass)
-    val list = ids.asSequence().map(map::get).filterNotNull().toList()
-    return Future.successful(list.unsafeCast())
+    return Flux.fromStream(ids.asSequence().map { id -> map[id] as E? }.filterNotNull().asStream())
   }
 
-  override fun <ID, E : Entity<ID>> findById(entityClass: Class<E>, id: ID): Future<Optional<E>> {
-    val e = getMap(entityClass)[id]
-    return Future.successful(Optional.ofNullable(e) as Optional<E>)
+  override fun <ID, E : Entity<ID>> findById(entityClass: Class<E>, id: ID): Mono<E> {
+    val e = getMap(entityClass)[id] as E?
+    return Mono.justOrEmpty(e)
   }
 
-  override fun <ID, E : Entity<ID>> listAll(entityClass: Class<E>): Future<List<E>> {
-    return Future.successful(getMap(entityClass).values.toList() as List<E>)
+  override fun <ID, E : Entity<ID>> queryAll(entityClass: Class<E>): Flux<E> {
+    return Flux.fromIterable(getMap(entityClass).values as Collection<E>)
   }
 
-  override fun <ID, E : Entity<ID>> listIds(entityClass: Class<E>): Future<List<ID>> {
-    return Future.successful(getMap(entityClass).keys.toList() as List<ID>)
+  override fun <ID, E : Entity<ID>> queryIds(entityClass: Class<E>): Flux<ID> {
+    return Flux.fromIterable(getMap(entityClass).keys as Collection<ID>)
   }
 
-  override fun <ID, E : Entity<ID>, C, C1 : C> collectId(
-    entityClass: Class<E>,
-    c: C1,
-    accumulator: (C1, ID) -> C1
-  ): Future<C> {
-    val result = getMap(entityClass).keys.fold(c) { acc, id -> accumulator(acc, id as ID) }
-    return Future.successful(result)
-  }
-
-  override fun <ID, E : Entity<ID>, R, R1 : R> fold(entityClass: Class<E>, initial: R1, f: (R1, E) -> R1): Future<R> {
-    var result = initial
-    for (entity in getMap(entityClass).values) {
-      result = f(result, entity as E)
+  override fun <ID, E : Entity<ID>> query(entityClass: Class<E>, fields: List<String>): Flux<ResultMap> {
+    return queryAll(entityClass).map { entity ->
+      val jsonNode = Json.convert(entity, JsonNode::class.java)
+      val resultMap = linkedMapOf<String, Any>()
+      for (field in fields) {
+        val value = jsonNode.get(field)
+        if (value != null) {
+          resultMap[field] = value
+        }
+      }
+      resultMap["id"] = entity.id() as Any
+      ResultMap(resultMap)
     }
-    return Future.successful(result)
   }
 
-  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
+  override fun <IDX, ID : Any, E : Entity<ID>> loadIdsByIndex(
     entityClass: Class<E>,
-    fields: List<String>,
-    initial: R1,
-    folder: (R1, ResultMap) -> R1
-  ): Future<R> {
-    return Future.successful(initial)
-  }
-
-  override fun <K, ID : ObjId, E : ObjIdEntity<ID>> listMultiIds(
-    entityClass: Class<E>,
-    keyName: String,
-    keyValue: K
-  ): Future<List<ID>> {
+    indexName: String,
+    indexValue: IDX
+  ): Flux<ID> {
     val map = getMap(entityClass)
     if (map.isEmpty()) {
-      return Future.successful(emptyList())
+      return Flux.empty()
     }
-    val fieldName = keyName.substringAfterLast('.')
     val result = map.values.asSequence()
       .map { it.unsafeCast<E>() }
-      .filter { Reflect.getFieldValue<Any>(it.id.javaClass.getDeclaredField(fieldName), it.id) == keyValue }
-      .map { it.id }
+      .filter { entity ->
+        var match = false
+        var obj: Any = entity
+        var field = ""
+        val iterator = indexName.splitToSequence('.').iterator()
+        while (iterator.hasNext()) {
+          field = iterator.next()
+          val value = Reflect.getFieldValue<Any>(obj.javaClass.getDeclaredField(field), obj)
+          if (!iterator.hasNext()) {
+            match = indexValue == value
+            break
+          }
+          if (value == null) {
+            break
+          }
+          obj = value
+        }
+        match
+      }
+      .map { it.id() }
       .toImmutableList()
-    return Future.successful(result)
+    return Flux.fromIterable(result)
   }
 }

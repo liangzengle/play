@@ -1,21 +1,21 @@
 package play.example.game.app.module.mail.entity
 
-import play.entity.cache.MultiEntityCacheKey
-import play.example.game.app.module.player.entity.AbstractPlayerMultiEntity
-import play.example.game.app.module.player.entity.PlayerObjId
+import play.entity.cache.CacheIndex
+import play.entity.cache.InitialCacheSize
+import play.example.game.app.module.player.entity.AbstractPlayerEntity
 import play.example.game.app.module.reward.model.Reward
 
-data class PlayerMailId(@MultiEntityCacheKey override val playerId: Long, val mailId: Int) : PlayerObjId()
-
+@InitialCacheSize("x100")
 class PlayerMailEntity(
-  id: PlayerMailId,
+  id: Long,
+  @CacheIndex override val playerId: Long,
   val title: String,
   val content: String,
   val rewards: List<Reward>,
   val logSource: Int,
   var status: Int,
   val createTime: Long
-) : AbstractPlayerMultiEntity<PlayerMailId>(id) {
+) : AbstractPlayerEntity(id) {
 
   fun setRead() {
     status = status or 1

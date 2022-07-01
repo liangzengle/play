@@ -9,21 +9,19 @@ import com.mongodb.reactivestreams.client.MongoClient
 import com.mongodb.reactivestreams.client.MongoCollection
 import org.bson.Document
 import org.bson.conversions.Bson
-import org.reactivestreams.FlowAdapters
 import play.db.Repository
 import play.db.ResultMap
 import play.db.TableNameResolver
 import play.db.mongo.Mongo.ID
 import play.entity.Entity
 import play.entity.EntityHelper
-import play.entity.ObjId
-import play.entity.ObjIdEntity
 import play.util.*
-import play.util.concurrent.*
+import play.util.concurrent.Future
 import play.util.json.Json
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import java.lang.reflect.Type
 import java.util.*
-import javax.annotation.CheckReturnValue
 
 class MongoDBRepository constructor(
   dbName: String,
@@ -50,49 +48,49 @@ class MongoDBRepository constructor(
 
   internal fun getCollectionName(clazz: Class<*>) = tableNameResolver.resolve(clazz)
 
-  fun listCollectionNames(): Future<MutableSet<String>> {
-    return FlowAdapters.toFlowPublisher(db.listCollectionNames()).subscribeToCollection(hashSetOf())
+  fun listCollectionNames(): Flux<String> {
+    return Flux.from(db.listCollectionNames())
   }
 
-  internal fun <T : Entity<*>> createCollection(clazz: Class<T>): Future<*> {
-    return FlowAdapters.toFlowPublisher(db.createCollection(getCollectionName(clazz))).subscribeOneNullable()
+  internal fun <T : Entity<*>> createCollection(clazz: Class<T>): Mono<Void> {
+    return Flux.from(db.createCollection(getCollectionName(clazz))).ignoreElements()
   }
 
   private fun getRawCollection(clazz: Class<*>): MongoCollection<Document> {
     return db.getCollection(tableNameResolver.resolve(clazz))
   }
 
-  override fun insert(entity: Entity<*>): Future<InsertOneResult> {
+  override fun insert(entity: Entity<*>): Mono<InsertOneResult> {
     val publisher = getCollection(entity).insertOne(entity, insertOneOptions)
-    return FlowAdapters.toFlowPublisher(publisher).subscribeOne()
+    return Flux.from(publisher).next()
   }
 
-  override fun update(entity: Entity<*>): Future<UpdateResult> {
+  override fun update(entity: Entity<*>): Mono<UpdateResult> {
     return insertOrUpdate(entity)
   }
 
-  override fun insertOrUpdate(entity: Entity<*>): Future<UpdateResult> {
+  override fun insertOrUpdate(entity: Entity<*>): Mono<UpdateResult> {
     val publisher = getCollection(entity).replaceOne(Filters.eq(entity.id()), entity, replaceOptions)
-    return FlowAdapters.toFlowPublisher(publisher).subscribeOne()
+    return Flux.from(publisher).next()
   }
 
-  override fun delete(entity: Entity<*>): Future<DeleteResult> {
+  override fun delete(entity: Entity<*>): Mono<DeleteResult> {
     return deleteById(entity.id(), entity.javaClass.unsafeCast())
   }
 
-  override fun <ID, E : Entity<ID>> deleteById(id: ID, entityClass: Class<E>): Future<DeleteResult> {
+  override fun <ID, E : Entity<ID>> deleteById(id: ID, entityClass: Class<E>): Mono<DeleteResult> {
     val publisher = getCollection(entityClass).deleteOne(Filters.eq(id), deleteOptions)
-    return FlowAdapters.toFlowPublisher(publisher).subscribeOne()
+    return Flux.from(publisher).next()
   }
 
-  override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<BulkWriteResult> {
+  override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Mono<BulkWriteResult> {
     if (entities.isEmpty()) {
-      return Future.successful(BulkWriteResult.acknowledged(0, 0, 0, 0, emptyList(), emptyList()))
+      return Mono.just(BulkWriteResult.acknowledged(0, 0, 0, 0, emptyList(), emptyList()))
     }
     // mongo driver will divide into small groups when a group exceeds the limit, which is 100,000 in MongoDB 3.6
     val writeModels = entities.map { ReplaceOneModel(Filters.eq(it.id()), it, replaceOptions) }
     val publisher = getCollection(entities.first().javaClass).bulkWrite(writeModels, unorderedBulkWrite)
-    return FlowAdapters.toFlowPublisher(publisher).subscribeOne()
+    return Flux.from(publisher).next()
   }
 
   override fun <ID, E : Entity<ID>> update(
@@ -100,119 +98,76 @@ class MongoDBRepository constructor(
     id: ID,
     field: String,
     value: Any
-  ): Future<UpdateResult> {
+  ): Mono<UpdateResult> {
     val publisher = getCollection(entityClass).updateOne(Filters.eq(ID, id), Updates.set(field, value))
-    return FlowAdapters.toFlowPublisher(publisher).subscribeOne()
+    return Flux.from(publisher).next()
   }
 
-  override fun <ID, E : Entity<ID>, R, R1 : R> fold(entityClass: Class<E>, initial: R1, f: (R1, E) -> R1): Future<R> {
-    return fold(entityClass, empty(), empty(), emptyInt(), initial, f)
-  }
-
-  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
-    entityClass: Class<E>,
-    fields: List<String>,
-    initial: R1,
-    folder: (R1, ResultMap) -> R1
-  ): Future<R> {
-    return fold(entityClass, fields, empty(), empty(), emptyInt(), initial, folder)
-  }
-
-  override fun <ID, E : Entity<ID>> findById(entityClass: Class<E>, id: ID): Future<Optional<E>> {
+  override fun <ID, E : Entity<ID>> findById(entityClass: Class<E>, id: ID): Mono<E> {
     val publisher = getCollection(entityClass).find(Filters.eq(id))
-    return FlowAdapters.toFlowPublisher(publisher).subscribeOneOptional()
+    return Flux.from(publisher).next()
   }
 
-  override fun <ID, E : Entity<ID>> loadAll(ids: Iterable<ID>, entityClass: Class<E>): Future<List<E>> {
+  override fun <ID, E : Entity<ID>> loadAll(entityClass: Class<E>, ids: Iterable<ID>): Flux<E> {
     val publisher = getCollection(entityClass).find(Filters.`in`(ID, ids))
-    return FlowAdapters.toFlowPublisher(publisher).subscribeToList()
+    return Flux.from(publisher)
   }
 
-  override fun <K, ID : ObjId, E : ObjIdEntity<ID>> listMultiIds(
+  override fun <IDX, ID : Any, E : Entity<ID>> loadIdsByIndex(
     entityClass: Class<E>,
-    keyName: String,
-    keyValue: K
-  ): Future<List<ID>> {
+    indexName: String,
+    indexValue: IDX
+  ): Flux<ID> {
     val idType = EntityHelper.getIdType(entityClass)
-    val fieldName = if (keyName.startsWith("id.")) "_$keyName" else keyName
-    val where = Filters.and(Filters.eq(fieldName, keyValue), Filters.ne(Entity.DELETED, true))
-    return fold(
-      entityClass,
-      listOf(ID),
-      where.toOptional(),
-      empty(),
-      emptyInt(),
-      LinkedList<ID>()
-    ) { list, r ->
-      val id = convertToID<ID>(r.getObject(ID), idType)
-      list.add(id)
-      list
-    }
+    val fieldName = if (indexName.startsWith("id.")) "_$indexName" else indexName
+    val where = Filters.and(Filters.eq(fieldName, indexValue), Filters.ne(Entity.DELETED, true))
+    return query(entityClass, listOf(ID), where.toOptional(), empty(), emptyInt())
+      .map { r -> convertToID<ID>(r.getObject(ID), idType) }
   }
 
-  override fun <ID, E : Entity<ID>> listAll(entityClass: Class<E>): Future<List<E>> {
+  override fun <ID, E : Entity<ID>> queryAll(entityClass: Class<E>): Flux<E> {
     val publisher = getCollection(entityClass).find()
-    return FlowAdapters.toFlowPublisher(publisher).subscribeToList()
+    return Flux.from(publisher)
   }
 
-  @CheckReturnValue
-  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
+  override fun <ID, E : Entity<ID>> query(
     entityClass: Class<E>,
     where: Optional<Bson>,
     order: Optional<Bson>,
-    limit: OptionalInt,
-    initial: R1,
-    folder: (R1, E) -> R1
-  ): Future<R> {
+    limit: OptionalInt
+  ): Flux<E> {
     val publisher = getCollection(entityClass).find()
     where.forEach { publisher.filter(it) }
     order.forEach { publisher.sort(it) }
     limit.forEach { publisher.limit(it) }
-    return FlowAdapters.toFlowPublisher(publisher).subscribeInto(initial, folder)
+    return Flux.from(publisher)
   }
 
-  @CheckReturnValue
-  override fun <ID, E : Entity<ID>, R, R1 : R> fold(
+  override fun <ID, E : Entity<ID>> query(
     entityClass: Class<E>,
     fields: List<String>,
     where: Optional<Bson>,
     order: Optional<Bson>,
-    limit: OptionalInt,
-    initial: R1,
-    folder: (R1, ResultMap) -> R1
-  ): Future<R> {
+    limit: OptionalInt
+  ): Flux<ResultMap> {
     val publisher = getRawCollection(entityClass).find()
-    val includeFields = if (fields.contains(ID)) fields else fields.toMutableList().apply { add((ID)) }
-    publisher.projection(Projections.include(includeFields))
+//    val includeFields = if (fields.contains(ID)) fields else fields.toMutableList().apply { add((ID)) }
+    publisher.projection(Projections.include(fields))
     where.forEach { publisher.filter(it) }
     order.forEach { publisher.sort(it) }
     limit.forEach { publisher.limit(it) }
-    return FlowAdapters.toFlowPublisher(publisher).subscribeInto(initial) { r, doc ->
+    return Flux.from(publisher).map { doc ->
       if (doc.containsKey(ID) && !doc.containsKey("id")) {
         doc["id"] = doc[ID]
       }
-      folder(r, ResultMap(doc))
+      ResultMap(doc)
     }
   }
 
-  override fun <ID, E : Entity<ID>> listIds(entityClass: Class<E>): Future<List<ID>> {
-    return collectId(entityClass, LinkedList<ID>()) { list, id ->
-      list.add(id)
-      list
-    }
-  }
-
-  override fun <ID, E : Entity<ID>, C, C1 : C> collectId(
-    entityClass: Class<E>,
-    c: C1,
-    accumulator: (C1, ID) -> C1
-  ): Future<C> {
+  override fun <ID, E : Entity<ID>> queryIds(entityClass: Class<E>): Flux<ID> {
     val idType = EntityHelper.getIdType(entityClass)
     val publisher = getRawCollection(entityClass).find().projection(Projections.include(ID))
-    return FlowAdapters.toFlowPublisher(publisher).subscribeInto(c) { list, doc ->
-      val id = convertToID<ID>(doc[ID]!!, idType)
-      accumulator(list, id)
-    }
+    return Flux.from(publisher).map { convertToID<ID>(it[ID]!!, idType) }
   }
 
   private fun <ID> convertToID(obj: Any, idType: Type): ID {
@@ -223,6 +178,6 @@ class MongoDBRepository constructor(
   }
 
   override fun runCommand(cmd: Bson): Future<Document> {
-    return FlowAdapters.toFlowPublisher(db.runCommand(cmd)).subscribeOne()
+    return Future(Flux.from(db.runCommand(cmd)).next().toFuture())
   }
 }

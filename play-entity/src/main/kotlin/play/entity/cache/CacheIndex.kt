@@ -6,4 +6,4 @@ package play.entity.cache
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FIELD)
-annotation class MultiEntityCacheKey
+annotation class CacheIndex

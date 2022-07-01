@@ -13,7 +13,7 @@ interface EntityCacheInternalApi<E : Entity<*>> {
   /**
    * 获取当前缓存中的所有实体
    *
-   * @return 缓存中所有实体的集合(不可修改)
+   * @return 缓存中所有实体
    */
   fun getAllCached(): Sequence<E>
 }

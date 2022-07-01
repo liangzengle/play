@@ -13,8 +13,8 @@ import play.example.game.app.module.platform.PlatformServiceProvider
 import play.util.collection.ConcurrentObjectLongMap
 import play.util.max
 import play.util.primitive.toInt
+import java.time.Duration
 import java.util.*
-import kotlin.time.Duration.Companion.seconds
 
 @Component
 class AccountIdCache @Autowired constructor(
@@ -27,12 +27,12 @@ class AccountIdCache @Autowired constructor(
   private val idGenerators: MutableIntObjectMap<AccountIdGenerator>
 
   init {
-    accountIdToId = queryService.fold(Account::class.java, ConcurrentObjectLongMap<AccountId>()) { map, account ->
-      val platformService = platformServiceProvider.getService(account.platformId.toInt())
-      val accountId = platformService.toAccountId(account)
-      map[accountId] = account.id
-      map
-    }.blockingGet(5.seconds)
+    accountIdToId = queryService.queryAll(Account::class.java)
+      .collect({ ConcurrentObjectLongMap<AccountId>() }, { map, account ->
+        val platformService = platformServiceProvider.getService(account.platformId.toInt())
+        val accountId = platformService.toAccountId(account)
+        map[accountId] = account.id
+      }).block(Duration.ofSeconds(5))!!
 
     val maxIds = IntLongMaps.mutable.empty()
     for ((accountId, id) in accountIdToId) {

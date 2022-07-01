@@ -58,13 +58,11 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     val classBuilder =
       TypeSpec.classBuilder(getCacheClassName(entityClassDeclaration)).addAnnotations(singletonAnnotations)
 
-    val multiEntityCacheKeySpec =
-      getMultiEntityCacheKeySpec(idClassDeclaration, "id") ?: getMultiEntityCacheKeySpec(entityClassDeclaration, "")
-
-    val superInterfaceTypeName = if (multiEntityCacheKeySpec == null) {
+    val cacheIndexSpec = getCacheIndexSpec(idClassDeclaration, entityClassDeclaration)
+    val superInterfaceTypeName = if (cacheIndexSpec == null) {
       EntityCache.parameterizedBy(idClass, entityClass)
     } else {
-      MultiEntityCache.parameterizedBy(multiEntityCacheKeySpec.keyType, idClass, entityClass)
+      IndexedEntityCache.parameterizedBy(cacheIndexSpec.indexFieldType, idClass, entityClass)
     }
 
     classBuilder.primaryConstructor(
@@ -77,7 +75,7 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     classBuilder.addSuperinterface(superInterfaceTypeName, CodeBlock.of(DELEGATEE, entityClass))
 
     classBuilder.addFunction(
-      if (multiEntityCacheKeySpec == null) {
+      if (cacheIndexSpec == null) {
         FunSpec.constructorBuilder()
           .addAnnotation(injectAnnotation)
           .addParameter("entityCacheManager", EntityCacheManager)
@@ -92,9 +90,9 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
           .callThisConstructor(
             CodeBlock.of(
               "%T(%S, { it.%L }, entityCacheManager.get(%T::class.java), entityCacheLoader, scheduler, %T.ofMinutes(30))",
-              multiEntityCacheKeySpec.cacheImplClassName,
-              multiEntityCacheKeySpec.keyName,
-              multiEntityCacheKeySpec.keyName,
+              cacheIndexSpec.cacheImplClassName,
+              cacheIndexSpec.indexName,
+              cacheIndexSpec.indexName,
               entityClass,
               JavaDuration
             )
@@ -166,19 +164,24 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     }
   }
 
-  private fun getMultiEntityCacheKeySpec(
-    classDeclaration: KSClassDeclaration,
-    prefix: String
-  ): MultiEntityCacheKeySpec? {
-    return classDeclaration.getAllProperties().firstOrNull {
-      it.isAnnotationPresent(MultiEntityCacheKey)
+  private fun getCacheIndexSpec(
+    idClassDeclaration: KSClassDeclaration,
+    entityClassDeclaration: KSClassDeclaration
+  ): CacheIndexSpec? {
+    val idType = idClassDeclaration.toClassName()
+    return entityClassDeclaration.getAllProperties().firstOrNull {
+      it.isAnnotationPresent(CacheIndex)
     }?.let {
-      val keyName = if (prefix.isEmpty()) it.simpleName.asString() else "$prefix.${it.simpleName.asString()}"
-      when (val keyType = it.type.resolve().toClassName()) {
-        LONG -> MultiEntityCacheKeySpec(keyName, keyType, MultiEntityCacheLong)
-        INT -> MultiEntityCacheKeySpec(keyName, keyType, MultiEntityCacheInt)
-        else -> null
+      val indexName = it.simpleName.asString()
+      val indexFieldType = it.type.resolve().toClassName()
+      val cacheClassName = if (idType == LONG && indexFieldType == LONG) {
+        LongLongIndexedEntityCache
+      } else if (idType == LONG && indexFieldType == INT) {
+        LongIntIndexedEntityCache
+      } else {
+        DefaultIndexedEntityCache
       }
+      CacheIndexSpec(indexName, indexFieldType, cacheClassName)
     }
   }
 
@@ -192,9 +195,9 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
       || cacheSpec?.getValue<KSType>("expireEvaluator")?.toClassName() == NeverExpireEvaluator
   }
 
-  private class MultiEntityCacheKeySpec(
-    val keyName: String,
-    val keyType: ClassName,
+  private class CacheIndexSpec(
+    val indexName: String,
+    val indexFieldType: ClassName,
     val cacheImplClassName: ClassName
   )
 }

@@ -13,7 +13,7 @@ import java.util.concurrent.ForkJoinPool
 /**
  * @author LiangZengle
  */
-internal class MultiEntityCacheImplTest {
+internal class IndexedEntityCacheImplTest {
 
   private val memoryRepository = MemoryRepository()
   private val scheduler =
@@ -42,12 +42,12 @@ internal class MultiEntityCacheImplTest {
   @Test
   fun getMulti() {
     for (playerId in 1..10L) {
-      for (i in 1..10) {
-        entityCache.getOrCreate(MyObjId(playerId, i), ::MyEntity)
+      for (i in 1..10L) {
+        entityCache.getOrCreate(i, playerId)
       }
     }
     for (playerId in 1..10L) {
-      val partitionEntities = entityCache.getMulti(playerId)
+      val partitionEntities = entityCache.getByIndex(playerId)
       println("$playerId: $partitionEntities")
     }
   }

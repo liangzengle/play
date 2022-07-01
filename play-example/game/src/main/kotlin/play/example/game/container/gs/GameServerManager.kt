@@ -7,6 +7,7 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import com.typesafe.config.Config
+import org.eclipse.collections.impl.factory.primitive.IntSets
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList
 import org.springframework.context.ConfigurableApplicationContext
 import play.akka.AbstractTypedActor
@@ -16,13 +17,14 @@ import play.db.Repository
 import play.example.game.container.gs.entity.GameServerEntity
 import play.example.game.container.gs.logging.ActorMDC
 import play.spring.getInstance
-import play.util.concurrent.PlayFuture
+import play.util.concurrent.Future.Companion.toPlay
 import play.util.concurrent.PlayPromise
 import play.util.control.getCause
 import play.util.unsafeCast
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
-import kotlin.time.Duration.Companion.seconds
 
 /**
  *
@@ -61,26 +63,28 @@ class GameServerManager(
 
   private fun init(cmd: Init) {
     val future = repository
-      .listIds(GameServerEntity::class.java)
-      .flatMap { serverIds ->
-        val futures = if (serverIds.isEmpty()) {
+      .queryIds(GameServerEntity::class.java)
+      .collect({ IntSets.mutable.empty() }, { set, id -> set.add(id) })
+      .flatMapMany { serverIds ->
+        if (serverIds.isEmpty) {
           val conf = parentApplicationContext.getInstance<Config>()
           val initialServerId = conf.getInt("play.initial-game-server-id")
           val promise = PlayPromise.make<Int>()
           self.tell(CreateGameServer(initialServerId, promise))
           gameServerIds.add(initialServerId)
-          listOf(promise.future)
+          Mono.fromFuture(promise.future.toJava()).flux()
         } else {
-          serverIds
-            .map { serverId ->
+          Flux.fromIterable(
+            serverIds.asLazy().collect { serverId ->
               val promise = PlayPromise.make<Int>()
               self.tell(StartGameServer(serverId, promise))
               gameServerIds.add(serverId)
-              promise.future
-            }.toList()
+              Mono.fromFuture(promise.future.toJava())
+            }
+          )
         }
-        PlayFuture.allOf(futures)
-      }.timeout(60.seconds)
+      }
+      .ignoreElements().toFuture().toPlay()
     future.pipToSelf(::InitResult)
     cmd.promise.completeWith(future)
   }
@@ -110,16 +114,14 @@ class GameServerManager(
     if (!gameServerIds.contains(serverId)) {
       repository
         .insert(GameServerEntity(serverId))
-        .onComplete(
-          {
-            logger.info("GameServerEntity($serverId)创建成功")
-            self.tell(StartGameServer(serverId, promise))
-          },
-          {
-            logger.error("GameServerEntity($serverId)创建失败", it)
-            promise.failure(it)
-          }
-        )
+        .doOnSuccess {
+          logger.info("GameServerEntity($serverId)创建成功")
+          self.tell(StartGameServer(serverId, promise))
+        }
+        .doOnError {
+          logger.error("GameServerEntity($serverId)创建失败", it)
+          promise.failure(it)
+        }
     } else {
       self.tell(StartGameServer(serverId, promise))
     }

@@ -19,7 +19,6 @@ import io.netty.channel.epoll.EpollSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import mu.KLogging
 import org.bson.codecs.configuration.CodecRegistries
-import org.reactivestreams.FlowAdapters
 import play.db.mongo.codec.EntityCodecProvider
 import play.db.mongo.codec.MongoIntIdMixIn
 import play.db.mongo.codec.MongoLongIdMixIn
@@ -28,12 +27,9 @@ import play.entity.Entity
 import play.entity.IntIdEntity
 import play.entity.LongIdEntity
 import play.entity.ObjIdEntity
-import play.entity.cache.MultiEntityCacheKey
-import play.util.concurrent.Future
-import play.util.concurrent.subscribeOne
-import play.util.concurrent.subscribeOneNullable
-import play.util.control.getCause
+import play.entity.cache.CacheIndex
 import play.util.json.Json
+import reactor.core.publisher.Flux
 import java.util.concurrent.TimeUnit
 
 object Mongo : KLogging() {
@@ -81,51 +77,38 @@ object Mongo : KLogging() {
   }
 
   fun ensureIndexes(repository: MongoDBRepository, entityClasses: Collection<Class<Entity<*>>>) {
-    repository.listCollectionNames().onSuccess { collectionNames ->
-      for (entityClass in entityClasses) {
-        if (!entityClass.isAnnotationPresent(Index::class.java)) {
-          continue
-        }
-        val indexModels = (entityClass.getAnnotationsByType(Index::class.java).asSequence().map(::toIndexModel) +
-          getMultiEntityCacheKeyIndex(entityClass)).toList()
-        if (indexModels.isEmpty()) {
-          continue
-        }
-        val collectionName = repository.getCollectionName(entityClass)
-        val createCollectionFuture = if (collectionNames.contains(collectionName)) {
-          Future.successful(Unit)
-        } else {
-          repository.createCollection(entityClass)
-        }
-        createCollectionFuture.flatMap {
-          FlowAdapters.toFlowPublisher(repository.getCollection(entityClass).createIndexes(indexModels))
-            .subscribeOneNullable()
-            .flatMap {
-              FlowAdapters.toFlowPublisher(repository.getCollection(entityClass).listIndexes()).subscribeOne()
-            }
-        }.onComplete {
-          if (it.isSuccess) {
-            logger.debug { "Indexes created for ${entityClass.simpleName}: ${it.getOrThrow()}" }
-          } else {
-            logger.error(it.getCause()) { "Index create failed: ${entityClass.simpleName}" }
+    Flux.fromIterable(entityClasses).flatMap { entityClass ->
+      val indexModels = getIndexModels(entityClass)
+      if (indexModels.isEmpty()) {
+        Flux.empty()
+      } else {
+        Flux.from(repository.getCollection(entityClass).createIndexes(indexModels))
+          .flatMap { Flux.from(repository.getCollection(entityClass).listIndexes()).collectList() }
+          .doOnNext {
+            logger.debug { "Indexes created for ${entityClass.simpleName}: $it" }
+          }.doOnError {
+            logger.error(it) { "Index create failed: ${entityClass.simpleName}" }
           }
-        }
       }
+    }.ignoreElements().block()
+  }
+
+  private fun getIndexModels(entityClass: Class<Entity<*>>): List<IndexModel> {
+    val indexSequence = entityClass.getAnnotationsByType(Index::class.java).asSequence().map(::toIndexModel)
+    val cacheIndex = getCacheIndex(entityClass)
+    return if (cacheIndex != null) {
+      (indexSequence + cacheIndex).toList()
+    } else {
+      indexSequence.toList()
     }
   }
 
-  private fun getMultiEntityCacheKeyIndex(entityClass: Class<*>): IndexModel? {
-    return getMultiEntityCacheKeyIndex(entityClass.getField("id").type, ID)
-      ?: getMultiEntityCacheKeyIndex(entityClass, "")
-  }
-
-  private fun getMultiEntityCacheKeyIndex(clazz: Class<*>, prefix: String): IndexModel? {
-    return clazz.declaredFields.asSequence()
-      .firstOrNull { it.isAnnotationPresent(MultiEntityCacheKey::class.java) }
+  private fun getCacheIndex(entityClass: Class<Entity<*>>): IndexModel? {
+    return entityClass.declaredFields.asSequence()
+      .firstOrNull { it.isAnnotationPresent(CacheIndex::class.java) }
       ?.let {
-        val fields = if (prefix.isEmpty()) arrayOf(it.name) else arrayOf("${prefix}.${it.name}")
-        val opts = IndexOptions()
-        opts.unique(false)
+        val fields = arrayOf(it.name)
+        val opts = IndexOptions().unique(false).sparse(true)
         val indexBson = Index.Type.AEC.parse(fields)
         IndexModel(indexBson, opts)
       }
@@ -139,7 +122,7 @@ object Mongo : KLogging() {
     for (i in fields.indices) {
       val field = fields[i]
       if (field.startsWith("id.")) {
-        fields[i] = field.replaceRange(0..2, "_id.")
+        fields[i] = "_$field"
       }
     }
     val opts = IndexOptions()
