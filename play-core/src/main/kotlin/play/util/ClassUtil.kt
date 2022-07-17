@@ -27,22 +27,6 @@ object ClassUtil {
   }
 
   @JvmStatic
-  fun getPrimitiveDefaultValue(type: Class<*>): Any {
-    val primitiveType = getPrimitiveType(type) ?: throw IllegalArgumentException("$type is not Primitive Type")
-    return when (primitiveType.name) {
-      "boolean" -> false
-      "byte" -> 0.toByte()
-      "short" -> 0.toShort()
-      "int" -> 0
-      "long" -> 0L
-      "float" -> 0f
-      "double" -> 0.0
-      "char" -> 0.toChar()
-      else -> throw IllegalStateException("should not happen")
-    }
-  }
-
-  @JvmStatic
   fun <T> loadClass(qualifiedName: String): Class<out T> {
     return loadClass(qualifiedName, Thread.currentThread().contextClassLoader)
   }
@@ -88,38 +72,8 @@ fun <T> Type.getRawClass(): Class<T> = Reflect.getRawClass(this)
 
 fun <T> Class<T>.createInstance(): T = Reflect.newInstance(this)
 
-fun Class<*>.isPublic() = Modifier.isPublic(modifiers)
-
-fun Class<*>.isProtected() = Modifier.isProtected(modifiers)
-
-fun Class<*>.isPrivate() = Modifier.isPrivate(modifiers)
-
-fun Class<*>.isAbstract() = Modifier.isAbstract(modifiers)
-
-fun Class<*>.isStatic() = Modifier.isStatic(modifiers)
-
-fun Class<*>.isFinal() = Modifier.isFinal(modifiers)
-
-fun Class<*>.isStrict() = Modifier.isStrict(modifiers)
-
 inline fun <reified T> classOf(): Class<T> = T::class.java
 
 inline fun <reified T> isAssignableFrom(clazz: Class<*>): Boolean = T::class.java.isAssignableFrom(clazz)
 
 inline fun <reified T> Class<*>.isSubclassOf() = T::class.java.isAssignableFrom(this)
-
-fun Member.isPublic() = Modifier.isPublic(modifiers)
-
-fun Member.isProtected() = Modifier.isProtected(modifiers)
-
-fun Member.isPrivate() = Modifier.isPrivate(modifiers)
-
-fun Member.isAbstract() = Modifier.isAbstract(modifiers)
-
-fun Member.isStatic() = Modifier.isStatic(modifiers)
-
-fun Member.isFinal() = Modifier.isFinal(modifiers)
-
-fun Member.isStrict() = Modifier.isStrict(modifiers)
-
-fun Field.isTransient() = Modifier.isTransient(modifiers)
