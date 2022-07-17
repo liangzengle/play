@@ -6,6 +6,7 @@ import kotlinx.serialization.serializer
 import mu.KLogging
 import play.util.ClassUtil
 import play.util.EmptyByteArray
+import play.util.primitive.PrimitiveDefaults
 import play.util.unsafeCast
 import kotlin.reflect.KClass
 
@@ -47,7 +48,7 @@ class KProtobufCodec<T : Any>(private val type: KClass<T>) : Codec<T> {
       if (bytes.isEmpty()) {
         val primitiveType = ClassUtil.getPrimitiveType(type.java)
         if (primitiveType != null) {
-          val defaultValue = ClassUtil.getPrimitiveDefaultValue(primitiveType)
+          val defaultValue = PrimitiveDefaults.get(primitiveType)
           @Suppress("UNCHECKED_CAST")
           return defaultValue as T
         }

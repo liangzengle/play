@@ -1,14 +1,13 @@
-package play.net.http
+package play.httpclient
 
 import org.junit.jupiter.api.Test
-import play.net.netty.http.NettyHttpClient
-import play.util.concurrent.CommonPool
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ForkJoinPool
 import kotlin.time.measureTime
 
 internal class NettyHttpClientTest {
 
-  private val httpClient = NettyHttpClient("test", CommonPool)
+  private val httpClient = NettyHttpClient(ForkJoinPool.commonPool())
 
   @Test
   fun get() {
@@ -16,7 +15,12 @@ internal class NettyHttpClientTest {
     val cost = measureTime {
       val cdl = CountDownLatch(n)
       for (i in 1..n) {
-        httpClient.get("http://localhost:8080", mapOf()).onComplete {
+        httpClient.get("http://localhost:8080", mapOf()).whenComplete { t, e ->
+          if (e != null) {
+            e.printStackTrace()
+          } else {
+            println(t)
+          }
           cdl.countDown()
         }
       }

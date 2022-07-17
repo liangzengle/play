@@ -11,6 +11,13 @@ pluginManagement {
 
 rootProject.name = "play"
 
+fun project(name: String, dir: String?) {
+  include(name)
+  if (dir != null) {
+    project(":$name").projectDir = file("./$dir/$name")
+  }
+}
+
 include("play-core")
 include("play-res")
 include("play-entity")
@@ -28,6 +35,9 @@ include("play-spring")
 include("play-boot")
 include("play-primitive-collection")
 include("play-rsocket-rpc")
+project("play-httpclient-api", "play-httpclient")
+project("play-httpclient-async", "play-httpclient")
+project("play-httpclient-ktor", "play-httpclient")
 
 include("play-modular-code")
 project(":play-modular-code").projectDir = file("./play-plugins/play-modular-code")

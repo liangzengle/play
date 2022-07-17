@@ -26,6 +26,7 @@ object Versions {
   const val KotlinxSerialization = "1.3.2"
   const val Ksp = "$Kotlin-1.0.4"
   const val Ktlint = "10.2.0"
+  const val Ktor = "2.0.3"
   const val Log4j = "2.17.2"
   const val Logback = "1.2.11"
   const val Micrometer = "1.8.4"

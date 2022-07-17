@@ -2,6 +2,7 @@ dependencies {
   api(project(":play-akka"))
   api(project(":play-res"))
   api(project(":play-net"))
+  api(project(":play-httpclient-ktor"))
 
   api(Deps.Log4j.Core)
   api(Deps.Log4j.Api)

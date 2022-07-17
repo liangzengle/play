@@ -1,6 +1,7 @@
 package play.net.http
 
 import org.junit.jupiter.api.Test
+import play.util.concurrent.Future.Companion.toPlay
 import play.util.http.JHttpClient
 import play.util.http.JdkHttpClient
 import java.time.Duration
@@ -14,7 +15,7 @@ internal class JdkHttpClientTest {
 //      .authenticator(Authenticator.getDefault())
     .build()
 
-  private val httpClient = JdkHttpClient("test", jhttpClient, Duration.ofSeconds(3))
+  private val httpClient = JdkHttpClient(jhttpClient, Duration.ofSeconds(3))
 
   @Test
   fun get() {
@@ -22,7 +23,7 @@ internal class JdkHttpClientTest {
     val cost = measureTime {
       val cdl = CountDownLatch(n)
       for (i in 1..n) {
-        httpClient.get("http://localhost:8080", mapOf()).onComplete {
+        httpClient.get("http://localhost:8080", mapOf()).toPlay().onComplete {
           cdl.countDown()
         }
       }

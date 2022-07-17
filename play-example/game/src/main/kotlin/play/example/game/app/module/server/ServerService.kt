@@ -17,6 +17,7 @@ import play.example.game.app.module.server.entity.ServerEntityCache
 import play.example.game.app.module.server.event.ServerOpenEvent
 import play.example.game.app.module.server.event.ServerOpenPlayerEvent
 import play.example.game.app.module.server.res.ServerConfig
+import play.httpclient.PlayHttpClient
 import play.spring.OrderedSmartInitializingSingleton
 import play.util.classOf
 import play.util.max

@@ -1,8 +1,8 @@
 package play.util.http
 
 import org.reactivestreams.FlowAdapters
-import org.slf4j.LoggerFactory
-import play.util.concurrent.Future
+import play.httpclient.PlayHttpClient
+import play.httpclient.UnsuccessfulStatusCodeException
 import play.util.concurrent.Future.Companion.toPlay
 import play.util.logging.Logger
 import play.util.mkStringTo
@@ -14,6 +14,7 @@ import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.net.http.HttpTimeoutException
 import java.time.Duration
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.atomic.AtomicLong
 
@@ -23,12 +24,13 @@ typealias JHttpClient = java.net.http.HttpClient
  * Created by LiangZengle on 2020/2/20.
  */
 class JdkHttpClient constructor(
-  private val name: String,
   private val client: JHttpClient,
   private val readTimeout: Duration = Duration.ofSeconds(5)
 ) : PlayHttpClient {
 
-  private val logger = Logger(LoggerFactory.getLogger(JdkHttpClient::class.qualifiedName + '.' + name))
+  companion object {
+    private val log = Logger(PlayHttpClient.LOGGER)
+  }
 
   init {
     require(readTimeout > Duration.ZERO) { "illegal readTimeout: $readTimeout" }
@@ -43,18 +45,18 @@ class JdkHttpClient constructor(
   }
 
   override fun toString(): String {
-    return "JdkHttpClient($name)"
+    return "JdkHttpClient"
   }
 
-  fun copy(name: String, readTimeout: Duration): JdkHttpClient {
-    return JdkHttpClient(name, client, readTimeout)
+  fun copy(readTimeout: Duration): JdkHttpClient {
+    return JdkHttpClient(client, readTimeout)
   }
 
   override fun get(
     url: String,
     params: Map<String, Any>,
     headers: Map<String, String>
-  ): Future<String> {
+  ): CompletableFuture<String> {
     val request = makeGetRequest(url, params, headers)
     return sendAsync(request)
   }
@@ -63,7 +65,7 @@ class JdkHttpClient constructor(
     url: String,
     form: Map<String, Any>,
     headers: Map<String, String>
-  ): Future<String> {
+  ): CompletableFuture<String> {
     val b = HttpRequest.newBuilder()
     b.uri(URI.create(url))
       .timeout(readTimeout)
@@ -77,7 +79,7 @@ class JdkHttpClient constructor(
     url: String,
     data: String,
     headers: Map<String, String>
-  ): Future<String> {
+  ): CompletableFuture<String> {
     val b = HttpRequest.newBuilder()
     b.uri(URI.create(url))
       .timeout(readTimeout)
@@ -135,7 +137,7 @@ class JdkHttpClient constructor(
     )
   }
 
-  fun sendAsync(request: HttpRequest): Future<String> {
+  fun sendAsync(request: HttpRequest): CompletableFuture<String> {
     val requestNo = counter.incrementAndGet()
     logRequest(requestNo, request)
     return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -143,18 +145,20 @@ class JdkHttpClient constructor(
       .andThen { v, e -> logResponse(requestNo, request, v, e) }
       .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.uri().toString(), it.statusCode()) })
       .map { it.body() ?: "" }
+      .toJava()
   }
 
   fun <Body> sendAsync(
     request: HttpRequest,
     bodyHandler: HttpResponse.BodyHandler<Body>
-  ): Future<HttpResponse<Body>> {
+  ): CompletableFuture<HttpResponse<Body>> {
     val requestNo = counter.incrementAndGet()
     logRequest(requestNo, request)
     return client.sendAsync(request, bodyHandler)
       .toPlay()
       .andThen { v, e -> logResponse(requestNo, request, v, e) }
       .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.uri().toString(), it.statusCode()) })
+      .toJava()
   }
 
   private fun logRequest(requestNo: Long, request: HttpRequest) {
@@ -167,13 +171,13 @@ class JdkHttpClient constructor(
               buffer.get(byteArray)
               String(byteArray, Charsets.UTF_8)
             } ?: ""
-            logger.info { "[$requestNo] sending http request: $request $content" }
+            log.info { "[$requestNo] sending http request: $request $content" }
           }
           .doOnError {
-            logger.error(it) { "[$requestNo] observing http request error: $request" }
+            log.error(it) { "[$requestNo] observing http request error: $request" }
           }
       },
-      { logger.info { "[$requestNo] sending http request: $request" } }
+      { log.info { "[$requestNo] sending http request: $request" } }
     )
   }
 
@@ -184,20 +188,20 @@ class JdkHttpClient constructor(
     exception: Throwable?
   ) {
     if (response == null && exception == null) {
-      logger.error { "[$requestNo][$request] returns nothing." }
+      log.error { "[$requestNo][$request] returns nothing." }
     } else if (exception != null) {
       var cause: Throwable = exception
       if (cause is CompletionException) {
         cause = cause.cause ?: cause
       }
       when (cause) {
-        is HttpConnectTimeoutException -> logger.error { "[$requestNo] http request connect timeout" }
-        is HttpTimeoutException -> logger.error { "[$requestNo] http request timeout" }
-        else -> logger.error(cause) { "[$requestNo] http request failure: ${cause.javaClass.simpleName}" }
+        is HttpConnectTimeoutException -> log.error { "[$requestNo] http request connect timeout" }
+        is HttpTimeoutException -> log.error { "[$requestNo] http request timeout" }
+        else -> log.error(cause) { "[$requestNo] http request failure: ${cause.javaClass.simpleName}" }
       }
     } else {
       checkNotNull(response)
-      logger.info { "[$requestNo] http response: ${response.statusCode()} ${response.body()}" }
+      log.info { "[$requestNo] http response: ${response.statusCode()} ${response.body()}" }
     }
   }
 }

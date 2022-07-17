@@ -69,6 +69,13 @@ object Deps {
     }
   }
 
+  object Ktor {
+    object Client {
+      const val Core = "io.ktor:ktor-client-core-jvm:${Versions.Ktor}"
+      const val Cio = "io.ktor:ktor-client-cio:${Versions.Ktor}"
+    }
+  }
+
   object Log4j {
     private const val Version = Versions.Log4j
     const val Api = "org.apache.logging.log4j:log4j-api:$Version"
