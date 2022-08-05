@@ -43,6 +43,9 @@ dependencies {
   api(project(":play-spring"))
   api(project("::play-rsocket-rpc"))
 
+  api(project("::play-codec"))
+  implementation(Deps.Kotlinx.Serialization.Protobuf)
+
   compileOnly(project(":play-codegen-annotations"))
   compileOnly(project(":play-codegen"))
   ksp(project(":play-codegen"))

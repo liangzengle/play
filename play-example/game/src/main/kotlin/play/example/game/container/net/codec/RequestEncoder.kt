@@ -4,7 +4,7 @@ import io.netty.channel.ChannelHandler
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelOutboundHandlerAdapter
 import io.netty.channel.ChannelPromise
-import play.mvc.MessageCodec
+import play.codec.MessageCodec
 import play.mvc.Request
 
 /**

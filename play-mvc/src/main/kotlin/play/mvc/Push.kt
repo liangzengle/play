@@ -1,6 +1,7 @@
 package play.mvc
 
 import mu.KLogging
+import play.codec.MessageCodec
 import play.util.EmptyByteArray
 import play.util.json.Json
 

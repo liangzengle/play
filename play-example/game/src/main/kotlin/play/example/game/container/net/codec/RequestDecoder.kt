@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder
 import io.netty.util.ReferenceCountUtil
+import play.codec.MessageCodec
 import play.mvc.*
 import play.net.netty.copyToArray
 

@@ -10,7 +10,7 @@ import com.squareup.kotlinpoet.MemberName
 internal object Types {
   val RequestParams = ClassName.bestGuess("play.example.robot.net.RequestParams")
 
-  val MessageCodec = ClassName.bestGuess("play.mvc.MessageCodec")
+  val MessageCodec = ClassName.bestGuess("play.codec.MessageCodec")
 
   val MsgId = ClassName.bestGuess("play.mvc.MsgId")
 

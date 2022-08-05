@@ -33,6 +33,7 @@ object Versions {
   const val MongoDB = "4.5.1"
   const val Mvel = "2.4.14.Final"
   const val Netty = "4.1.75.Final"
+  const val Protobuf = "3.21.4"
   const val Reactor = "3.4.19"
   const val Rxjava3 = "3.1.3"
   const val Scala = "2.13.8"

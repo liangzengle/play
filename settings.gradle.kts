@@ -19,6 +19,7 @@ fun project(name: String, dir: String?) {
 }
 
 include("play-core")
+include("play-codec")
 include("play-res")
 include("play-entity")
 include("play-db")

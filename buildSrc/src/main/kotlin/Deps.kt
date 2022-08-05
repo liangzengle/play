@@ -153,6 +153,8 @@ object Deps {
 
   const val Micrometer = "io.micrometer:micrometer-core:${Versions.Micrometer}"
 
+  const val Protobuf = "com.google.protobuf:protobuf-java:${Versions.Protobuf}"
+
   const val Rxjava3 = "io.reactivex.rxjava3:rxjava:${Versions.Rxjava3}"
 
   const val TsConfig = "com.typesafe:config:${Versions.TsConfig}"

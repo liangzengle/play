@@ -1,6 +1,7 @@
 package play.mvc
 
 import kotlinx.serialization.Serializable
+import play.codec.MessageCodec
 import play.util.EmptyByteArray
 import play.util.EmptyIntArray
 import play.util.EmptyLongArray

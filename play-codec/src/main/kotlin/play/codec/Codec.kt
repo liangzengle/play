@@ -1,7 +1,7 @@
-package play.util.codec
+package play.codec
 
 interface Codec<T: Any> {
   fun encode(value: T?): ByteArray
 
-  fun decode(value: ByteArray): T
+  fun decode(bytes: ByteArray): T
 }
