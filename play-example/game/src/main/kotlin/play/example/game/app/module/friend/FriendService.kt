@@ -4,7 +4,7 @@ import akka.actor.typed.ActorRef
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.stereotype.Component
 import play.example.game.app.module.friend.entity.PlayerFriendEntityCache
-import play.example.game.app.module.friend.message.FriendInfo
+import play.example.module.friend.message.FriendInfo
 import play.util.control.Result2
 import play.util.control.ok
 

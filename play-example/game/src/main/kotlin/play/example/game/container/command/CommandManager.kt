@@ -11,31 +11,52 @@ class CommandManager constructor(
   private val classScanner: ClassScanner
 ) {
 
-  private val descriptors: List<CommandModuleDescriptor> by lazy {
-    classScanner.getInstantiatableClassesAnnotatedWith(CommandModule::class.java)
-      .asSequence()
-      .map(::toCommandModuleDescriptor)
-      .toImmutableList()
-  }
+  private lateinit var descriptors: List<CommandModuleDescriptor>
 
-  private val invokerMap: Map<String, Map<String, CommandInvoker>> by lazy {
-    classScanner.getInstantiatableClassesAnnotatedWith(CommandModule::class.java)
-      .asSequence()
-      .map { moduleClass ->
-        val commandModule = moduleClass.getAnnotation(CommandModule::class.java)
-        commandModule.name to moduleClass.declaredMethods.asSequence()
-          .filter { it.isAnnotationPresent(Command::class.java) }
-          .map { method ->
-            getCommandName(method) to CommandInvoker(method, commanderType)
-          }.toImmutableMap()
-      }.toImmutableMap()
+  private lateinit var invokers: Map<String, Map<String, CommandInvoker>>
+
+  @Volatile
+  private var initialized = false
+
+  private fun ensureInitialized() {
+    if (initialized) {
+      return
+    }
+    synchronized(this) {
+      if (initialized) {
+        return
+      }
+      val commandModuleClasses = classScanner.getInstantiatableClassesAnnotatedWith(CommandModule::class.java)
+      val descriptors = commandModuleClasses
+        .asSequence()
+        .map(::toCommandModuleDescriptor)
+        .toImmutableList()
+      val invokers = commandModuleClasses
+        .asSequence()
+        .map { moduleClass ->
+          val commandModule = moduleClass.getAnnotation(CommandModule::class.java)
+          commandModule.name to moduleClass.declaredMethods.asSequence()
+            .filter { it.isAnnotationPresent(Command::class.java) }
+            .map { method ->
+              getCommandName(method) to CommandInvoker(method, commanderType)
+            }.toImmutableMap()
+        }.toImmutableMap()
+
+      this.descriptors = descriptors
+      this.invokers = invokers
+      this.initialized = true
+    }
   }
 
   fun getInvoker(module: String, cmd: String): CommandInvoker? {
-    return invokerMap[module]?.get(cmd)
+    ensureInitialized()
+    return invokers[module]?.get(cmd)
   }
 
-  fun getCommandDescriptors() = descriptors
+  fun getCommandModuleDescriptors(): List<CommandModuleDescriptor> {
+    ensureInitialized()
+    return descriptors
+  }
 
   private fun getCommandName(method: Method): String {
     val name = method.getAnnotation(Command::class.java)?.name

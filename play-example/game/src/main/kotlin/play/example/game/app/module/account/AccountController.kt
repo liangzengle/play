@@ -2,7 +2,7 @@ package play.example.game.app.module.account
 
 import org.springframework.stereotype.Component
 import play.example.game.app.module.ModuleId
-import play.example.game.app.module.account.message.LoginParams
+import play.example.module.login.message.LoginParams
 import play.mvc.AbstractController
 import play.mvc.Cmd
 import play.mvc.Controller

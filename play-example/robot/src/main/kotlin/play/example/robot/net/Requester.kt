@@ -4,7 +4,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import play.mvc.Header
 import play.mvc.MsgId
 import play.mvc.Request
-import play.mvc.RequestBody
+import play.mvc.RequestBodyFactory
 import java.time.Duration
 
 class Requester(private val client: RobotClient) {
@@ -25,7 +25,7 @@ class Requester(private val client: RobotClient) {
   fun send(msgId: Int, params: RequestParams?) {
     val requestId = nextRequestId()
     val header = Header(MsgId(msgId), requestId)
-    client.write(Request(header, params?.toRequestBody() ?: RequestBody.Empty))
+    client.write(Request(header, params?.toRequestBody() ?: RequestBodyFactory.Default.empty()))
     if (params != null) {
       requestParamsCache.put(requestId, params)
     }

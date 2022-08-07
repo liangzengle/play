@@ -1,7 +1,7 @@
 package play.example.robot.module.maintask
 
 import org.springframework.stereotype.Component
-import play.example.game.app.module.playertask.message.TaskInfo
+import play.example.module.task.message.TaskProto
 import play.example.robot.module.MainTaskModule
 import play.example.robot.module.player.RobotPlayer
 
@@ -11,7 +11,7 @@ import play.example.robot.module.player.RobotPlayer
  */
 @Component
 class MainTaskModuleImpl : MainTaskModule() {
-  override fun acceptResp(player: RobotPlayer, data: TaskInfo, req: AcceptRequestParams?) {
+  override fun acceptResp(player: RobotPlayer, data: TaskProto, req: AcceptRequestParams?) {
     TODO("Not yet implemented")
   }
 

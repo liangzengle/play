@@ -10,12 +10,14 @@ import play.Log
 import play.akka.*
 import play.example.common.StatusCode
 import play.example.game.app.module.account.entity.AccountEntityCache
-import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerModule
 import play.example.game.app.module.player.PlayerService
+import play.example.game.container.net.NetModule
 import play.example.game.container.net.Session
 import play.example.game.container.net.SessionActor
+import play.example.game.container.net.SessionCloseReason
+import play.example.module.login.message.LoginParams
 import play.mvc.Request
 import play.mvc.Response
 
@@ -30,8 +32,8 @@ class AccountActor(
   private val playerService: PlayerService
 ) : AbstractTypedActor<AccountActor.Command>(context) {
 
-  private lateinit var loginParams: LoginParams
-  private lateinit var session: Session
+  private var loginParams: LoginParams? = null
+  private var session: Session? = null
 
   private val requestAdapter = context.messageAdapter(Request::class.java) {
     RequestCommand(it)
@@ -49,6 +51,8 @@ class AccountActor(
   }
 
   private fun onRequest(cmd: RequestCommand): Behavior<Command> {
+    val session = checkNotNull(this.session)
+    val loginParams = checkNotNull(this.loginParams)
     val request = cmd.request
     return when (request.header.msgId.toInt()) {
       PlayerModule.create -> {
@@ -62,10 +66,12 @@ class AccountActor(
         }
         sameBehavior()
       }
+
       PlayerModule.login -> {
         playerManager send PlayerManager.LoginPlayerRequest(id, request, loginParams, session)
         sameBehavior() // TODO stop?
       }
+
       else -> {
         context.log.warn("unhandled request: $request")
         sameBehavior()
@@ -74,13 +80,22 @@ class AccountActor(
   }
 
   private fun onLogin(cmd: Login): Behavior<Command> {
-    loginParams = cmd.params
-    this.session = cmd.session
-    context.watch(session.actorRef)
-    session.tellActor(SessionActor.BindId(id))
-    session.tellActor(SessionActor.Subscribe(requestAdapter))
+    val preSession = this.session
+    preSession?.tellActor(
+      SessionActor.NotifyAndClose(
+        "Repeat login",
+        NetModule.sessionClosePush(SessionCloseReason.RepeatLogin)
+      )
+    )
+
+    val newSession = cmd.session
+    context.watch(newSession.actorRef)
+    newSession.tellActor(SessionActor.BindId(id))
+    newSession.tellActor(SessionActor.Subscribe(requestAdapter))
     val hasPlayer = playerService.isPlayerExists(id)
-    session.write(Response(cmd.request.header, 0, hasPlayer))
+    newSession.write(Response(cmd.request.header, 0, hasPlayer))
+    this.loginParams = cmd.params
+    this.session = newSession
     return waitingPlayerCreate
   }
 

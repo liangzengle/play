@@ -2,17 +2,17 @@ package play.example.game.app.module.player
 
 import mu.KLogging
 import org.springframework.stereotype.Component
-import play.example.game.app.module.account.message.LoginParams
+import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.entity.PlayerEntity
 import play.example.game.app.module.player.entity.PlayerEntityCache
 import play.example.game.app.module.player.entity.PlayerInfoEntity
 import play.example.game.app.module.player.entity.PlayerInfoEntityCache
 import play.example.game.app.module.player.event.*
-import play.example.game.app.module.player.PlayerManager.Self
-import play.example.game.app.module.player.message.PlayerDTO
 import play.example.game.app.module.player.scheduling.PlayerScheduler
 import play.example.game.app.module.reward.model.Cost
 import play.example.game.app.module.reward.model.CostResultSet
+import play.example.module.login.message.LoginParams
+import play.example.player.message.PlayerProto
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.control.Result2
@@ -61,12 +61,12 @@ class PlayerService(
     onNewDayStart(self)
   }
 
-  fun login(self: Self, loginParams: LoginParams): PlayerDTO {
+  fun login(self: Self, loginParams: LoginParams): PlayerProto {
     val player = playerCache.getOrThrow(self.id)
     val playerInfo = playerInfoCache.getOrThrow(self.id)
     onlinePlayerService.login(self, loginParams)
     logger.info("player login: {}", self)
-    return PlayerDTO(self.id, playerInfo.name)
+    return PlayerProto(self.id, playerInfo.name)
   }
 
   fun logout(self: Self) {

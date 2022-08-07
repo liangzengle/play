@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package play.example.module.guild.message;
+
+
+message GuildProto {
+  int64 id = 1;
+  string name = 2;
+  int64 leaderId = 3;
+  string leaderName = 4;
+  int32 membersCount = 5;
+}

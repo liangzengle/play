@@ -16,7 +16,7 @@ object Time {
 
   @Synchronized
   fun setClock(clock: Clock) {
-    check(this.clock === defaultClock) { "clock has been set to ${this.clock}" }
+    check(this.clock !== defaultClock) { "clock has been set to ${this.clock}" }
     this.clock = clock
   }
 
@@ -61,7 +61,7 @@ object Time {
   fun LocalTime.formatToInt(): Int = hour * 10000 + minute * 100 + second
 
   @JvmStatic
-  fun LocalDateTime.formatToLong(): Int = toLocalDate().formatToInt() * 1000000 + toLocalTime().formatToInt()
+  fun LocalDateTime.formatToLong(): Long = toLocalDate().formatToInt() * 1000000L + toLocalTime().formatToInt()
 
   @JvmStatic
   fun LocalDateTime.betweenMillis(toExclusive: LocalDateTime) = between(ChronoUnit.MILLIS, this, toExclusive)

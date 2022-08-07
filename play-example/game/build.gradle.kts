@@ -3,8 +3,9 @@ import org.gradle.api.internal.plugins.WindowsStartScriptGenerator
 
 plugins {
   id("play.modular-code") version "0.1"
-  id("org.jetbrains.kotlin.plugin.serialization") version Versions.Kotlin
   application
+  java
+  idea
 }
 
 apply(plugin = "kotlin-kapt")
@@ -35,6 +36,7 @@ val kapt by configurations
 dependencies {
   api(project(":play-example-common"))
   api(project(":play-example-rpc-api"))
+  api(project("::play-example-protos"))
   api(project(":play-net"))
   api(project(":play-entity"))
   api(project(":play-db"))
@@ -42,9 +44,6 @@ dependencies {
   api(project(":play-mvc"))
   api(project(":play-spring"))
   api(project("::play-rsocket-rpc"))
-
-  api(project("::play-codec"))
-  implementation(Deps.Kotlinx.Serialization.Protobuf)
 
   compileOnly(project(":play-codegen-annotations"))
   compileOnly(project(":play-codegen"))

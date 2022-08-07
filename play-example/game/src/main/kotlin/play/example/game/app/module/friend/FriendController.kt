@@ -2,7 +2,7 @@ package play.example.game.app.module.friend
 
 import org.springframework.stereotype.Component
 import play.example.game.app.module.ModuleId
-import play.example.game.app.module.friend.message.FriendInfo
+import play.example.module.friend.message.FriendInfo
 import play.mvc.*
 import play.util.concurrent.PlayFuture
 import play.util.control.ok

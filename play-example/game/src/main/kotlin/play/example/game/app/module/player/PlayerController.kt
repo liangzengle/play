@@ -2,8 +2,8 @@ package play.example.game.app.module.player
 
 import org.springframework.stereotype.Component
 import play.example.game.app.module.ModuleId
-import play.example.game.app.module.player.message.PlayerDTO
 import play.example.game.container.command.CommandService
+import play.example.player.message.PlayerProto
 import play.mvc.*
 import play.util.control.ok
 
@@ -22,7 +22,7 @@ class PlayerController(
   fun create(name: String): RequestResult<Boolean> = throw UnsupportedOperationException()
 
   @Cmd(2, dummy = true)
-  fun login(): RequestResult<PlayerDTO> = throw UnsupportedOperationException()
+  fun login(): RequestResult<PlayerProto> = throw UnsupportedOperationException()
 
   @Cmd(3)
   fun ping(self: PlayerManager.Self, msg: String): RequestResult<String> = ok("world!").toRequestResult()

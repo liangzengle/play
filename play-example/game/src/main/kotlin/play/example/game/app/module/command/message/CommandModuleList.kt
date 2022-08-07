@@ -1,6 +1,5 @@
 package play.example.game.app.module.command.message
 
-import kotlinx.serialization.Serializable
 import play.example.game.container.command.CommandModuleDescriptor
 
 /**
@@ -9,5 +8,4 @@ import play.example.game.container.command.CommandModuleDescriptor
  * @property mostUsed 常用指令
  * @constructor
  */
-@Serializable
 data class CommandModuleList(val commandModules: List<CommandModuleDescriptor>, val mostUsed: CommandModuleDescriptor)

@@ -10,7 +10,7 @@ class CommandInvoker(private val method: Method, commanderType: Class<*>) {
   private val parameters: List<Parameter>
   private val parameterConverters: List<ParameterConverter<*>>
 
-  val targetClass get() = method.declaringClass
+  val targetClass: Class<*> get() = method.declaringClass
 
   init {
     method.trySetAccessible()

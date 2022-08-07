@@ -11,7 +11,7 @@ class LoggingOnErrorHttpClient(private val delegate: PlayHttpClient) : PlayHttpC
     return delegate.get(url, params, headers)
       .whenComplete { _, exception ->
         if (exception != null) {
-          logger.error("http request failed: $url $params", exception)
+          delegate.logger.error("http request failed: $url $params", exception)
         }
       }
   }
@@ -20,7 +20,7 @@ class LoggingOnErrorHttpClient(private val delegate: PlayHttpClient) : PlayHttpC
     return delegate.post(url, form, headers)
       .whenComplete { _, exception ->
         if (exception != null) {
-          logger.error("http request failed: $url $form", exception)
+          delegate.logger.error("http request failed: $url $form", exception)
         }
       }
   }
@@ -29,7 +29,7 @@ class LoggingOnErrorHttpClient(private val delegate: PlayHttpClient) : PlayHttpC
     return delegate.post(url, data, headers)
       .whenComplete { _, exception ->
         if (exception != null) {
-          logger.error("http request failed: $url $data", exception)
+          delegate.logger.error("http request failed: $url $data", exception)
         }
       }
   }

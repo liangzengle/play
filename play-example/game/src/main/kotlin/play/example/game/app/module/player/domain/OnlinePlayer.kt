@@ -1,6 +1,6 @@
 package play.example.game.app.module.player.domain
 
-import play.example.game.app.module.account.message.LoginParams
+import play.example.module.login.message.LoginParams
 
 class OnlinePlayer(val playerId: Long, var loginParams: LoginParams, var logoutTime: Long = 0) {
 

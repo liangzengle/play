@@ -6,11 +6,10 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import play.akka.AbstractTypedActor
+import play.akka.scheduling.ActorScheduler
 import play.akka.send
 import play.akka.withResumeSupervisor
-import play.akka.scheduling.ActorScheduler
 import play.example.common.scheduling.Cron
-import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.domain.PlayerErrorCode
 import play.example.game.app.module.player.event.PlayerEvent
 import play.example.game.app.module.player.event.PlayerEventDispatcher
@@ -18,6 +17,7 @@ import play.example.game.app.module.player.event.PromisedPlayerEvent
 import play.example.game.app.module.playertask.PlayerTaskEventReceiver
 import play.example.game.container.gs.logging.ActorMDC
 import play.example.game.container.net.Session
+import play.example.module.login.message.LoginParams
 import play.mvc.Request
 import play.mvc.RequestCommander
 import play.mvc.Response
@@ -76,7 +76,7 @@ class PlayerManager(
     }
     playerService.createPlayer(playerId, playerName)
     playerIdNameCache.add(playerId, playerName)
-    cmd.session.write(Response(cmd.request.header, 0))
+    cmd.session.write(Response(cmd.request.header, 0, false))
   }
 
   private fun onEvent(event: PlayerEvent) {

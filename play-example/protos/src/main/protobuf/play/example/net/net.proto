@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+
+package play.example.net.message;
+
+// 心跳
+message Heartbeat {
+  // 客户端时间
+  int64 clientTime = 1;
+  // 服务端时间
+  int64 serverTime = 2;
+}
+
+message RequestParams {
+  bool b1 = 1;
+  bool b2 = 2;
+  bool b3 = 3;
+
+  int32 i1 = 11;
+  int32 i2 = 12;
+  int32 i3 = 13;
+
+  int64 l1 = 21;
+  int64 l2 = 22;
+  int64 l3 = 23;
+
+  string s1 = 31;
+  string s2 = 32;
+  string s3 = 33;
+
+  repeated int32 ints = 41;
+  repeated int64 longs = 42;
+
+  bytes payload = 50;
+}

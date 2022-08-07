@@ -6,11 +6,13 @@ import play.example.game.app.module.ModuleId
 import play.example.game.app.module.command.entity.CommandId
 import play.example.game.app.module.command.entity.CommandStatisticsEntityCache
 import play.example.game.app.module.command.message.CommandModuleList
+import play.example.game.app.module.command.message.toProto
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.container.command.CommandDescriptor
 import play.example.game.container.command.CommandModuleDescriptor
 import play.example.game.container.command.CommandResult
 import play.example.game.container.command.CommandService
+import play.example.module.command.message.CommandModuleListProto
 import play.mvc.AbstractController
 import play.mvc.Cmd
 import play.mvc.Controller
@@ -46,11 +48,11 @@ class CommandController(
   }
 
   @Cmd(2)
-  fun list(self: Self): RequestResult<CommandModuleList> {
-    val commandModules = commandService.listCommandModules()
+  fun list(self: Self): RequestResult<CommandModuleListProto> {
+    val commandModules = commandService.getCommandModuleDescriptors()
     val selectMostUsedCommands = selectMostUsedCommands(commandModules, 20)
     val mostUsed = CommandModuleDescriptor("mostUsed", "常用", selectMostUsedCommands)
-    return RequestResult.ok(CommandModuleList(commandModules, mostUsed))
+    return RequestResult.ok(CommandModuleList(commandModules, mostUsed).toProto())
   }
 
   @Suppress("UnstableApiUsage")

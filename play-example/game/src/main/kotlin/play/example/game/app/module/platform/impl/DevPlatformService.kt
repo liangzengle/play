@@ -1,9 +1,9 @@
 package play.example.game.app.module.platform.impl
 
 import org.springframework.stereotype.Component
-import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.platform.PlatformService
 import play.example.game.app.module.platform.domain.Platform
+import play.example.module.login.message.LoginParams
 
 /**
  * Created by liang on 2020/6/27.

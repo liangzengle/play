@@ -2,9 +2,9 @@ package play.example.game.app.module.player
 
 import org.jctools.maps.NonBlockingHashMapLong
 import org.springframework.stereotype.Component
-import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.player.domain.OnlinePlayer
 import play.example.game.container.net.Session
+import play.example.module.login.message.LoginParams
 import play.mvc.Response
 import play.scheduling.Scheduler
 import play.util.collection.keysIterator

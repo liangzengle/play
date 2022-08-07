@@ -2,7 +2,7 @@ package play.example.game.app.module.guild
 
 import org.springframework.stereotype.Component
 import play.example.game.app.module.ModuleId
-import play.example.game.app.module.guild.message.GuildInfo
+import play.example.module.guild.message.GuildProto
 import play.mvc.*
 
 /**
@@ -16,8 +16,10 @@ public class GuildController(
 ) : AbstractController(ModuleId.Guild) {
 
   @Cmd(1, dummy = true)
-  fun create(playerId: GuildManager.Commander, guildName: String): RequestResult<GuildInfo> = throw UnsupportedOperationException()
+  fun create(playerId: GuildManager.Commander, guildName: String): RequestResult<GuildProto> =
+    throw UnsupportedOperationException()
 
   @Cmd(2, dummy = true)
-  fun join(playerId: GuildManager.Commander, guildId: Long): RequestResult<GuildInfo> = throw UnsupportedOperationException()
+  fun join(playerId: GuildManager.Commander, guildId: Long): RequestResult<GuildProto> =
+    throw UnsupportedOperationException()
 }

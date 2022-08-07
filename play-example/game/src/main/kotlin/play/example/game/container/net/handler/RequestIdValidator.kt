@@ -21,7 +21,7 @@ class RequestIdValidator : ChannelInboundHandlerAdapter() {
     val requestId = msg.header.requestId
     if (requestId < nextRequestId) {
       val errorMsg = "expected:$nextRequestId, received:$requestId, channel:${ctx.channel()}"
-      ctx.fireExceptionCaught(InvalidRequestSequenceNoException(errorMsg))
+      ctx.fireExceptionCaught(InvalidRequestIdException(errorMsg))
       return
     }
     nextRequestId = requestId + 1
@@ -32,4 +32,4 @@ class RequestIdValidator : ChannelInboundHandlerAdapter() {
   }
 }
 
-class InvalidRequestSequenceNoException(msg: String) : NoStackTraceException(msg)
+class InvalidRequestIdException(msg: String) : NoStackTraceException(msg)

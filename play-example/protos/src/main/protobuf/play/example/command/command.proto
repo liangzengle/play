@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package play.example.module.command.message;
+
+message CommandParamProto{
+  string name = 1;
+  string desc = 2;
+  string defaultValue = 3;
+}
+
+message CommandProto {
+  string module = 1;
+  string name = 2;
+  string desc = 3;
+  repeated CommandParamProto params = 4;
+}
+
+message CommandModuleProto {
+  string name = 1;
+  string label = 2;
+  repeated CommandProto commands = 3;
+}
+
+message CommandModuleListProto {
+  repeated CommandModuleProto modules = 1;
+  CommandModuleProto mostUsed = 2;
+}

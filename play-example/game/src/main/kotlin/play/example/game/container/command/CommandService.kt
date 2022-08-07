@@ -4,21 +4,35 @@ import mu.KLogging
 import play.inject.PlayInjector
 import play.util.control.Result2
 
-class CommandService constructor(
-  private val injector: PlayInjector,
-  private val commandManager: CommandManager
-) {
+class CommandService(private val beanProvider: (Class<*>) -> Any, private val commandManager: CommandManager) {
+  constructor(injector: PlayInjector, commandManager: CommandManager) : this(
+    { injector.getInstance(it) },
+    commandManager
+  )
+
   companion object : KLogging()
+
+  private val beanCache = object : ClassValue<Any>() {
+    override fun computeValue(type: Class<*>): Any {
+      return beanProvider(type)
+    }
+  }
 
   fun invoke(commander: Any, module: String, cmd: String, args: List<String>): CommandResult {
     val invoker = commandManager.getInvoker(module, cmd) ?: return CommandResult.err("GM指令不存在: $module $cmd")
-    val moduleInstance = injector.getInstance(invoker.targetClass)
     return try {
-      val result = invoker.invoke(commander, moduleInstance, args)
+      val target = beanCache.get(invoker.targetClass)
+      val result = invoker.invoke(commander, target, args)
       onResult(result)
     } catch (e: Exception) {
-      logger.debug(e) { "GM指令错误: $invoker $args" }
-      CommandResult.err("操作失败, 服务器异常: ${e.javaClass.name}: ${e.message}")
+      when (e) {
+        is CommandParamMissingException -> CommandResult.err(e.message!!)
+        is CommandParamIllegalException -> CommandResult.err(e.message!!)
+        else -> {
+          logger.debug(e) { "GM指令错误: $invoker $args" }
+          CommandResult.err("操作失败, 服务器异常: ${e.javaClass.name}: ${e.message}")
+        }
+      }
     }
   }
 
@@ -32,5 +46,5 @@ class CommandService constructor(
     }
   }
 
-  fun listCommandModules() = commandManager.getCommandDescriptors()
+  fun getCommandModuleDescriptors() = commandManager.getCommandModuleDescriptors()
 }

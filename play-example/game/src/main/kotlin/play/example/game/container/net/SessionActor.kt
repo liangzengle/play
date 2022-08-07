@@ -41,13 +41,8 @@ class SessionActor(
   }
 
   override fun createReceive(): Receive<Command> {
-    return newReceiveBuilder()
-      .accept(::close)
-      .accept(::bind)
-      .accept(::subscribe)
-      .accept(::write)
-      .acceptSignal<PostStop>(::postStop)
-      .build()
+    return newReceiveBuilder().accept(::close).accept(::notifyAndClose).accept(::bind).accept(::subscribe)
+      .accept(::write).acceptSignal<PostStop>(::postStop).build()
   }
 
   private fun postStop() {
@@ -63,6 +58,11 @@ class SessionActor(
     }
     session.write(cmd.msg)
     return sameBehavior()
+  }
+
+  private fun notifyAndClose(cmd: NotifyAndClose): Behavior<Command> {
+    session.write(cmd.msg)
+    return close(Close(cmd.reason))
   }
 
   private fun close(cmd: Close): Behavior<Command> {
@@ -98,11 +98,11 @@ class SessionActor(
   }
 
   private inner class ChannelHandler : ChannelInboundHandlerAdapter() {
-    override fun channelInactive(ctx: ChannelHandlerContext?) {
+    override fun channelInactive(ctx: ChannelHandlerContext) {
       forceClose("Channel Inactive")
     }
 
-    override fun channelRead(ctx: ChannelHandlerContext, msg: Any?) {
+    override fun channelRead(ctx: ChannelHandlerContext, msg: Any) {
       if (msg !is Request) {
         ctx.fireChannelRead(msg)
         return
@@ -125,6 +125,7 @@ class SessionActor(
             forceClose("Read Idle Timeout")
           }
         }
+
         else -> logger.info { "userEventTriggered: $evt" }
       }
     }
@@ -137,7 +138,7 @@ class SessionActor(
       }
     }
 
-    @Suppress("DEPRECATION")
+    @Deprecated("Deprecated in Java")
     override fun exceptionCaught(ctx: ChannelHandlerContext, cause: Throwable) {
       forceClose("Exception Occurred", cause)
     }
@@ -154,6 +155,7 @@ class SessionActor(
 
   interface Command
   data class Close(val reason: String, val cause: Throwable? = null) : Command
+  data class NotifyAndClose(val reason: String, val msg: Response) : Command
   data class BindId(val id: Long) : Command
   data class Subscribe(val subscriber: ActorRef<Request>) : Command
   data class Write(val msg: Response) : Command

@@ -24,12 +24,10 @@ class SessionManager(context: ActorContext<Command>) :
       .build()
   }
 
-  @Suppress("UnstableApiUsage")
   private fun registerUnhandledRequestReceiver(cmd: RegisterUnhandledRequestReceiver) {
     unhandledRequestReceivers = unhandledRequestReceivers.newWith(cmd.receiver)
   }
 
-  @Suppress("UnstableApiUsage")
   private fun createSession(cmd: CreateSession) {
     val hostAndPort = cmd.ch.remoteAddress().getHostAndPort()
     val session =

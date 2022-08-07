@@ -1,8 +1,7 @@
 package play.scheduling
 
 import play.Log
-import play.SystemProps
-import play.util.reflect.Reflect
+import play.StaticConfigurator
 import java.time.LocalDateTime
 import javax.annotation.Nonnull
 import javax.annotation.Nullable
@@ -11,8 +10,7 @@ interface CronExpression {
 
   companion object {
     private val factory: Factory =
-      SystemProps.getOrNull("play.cron.expression.factory")?.let { Reflect.getKotlinObjectOrNewInstance(it) }
-        ?: CronSequenceGeneratorFactory
+      StaticConfigurator.getOrDefault(Factory::class.java) { CronSequenceGeneratorFactory }
 
     init {
       Log.debug { "CronExpression.Factory: ${factory.javaClass.simpleName}" }

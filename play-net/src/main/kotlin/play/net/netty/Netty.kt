@@ -36,7 +36,6 @@ fun SocketAddress.getPort(): Int {
   return if (this is InetSocketAddress) this.port else -1
 }
 
-@Suppress("UnstableApiUsage")
 fun SocketAddress.getHostAndPort(): HostAndPort {
   return if (this is InetSocketAddress) HostAndPort.fromParts(hostString, port)
   else HostAndPort.fromParts("127.0.0.1", 0)

@@ -5,15 +5,13 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
-import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.protobuf.ProtoBuf
 import play.Log
 import play.akka.AbstractTypedActor
 import play.akka.send
+import play.codec.MessageCodec
 import play.example.game.app.module.account.domain.AccountErrorCode
 import play.example.game.app.module.account.entity.Account
 import play.example.game.app.module.account.entity.AccountEntityCache
-import play.example.game.app.module.account.message.LoginParams
 import play.example.game.app.module.platform.PlatformServiceProvider
 import play.example.game.app.module.platform.domain.Platforms
 import play.example.game.app.module.player.PlayerEntityCacheInitializer
@@ -23,6 +21,7 @@ import play.example.game.app.module.server.ServerService
 import play.example.game.container.gs.logging.ActorMDC
 import play.example.game.container.login.LoginDispatcherActor
 import play.example.game.container.net.Session
+import play.example.module.login.message.LoginParams
 import play.mvc.Request
 import play.mvc.Response
 import play.util.control.Result2
@@ -71,13 +70,14 @@ class AccountManager(
         println("ping")
         session.write(Response(request.header, 0, "hello"))
       }
+
       else -> Log.warn { "unhandled request: $request" }
     }
   }
 
   private fun login(request: Request, session: Session) {
     val requestBody = request.body
-    val params = ProtoBuf.decodeFromByteArray<LoginParams>(requestBody.bytes)
+    val params = MessageCodec.decode<LoginParams>(requestBody.getPayload())
     val result = getOrCreateAccount(params)
     if (result.isErr()) {
       session.write(Response(request.header, result.getErrorCode()))

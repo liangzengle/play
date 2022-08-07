@@ -3,8 +3,7 @@ package play.example.game.app.module.guild.entity
 import play.db.Merge
 import play.entity.LongIdEntity
 import play.entity.cache.CacheSpec
-import play.entity.cache.NeverExpireEvaluator
-import play.example.game.app.module.guild.message.GuildInfo
+import play.example.module.guild.message.GuildProto
 import play.util.collection.ConcurrentHashSet
 
 /**
@@ -21,7 +20,7 @@ class GuildEntity(id: Long, val name: String) : LongIdEntity(id) {
 
   val members: MutableSet<Long> = ConcurrentHashSet()
 
-  fun toMessage(): GuildInfo {
-    return GuildInfo(id, name, leaderId, leaderName, members.size)
+  fun toMessage(): GuildProto {
+    return GuildProto(id, name, leaderId, leaderName, members.size)
   }
 }

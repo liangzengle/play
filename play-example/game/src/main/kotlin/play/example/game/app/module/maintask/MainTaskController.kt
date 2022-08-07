@@ -3,7 +3,7 @@ package play.example.game.app.module.maintask
 import org.springframework.stereotype.Component
 import play.example.game.app.module.ModuleId
 import play.example.game.app.module.player.PlayerManager.Self
-import play.example.game.app.module.playertask.message.TaskInfo
+import play.example.module.task.message.TaskProto
 import play.mvc.AbstractController
 import play.mvc.Cmd
 import play.mvc.Controller
@@ -28,7 +28,7 @@ public class MainTaskController(
    * @return RequestResult<TaskProto>
    */
   @Cmd(1)
-  fun accept(self: Self, taskId: Int): RequestResult<TaskInfo> = RequestResult {
+  fun accept(self: Self, taskId: Int): RequestResult<TaskProto> = RequestResult {
     mainTaskService.acceptTask(self, taskId).map(mainTaskService::toMessage)
   }
 

@@ -1,5 +1,7 @@
 package play.util.hotswap
 
+import play.hotswap.HotSwapWatcher
+
 /**
  *
  * @author LiangZengle

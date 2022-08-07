@@ -70,32 +70,27 @@ internal fun KSValueParameter.nameEquals(name: String): Boolean {
 internal fun readStmt(parameter: KSValueParameter): String {
   val reader = when (val paramClassName = parameter.type.resolve().toClassName()) {
     BOOLEAN -> "readBoolean()"
-    BYTE -> "readByte()"
     INT -> "readInt()"
     LONG -> "readLong()"
-    DOUBLE -> "readDouble()"
     STRING -> "readString()"
-    BYTE_ARRAY -> "getByteArray()"
+    BYTE_ARRAY -> "getPayload()"
     INT_ARRAY -> "getIntArray()"
     LONG_ARRAY -> "getLongArray()"
-    DOUBLE_ARRAY -> "getDoubleArray()"
-    ARRAY -> "getStringArray()"
     LIST -> {
       when (val type = parameter.type.toTypeName()) {
         is ParameterizedTypeName -> {
           when (val componentType = type.typeArguments[0]) {
-            BYTE -> "getByteList()"
             INT -> "getIntList()"
             LONG -> "getLongList()"
-            DOUBLE -> "getDoubleList()"
-            STRING -> "getStringList()"
             else -> throw IllegalArgumentException("Unsupported component type: $componentType")
           }
         }
+
         else -> throw IllegalArgumentException("Unsupported parameter type: $type")
       }
     }
-    else -> "decodeBytesAs(${paramClassName.canonicalName}::class.java)"
+
+    else -> "decodePayloadAs(${paramClassName.canonicalName}::class.java)"
   }
   return "request.body.$reader"
 }

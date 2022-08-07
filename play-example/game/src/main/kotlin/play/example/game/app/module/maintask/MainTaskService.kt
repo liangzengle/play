@@ -10,12 +10,12 @@ import play.example.game.app.module.maintask.res.MainTaskResourceSet
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.playertask.AbstractPlayerTaskService
 import play.example.game.app.module.playertask.PlayerTaskTargetHandlerProvider
-import play.example.game.app.module.playertask.message.TaskInfo
 import play.example.game.app.module.reward.RewardService
 import play.example.game.app.module.task.domain.TaskErrorCode
 import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.event.TaskEvent
 import play.example.game.app.module.task.res.AbstractTaskResourceExtension
+import play.example.module.task.message.TaskProto
 import play.util.filterOrNull
 
 /**
@@ -108,8 +108,8 @@ public class MainTaskService(
     return MainTaskResourceSet.getOrNull(taskId)
   }
 
-  fun toMessage(task: PlayerMainTask): TaskInfo {
-    return TaskInfo(task.id, task.status, getProgressList(task))
+  fun toMessage(task: PlayerMainTask): TaskProto {
+    return TaskProto(task.id, task.status.toInt(), getProgressList(task))
   }
 
   override val errorCode: TaskErrorCode

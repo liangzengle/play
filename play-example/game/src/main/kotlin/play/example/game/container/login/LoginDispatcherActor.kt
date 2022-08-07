@@ -3,14 +3,16 @@ package play.example.game.container.login
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Receive
+import org.eclipse.collections.api.block.predicate.Predicate
+import org.eclipse.collections.api.factory.Lists
 import org.eclipse.collections.api.set.primitive.IntSet
 import play.akka.AbstractTypedActor
 import play.codec.MessageCodec
 import play.example.game.app.module.account.AccountModule
-import play.example.game.app.module.account.message.LoginParams
 import play.example.game.container.net.Session
 import play.example.game.container.net.SessionManager
 import play.example.game.container.net.UnhandledRequest
+import play.example.module.login.message.LoginParams
 import play.mvc.Request
 
 /**
@@ -22,15 +24,14 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
   interface Command
   class UnhandledLoginRequest(@JvmField val request: Request, @JvmField val session: Session) : Command
   class RegisterLoginReceiver(
-    @JvmField val serverIds: IntSet,
-    @JvmField val receiver: ActorRef<UnhandledLoginRequest>
+    @JvmField val serverIds: IntSet, @JvmField val receiver: ActorRef<UnhandledLoginRequest>
   ) : Command
 
   private class UnregisterLoginReceiver(val receiver: ActorRef<UnhandledLoginRequest>) : Command
 
   private val loginParamCodec = MessageCodec.newCodec(LoginParams::class)
 
-  private val receivers = ArrayList<RegisterLoginReceiver>(1)
+  private val receivers = Lists.mutable.ofInitialCapacity<RegisterLoginReceiver>(1)
 
   init {
     val receiver =
@@ -39,11 +40,7 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
   }
 
   override fun createReceive(): Receive<Command> {
-    return newReceiveBuilder()
-      .accept(::handle)
-      .accept(::register)
-      .accept(::unregister)
-      .build()
+    return newReceiveBuilder().accept(::handle).accept(::register).accept(::unregister).build()
   }
 
   private fun register(cmd: RegisterLoginReceiver) {
@@ -52,7 +49,7 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
   }
 
   private fun unregister(cmd: UnregisterLoginReceiver) {
-    receivers.removeIf { it.receiver === cmd.receiver }
+    receivers.removeIf(Predicate { it.receiver === cmd.receiver })
   }
 
   private fun handle(req: UnhandledLoginRequest) {
@@ -65,7 +62,7 @@ class LoginDispatcherActor(ctx: ActorContext<Command>, sessionManager: ActorRef<
   private fun dispatch(req: UnhandledLoginRequest) {
     try {
       val requestBody = req.request.body
-      val params = loginParamCodec.decode(requestBody.bytes)
+      val params = loginParamCodec.decode(requestBody.getPayload())
       val serverId = params.serverId
       for (i in receivers.indices) {
         val cmd = receivers[i]

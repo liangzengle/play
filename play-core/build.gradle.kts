@@ -21,5 +21,6 @@ dependencies {
   api(Deps.UnsafeAccessor)
   ksp(Deps.AutoServiceKsp)
   compileOnly(Deps.Kotlinx.Serialization.Protobuf)
+  compileOnly(Deps.Wire.Runtime)
   api(Deps.Reactor.Core)
 }

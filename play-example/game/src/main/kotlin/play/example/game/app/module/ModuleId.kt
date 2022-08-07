@@ -1,16 +1,17 @@
 package play.example.game.app.module
 
 object ModuleId {
+  const val Net: Short = 1
 
-  const val Account: Short = 1
-  const val Player: Short = 2
-  const val Equip: Short = 3
-  const val Item: Short = 4
-  const val Friend: Short = 5
-  const val Guild: Short = 6
-  const val MainTask: Short = 7
-  const val ModuleControl: Short = 8
-  const val Mail: Short = 9
-  const val Command: Short = 10
-  const val ServerTask: Short = 11
+  const val Account: Short = 11
+  const val Player: Short = 12
+  const val Equip: Short = 13
+  const val Item: Short = 14
+  const val Friend: Short = 15
+  const val Guild: Short = 16
+  const val MainTask: Short = 17
+  const val ModuleControl: Short = 18
+  const val Mail: Short = 19
+  const val Command: Short = 20
+  const val ServerTask: Short = 21
 }

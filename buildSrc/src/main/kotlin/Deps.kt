@@ -117,6 +117,12 @@ object Deps {
     const val StarterActuator = "org.springframework.boot:spring-boot-starter-actuator:${Versions.SpringBoot}"
   }
 
+  object Wire {
+    private const val Version = Versions.Wire
+    const val Runtime = "com.squareup.wire:wire-runtime-jvm:$Version"
+    const val Schema = "com.squareup.wire:wire-schema-jvm:$Version"
+  }
+
   const val Asm = "org.ow2.asm:asm:${Versions.Asm}"
 
   const val AsyncHttpClient = "org.asynchttpclient:async-http-client:${Versions.AsyncHttpClient}"
@@ -152,8 +158,6 @@ object Deps {
   const val Logback = "ch.qos.logback:logback-classic:${Versions.Logback}"
 
   const val Micrometer = "io.micrometer:micrometer-core:${Versions.Micrometer}"
-
-  const val Protobuf = "com.google.protobuf:protobuf-java:${Versions.Protobuf}"
 
   const val Rxjava3 = "io.reactivex.rxjava3:rxjava:${Versions.Rxjava3}"
 

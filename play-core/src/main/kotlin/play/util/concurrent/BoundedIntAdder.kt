@@ -11,10 +11,16 @@ import javax.annotation.concurrent.ThreadSafe
  * @author LiangZengle
  */
 @ThreadSafe
-class BoundedIntAdder {
+class BoundedIntAdder(initialValue: Int) {
+  init {
+    require(initialValue >= 0) { "Illegal initialValue:$initialValue" }
+  }
+
   @JsonValue
   @Volatile
-  private var value = 0
+  private var value = initialValue
+
+  constructor() : this(0)
 
   companion object {
     private val valueUpdater = AtomicIntegerFieldUpdater.newUpdater(BoundedIntAdder::class.java, "value")
@@ -22,34 +28,43 @@ class BoundedIntAdder {
     @JvmStatic
     @JsonCreator
     private fun fromJson(node: IntNode): BoundedIntAdder {
-      val adder = BoundedIntAdder()
-      valueUpdater.set(adder, node.intValue())
-      return adder
+      return BoundedIntAdder(node.intValue())
     }
   }
 
   /**
    * 增加
    *
-   * @param delta 增加的值
-   * @param bound 上限
-   * @return 成功增加则返回增加后的值, 增加失败则返回当前的负数
+   * @param delta 增加的值，可以是负数
+   * @param higherBound 上限
+   * @return 变化值
    */
-  fun add(delta: Int, bound: Int): Int {
+  fun add(delta: Int, higherBound: Int): Int {
     var oldValue: Int
     var newValue: Int
     do {
       oldValue = value
-      if (bound <= oldValue) {
-        return -oldValue
+      if (higherBound <= oldValue) {
+        return 0
       }
-      val longValue = oldValue.toLong() + delta
-      if (longValue < 0 || longValue > bound) {
-        return -oldValue
-      }
+
+      val longValue = (oldValue.toLong() + delta).coerceAtLeast(0).coerceAtMost(higherBound.toLong())
       newValue = longValue.toInt()
     } while (!valueUpdater.compareAndSet(this, oldValue, newValue))
-    return newValue
+    return newValue - oldValue
+  }
+
+  fun decrease(): Boolean {
+    var oldValue: Int
+    var newValue: Int
+    do {
+      oldValue = value
+      if (oldValue <= 0) {
+        return false
+      }
+      newValue = oldValue - 1
+    } while (!valueUpdater.compareAndSet(this, oldValue, newValue))
+    return true
   }
 
   fun get(): Int = value

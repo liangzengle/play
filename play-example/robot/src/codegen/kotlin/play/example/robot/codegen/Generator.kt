@@ -93,7 +93,7 @@ object Generator {
       val toRequestBody = FunSpec.builder("toRequestBody").addModifiers(KModifier.OVERRIDE)
         .returns(Types.RequestBody)
       val toRequestBodyCodeBlock = CodeBlock.builder()
-      toRequestBodyCodeBlock.add("return %T()", Types.RequestBodyBuilder)
+      toRequestBodyCodeBlock.add("return %T.builder()", Types.RequestBodyFactory)
       val reqCodeBlock = CodeBlock.builder()
       reqCodeBlock.add("player.send(%T($moduleId.toShort(), ${cmd.value}.toByte()).toInt()", Types.MsgId)
       for (parameter in method.parameters) {
@@ -173,7 +173,7 @@ object Generator {
         .addParameter(ParameterSpec("statusCode", INT))
         .addParameter("data", returnType.copy(true))
         .addParameter(ParameterSpec("req", requestParamsClassName.copy(true)))
-        .addCode("""System.err.println("${'$'}statusCode")""")
+        .addCode("""System.err.println("$respErrorFunName error: ${'$'}statusCode")""")
 
       val resp = FunSpec.builder(respFunName).addModifiers(KModifier.ABSTRACT)
         .addParameter("player", Types.RobotPlayer)

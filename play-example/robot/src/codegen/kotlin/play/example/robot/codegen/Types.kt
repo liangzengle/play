@@ -18,7 +18,7 @@ internal object Types {
 
   val Response = ClassName.bestGuess("play.mvc.Response")
 
-  val RequestBodyBuilder = ClassName.bestGuess("play.mvc.RequestBodyBuilder")
+  val RequestBodyFactory = ClassName.bestGuess("play.mvc.RequestBodyFactory")
 
   val RobotPlayer = ClassName.bestGuess("play.example.robot.module.player.RobotPlayer")
 

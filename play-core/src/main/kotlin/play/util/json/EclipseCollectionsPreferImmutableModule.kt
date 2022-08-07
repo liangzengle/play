@@ -16,7 +16,7 @@ import org.eclipse.collections.api.list.primitive.*
 import org.eclipse.collections.api.map.primitive.*
 import org.eclipse.collections.api.set.primitive.*
 import play.Log
-import play.util.SystemProps
+import play.SystemProps
 import play.util.reflect.Reflect
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -45,6 +45,12 @@ class EclipseCollectionsPreferImmutableModule : Module() {
 
   companion object {
     private val modified = AtomicBoolean()
+
+    private val entries: MutableMap<Class<*>, Any?>
+    init {
+      val entriesField = EclipseMapDeserializers::class.java.getDeclaredField("ENTRIES")
+      entries = Reflect.getFieldValue(entriesField, null)!!
+    }
   }
 
   override fun version(): Version = PackageVersion.VERSION
@@ -76,8 +82,6 @@ class EclipseCollectionsPreferImmutableModule : Module() {
       )!!
     replaceCollectionDeserializer(primitiveDeserializers)
 
-    val entriesField = EclipseMapDeserializers::class.java.getDeclaredField("ENTRIES")
-    val entries = Reflect.getFieldValue<MutableMap<Class<*>, Any?>>(entriesField, null)!!
     replaceMapDeserializer(entries)
   }
 

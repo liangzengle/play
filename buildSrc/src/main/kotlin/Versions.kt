@@ -34,6 +34,7 @@ object Versions {
   const val Mvel = "2.4.14.Final"
   const val Netty = "4.1.75.Final"
   const val Protobuf = "3.21.4"
+  const val PBAndK = "0.14.1"
   const val Reactor = "3.4.19"
   const val Rxjava3 = "3.1.3"
   const val Scala = "2.13.8"
@@ -42,4 +43,5 @@ object Versions {
   const val SpringBoot = "2.6.6"
   const val TsConfig = "1.4.2"
   const val UnsafeAccessor = "1.6.2"
+  const val Wire = "4.4.1"
 }

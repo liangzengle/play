@@ -14,11 +14,15 @@ import play.example.game.app.module.guild.domain.GuildErrorCode
 import play.example.game.app.module.guild.domain.GuildLogSource
 import play.example.game.app.module.guild.entity.GuildEntity
 import play.example.game.app.module.guild.entity.GuildEntityCache
-import play.example.game.app.module.guild.message.*
+import play.example.game.app.module.guild.message.CreateGuildRequest
+import play.example.game.app.module.guild.message.GuildMessageConverter
+import play.example.game.app.module.guild.message.GuildPlayerRequest
+import play.example.game.app.module.guild.message.JoinGuildRequest
 import play.example.game.app.module.guild.res.GuildSettingConf
 import play.example.game.app.module.player.PlayerRequestHandler
 import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.reward.model.CostResultSet
+import play.example.module.guild.message.GuildProto
 import play.mvc.PlayerRequest
 import play.mvc.RequestCommander
 import play.mvc.RequestResult
@@ -82,7 +86,7 @@ class GuildManager(
     requestHandler.onResult(cmd, RequestResult(result))
   }
 
-  private fun joinGuild(playerId: Long, guildId: Long): Result2<GuildInfo> {
+  private fun joinGuild(playerId: Long, guildId: Long): Result2<GuildProto> {
     if (guildCache.hasGuild(playerId)) {
       return err(GuildErrorCode.HasGuild)
     }
@@ -110,14 +114,14 @@ class GuildManager(
   private fun createGuildStart(
     playerId: Long,
     guildName: String
-  ): PlayFuture<Result2<GuildInfo>> {
+  ): PlayFuture<Result2<GuildProto>> {
     if (guildCache.hasGuild(playerId)) {
       return PlayFuture.successful(err(GuildErrorCode.HasGuild))
     }
     if (!isGuildNameAvailable(guildName)) {
       return PlayFuture.successful(err(GuildErrorCode.NameNotAvailable))
     }
-    val promise = PlayPromise.make<Result2<GuildInfo>>()
+    val promise = PlayPromise.make<Result2<GuildProto>>()
     // 玩家消耗
     val costFuture = playerService.costAsync(playerId, GuildSettingConf.createCost, GuildLogSource.CreateGuild)
     // 将消耗执行结果发送给自己
@@ -141,7 +145,7 @@ class GuildManager(
     playerId: Long,
     guildName: String,
     result: Result<Result2<CostResultSet>>
-  ): Result2<GuildInfo> {
+  ): Result2<GuildProto> {
     // 处理异常
     if (result.isFailure) {
       log.error("创建工会失败，玩家消耗执行异常", result.getCause())
@@ -184,7 +188,7 @@ class GuildManager(
     val playerId: Long,
     val guildName: String,
     val result: Result<Result2<CostResultSet>>,
-    val promise: PlayPromise<Result2<GuildInfo>>
+    val promise: PlayPromise<Result2<GuildProto>>
   ) : Command
 
   inner class Token constructor(val guildManager: ActorRef<Command>)

@@ -10,6 +10,8 @@ import play.akka.ActorConfigurationSupport
 import play.akka.GuardianBehavior
 import play.example.game.container.net.codec.RequestDecoder
 import play.example.game.container.net.codec.ResponseEncoder
+import play.example.game.container.net.handler.FireEventOnReadTimeoutHandler
+import play.example.game.container.net.handler.HeartbeatResponder
 import play.example.game.container.net.handler.RequestIdValidator
 import play.example.game.container.net.handler.RequestsPerSecondController
 import play.net.netty.NettyServer
@@ -32,6 +34,7 @@ class SocketServerConfiguration : ActorConfigurationSupport {
     val host = conf.getString("play.net.host")
     val port = conf.getInt("play.net.port")
     val requestsPerSecond = conf.getInt("play.net.requests-per-second")
+    val readTimeout = conf.getDuration("play.net.read-timeout")
     return serverBuilder
       .host(host)
       .port(port)
@@ -50,6 +53,8 @@ class SocketServerConfiguration : ActorConfigurationSupport {
               50
             )
           )
+          addLast(FireEventOnReadTimeoutHandler(readTimeout))
+          addLast(HeartbeatResponder)
         }
         ch.config().isAutoRead = false
         sessionManager.tell(SessionManager.CreateSession(ch))

@@ -1,8 +1,8 @@
 package play.example.robot.module.command
 
 import org.springframework.stereotype.Component
-import play.example.game.app.module.command.message.CommandModuleList
 import play.example.game.container.command.CommandResult
+import play.example.module.command.message.CommandModuleListProto
 import play.example.robot.module.CommandModule
 import play.example.robot.module.player.RobotPlayer
 
@@ -12,8 +12,8 @@ import play.example.robot.module.player.RobotPlayer
  */
 @Component
 class CommandModuleImpl : CommandModule() {
-  override fun listResp(player: RobotPlayer, data: CommandModuleList, req: Any?) {
-    for (commandModule in data.commandModules) {
+  override fun listResp(player: RobotPlayer, data: CommandModuleListProto, req: Any?) {
+    for (commandModule in data.modules) {
       println(commandModule.label)
       for (command in commandModule.commands) {
         println("\t$command")

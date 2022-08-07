@@ -19,25 +19,26 @@ public final class PrimitiveDefaults {
     public static final Double DOUBLE = 0D;
     public static final Character CHARACTER = '0';
 
+    @SuppressWarnings("unchecked")
     @NotNull
-    public static Object get(Class<?> primitiveType) {
+    public static <T> T get(Class<?> primitiveType) {
         switch (primitiveType.getName()) {
             case "boolean":
-                return BOOLEAN;
+                return (T) BOOLEAN;
             case "byte":
-                return BYTE;
+                return (T) BYTE;
             case "short":
-                return SHORT;
+                return (T) SHORT;
             case "int":
-                return INTEGER;
+                return (T) INTEGER;
             case "long":
-                return LONG;
+                return (T) LONG;
             case "float":
-                return FLOAT;
+                return (T) FLOAT;
             case "double":
-                return DOUBLE;
+                return (T) DOUBLE;
             case "char":
-                return CHARACTER;
+                return (T) CHARACTER;
         }
         throw new IllegalArgumentException(primitiveType.getName() + " is not a primitive class");
     }

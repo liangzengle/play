@@ -1,7 +1,7 @@
 package play.example.robot.module.friend
 
 import org.springframework.stereotype.Component
-import play.example.game.app.module.friend.message.FriendInfo
+import play.example.module.friend.message.FriendInfo
 import play.example.robot.module.FriendModule
 import play.example.robot.module.player.RobotPlayer
 

@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+
+package play.example.module.login.message;
+
+// 登录参数
+message LoginParams {
+  // 平台
+  string platform = 1;
+  // 服id
+  int32 serverId = 2;
+  // 账号
+  string account = 3;
+}

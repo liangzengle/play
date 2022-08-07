@@ -2,7 +2,7 @@ package play.example.robot.module.player
 
 import mu.KLogging
 import org.springframework.stereotype.Component
-import play.example.game.app.module.player.message.PlayerDTO
+import play.example.player.message.PlayerProto
 import play.example.robot.module.CommandModule
 import play.example.robot.module.PlayerModule
 
@@ -18,8 +18,8 @@ class PlayerModuleImpl(private val commandModule: CommandModule) : PlayerModule(
     loginReq(player)
   }
 
-  override fun loginResp(player: RobotPlayer, data: PlayerDTO, req: Any?) {
-    player.id = data.Id
+  override fun loginResp(player: RobotPlayer, data: PlayerProto, req: Any?) {
+    player.id = data.id
     player.name = data.name
     println("$player logged in")
     pingReq(player, "hello")
