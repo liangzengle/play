@@ -8,7 +8,6 @@ spring:
       - org.springframework.boot.autoconfigure.mongo.MongoReactiveAutoConfiguration
   profiles:
     include:
-      - rpc
       - db
 
 #logging.level.root: DEBUG

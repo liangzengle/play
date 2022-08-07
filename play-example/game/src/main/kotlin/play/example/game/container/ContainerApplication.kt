@@ -12,7 +12,6 @@ import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.container.command.CommandManager
 import play.http.EnableHttpClient
 import play.mongodb.PlayMongoClientConfiguration
-import play.rsocket.rpc.RSocketRpcConfiguration
 import play.util.reflect.ClassScanner
 
 /**
@@ -28,8 +27,7 @@ import play.util.reflect.ClassScanner
     PlayCoreConfiguration::class,
     PlayDBConfiguration::class,
     PlayMongoClientConfiguration::class,
-    NettyServerConfiguration::class,
-    RSocketRpcConfiguration::class
+    NettyServerConfiguration::class
   ]
 )
 class ContainerApplication {

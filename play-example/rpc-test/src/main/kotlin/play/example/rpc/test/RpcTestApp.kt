@@ -1,26 +1,31 @@
 package play.example.rpc.test
 
-import com.alibaba.rsocket.upstream.UpstreamManager
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import play.rsocket.rpc.RpcClient
+import org.springframework.context.annotation.Import
+import play.rsocket.client.RSocketClientAutoConfiguration
+import play.rsocket.client.RSocketClientCustomizer
 
 /**
  *
  * @author LiangZengle
  */
 @SpringBootApplication
-@Configuration(proxyBeanMethods = false)
+@Import(value = [RSocketClientAutoConfiguration::class])
 class RpcTestApp {
 
   @Bean
-  fun rpcClient(upstreamManager: UpstreamManager): RpcClient {
-    return RpcClient.create(upstreamManager)
+  fun idAndRole(): RSocketClientCustomizer {
+    return RSocketClientCustomizer { builder ->
+      builder.id(100).role(2)
+    }
   }
 }
 
 fun main() {
-  SpringApplication.run(RpcTestApp::class.java)
+  val context = SpringApplication.run(RpcTestApp::class.java)
+  while (context.isActive) {
+    Thread.sleep(10000)
+  }
 }

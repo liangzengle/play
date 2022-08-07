@@ -13,12 +13,12 @@ class PlayerSpringConfiguration : GameServerScopeConfiguration() {
 
   @Bean
   fun playerManager(
-      eventDispatcher: PlayerEventDispatcher,
-      playerIdNameCache: PlayerIdNameCache,
-      playerService: PlayerService,
-      requestHandler: PlayerRequestHandler,
-      actorScheduler: ActorRef<ActorScheduler.Command>,
-      taskEventReceiver: PlayerTaskEventReceiver
+    eventDispatcher: PlayerEventDispatcher,
+    playerIdNameCache: PlayerIdNameCache,
+    playerService: PlayerService,
+    requestHandler: PlayerRequestHandler,
+    actorScheduler: ActorRef<ActorScheduler.Command>,
+    taskEventReceiver: PlayerTaskEventReceiver
   ): ActorRef<PlayerManager.Command> {
     return spawn("PlayerManager") { mdc ->
       PlayerManager.create(

@@ -95,7 +95,11 @@ class PlayCoreConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  fun scheduler(scheduleService: ObjectFactory<ScheduledExecutorService>, executor: Executor, clock: Clock): Scheduler {
+  fun scheduler(
+    scheduleService: ObjectFactory<ScheduledExecutorService>,
+    executor: Executor,
+    clock: Clock
+  ): Scheduler {
     return DefaultScheduler(scheduleService.`object`, executor, clock)
   }
 

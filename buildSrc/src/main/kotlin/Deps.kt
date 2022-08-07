@@ -4,7 +4,10 @@ object Deps {
     private const val Version = Versions.Akka
     const val Actor = "com.typesafe.akka:akka-actor-typed_2.13:$Version"
     const val Cluster = "com.typesafe.akka:akka-cluster-typed_2.13:$Version"
-    const val SerializationJackson = "com.typesafe.akka:akka-serialization-jackson_2.13:$Version"
+
+    object Serialization {
+      const val Jackson = "com.typesafe.akka:akka-serialization-jackson_2.13:$Version"
+    }
   }
 
   object AlibabaRsocket {
@@ -13,11 +16,27 @@ object Deps {
     val Client = "com.alibaba.rsocket:alibaba-rsocket-spring-boot-starter:${Versions.AlibabaRsocket}"
   }
 
+  object Assertj {
+    const val Core = "org.assertj:assertj-core:${Versions.Assertj}"
+  }
+
   object Hibernate {
     private const val Version = Versions.HibernateValidator
     const val Validator = "org.hibernate.validator:hibernate-validator:$Version"
     const val ValidatorApt = "org.hibernate.validator:hibernate-validator-annotation-processor:$Version"
   }
+
+  object Eclipse {
+    const val Version = Versions.EclipseCollections
+
+    object Collections {
+      const val Api = "org.eclipse.collections:eclipse-collections-api:$Version"
+      const val Impl = "org.eclipse.collections:eclipse-collections:$Version"
+    }
+  }
+
+  @Deprecated("remove")
+  const val EclipseCollections = "org.eclipse.collections:eclipse-collections:${Versions.EclipseCollections}"
 
   object EL {
     const val Api = "jakarta.el:jakarta.el-api:${Versions.JakartaElApi}"
@@ -33,6 +52,18 @@ object Deps {
     const val Scala = "com.fasterxml.jackson.module:jackson-module-scala_2.13:$Version"
     const val EclipseCollections = "com.fasterxml.jackson.datatype:jackson-datatype-eclipse-collections:$Version"
     const val Bson = "de.undercouch:bson4jackson:${Versions.Bson4Jackson}"
+  }
+
+  object Jakarta {
+    object Inject {
+      const val Version = "2.0.1"
+      val Api = "jakarta.inject:jakarta.inject-api:2.0.1"
+    }
+  }
+
+  object JCTools {
+    const val Version = "3.3.0"
+    const val Core = "org.jctools:jctools-core:$Version"
   }
 
   object Junit {
@@ -94,10 +125,22 @@ object Deps {
     const val CodecHttp = "io.netty:netty-codec-http:$Version"
     const val Epoll = "io.netty:netty-transport-native-epoll:$Version"
     const val Handler = "io.netty:netty-handler:$Version"
+    const val Buffer = "io.netty:netty-buffer:$Version"
   }
 
   object Reactor {
     const val Core = "io.projectreactor:reactor-core:${Versions.Reactor}"
+  }
+
+  object RSocket {
+    const val Version = "1.1.2"
+
+    const val Core = "io.rsocket:rsocket-core:$Version"
+
+    object Transport {
+      const val Netty = "io.rsocket:rsocket-transport-netty:$Version"
+      const val Local = "io.rsocket:rsocket-transport-local:$Version"
+    }
   }
 
   object Slf4j {
@@ -111,10 +154,24 @@ object Deps {
     const val Java8 = "org.scala-lang.modules:scala-java8-compat_2.13:${Versions.ScalaJava8Compact}"
   }
 
+  object Spring {
+    const val Messaging = "org.springframework:spring-messaging:5.3.22"
+  }
+
   object SpringBoot {
+    const val Boot = "org.springframework.boot:spring-boot:${Versions.SpringBoot}"
     const val Starter = "org.springframework.boot:spring-boot-starter:${Versions.SpringBoot}"
+    const val StarterLog4j2 = "org.springframework.boot:spring-boot-starter-log4j2:${Versions.SpringBoot}"
     const val StarterWebflux = "org.springframework.boot:spring-boot-starter-webflux:${Versions.SpringBoot}"
     const val StarterActuator = "org.springframework.boot:spring-boot-starter-actuator:${Versions.SpringBoot}"
+    const val StarterRSocket = "org.springframework.boot:spring-boot-starter-rsocket:${Versions.SpringBoot}"
+  }
+
+  object SpringSecurity {
+    private const val Version = Versions.SpringSecurity
+    const val Core = "org.springframework.security:spring-security-core:$Version"
+    const val Config = "org.springframework.security:spring-security-config:$Version"
+    const val RSocket = "org.springframework.security:spring-security-rsocket:$Version"
   }
 
   object Wire {
@@ -141,8 +198,6 @@ object Deps {
 
   const val ClassGraph = "io.github.classgraph:classgraph:${Versions.ClassGraph}"
 
-  const val EclipseCollections = "org.eclipse.collections:eclipse-collections:${Versions.EclipseCollections}"
-
   const val FastUtil = "it.unimi.dsi:fastutil-core:${Versions.FastUtil}"
 
   const val Guava = "com.google.guava:guava:${Versions.Guava}"
@@ -150,6 +205,8 @@ object Deps {
   const val Jctools = "org.jctools:jctools-core:${Versions.Jctools}"
 
   const val KotlinLogging = "io.github.microutils:kotlin-logging-jvm:${Versions.KotlinLogging}"
+
+  const val Kryo = "com.esotericsoftware:kryo:${Versions.Kryo}"
 
   const val Ksp = "com.google.devtools.ksp:symbol-processing-api:${Versions.Ksp}"
 

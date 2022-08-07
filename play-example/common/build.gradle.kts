@@ -3,13 +3,10 @@ dependencies {
   api(project(":play-res"))
   api(project(":play-net"))
   api(project(":play-httpclient-ktor"))
-
-  api(Deps.Log4j.Core)
-  api(Deps.Log4j.Api)
-  api(Deps.Log4j.Jul)
-  api(Deps.Log4j.Slf4j)
+  api(project(":play-rsocket-client-spring"))
 
   api(Deps.SpringBoot.Starter) {
     exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
   }
+  api(Deps.SpringBoot.StarterLog4j2)
 }

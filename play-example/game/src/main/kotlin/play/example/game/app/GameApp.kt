@@ -15,25 +15,47 @@ import play.entity.cache.DefaultEntityCachePersistFailOver
 import play.entity.cache.EntityCacheManager
 import play.entity.cache.EntityCachePersistFailOver
 import play.event.EnableGuavaEventBus
+import play.example.common.Role
 import play.example.game.container.command.CommandManager
 import play.example.game.container.command.CommandService
 import play.example.game.container.gs.domain.GameServerId
 import play.inject.PlayInjector
 import play.inject.SpringPlayInjector
 import play.mongodb.MongoDBRepositoryCustomizer
+import play.rsocket.client.RSocketClientAutoConfiguration
 import play.scheduling.Scheduler
 import play.util.concurrent.PlayFuture
 import play.util.reflect.ClassgraphClassScanner
+import play.rsocket.client.RSocketClientCustomizer as RSocketClientCustomizer1
 
 /**
  *
  * @author LiangZengle
  */
 @SpringBootApplication
-@Import(value = [PlayEntityCacheConfiguration::class])
+@Import(value = [PlayEntityCacheConfiguration::class, RSocketClientAutoConfiguration::class])
 @EnableGuavaEventBus
 @Configuration(proxyBeanMethods = false)
 class GameApp {
+
+  @Bean
+  fun idAndRole(gameServerId: GameServerId): RSocketClientCustomizer1 {
+    val id = gameServerId.toInt()
+    return RSocketClientCustomizer1 { builder ->
+      builder.id(id).role(Role.Game)
+    }
+  }
+
+//  @Bean
+//  fun rsocketResume(gameServerId: GameServerId, address: HostAndPort): RSocketClientCustomizer {
+//    val id = gameServerId.toInt()
+//    val token = "$id@${address.host}:${address.port}"
+//    return RSocketClientCustomizer { builder ->
+//      builder.customizeConnector { connector ->
+//        connector.resume(Resume().token { Unpooled.wrappedBuffer(token.encodeToByteArray()) })
+//      }
+//    }
+//  }
 
   @Bean
   fun gmCommandService(injector: PlayInjector, invokerManager: CommandManager): CommandService {

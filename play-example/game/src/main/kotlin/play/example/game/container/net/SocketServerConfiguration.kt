@@ -2,6 +2,7 @@ package play.example.game.container.net
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import com.google.common.net.HostAndPort
 import com.typesafe.config.Config
 import io.netty.handler.flush.FlushConsolidationHandler
 import org.springframework.context.annotation.Bean
@@ -22,44 +23,43 @@ import play.net.netty.handler.ScheduledFlushConsolidationHandler
  *
  * @author LiangZengle
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 class SocketServerConfiguration : ActorConfigurationSupport {
+
+  @Bean
+  fun address(conf: Config): HostAndPort {
+    val host = conf.getString("play.net.host")
+    val port = conf.getInt("play.net.port")
+    return HostAndPort.fromParts(host, port)
+  }
 
   @Bean("gameSocketServer")
   fun socketServer(
-    conf: Config,
-    serverBuilder: NettyServerBuilder,
-    sessionManager: ActorRef<SessionManager.Command>
+    conf: Config, serverBuilder: NettyServerBuilder, sessionManager: ActorRef<SessionManager.Command>
   ): NettyServer {
     val host = conf.getString("play.net.host")
     val port = conf.getInt("play.net.port")
     val requestsPerSecond = conf.getInt("play.net.requests-per-second")
     val readTimeout = conf.getDuration("play.net.read-timeout")
-    return serverBuilder
-      .host(host)
-      .port(port)
-      .childHandler { ch ->
-        ch.pipeline().apply {
-          addLast(ResponseEncoder)
-          addLast(RequestDecoder(1024))
-          if (requestsPerSecond > 0) {
-            addLast(RequestsPerSecondController(requestsPerSecond))
-          }
-          addLast(RequestIdValidator())
-          addLast(
-            ScheduledFlushConsolidationHandler(
-              FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES,
-              true,
-              50
-            )
-          )
-          addLast(FireEventOnReadTimeoutHandler(readTimeout))
-          addLast(HeartbeatResponder)
+    return serverBuilder.host(host).port(port).childHandler { ch ->
+      ch.pipeline().apply {
+        addLast(ResponseEncoder)
+        addLast(RequestDecoder(1024))
+        if (requestsPerSecond > 0) {
+          addLast(RequestsPerSecondController(requestsPerSecond))
         }
-        ch.config().isAutoRead = false
-        sessionManager.tell(SessionManager.CreateSession(ch))
+        addLast(RequestIdValidator())
+        addLast(
+          ScheduledFlushConsolidationHandler(
+            FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, true, 50
+          )
+        )
+        addLast(FireEventOnReadTimeoutHandler(readTimeout))
+        addLast(HeartbeatResponder)
       }
-      .build("game")
+      ch.config().isAutoRead = false
+      sessionManager.tell(SessionManager.CreateSession(ch))
+    }.build("game")
   }
 
   @Bean
