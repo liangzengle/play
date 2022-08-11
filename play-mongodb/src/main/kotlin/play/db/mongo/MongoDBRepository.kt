@@ -17,6 +17,7 @@ import play.entity.Entity
 import play.entity.EntityHelper
 import play.util.*
 import play.util.concurrent.Future
+import play.util.concurrent.Future.Companion.toPlay
 import play.util.json.Json
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -60,37 +61,37 @@ class MongoDBRepository constructor(
     return db.getCollection(tableNameResolver.resolve(clazz))
   }
 
-  override fun insert(entity: Entity<*>): Mono<InsertOneResult> {
+  override fun insert(entity: Entity<*>): Future<InsertOneResult> {
     val publisher = getCollection(entity).insertOne(entity, insertOneOptions)
-    return Flux.from(publisher).next()
+    return Mono.from(publisher).toFuture().toPlay()
   }
 
-  override fun update(entity: Entity<*>): Mono<UpdateResult> {
+  override fun update(entity: Entity<*>): Future<UpdateResult> {
     return insertOrUpdate(entity)
   }
 
-  override fun insertOrUpdate(entity: Entity<*>): Mono<UpdateResult> {
+  override fun insertOrUpdate(entity: Entity<*>): Future<UpdateResult> {
     val publisher = getCollection(entity).replaceOne(Filters.eq(entity.id()), entity, replaceOptions)
-    return Flux.from(publisher).next()
+    return Mono.from(publisher).toFuture().toPlay()
   }
 
-  override fun delete(entity: Entity<*>): Mono<DeleteResult> {
+  override fun delete(entity: Entity<*>): Future<DeleteResult> {
     return deleteById(entity.id(), entity.javaClass.unsafeCast())
   }
 
-  override fun <ID, E : Entity<ID>> deleteById(id: ID, entityClass: Class<E>): Mono<DeleteResult> {
+  override fun <ID, E : Entity<ID>> deleteById(id: ID, entityClass: Class<E>): Future<DeleteResult> {
     val publisher = getCollection(entityClass).deleteOne(Filters.eq(id), deleteOptions)
-    return Flux.from(publisher).next()
+    return Mono.from(publisher).toFuture().toPlay()
   }
 
-  override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Mono<BulkWriteResult> {
+  override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<BulkWriteResult> {
     if (entities.isEmpty()) {
-      return Mono.just(BulkWriteResult.acknowledged(0, 0, 0, 0, emptyList(), emptyList()))
+      return Future.successful(BulkWriteResult.acknowledged(0, 0, 0, 0, emptyList(), emptyList()))
     }
     // mongo driver will divide into small groups when a group exceeds the limit, which is 100,000 in MongoDB 3.6
     val writeModels = entities.map { ReplaceOneModel(Filters.eq(it.id()), it, replaceOptions) }
     val publisher = getCollection(entities.first().javaClass).bulkWrite(writeModels, unorderedBulkWrite)
-    return Flux.from(publisher).next()
+    return Mono.from(publisher).toFuture().toPlay()
   }
 
   override fun <ID, E : Entity<ID>> update(
@@ -98,14 +99,14 @@ class MongoDBRepository constructor(
     id: ID,
     field: String,
     value: Any
-  ): Mono<UpdateResult> {
+  ): Future<UpdateResult> {
     val publisher = getCollection(entityClass).updateOne(Filters.eq(ID, id), Updates.set(field, value))
-    return Flux.from(publisher).next()
+    return Mono.from(publisher).toFuture().toPlay()
   }
 
   override fun <ID, E : Entity<ID>> findById(entityClass: Class<E>, id: ID): Mono<E> {
     val publisher = getCollection(entityClass).find(Filters.eq(id))
-    return Flux.from(publisher).next()
+    return Mono.from(publisher)
   }
 
   override fun <ID, E : Entity<ID>> loadAll(entityClass: Class<E>, ids: Iterable<ID>): Flux<E> {
@@ -177,7 +178,7 @@ class MongoDBRepository constructor(
     return Json.convert(obj, idType)
   }
 
-  override fun runCommand(cmd: Bson): Future<Document> {
-    return Future(Flux.from(db.runCommand(cmd)).next().toFuture())
+  override fun runCommand(cmd: Bson): Flux<Document> {
+    return Flux.from(db.runCommand(cmd))
   }
 }

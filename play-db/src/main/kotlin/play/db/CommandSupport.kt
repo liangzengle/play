@@ -1,6 +1,6 @@
 package play.db
 
-import play.util.concurrent.PlayFuture
+import reactor.core.publisher.Flux
 
 /**
  *
@@ -8,5 +8,5 @@ import play.util.concurrent.PlayFuture
  */
 interface CommandSupport<IN, OUT> {
 
-  fun runCommand(cmd: IN): PlayFuture<out OUT>
+  fun runCommand(cmd: IN): Flux<out OUT>
 }

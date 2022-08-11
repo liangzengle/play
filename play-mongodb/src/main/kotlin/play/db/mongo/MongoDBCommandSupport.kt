@@ -3,7 +3,7 @@ package play.db.mongo
 import org.bson.Document
 import org.bson.conversions.Bson
 import play.db.CommandSupport
-import play.util.concurrent.Future
+import reactor.core.publisher.Flux
 
 /**
  *
@@ -11,5 +11,5 @@ import play.util.concurrent.Future
  */
 interface MongoDBCommandSupport : CommandSupport<Bson, Document> {
 
-  override fun runCommand(cmd: Bson): Future<Document>
+  override fun runCommand(cmd: Bson): Flux<Document>
 }

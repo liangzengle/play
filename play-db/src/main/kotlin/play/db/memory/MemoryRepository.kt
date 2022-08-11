@@ -5,6 +5,7 @@ import play.db.Repository
 import play.db.ResultMap
 import play.entity.Entity
 import play.util.collection.toImmutableList
+import play.util.concurrent.Future
 import play.util.json.Json
 import play.util.reflect.Reflect
 import play.util.unsafeCast
@@ -23,40 +24,40 @@ class MemoryRepository : Repository {
     return map ?: caches.computeIfAbsent(entityClass) { ConcurrentHashMap() }
   }
 
-  override fun insert(entity: Entity<*>): Mono<Void> {
+  override fun insert(entity: Entity<*>): Future<Unit> {
     val prev = getMap(entity.javaClass).putIfAbsent(entity.id(), entity)
     if (prev != null) {
       throw IllegalStateException("${entity.javaClass.simpleName}(${entity.id()}) already exists")
     }
-    return Mono.empty()
+    return Future.successful(Unit)
   }
 
-  override fun update(entity: Entity<*>): Mono<Void> {
-    return Mono.empty()
+  override fun update(entity: Entity<*>): Future<Unit> {
+    return Future.successful(Unit)
   }
 
-  override fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any): Mono<Void> {
-    return Mono.empty()
+  override fun <ID, E : Entity<ID>> update(entityClass: Class<E>, id: ID, field: String, value: Any): Future<Unit> {
+    return Future.successful(Unit)
   }
 
-  override fun insertOrUpdate(entity: Entity<*>): Mono<Void> {
-    getMap(entity.javaClass).put(entity.id(), entity)
-    return Mono.empty()
+  override fun insertOrUpdate(entity: Entity<*>): Future<Unit> {
+    getMap(entity.javaClass)[entity.id()] = entity
+    return Future.successful(Unit)
   }
 
-  override fun delete(entity: Entity<*>): Mono<Void> {
+  override fun delete(entity: Entity<*>): Future<Unit> {
     getMap(entity.javaClass).remove(entity.id())
-    return Mono.empty()
+    return Future.successful(Unit)
   }
 
-  override fun <ID, E : Entity<ID>> deleteById(id: ID, entityClass: Class<E>): Mono<Void> {
+  override fun <ID, E : Entity<ID>> deleteById(id: ID, entityClass: Class<E>): Future<Unit> {
     getMap(entityClass).remove(id)
-    return Mono.empty()
+    return Future.successful(Unit)
   }
 
-  override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Mono<Void> {
+  override fun batchInsertOrUpdate(entities: Collection<Entity<*>>): Future<Unit> {
     entities.forEach(::insertOrUpdate)
-    return Mono.empty()
+    return Future.successful(Unit)
   }
 
   override fun <ID, E : Entity<ID>> loadAll(entityClass: Class<E>, ids: Iterable<ID>): Flux<E> {

@@ -114,11 +114,11 @@ class GameServerManager(
     if (!gameServerIds.contains(serverId)) {
       repository
         .insert(GameServerEntity(serverId))
-        .doOnSuccess {
+        .onSuccess {
           logger.info("GameServerEntity($serverId)创建成功")
           self.tell(StartGameServer(serverId, promise))
         }
-        .doOnError {
+        .onFailure {
           logger.error("GameServerEntity($serverId)创建失败", it)
           promise.failure(it)
         }

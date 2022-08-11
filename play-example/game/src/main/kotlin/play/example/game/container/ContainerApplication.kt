@@ -32,7 +32,7 @@ import play.util.reflect.ClassScanner
     RSocketRpcConfiguration::class
   ]
 )
-class ContainerApp {
+class ContainerApplication {
 
   @Bean
   fun commandManager(classScanner: ClassScanner): CommandManager {

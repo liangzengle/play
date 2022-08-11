@@ -15,14 +15,13 @@ import play.GracefullyShutdown
 import play.Log
 import play.db.DatabaseNameProvider
 import play.example.common.App
-import play.example.game.container.ContainerApp
+import play.example.game.container.ContainerApplication
 import play.example.game.container.gs.GameServerManager
 import play.net.netty.NettyServer
 import play.res.ResourceManager
 import play.spring.closeAndWait
 import play.spring.getInstance
 import play.util.concurrent.Future
-import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
 import play.util.reflect.ClassgraphClassScanner
 import kotlin.system.exitProcess
@@ -70,7 +69,7 @@ object ContainerApp : App() {
         GracefullyShutdown.PHASE_SHUTDOWN_APPLICATION_CONTEXT,
         "shutdown Spring Application Context",
         applicationContext
-      ) { PlayFuture { it.closeAndWait() } }
+      ) { Future { it.closeAndWait() } }
     return applicationContext
   }
 
@@ -88,7 +87,7 @@ object ContainerApp : App() {
     // 启动Spring
     val springApplication = SpringApplicationBuilder()
       .bannerMode(Banner.Mode.OFF)
-      .sources(ContainerApp::class.java)
+      .sources(ContainerApplication::class.java)
       .registerShutdownHook(false)
       .build()
 

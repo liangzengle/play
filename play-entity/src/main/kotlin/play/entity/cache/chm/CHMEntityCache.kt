@@ -114,8 +114,8 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
 
   private fun batchPersist(entities: Collection<E>) {
     entityCacheWriter.batchInsertOrUpdate(entities)
-      .doOnSuccess { entities.forEach(::onPersistSucceeded) }
-      .doOnError { e ->
+      .onSuccess { entities.forEach(::onPersistSucceeded) }
+      .onFailure { e ->
         logger.error(e) { "[${entityClass.simpleName}] batch upsert failed, fallback to one by one" }
         entities.forEach(::singlePersist)
       }
@@ -123,8 +123,8 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
 
   private fun singlePersist(entity: E) {
     entityCacheWriter.insertOrUpdate(entity)
-      .doOnSuccess { onPersistSucceeded(entity) }
-      .doOnError { e ->
+      .onSuccess { onPersistSucceeded(entity) }
+      .onFailure { e ->
         logger.error(e) {
           "${entityClass.simpleName}(${entity.id()}) upsert failed: ${Json.stringify(entity)}"
         }
@@ -185,7 +185,10 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
       if (cacheObj is NonEmpty<ID, E>) {
         val entity = cacheObj.accessEntity()
         if (!cacheObj.isExpired() ||
-          cache.putIfAbsent(id, NonEmpty(entity)) == null /* 这一刻刚好过期了，但是还没有从数据库重新加载，可以直接使用 */) {
+          cache.putIfAbsent(
+            id,
+            NonEmpty(entity)
+          ) == null /* 这一刻刚好过期了，但是还没有从数据库重新加载，可以直接使用 */) {
           return entity
         }
       } else if (loadOnEmpty == null) {
@@ -280,7 +283,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
 
   override fun delete(id: ID) {
     getCache().compute(id) { k, _ ->
-      entityCacheWriter.deleteById(k, entityClass).doOnError {
+      entityCacheWriter.deleteById(k, entityClass).onFailure {
         logger.error(it) { "Delete entity failed: ${entityClass.simpleName}($k)" }
         retryDelete(k)
       }
@@ -343,7 +346,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
       .filterNot { isImmutable && it.lastPersistTime != 0L }
       .map { it.peekEntity() }
       .toList()
-    return Future(entityCacheWriter.batchInsertOrUpdate(entities).toFuture()) as Future<Unit>
+    return entityCacheWriter.batchInsertOrUpdate(entities) as Future<Unit>
   }
 
   override fun expireEvaluator(): ExpireEvaluator = expireEvaluator
