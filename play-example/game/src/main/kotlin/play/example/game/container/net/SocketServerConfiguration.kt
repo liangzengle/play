@@ -5,19 +5,20 @@ import akka.actor.typed.ActorSystem
 import com.google.common.net.HostAndPort
 import com.typesafe.config.Config
 import io.netty.handler.flush.FlushConsolidationHandler
+import io.netty.handler.timeout.IdleStateHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import play.akka.ActorConfigurationSupport
 import play.akka.GuardianBehavior
 import play.example.game.container.net.codec.RequestDecoder
 import play.example.game.container.net.codec.ResponseEncoder
-import play.example.game.container.net.handler.FireEventOnReadTimeoutHandler
 import play.example.game.container.net.handler.HeartbeatResponder
 import play.example.game.container.net.handler.RequestIdValidator
 import play.example.game.container.net.handler.RequestsPerSecondController
 import play.net.netty.NettyServer
 import play.net.netty.NettyServerBuilder
 import play.net.netty.handler.ScheduledFlushConsolidationHandler
+import java.util.concurrent.TimeUnit
 
 /**
  *
@@ -54,7 +55,7 @@ class SocketServerConfiguration : ActorConfigurationSupport {
             FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, true, 50
           )
         )
-        addLast(FireEventOnReadTimeoutHandler(readTimeout))
+        addLast(IdleStateHandler(readTimeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS))
         addLast(HeartbeatResponder)
       }
       ch.config().isAutoRead = false
