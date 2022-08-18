@@ -5,7 +5,6 @@ package play.net.netty
 import com.google.common.net.HostAndPort
 import io.netty.bootstrap.Bootstrap
 import io.netty.bootstrap.ServerBootstrap
-import io.netty.buffer.ByteBuf
 import io.netty.channel.*
 import io.netty.channel.epoll.Epoll
 import io.netty.channel.epoll.EpollEventLoopGroup
@@ -18,7 +17,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.util.concurrent.DefaultThreadFactory
 import io.netty.util.concurrent.Future
-import play.util.EmptyByteArray
 import play.util.concurrent.PlayFuture
 import play.util.unsafeCastOrNull
 import java.net.InetSocketAddress
@@ -39,14 +37,6 @@ fun SocketAddress.getPort(): Int {
 fun SocketAddress.getHostAndPort(): HostAndPort {
   return if (this is InetSocketAddress) HostAndPort.fromParts(hostString, port)
   else HostAndPort.fromParts("127.0.0.1", 0)
-}
-
-fun ByteBuf.copyToArray(): ByteArray {
-  val len = readableBytes()
-  if (len == 0) return EmptyByteArray
-  val byteArray = ByteArray(len)
-  readBytes(byteArray)
-  return byteArray
 }
 
 fun ServerBootstrap.options(options: Map<ChannelOption<Any>, Any>): ServerBootstrap {

@@ -1,13 +1,13 @@
 package play.example.game.container.net.codec
 
 import io.netty.buffer.ByteBuf
+import io.netty.buffer.ByteBufUtil
 import io.netty.channel.ChannelHandlerContext
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder
 import io.netty.util.ReferenceCountUtil
 import play.mvc.Header
 import play.mvc.MsgId
 import play.mvc.Response
-import play.net.netty.copyToArray
 
 /**
  * ByteBuf -> Response(Header, StatusCode, ByteBuf)
@@ -24,7 +24,7 @@ class ResponseDecoder(maxFrameLength: Int) : LengthFieldBasedFrameDecoder(maxFra
       val msgId = msg.readInt()
       val sequenceNo = msg.readInt()
       val statusCode = msg.readInt()
-      response = Response(Header(MsgId(msgId), sequenceNo), statusCode, msg.copyToArray())
+      response = Response(Header(MsgId(msgId), sequenceNo), statusCode, ByteBufUtil.getBytes(msg))
     } finally {
       ReferenceCountUtil.release(msg)
     }
