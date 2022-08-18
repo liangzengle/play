@@ -1,15 +1,14 @@
 package play.example.game.container.command
 
+import org.springframework.stereotype.Component
 import play.util.collection.toImmutableList
 import play.util.collection.toImmutableMap
 import play.util.reflect.ClassScanner
 import java.lang.reflect.Method
 import java.lang.reflect.Parameter
 
-class CommandManager constructor(
-  private val commanderType: Class<*>,
-  private val classScanner: ClassScanner
-) {
+@Component
+class CommandManager constructor(private val classScanner: ClassScanner) {
 
   private lateinit var descriptors: List<CommandModuleDescriptor>
 
@@ -37,9 +36,8 @@ class CommandManager constructor(
           val commandModule = moduleClass.getAnnotation(CommandModule::class.java)
           commandModule.name to moduleClass.declaredMethods.asSequence()
             .filter { it.isAnnotationPresent(Command::class.java) }
-            .map { method ->
-              getCommandName(method) to CommandInvoker(method, commanderType)
-            }.toImmutableMap()
+            .map { method -> getCommandName(method) to CommandInvoker(method) }
+            .toImmutableMap()
         }.toImmutableMap()
 
       this.descriptors = descriptors

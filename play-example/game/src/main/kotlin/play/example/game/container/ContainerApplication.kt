@@ -1,18 +1,14 @@
 package play.example.game.container
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import play.PlayCoreConfiguration
 import play.akka.EnableAkka
 import play.db.PlayDBConfiguration
 import play.example.common.net.NettyServerConfiguration
-import play.example.game.app.module.player.PlayerManager.Self
-import play.example.game.container.command.CommandManager
 import play.http.EnableHttpClient
 import play.mongodb.PlayMongoClientConfiguration
-import play.util.reflect.ClassScanner
 
 /**
  *
@@ -30,10 +26,4 @@ import play.util.reflect.ClassScanner
     NettyServerConfiguration::class
   ]
 )
-class ContainerApplication {
-
-  @Bean
-  fun commandManager(classScanner: ClassScanner): CommandManager {
-    return CommandManager(Self::class.java, classScanner)
-  }
-}
+class ContainerApplication
