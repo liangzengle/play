@@ -15,6 +15,7 @@ import play.util.concurrent.CommonPool
 import play.util.concurrent.threadFactory
 import play.util.reflect.ClassScanner
 import play.util.reflect.ClassgraphClassScanner
+import play.util.time.Time
 import java.time.Clock
 import java.util.concurrent.*
 
@@ -29,7 +30,7 @@ class PlayCoreConfiguration {
   @Bean
   @ConditionalOnMissingBean(Clock::class)
   fun clock(): Clock {
-    return Clock.systemDefaultZone()
+    return Time.clock()
   }
 
   @Bean

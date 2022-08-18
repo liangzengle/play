@@ -8,7 +8,7 @@ class SnowflakeIdGenerator(
   timestampBits: Int,
   nodeIdBits: Int,
   private val sequenceBits: Int,
-  private val timestampOffset: Long,
+  private val baseTimestamp: Long,
   private val clock: SnowflakeIdGeneratorLike.Clock
 ) : LongIdGenerator(), SnowflakeIdGeneratorLike {
   companion object {
@@ -27,7 +27,7 @@ class SnowflakeIdGenerator(
     NODE_ID_BITS_DEFAULT,
     SEQUENCE_BITS_DEFAULT,
     0,
-    SnowflakeIdGeneratorLike.SystemClockMS
+    SnowflakeIdGeneratorLike.ClockMS
   )
 
   private val nodeIdAndSequenceBits = nodeIdBits + sequenceBits
@@ -45,10 +45,10 @@ class SnowflakeIdGenerator(
     }
     require(maxBits < 64) { "maxBits must be less than 64" }
     require(nodeId in 1..maxNodeId) { "nodeId must be in range [1, $maxNodeId]" }
-    require(clock.time() >= timestampOffset) {
+    require(clock.time() >= baseTimestamp) {
       "clock.millis() must be greater than or equal to timestampOffsetMs"
     }
-    val epoch = clock.time() - timestampOffset
+    val epoch = clock.time() - baseTimestamp
     require(epoch <= maxTimestamp) { "clock.millis() - timestampOffsetMs must be less than or equal to maxTimestamp" }
   }
 
@@ -58,7 +58,7 @@ class SnowflakeIdGenerator(
   override fun nextId(): Long {
     while (true) {
       val oldTimestampSequence = timestampSequence
-      val timestamp = clock.time() - timestampOffset
+      val timestamp = clock.time() - baseTimestamp
       if (timestamp > maxTimestamp) {
         throw IllegalStateException("timestampMs must be less than maxTimestamp")
       }

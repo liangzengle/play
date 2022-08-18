@@ -63,6 +63,7 @@ dependencies {
 
   testImplementation(Deps.KotlinPoet.Poet)
   testImplementation(Deps.KotlinPoet.Metadata)
+  testImplementation("com.tngtech.archunit:archunit:1.0.0-rc1")
 }
 
 modularCode {

@@ -18,11 +18,11 @@ class UIDGenerator private constructor(private val snowflakeIdGenerator: Snowfla
     const val NODE_ID_BITS = 24
     const val SEQUENCE_BITS = 10
 
-    val TIMESTAMP_OFFSET: Long
+    val BASE_TIMESTAMP: Long
 
     init {
-      SystemProps.getOrDefault("play.id.timestampOffset", "2022-01-01T00:00:00").let {
-        TIMESTAMP_OFFSET = LocalDateTime.parse(it).toMillis() / 1000
+      SystemProps.getOrDefault("play.id.baseTimestamp", "2022-01-01T00:00:00").let {
+        BASE_TIMESTAMP = LocalDateTime.parse(it).toMillis() / 1000
       }
     }
   }
@@ -34,8 +34,8 @@ class UIDGenerator private constructor(private val snowflakeIdGenerator: Snowfla
       TIMESTAMP_BITS,
       NODE_ID_BITS,
       SEQUENCE_BITS,
-      TIMESTAMP_OFFSET,
-      SnowflakeIdGeneratorLike.SystemClockS
+      BASE_TIMESTAMP,
+      SnowflakeIdGeneratorLike.ClockS
     )
   )
 

@@ -10,7 +10,7 @@ internal class BoundedCronTriggerTest {
 
   @Test
   fun startTime() {
-    val context = SimpleTriggerContext(Time.clock)
+    val context = SimpleTriggerContext(Time.clock())
     val startTime = context.clock.currentDateTime().plusDays(1).withNano(0)
     val trigger = BoundedCronTrigger(CronExpression.parse("* * * * * ?"), startTime, null)
     val nextExecutionTime = trigger.nextExecutionTime(context)
@@ -20,7 +20,7 @@ internal class BoundedCronTriggerTest {
 
   @Test
   fun stopTime() {
-    val context = SimpleTriggerContext(Time.clock)
+    val context = SimpleTriggerContext(Time.clock())
     val stopTime = context.clock.currentDateTime().withNano(0)
     val trigger = BoundedCronTrigger(CronExpression.parse("* * * * * ?"), null, stopTime)
     val nextExecutionTime = trigger.nextExecutionTime(context)

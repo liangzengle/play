@@ -1,6 +1,8 @@
 package play.util.time
 
 import play.util.primitive.toIntChecked
+import java.beans.PropertyChangeListener
+import java.beans.PropertyChangeSupport
 import java.time.*
 import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
@@ -9,15 +11,33 @@ import java.time.temporal.WeekFields
 import java.util.*
 
 object Time {
-  private val defaultClock = Clock.systemDefaultZone()
+  private val clock = DelegatingClock(Clock.systemDefaultZone())
 
-  var clock: Clock = defaultClock
-    private set
+  private val pcs = PropertyChangeSupport(this)
 
-  @Synchronized
-  fun setClock(clock: Clock) {
-    check(this.clock !== defaultClock) { "clock has been set to ${this.clock}" }
-    this.clock = clock
+  @JvmStatic
+  fun clock(): Clock = clock
+
+  @JvmStatic
+  fun setClock(newClock: Clock) {
+    val prev = clock.underlying
+    clock.underlying = newClock
+    pcs.firePropertyChange("clock", prev, newClock)
+  }
+
+  @JvmStatic
+  fun setClockOffset(offsetDuration: Duration) {
+    setClock(Clock.offset(clock.underlying, offsetDuration))
+  }
+
+  @JvmStatic
+  fun addClockChangeListener(listener: PropertyChangeListener) {
+    pcs.addPropertyChangeListener(listener)
+  }
+
+  @JvmStatic
+  fun removeClockChangeListener(listener: PropertyChangeListener) {
+    pcs.removePropertyChangeListener(listener)
   }
 
   @JvmStatic
@@ -121,8 +141,7 @@ object Time {
   }
 
   @JvmStatic
-  fun isSameDay(t1: Long, t2: Long): Boolean =
-    toLocalDateTime(t1).toLocalDate() == toLocalDateTime(t2).toLocalDate()
+  fun isSameDay(t1: Long, t2: Long): Boolean = toLocalDateTime(t1).toLocalDate() == toLocalDateTime(t2).toLocalDate()
 
   @JvmStatic
   fun isSameWeek(t1: Long, t2: Long): Boolean = toLocalDateTime(t1).weekEquals(toLocalDateTime(t2))

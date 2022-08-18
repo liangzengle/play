@@ -1,5 +1,7 @@
 package play.util.id
 
+import play.util.time.Time
+
 interface SnowflakeIdGeneratorLike {
 
   fun nextId(): Long
@@ -14,15 +16,15 @@ interface SnowflakeIdGeneratorLike {
     fun time(): Long
   }
 
-  object SystemClockMS : Clock {
+  object ClockMS : Clock {
     override fun time(): Long {
-      return System.currentTimeMillis()
+      return Time.currentMillis()
     }
   }
 
-  object SystemClockS : Clock {
+  object ClockS : Clock {
     override fun time(): Long {
-      return System.currentTimeMillis() / 1000
+      return Time.currentMillis() / 1000
     }
   }
 }

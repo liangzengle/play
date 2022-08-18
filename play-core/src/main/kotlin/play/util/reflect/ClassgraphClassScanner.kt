@@ -1,5 +1,6 @@
 package play.util.reflect
 
+import com.google.common.base.Stopwatch
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ClassInfoList
 import io.github.classgraph.ScanResult
@@ -7,6 +8,7 @@ import play.Log
 import play.util.concurrent.CommonPool
 import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
 
 /**
  * 类扫描工具
@@ -48,14 +50,14 @@ class ClassgraphClassScanner(scanExecutor: ExecutorService, jarsToScan: List<Str
 
     private fun scan(): ScanResult {
       scanTimes++
-      val start = System.currentTimeMillis()
+      val stopwatch = Stopwatch.createStarted()
       val result = ClassGraph()
         .acceptJars(*jarsToScan)
         .acceptPackages(*packagesToScan)
         .enableClassInfo()
         .enableAnnotationInfo()
         .scan(scanExecutor, 8)
-      val elapsed = System.currentTimeMillis() - start
+      val elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS)
       Log.info { "ClassScanner(${Integer.toHexString(hashCode())}) run ${scanTimes}th class scan, cost ${elapsed}ms" }
       return result
     }
