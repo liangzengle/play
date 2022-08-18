@@ -36,8 +36,8 @@ class SessionActor(
 
   init {
     ch.pipeline().addLast("session", ChannelHandler())
-    ch.config().isAutoRead = true
     session = Session(ch, context.self, flushIntervalMillis)
+    ch.config().isAutoRead = true
   }
 
   override fun createReceive(): Receive<Command> {
