@@ -21,4 +21,32 @@ interface IntIterator {
       }
     }
   }
+
+  companion object {
+    @JvmStatic
+    fun fromJava(it: Iterator<Int>): IntIterator {
+      return when (it) {
+        is IntIterator -> it
+        is PrimitiveIterator.OfInt -> object : IntIterator {
+          override fun hasNext(): Boolean {
+            return it.hasNext()
+          }
+
+          override fun next(): Int {
+            return it.nextInt()
+          }
+        }
+
+        else -> object : IntIterator {
+          override fun hasNext(): Boolean {
+            return it.hasNext()
+          }
+
+          override fun next(): Int {
+            return it.next()
+          }
+        }
+      }
+    }
+  }
 }

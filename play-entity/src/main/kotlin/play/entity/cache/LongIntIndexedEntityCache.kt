@@ -9,7 +9,6 @@ import play.util.getOrNull
 import play.util.max
 import play.util.min
 import java.time.Duration
-import java.util.*
 import java.util.function.ToIntFunction
 
 /**
@@ -18,11 +17,11 @@ import java.util.function.ToIntFunction
 class LongIntIndexedEntityCache<E : LongIdEntity>(
   private val indexName: String,
   private val indexMapper: ToIntFunction<E>,
-  private val entityCache: EntityCache<Long, E>,
+  private val entityCache: EntityCacheLong<E>,
   private val entityCacheLoader: EntityCacheLoader,
   scheduler: Scheduler,
   keepAlive: Duration
-) : IndexedEntityCache<Int, Long, E>, EntityCache<Long, E> by entityCache, EntityCacheInternalApi<E> {
+) : IndexedEntityCache<Int, Long, E>, EntityCacheLong<E> by entityCache, EntityCacheInternalApi<E> {
 
   private val cache = ConcurrentIntObjectMap<ConcurrentHashSetLong>()
 
@@ -94,8 +93,7 @@ class LongIntIndexedEntityCache<E : LongIdEntity>(
   }
 
   override fun getByIndex(index: Int): List<E> {
-    val idSet = getIds(index)
-    return getAll(Collections.unmodifiableSet(idSet.toJava()))
+    return getAll(getIds(index))
   }
 
   override fun getIndexSize(index: Int): Int {

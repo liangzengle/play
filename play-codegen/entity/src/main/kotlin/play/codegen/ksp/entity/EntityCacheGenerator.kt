@@ -89,10 +89,11 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
           .addParameter("scheduler", Scheduler)
           .callThisConstructor(
             CodeBlock.of(
-              "%T(%S, { it.%L }, entityCacheManager.get(%T::class.java), entityCacheLoader, scheduler, %T.ofMinutes(30))",
+              "%T(%S, { it.%L }, entityCacheManager.%L(%T::class.java), entityCacheLoader, scheduler, %T.ofMinutes(30))",
               cacheIndexSpec.cacheImplClassName,
               cacheIndexSpec.indexName,
               cacheIndexSpec.indexName,
+              cacheIndexSpec.getterFunctionName,
               entityClass,
               JavaDuration
             )
@@ -174,14 +175,19 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     }?.let {
       val indexName = it.simpleName.asString()
       val indexFieldType = it.type.resolve().toClassName()
-      val cacheClassName = if (idType == LONG && indexFieldType == LONG) {
-        LongLongIndexedEntityCache
+      val cacheClassName: ClassName
+      val getterFunctionName: String
+      if (idType == LONG && indexFieldType == LONG) {
+        cacheClassName = LongLongIndexedEntityCache
+        getterFunctionName = "getEntityCacheLong"
       } else if (idType == LONG && indexFieldType == INT) {
-        LongIntIndexedEntityCache
+        cacheClassName = LongIntIndexedEntityCache
+        getterFunctionName = "getEntityCacheInt"
       } else {
-        DefaultIndexedEntityCache
+        cacheClassName = DefaultIndexedEntityCache
+        getterFunctionName = "get"
       }
-      CacheIndexSpec(indexName, indexFieldType, cacheClassName)
+      CacheIndexSpec(indexName, indexFieldType, cacheClassName, getterFunctionName)
     }
   }
 
@@ -198,6 +204,7 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
   private class CacheIndexSpec(
     val indexName: String,
     val indexFieldType: ClassName,
-    val cacheImplClassName: ClassName
+    val cacheImplClassName: ClassName,
+    val getterFunctionName: String
   )
 }

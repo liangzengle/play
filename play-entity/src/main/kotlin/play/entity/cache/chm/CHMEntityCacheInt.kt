@@ -8,6 +8,7 @@ import play.entity.cache.*
 import play.inject.PlayInjector
 import play.scheduling.Scheduler
 import play.util.collection.ConcurrentIntObjectMap
+import play.util.collection.IntIterable
 import play.util.concurrent.Future
 import play.util.concurrent.PlayFuture
 import play.util.control.Retryable
@@ -31,7 +32,7 @@ class CHMEntityCacheInt<E : IntIdEntity>(
   private val executor: Executor,
   private val settings: EntityCacheFactory.Settings,
   private val initializerProvider: EntityInitializerProvider
-) : EntityCache<Int, E>, UnsafeEntityCacheOps<Int>, EntityCacheInternalApi<E> {
+) : EntityCacheInt<E>, UnsafeEntityCacheOps<Int>, EntityCacheInternalApi<E> {
   companion object : KLogging()
 
   private var initialized = false
@@ -144,7 +145,14 @@ class CHMEntityCacheInt<E : IntIdEntity>(
   private fun scheduledExpire(expireAfterAccess: Long) {
     val cache = getCache()
     val accessTimeThreshold = currentMillis() - expireAfterAccess
-    for (id in cache.keys) {
+    val expireKeys = IntLists.mutable.empty()
+    for (entry in cache) {
+      if (entry.value.lastAccessTime() <= accessTimeThreshold) {
+        expireKeys.add(entry.key)
+      }
+    }
+    for (i in 0 until expireKeys.size()) {
+      val id = expireKeys[i]
       cache.computeIfPresent(id) { _, v ->
         if (v.lastAccessTime() > accessTimeThreshold) v
         else if (v is NonEmpty<E>) {
@@ -243,8 +251,12 @@ class CHMEntityCacheInt<E : IntIdEntity>(
     return getCache().values.asSequence().filterIsInstance<NonEmpty<E>>().map { it.peekEntity() }
   }
 
-  override fun getAll(ids: Collection<Int>): List<E> {
-    val result = ArrayList<E>(ids.size)
+  override fun getAll(ids: Iterable<Int>): List<E> {
+    return getAll(IntIterable.fromJava(ids))
+  }
+
+  override fun getAll(ids: IntIterable): List<E> {
+    val result = LinkedList<E>()
     val missing = IntLists.mutable.empty()
     for (id in ids) {
       val entity = getOrNull(id)

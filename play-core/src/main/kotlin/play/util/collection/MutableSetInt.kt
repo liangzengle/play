@@ -38,5 +38,5 @@ interface MutableSetInt : IntIterable {
 
   fun stream(): IntStream
 
-  fun toJava(): MutableSet<Int>
+  override fun toJava(): MutableSet<Int>
 }

@@ -38,5 +38,5 @@ interface MutableSetLong : LongIterable {
 
   fun stream(): LongStream
 
-  fun toJava(): MutableSet<Long>
+  override fun toJava(): MutableSet<Long>
 }

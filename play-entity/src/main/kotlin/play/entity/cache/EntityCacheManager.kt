@@ -2,6 +2,8 @@ package play.entity.cache
 
 import mu.KLogging
 import play.entity.Entity
+import play.entity.IntIdEntity
+import play.entity.LongIdEntity
 import play.inject.PlayInjector
 import play.util.ClassUtil
 import play.util.control.getCause
@@ -19,6 +21,16 @@ abstract class EntityCacheManager {
   }
 
   abstract fun <ID : Any, E : Entity<ID>> get(clazz: Class<E>): EntityCache<ID, E>
+
+  fun <E : IntIdEntity> getEntityCacheInt(clazz: Class<E>): EntityCacheInt<E> {
+    val cache = get(clazz)
+    return if (cache is EntityCacheInt<E>) cache else EntityCacheIntWrapper(cache)
+  }
+
+  fun <E : LongIdEntity> getEntityCacheLong(clazz: Class<E>): EntityCacheLong<E> {
+    val cache = get(clazz)
+    return if (cache is EntityCacheLong<E>) cache else EntityCacheLongWrapper(cache)
+  }
 }
 
 class EntityCacheManagerImpl constructor(

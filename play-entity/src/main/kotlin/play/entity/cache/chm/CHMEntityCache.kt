@@ -142,7 +142,14 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
   private fun scheduledExpire(expireAfterAccess: Long) {
     val cache = getCache()
     val accessTimeThreshold = currentMillis() - expireAfterAccess
-    for (id in cache.keys) {
+    val expireKeys = ArrayList<ID>()
+    for (entry in cache) {
+      if (entry.value.lastAccessTime() <= accessTimeThreshold) {
+        expireKeys.add(entry.key)
+      }
+    }
+    for (i in expireKeys.indices) {
+      val id = expireKeys[i]
       cache.computeIfPresent(id) { _, v ->
         if (v.lastAccessTime() > accessTimeThreshold) v
         else if (v is NonEmpty<ID, E>) {
@@ -241,8 +248,8 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     return getCache().values.asSequence().filterIsInstance<NonEmpty<ID, E>>().map { it.peekEntity() }
   }
 
-  override fun getAll(ids: Collection<ID>): List<E> {
-    val result = ArrayList<E>(ids.size)
+  override fun getAll(ids: Iterable<ID>): List<E> {
+    val result = LinkedList<E>()
     val missing = arrayListOf<ID>()
     for (id in ids) {
       val entity = getOrNull(id)
