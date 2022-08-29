@@ -1,5 +1,7 @@
 package play.example.game.app
 
+import akka.actor.typed.ActorRef
+import akka.actor.typed.javadsl.Behaviors
 import com.typesafe.config.Config
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.ApplicationContext
@@ -8,6 +10,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import play.DefaultGracefullyShutdown
 import play.GracefullyShutdown
+import play.akka.scheduling.ActorScheduler
 import play.db.mongo.Mongo
 import play.entity.Entity
 import play.entity.PlayEntityCacheConfiguration
@@ -18,12 +21,14 @@ import play.event.EnableEventBus
 import play.example.common.Role
 import play.example.game.container.command.CommandManager
 import play.example.game.container.command.CommandService
+import play.example.game.container.gs.GameServerScopeConfiguration
 import play.example.game.container.gs.domain.GameServerId
 import play.inject.PlayInjector
 import play.inject.SpringPlayInjector
 import play.mongodb.MongoDBRepositoryCustomizer
 import play.rsocket.client.RSocketClientAutoConfiguration
 import play.scheduling.Scheduler
+import play.util.classOf
 import play.util.concurrent.PlayFuture
 import play.util.reflect.ClassgraphClassScanner
 import play.rsocket.client.RSocketClientCustomizer as RSocketClientCustomizer1
@@ -36,7 +41,7 @@ import play.rsocket.client.RSocketClientCustomizer as RSocketClientCustomizer1
 @Import(value = [PlayEntityCacheConfiguration::class, RSocketClientAutoConfiguration::class])
 @EnableEventBus
 @Configuration(proxyBeanMethods = false)
-class GameApp {
+class GameApp : GameServerScopeConfiguration() {
 
   @Bean
   fun idAndRole(gameServerId: GameServerId): RSocketClientCustomizer1 {
@@ -56,6 +61,20 @@ class GameApp {
 //      }
 //    }
 //  }
+
+  @Bean
+  fun actorScheduler(
+    scheduler: Scheduler
+  ): ActorRef<ActorScheduler.Command> {
+    return spawn("ActorScheduler", classOf()) { _ ->
+      Behaviors.setup {
+        ActorScheduler(
+          it,
+          scheduler
+        )
+      }
+    }
+  }
 
   @Bean
   fun gmCommandService(injector: PlayInjector, invokerManager: CommandManager): CommandService {

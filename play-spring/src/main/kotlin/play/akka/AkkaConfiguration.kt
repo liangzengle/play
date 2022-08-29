@@ -1,13 +1,10 @@
 package play.akka
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
-import akka.actor.typed.javadsl.Behaviors
 import com.typesafe.config.Config
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import play.GracefullyShutdown
-import play.akka.scheduling.ActorScheduler
 import play.akka.scheduling.AkkaScheduler
 import play.scala.toPlay
 import play.scheduling.Scheduler
@@ -37,13 +34,5 @@ class AkkaConfiguration : ActorConfigurationSupport {
   @Bean
   fun scheduler(actorSystem: ActorSystem<*>, clock: Clock): Scheduler {
     return AkkaScheduler(actorSystem.scheduler(), actorSystem.executionContext(), clock)
-  }
-
-  @Bean
-  fun actorScheduler(
-    actorSystem: ActorSystem<GuardianBehavior.Command>,
-    scheduler: Scheduler
-  ): ActorRef<ActorScheduler.Command> {
-    return spawn(actorSystem, Behaviors.setup { ActorScheduler(it, scheduler) }, "ActorScheduler")
   }
 }
