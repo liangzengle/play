@@ -5,6 +5,7 @@ import akka.actor.typed.javadsl.Behaviors
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import play.example.game.container.gs.GameServerScopeConfiguration
+import play.util.classOf
 
 @Configuration(proxyBeanMethods = false)
 class ServerTaskSpringConfiguration : GameServerScopeConfiguration() {
@@ -13,7 +14,7 @@ class ServerTaskSpringConfiguration : GameServerScopeConfiguration() {
   fun serverTaskManager(
     taskService: ServerTaskService
   ): ActorRef<ServerTaskManager.Command> {
-    return spawn("ServerTaskManager") {
+    return spawn("ServerTaskManager", classOf()) {
       Behaviors.setup { ctx -> ServerTaskManager(ctx, taskService) }
     }
   }

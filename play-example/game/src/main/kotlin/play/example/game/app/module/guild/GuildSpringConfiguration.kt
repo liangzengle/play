@@ -7,6 +7,7 @@ import play.example.game.app.module.guild.entity.GuildEntityCache
 import play.example.game.app.module.player.PlayerRequestHandler
 import play.example.game.app.module.player.PlayerService
 import play.example.game.container.gs.GameServerScopeConfiguration
+import play.util.classOf
 
 @Configuration(proxyBeanMethods = false)
 class GuildSpringConfiguration : GameServerScopeConfiguration() {
@@ -18,7 +19,7 @@ class GuildSpringConfiguration : GameServerScopeConfiguration() {
     playerService: PlayerService,
     guildCache: GuildCache
   ): ActorRef<GuildManager.Command> {
-    return spawn("GuildManager") {
+    return spawn("GuildManager", classOf()) {
       GuildManager.create(
         playerRequestHandler,
         guildEntityCache,

@@ -5,6 +5,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.javadsl.ActorContext
+import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import com.google.common.primitives.Bytes
 import com.typesafe.config.Config
@@ -13,7 +14,6 @@ import org.springframework.boot.Banner
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
-import org.springframework.scheduling.TaskScheduler
 import play.akka.AbstractTypedActor
 import play.akka.stoppedBehavior
 import play.db.DatabaseNameProvider
@@ -53,6 +53,7 @@ class GameServerActor(
   data class Spawn<T>(
     val behaviorFactory: (ActorMDC) -> Behavior<T>,
     val name: String,
+    val messageType: Class<T>,
     val promise: PlayPromise<ActorRef<T>>
   ) : Command
 
@@ -97,7 +98,8 @@ class GameServerActor(
   }
 
   private fun spawn(cmd: Spawn<Any>) {
-    val behavior = cmd.behaviorFactory(actorMdc)
+    val behavior =
+      Behaviors.withMdc(cmd.messageType, actorMdc.staticMdc, actorMdc.mdcPerMessage(), cmd.behaviorFactory(actorMdc))
     val ref = context.spawn(behavior, cmd.name)
     cmd.promise.success(ref)
   }

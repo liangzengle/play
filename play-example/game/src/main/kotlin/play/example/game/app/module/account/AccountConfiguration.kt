@@ -11,6 +11,7 @@ import play.example.game.app.module.player.PlayerService
 import play.example.game.app.module.server.ServerService
 import play.example.game.container.gs.GameServerScopeConfiguration
 import play.example.game.container.login.LoginDispatcherActor
+import play.util.classOf
 
 /**
  *
@@ -30,7 +31,7 @@ class AccountConfiguration : GameServerScopeConfiguration() {
     playerEntityCacheInitializer: PlayerEntityCacheInitializer,
     playerService: PlayerService
   ): ActorRef<AccountManager.Command> {
-    return spawn("AccountManager") { mdc ->
+    return spawn("AccountManager", classOf()) { mdc ->
       AccountManager.create(
         platformServiceProvider,
         accountIdCache,

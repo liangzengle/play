@@ -7,6 +7,7 @@ import play.akka.scheduling.ActorScheduler
 import play.example.game.app.module.player.event.PlayerEventDispatcher
 import play.example.game.app.module.playertask.PlayerTaskEventReceiver
 import play.example.game.container.gs.GameServerScopeConfiguration
+import play.util.classOf
 
 @Configuration(proxyBeanMethods = false)
 class PlayerSpringConfiguration : GameServerScopeConfiguration() {
@@ -20,7 +21,7 @@ class PlayerSpringConfiguration : GameServerScopeConfiguration() {
     actorScheduler: ActorRef<ActorScheduler.Command>,
     taskEventReceiver: PlayerTaskEventReceiver
   ): ActorRef<PlayerManager.Command> {
-    return spawn("PlayerManager") { mdc ->
+    return spawn("PlayerManager", classOf()) { mdc ->
       PlayerManager.create(
         eventDispatcher,
         playerIdNameCache,
