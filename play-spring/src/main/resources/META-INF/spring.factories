@@ -1,3 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-play.db.PlayMemoryRepositoryAutoConfiguration,\
-play.mongodb.PlayMongoRepositoryAutoConfiguration

@@ -1,0 +1,2 @@
+play.db.PlayMemoryRepositoryAutoConfiguration
+play.mongodb.PlayMongoRepositoryAutoConfiguration
