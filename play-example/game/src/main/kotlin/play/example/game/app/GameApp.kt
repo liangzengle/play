@@ -14,7 +14,7 @@ import play.entity.PlayEntityCacheConfiguration
 import play.entity.cache.DefaultEntityCachePersistFailOver
 import play.entity.cache.EntityCacheManager
 import play.entity.cache.EntityCachePersistFailOver
-import play.event.EnableGuavaEventBus
+import play.event.EnableEventBus
 import play.example.common.Role
 import play.example.game.container.command.CommandManager
 import play.example.game.container.command.CommandService
@@ -34,7 +34,7 @@ import play.rsocket.client.RSocketClientCustomizer as RSocketClientCustomizer1
  */
 @SpringBootApplication
 @Import(value = [PlayEntityCacheConfiguration::class, RSocketClientAutoConfiguration::class])
-@EnableGuavaEventBus
+@EnableEventBus
 @Configuration(proxyBeanMethods = false)
 class GameApp {
 

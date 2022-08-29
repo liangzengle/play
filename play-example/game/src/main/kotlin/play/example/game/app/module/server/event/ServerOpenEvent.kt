@@ -3,11 +3,6 @@ package play.example.game.app.module.server.event
 import play.example.game.app.module.player.event.PlayerEvent
 
 /**
- * 服务器启动完毕时间
- */
-object ApplicationStartedEvent
-
-/**
  * 开服事件
  */
 object ServerOpenEvent

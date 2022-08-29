@@ -13,7 +13,7 @@ interface PlayerEventListener {
 data class PlayerEventReceive(val receive: Map<Class<PlayerEvent>, (Self, PlayerEvent) -> Unit>)
 
 class PlayerEventReceiveBuilder {
-  private val map: MutableMap<Class<PlayerEvent>, (Self, PlayerEvent) -> Unit> = hashMapOf()
+  private val builder = ImmutableMap.builder<Class<PlayerEvent>, (Self, PlayerEvent) -> Unit>()
 
   inline fun <reified T : PlayerEvent> match(noinline f: (Self, T) -> Unit): PlayerEventReceiveBuilder {
     match(T::class.java, f)
@@ -39,13 +39,10 @@ class PlayerEventReceiveBuilder {
   private fun <T> add(clazz: Class<T>, f: (Self, T) -> Unit) {
     val eventType = clazz as Class<PlayerEvent>
     val listener = f as ((Self, PlayerEvent) -> Unit)
-    val prev = map.put(eventType, listener)
-    if (prev != null) {
-      throw IllegalStateException("重复监听事件: ${eventType.simpleName}")
-    }
+    builder.put(eventType, listener)
   }
 
   fun build(): PlayerEventReceive {
-    return PlayerEventReceive(ImmutableMap.copyOf(map))
+    return PlayerEventReceive(builder.build())
   }
 }

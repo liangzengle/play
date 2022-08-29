@@ -1,6 +1,5 @@
 package play.example.game.app.module.server
 
-import com.google.common.eventbus.Subscribe
 import org.eclipse.collections.api.set.primitive.ImmutableIntSet
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.eclipse.collections.api.set.primitive.MutableIntSet
@@ -10,6 +9,8 @@ import org.springframework.stereotype.Component
 import play.db.QueryService
 import play.entity.cache.EntityCacheWriter
 import play.event.EventBus
+import play.event.EventListener
+import play.event.EventReceive
 import play.example.game.app.module.platform.domain.Platform
 import play.example.game.app.module.player.event.PlayerEventBus
 import play.example.game.app.module.server.entity.ServerEntity
@@ -17,7 +18,6 @@ import play.example.game.app.module.server.entity.ServerEntityCache
 import play.example.game.app.module.server.event.ServerOpenEvent
 import play.example.game.app.module.server.event.ServerOpenPlayerEvent
 import play.example.game.app.module.server.res.ServerConfig
-import play.httpclient.PlayHttpClient
 import play.spring.OrderedSmartInitializingSingleton
 import play.util.classOf
 import play.util.max
@@ -36,7 +36,7 @@ class ServerService(
   private val playerEventBus: PlayerEventBus,
   private val eventBus: EventBus,
   private val entityCacheWriter: EntityCacheWriter
-) : OrderedSmartInitializingSingleton {
+) : OrderedSmartInitializingSingleton, EventListener {
 
   private val serverIds: ImmutableIntSet
 
@@ -58,6 +58,12 @@ class ServerService(
     serverEntityCache.getOrCreate(serverId, ::ServerEntity)
   }
 
+  override fun eventReceive(): EventReceive {
+    return newEventReceiveBuilder()
+      .match(::onServerOpen)
+      .build()
+  }
+
   fun getServerIds(): IntSet {
     return serverIds
   }
@@ -74,16 +80,21 @@ class ServerService(
     return openDate.get().betweenDays(toDate).toIntSaturated().max(0) + 1
   }
 
-  fun open() {
-    val server = serverEntityCache.getOrThrow(serverId)
-    server.open(currentDateTime())
-    entityCacheWriter.update(server)
-    // TODO post event
-    eventBus.postSync(ServerOpenEvent)
+  fun tryOpen() {
+    val entity = serverEntityCache.getOrThrow(serverId)
+    if (entity.getOpenDate().isPresent) {
+      return
+    }
+    synchronized(entity) {
+      if (entity.getOpenDate().isEmpty) {
+        entity.open(currentDateTime())
+      }
+    }
+    entityCacheWriter.update(entity)
+    eventBus.post(ServerOpenEvent)
     playerEventBus.postToOnlinePlayers { ServerOpenPlayerEvent(it) }
   }
 
-  @Subscribe
   private fun onServerOpen(event: ServerOpenEvent) {
     println("test event receive: $event")
   }
