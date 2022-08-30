@@ -13,7 +13,7 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
   AbstractTypedActor<ActorScheduler.Command>(ctx) {
   companion object : KLogging()
 
-   private val scheduleMap = hashMapOf<ActorRef<*>, MutableMap<Any, Cancellable>>()
+  private val scheduleMap = hashMapOf<ActorRef<*>, MutableMap<Any, Cancellable>>()
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
@@ -21,8 +21,13 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
       .accept(::scheduleCron)
       .accept(::cancel)
       .accept(::cancelAll)
+      .accept(::logTriggered)
       .acceptSignal(::onCommanderTerminated)
       .build()
+  }
+
+  private fun logTriggered(msg: LogScheduleTriggered) {
+    logger.info("schedule triggered: {} {}", msg.receiver, msg.triggerEvent)
   }
 
   private fun scheduleCron(cmd: ScheduleCron<Any>) {
@@ -37,26 +42,27 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
   private fun schedule(trigger: Trigger, triggerEvent: Any, receiver: ActorRef<Any>) {
     val cancellable = scheduler.schedule(trigger, context.executionContext) {
       receiver.tell(triggerEvent)
-      logger.info { "cron schedule triggered: $receiver $triggerEvent" }
+      self.tell(LogScheduleTriggered(triggerEvent, receiver))
     }
 
-    logger.info { "cron schedule added: $triggerEvent" }
+    logger.info("schedule added: {} {}", receiver, triggerEvent)
 
-    val watched = scheduleMap.containsKey(receiver)
-    if (!watched) {
+    var map = scheduleMap[receiver]
+    if (map == null) {
+      map = HashMap(4)
+      scheduleMap[receiver] = map
       context.watch(receiver)
     }
-    val map = scheduleMap.computeIfAbsent(receiver) { hashMapOf() }
     val prev = map.put(triggerEvent, cancellable)
     if (prev != null) {
       prev.cancel()
-      logger.info { "cron schedule replaced: $triggerEvent" }
+      logger.info("schedule replaced: {} {}", receiver, triggerEvent)
     }
   }
 
   private fun cancel(cmd: Cancel<Any>) {
     scheduleMap[cmd.commander]?.remove(cmd.triggerEvent)?.cancel()
-    logger.info { "cron schedule cancelled: $cmd" }
+    logger.info("schedule cancelled: {}", cmd)
   }
 
   private fun cancelAll(cmd: CancelAll<Any>) {
@@ -65,7 +71,7 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
     if (cancelEventType == null) {
       scheduleMap.remove(commander)?.values?.forEach { it.cancel() }
       context.unwatch(commander)
-      logger.info { "cron schedule cancel all: $commander" }
+      logger.info("schedule cancel all: {}", commander)
     } else {
       val it = scheduleMap[commander]?.entries?.iterator()
       if (it != null) {
@@ -74,7 +80,7 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
           if (cancelEventType.isAssignableFrom(event.javaClass)) {
             it.remove()
             cancellable.cancel()
-            logger.info { "cron schedule cancel certain type schedule: $event $commander" }
+            logger.info("schedule cancel by type: {} {}", commander, event)
           }
         }
       }
@@ -84,10 +90,12 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
   private fun onCommanderTerminated(msg: Terminated) {
     val commander = msg.ref
     scheduleMap.remove(commander)?.values?.forEach { it.cancel() }
-    logger.info { "cron schedule commander terminated, cancel all its schedules: $commander" }
+    logger.info("schedule commander terminated, cancelling all its schedules: {}", commander)
   }
 
   interface Command
+
+  private class LogScheduleTriggered(val triggerEvent: Any, val receiver: ActorRef<Any>) : Command
 
   /**
    * 添加定时任务
