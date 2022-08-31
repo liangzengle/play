@@ -1,5 +1,7 @@
 package play.example.rpc.test
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean
@@ -20,6 +22,11 @@ class RpcTestApp {
     return RSocketClientCustomizer { builder ->
       builder.id(100).role(2)
     }
+  }
+
+  @Bean
+  fun config(): Config {
+    return ConfigFactory.load()
   }
 }
 

@@ -9,6 +9,7 @@ import io.rsocket.metadata.WellKnownMimeType
 import io.rsocket.util.ByteBufPayload
 import play.rsocket.RequestType
 import play.rsocket.metadata.RoutingMetadata
+import play.rsocket.serializer.RSocketCodec
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.lang.reflect.Type
@@ -18,10 +19,7 @@ import java.lang.reflect.Type
  *
  * @author LiangZengle
  */
-abstract class AbstractRSocketRequester(
-  protected val resultDecoder: (ByteBuf, Type) -> Any?,
-  protected val paramEncoder: (Any) -> ByteBuf
-) {
+abstract class AbstractRSocketRequester(private val codec: RSocketCodec) {
 
   abstract fun upstreamRSocket(): RSocket
 
@@ -56,7 +54,7 @@ abstract class AbstractRSocketRequester(
   fun remoteRequestResponse(data: ByteBuf, compositeMetadata: ByteBuf, returnDataType: Type): Mono<*> {
     val payload = ByteBufPayload.create(data, compositeMetadata)
     return upstreamRSocket().requestResponse(payload).map { p ->
-      resultDecoder(p.data(), returnDataType)
+      codec.decode(p.data(), returnDataType)
     }
   }
 
@@ -64,7 +62,7 @@ abstract class AbstractRSocketRequester(
     val payload = ByteBufPayload.create(data, compositeMetadata)
     val flux = upstreamRSocket().requestStream(payload)
     return flux.map { p ->
-      resultDecoder(p.data(), returnDataType)
+      codec.decode(p.data(), returnDataType)
     }
   }
 
@@ -74,11 +72,11 @@ abstract class AbstractRSocketRequester(
   ): Flux<*> {
     val firstPayload = ByteBufPayload.create(data, compositeMetadata)
     val payloads = (publisher as Flux<Any>).startWith(firstPayload).map {
-      if (it is Payload) it else ByteBufPayload.create(paramEncoder(it))
+      if (it is Payload) it else ByteBufPayload.create(codec.encode(it))
     }
     val flux = upstreamRSocket().requestChannel(payloads)
     return flux.map { p ->
-      resultDecoder(p.data(), returnDataType)
+      codec.decode(p.data(), returnDataType)
     }
   }
 }

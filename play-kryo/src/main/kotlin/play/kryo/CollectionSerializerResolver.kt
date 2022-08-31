@@ -1,8 +1,8 @@
-package play.rsocket.serializer.kryo
+package play.kryo
 
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.serializers.CollectionSerializer
-import play.rsocket.util.Types
+import play.kryo.util.TypeUtil
 import java.lang.reflect.ParameterizedType
 
 /**
@@ -19,7 +19,7 @@ class CollectionSerializerResolver : ParameterizedTypeSerializerResolver<Collect
     val serializer = kryo.getRegistration(rawType, true).serializer
     if (serializer is CollectionSerializer<*>) {
       serializer.isImmutable = true
-      serializer.elementClass = Types.getRawClass(elementType)
+      serializer.elementClass = TypeUtil.getRawClass(elementType)
       serializer.elementSerializer = kryo.getSerializer(elementType)
     }
     return serializer as Serializer<Collection<*>>

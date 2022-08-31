@@ -1,4 +1,4 @@
-package play.rsocket.serializer.kryo
+package play.kryo
 
 import com.esotericsoftware.kryo.*
 import com.esotericsoftware.kryo.SerializerFactory.FieldSerializerFactory
@@ -11,19 +11,8 @@ import java.lang.reflect.Proxy
 import java.lang.reflect.Type
 import java.util.*
 
-class PlayKryo private constructor() : Kryo() {
-
-  companion object {
-    private val customizers = ServiceLoader.load(PlayKryoCustomizer::class.java).toList()
-
-    @JvmStatic
-    fun newInstance(): PlayKryo {
-      val kryo = PlayKryo()
-      customizers.forEach { it.customize(kryo) }
-      return kryo
-    }
-  }
-
+class PlayKryo(classResolver: ClassResolver, referenceResolver: ReferenceResolver?) :
+  Kryo(classResolver, referenceResolver) {
 
   private val defaultSerializerFactory: SerializerFactory<*> = FieldSerializerFactory()
 

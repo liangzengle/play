@@ -1,7 +1,5 @@
 package play.rsocket.broker
 
-import io.netty.buffer.ByteBuf
-import io.netty.buffer.ByteBufAllocator
 import io.rsocket.ConnectionSetupPayload
 import io.rsocket.Payload
 import io.rsocket.core.RSocketServer
@@ -29,8 +27,7 @@ import play.rsocket.rpc.LocalServiceCaller
 import play.rsocket.rpc.LocalServiceCallerRegistry
 import play.rsocket.rpc.LocalServiceCallerRegistryImpl
 import play.rsocket.security.SimpleTokenSocketAcceptorInterceptor
-import play.rsocket.serializer.kryo.KryoSerializerProvider
-import play.rsocket.serializer.kryo.io.ByteBufOutput
+import play.rsocket.serializer.RSocketCodec
 import reactor.netty.tcp.TcpServer
 
 /**
@@ -106,7 +103,8 @@ class RSocketBrokerAutoConfiguration {
   fun recievingRSocketFactory(
     properties: RSocketBrokerProperties,
     rsocketLocator: RSocketLocator,
-    localServiceCallerRegistry: LocalServiceCallerRegistry
+    localServiceCallerRegistry: LocalServiceCallerRegistry,
+    codec: RSocketCodec
   ): RSocketFactory {
     val routingMetadataExtractor: (Payload) -> RoutingMetadata? = {
       MetadataExtractor.extract(
@@ -116,16 +114,10 @@ class RSocketBrokerAutoConfiguration {
         RoutingMetadata.DefaultInstance::parseFrom
       )
     }
-    val resultEncoder: (Any) -> ByteBuf = { o ->
-      val serializer = KryoSerializerProvider.get()
-      val buffer = ByteBufAllocator.DEFAULT.buffer()
-      val output = ByteBufOutput(buffer)
-      serializer.writeObject(output, o.javaClass, o)
-      buffer
-    }
+
     return RSocketFactory {
       BrokerRSocketResponder(
-        properties.id, rsocketLocator, routingMetadataExtractor, localServiceCallerRegistry, resultEncoder
+        properties.id, rsocketLocator, routingMetadataExtractor, localServiceCallerRegistry, codec::encode
       )
     }
   }

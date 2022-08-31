@@ -9,8 +9,8 @@ import net.bytebuddy.implementation.bind.annotation.RuntimeType
 import net.bytebuddy.implementation.bind.annotation.This
 import play.rsocket.RequestType
 import play.rsocket.serializer.ByteBufToIOStreamAdapter
-import play.rsocket.serializer.PlaySerializer
-import play.rsocket.serializer.PlaySerializerProvider
+import play.rsocket.serializer.RSocketSerializer
+import play.rsocket.serializer.RSocketSerializerProvider
 import reactor.core.publisher.Flux
 import java.lang.reflect.Method
 
@@ -21,7 +21,7 @@ import java.lang.reflect.Method
 class RpcServiceProxy(
   private val serviceInterface: Class<*>,
   private val ioStreamAdapter: ByteBufToIOStreamAdapter,
-  private val serializerProvider: PlaySerializerProvider,
+  private val serializerProvider: RSocketSerializerProvider,
   private val requester: AbstractRSocketRequester
 ) {
 
@@ -51,7 +51,7 @@ class RpcServiceProxy(
       for (i in 0 until parameterCount) {
         val parameter = parameters[i]
         val parameterValue = allArguments[i]
-        PlaySerializer.write(serializer, output, parameter.parameterizedType, parameterValue)
+        RSocketSerializer.write(serializer, output, parameter.parameterizedType, parameterValue)
       }
     }
     val compositeMetadata = ByteBufAllocator.DEFAULT.compositeBuffer()

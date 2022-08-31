@@ -1,8 +1,8 @@
-package play.rsocket.serializer.kryo
+package play.kryo
 
 import com.esotericsoftware.kryo.Serializer
 import com.esotericsoftware.kryo.serializers.MapSerializer
-import play.rsocket.util.Types
+import play.kryo.util.TypeUtil
 import java.lang.reflect.ParameterizedType
 
 /**
@@ -22,8 +22,8 @@ class MapSerializerResolver : ParameterizedTypeSerializerResolver<Map<*, *>> {
       serializer.isImmutable = true
       serializer.setKeysCanBeNull(false)
       serializer.setValuesCanBeNull(false)
-      serializer.setKeyClass(Types.getRawClass(keyType))
-      serializer.setValueClass(Types.getRawClass(valueType))
+      serializer.setKeyClass(TypeUtil.getRawClass(keyType))
+      serializer.setValueClass(TypeUtil.getRawClass(valueType))
       serializer.setKeySerializer(kryo.getSerializer(keyType))
       serializer.setValueSerializer(kryo.getSerializer(valueType))
     }

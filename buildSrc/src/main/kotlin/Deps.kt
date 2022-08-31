@@ -7,6 +7,7 @@ object Deps {
 
     object Serialization {
       const val Jackson = "com.typesafe.akka:akka-serialization-jackson_2.13:$Version"
+      const val Kryo = "io.altoo:akka-kryo-serialization_2.13:${Versions.AkkaKryo}"
     }
   }
 

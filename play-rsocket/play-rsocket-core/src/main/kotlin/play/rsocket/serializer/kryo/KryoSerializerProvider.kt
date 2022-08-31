@@ -1,16 +1,27 @@
 package play.rsocket.serializer.kryo
 
-import play.rsocket.serializer.PlaySerializer
-import play.rsocket.serializer.PlaySerializerProvider
+import io.netty.util.concurrent.FastThreadLocal
+import play.kryo.PlayKryoFactory
+import play.rsocket.serializer.RSocketSerializer
+import play.rsocket.serializer.RSocketSerializerProvider
 
 /**
  *
  *
  * @author LiangZengle
  */
-object KryoSerializerProvider : PlaySerializerProvider {
-  @JvmStatic
-  private val serializerThreadLocal = ThreadLocal.withInitial { KryoSerializer(PlayKryo.newInstance()) }
+class KryoSerializerProvider(private val factory: PlayKryoFactory) : RSocketSerializerProvider {
+  companion object {
+    @JvmStatic
+    private val ftl = FastThreadLocal<KryoSerializer>()
+  }
 
-  override fun get(): PlaySerializer = serializerThreadLocal.get()
+  override fun get(): RSocketSerializer {
+    var serializer = ftl.get()
+    if (serializer == null) {
+      serializer = KryoSerializer(factory.create())
+      ftl.set(serializer)
+    }
+    return serializer
+  }
 }

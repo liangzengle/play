@@ -1,4 +1,4 @@
-package play.rsocket.util
+package play.kryo.util
 
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
@@ -10,7 +10,7 @@ import java.lang.reflect.WildcardType
  *
  * @author LiangZengle
  */
-internal object Types {
+object TypeUtil {
 
   fun getRawClass(type: Type): Class<*> {
     return when (type) {
@@ -21,7 +21,4 @@ internal object Types {
       else -> throw IllegalStateException("Unexpected type: ${type.javaClass.name}")
     }
   }
-
-  @JvmStatic
-  fun isVoid(type: Type): Boolean = type == Void.TYPE || type == Void::class.java || type == Unit.javaClass
 }

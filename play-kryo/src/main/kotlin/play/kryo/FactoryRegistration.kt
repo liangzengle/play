@@ -1,4 +1,4 @@
-package play.rsocket.serializer.kryo
+package play.kryo
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Registration

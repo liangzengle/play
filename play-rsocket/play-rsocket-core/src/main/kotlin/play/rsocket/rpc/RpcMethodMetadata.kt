@@ -3,7 +3,6 @@ package play.rsocket.rpc
 import org.reactivestreams.Publisher
 import play.rsocket.RequestType
 import play.rsocket.util.ServiceUtil
-import play.rsocket.util.Types
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.lang.reflect.Method
@@ -57,13 +56,13 @@ class RpcMethodMetadata(
 
     @JvmStatic
     private fun getRequestType(method: Method): RequestType {
-      if (Types.isVoid(method.returnType)) {
+      if (isVoid(method.returnType)) {
         return RequestType.FireAndForget
       }
       val genericReturnType = method.genericReturnType
       if (genericReturnType is ParameterizedType) {
         if (genericReturnType.rawType == Mono::class.java) {
-          return if (Types.isVoid(genericReturnType.actualTypeArguments[0])) {
+          return if (isVoid(genericReturnType.actualTypeArguments[0])) {
             RequestType.FireAndForget
           } else {
             RequestType.RequestResponse
@@ -73,7 +72,7 @@ class RpcMethodMetadata(
           val genericParameterTypes = method.genericParameterTypes
           val lastGenericParameterType = genericParameterTypes.last()
           return if (lastGenericParameterType is ParameterizedType && lastGenericParameterType.rawType == Flux::class.java) {
-            if (Types.isVoid(lastGenericParameterType.actualTypeArguments[0])) {
+            if (isVoid(lastGenericParameterType.actualTypeArguments[0])) {
               throw IllegalStateException("Can't use `void` Publisher as a parameter")
             }
             RequestType.RequestChannel
@@ -84,6 +83,9 @@ class RpcMethodMetadata(
       }
       throw IllegalStateException("Can't detect RequestType for method: $method")
     }
+
+    @JvmStatic
+    private fun isVoid(type: Type): Boolean = type == Void.TYPE || type == Void::class.java || type == Unit.javaClass
   }
 
   override fun toString(): String {

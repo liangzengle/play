@@ -1,5 +1,6 @@
 object Versions {
   const val Akka = "2.6.19"
+  const val AkkaKryo = "2.4.3"
   const val AlibabaRsocket = "1.1.3"
   const val Asm = "9.2"
   const val Assertj = "3.22.0"

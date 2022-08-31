@@ -15,10 +15,8 @@ import play.rsocket.event.RSocketMetadataPushEvent
 import play.rsocket.rpc.*
 import play.rsocket.security.SimpleTokenMetadata
 import play.rsocket.serializer.ByteBufToIOStreamAdapter
-import play.rsocket.serializer.PlaySerializerProvider
-import play.rsocket.serializer.kryo.KryoCodec
-import play.rsocket.serializer.kryo.KryoSerializerProvider
-import play.rsocket.serializer.kryo.io.ByteBufToInputOutput
+import play.rsocket.serializer.RSocketCodec
+import play.rsocket.serializer.RSocketSerializerProvider
 import play.rsocket.transport.SmartTransportFactory
 import play.rsocket.transport.TcpTransportFactory
 import play.rsocket.transport.TransportFactory
@@ -43,15 +41,15 @@ class RSocketClientAutoConfiguration {
   @Bean
   fun socketAcceptor(
     localServiceCallerRegistry: LocalServiceCallerRegistry,
-    eventPublisher: ApplicationEventPublisher
+    eventPublisher: ApplicationEventPublisher,
+    codec: RSocketCodec
   ): BrokerClientSocketAcceptor {
     val sink = Sinks.many().unicast().onBackpressureError<ByteBuf>()
-    sink.asFlux()
-      .doOnNext {
-        val event = KryoCodec.decoder(it, RSocketMetadataPushEvent::class.java) as RSocketMetadataPushEvent
-        eventPublisher.publishEvent(MetadataPushApplicationEvent(event.data))
-      }.subscribe()
-    return BrokerClientSocketAcceptor { ClientRSocketResponder(localServiceCallerRegistry, KryoCodec.encoder, sink) }
+    sink.asFlux().doOnNext {
+      val event = codec.decode(it, RSocketMetadataPushEvent::class.java) as RSocketMetadataPushEvent
+      eventPublisher.publishEvent(MetadataPushApplicationEvent(event.data))
+    }.subscribe()
+    return BrokerClientSocketAcceptor { ClientRSocketResponder(localServiceCallerRegistry, codec::encode, sink) }
   }
 
   @ConditionalOnProperty(prefix = "rsocket.client.auth", value = ["type"], havingValue = "token")
@@ -109,20 +107,8 @@ class RSocketClientAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  fun requester(brokerRSocketManager: BrokerRSocketManager): AbstractRSocketRequester {
-    return ClientRSocketRequester(brokerRSocketManager::getRSocket, KryoCodec.decoder, KryoCodec.encoder)
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  fun ioStreamAdapter(): ByteBufToIOStreamAdapter {
-    return ByteBufToInputOutput
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  fun serializerProvider(): PlaySerializerProvider {
-    return KryoSerializerProvider
+  fun requester(brokerRSocketManager: BrokerRSocketManager, codec: RSocketCodec): AbstractRSocketRequester {
+    return ClientRSocketRequester(brokerRSocketManager::getRSocket, codec)
   }
 
   @Bean
@@ -130,7 +116,7 @@ class RSocketClientAutoConfiguration {
   fun rpcClient(
     requester: AbstractRSocketRequester,
     ioStreamAdapter: ByteBufToIOStreamAdapter,
-    serializerProvider: PlaySerializerProvider
+    serializerProvider: RSocketSerializerProvider
   ): RpcClient {
     return ProxyRpcClient(requester, ioStreamAdapter, serializerProvider)
   }

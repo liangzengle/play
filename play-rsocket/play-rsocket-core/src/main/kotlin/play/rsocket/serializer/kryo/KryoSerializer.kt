@@ -2,8 +2,9 @@ package play.rsocket.serializer.kryo
 
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import play.rsocket.serializer.PlaySerializer
-import play.rsocket.util.Types
+import play.kryo.PlayKryo
+import play.kryo.util.TypeUtil
+import play.rsocket.serializer.RSocketSerializer
 import java.io.InputStream
 import java.io.OutputStream
 import java.lang.reflect.Type
@@ -12,7 +13,7 @@ import java.lang.reflect.Type
  *
  * @author LiangZengle
  */
-class KryoSerializer(private val kryo: PlayKryo) : PlaySerializer {
+class KryoSerializer(private val kryo: PlayKryo) : RSocketSerializer {
 
   override fun writeBoolean(out: OutputStream, value: Boolean) {
     (out as Output).writeBoolean(value)
@@ -172,13 +173,13 @@ class KryoSerializer(private val kryo: PlayKryo) : PlaySerializer {
 
   @Suppress("UNCHECKED_CAST")
   override fun <T : Any> readObject(`in`: InputStream, type: Type): T {
-    val rawClass: Class<*> = Types.getRawClass(type)
+    val rawClass: Class<*> = TypeUtil.getRawClass(type)
     return kryo.readObject(`in` as Input, rawClass, kryo.getSerializer(type)) as T
   }
 
   @Suppress("UNCHECKED_CAST")
   override fun <T : Any> readObjectOrNull(`in`: InputStream, type: Type): T? {
-    val rawClass: Class<*> = Types.getRawClass(type)
+    val rawClass: Class<*> = TypeUtil.getRawClass(type)
     return kryo.readObjectOrNull(`in` as Input, rawClass, kryo.getSerializer(type)) as T?
   }
 

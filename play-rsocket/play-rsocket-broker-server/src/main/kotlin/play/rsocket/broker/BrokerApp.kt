@@ -1,7 +1,11 @@
 package play.rsocket.broker
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
 
 /**
@@ -10,7 +14,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
  * @author LiangZengle
  */
 @SpringBootApplication
-class BrokerApp
+@Configuration(proxyBeanMethods = false)
+class BrokerApp {
+
+  @Bean
+  fun config(): Config {
+    return ConfigFactory.load()
+  }
+}
 
 fun main(args: Array<String>) {
   val ctx = SpringApplication.run(BrokerApp::class.java, *args)

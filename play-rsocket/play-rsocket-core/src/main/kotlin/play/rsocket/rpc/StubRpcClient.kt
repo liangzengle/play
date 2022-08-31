@@ -2,7 +2,7 @@ package play.rsocket.rpc
 
 import play.rsocket.metadata.RoutingMetadata
 import play.rsocket.serializer.ByteBufToIOStreamAdapter
-import play.rsocket.serializer.PlaySerializerProvider
+import play.rsocket.serializer.RSocketSerializerProvider
 import java.lang.invoke.MethodHandle
 import java.lang.invoke.MethodHandles
 import java.lang.invoke.MethodType
@@ -15,7 +15,7 @@ import java.lang.invoke.MethodType
 class StubRpcClient(
   private val requester: AbstractRSocketRequester,
   private val ioStreamAdapter: ByteBufToIOStreamAdapter,
-  private val serializerProvider: PlaySerializerProvider,
+  private val serializerProvider: RSocketSerializerProvider,
 ) : NodeAwareRpcClient() {
 
   private val serviceStubFactories = object : ClassValue<() -> RpcServiceStub>() {
@@ -26,7 +26,7 @@ class StubRpcClient(
           Void.TYPE,
           AbstractRSocketRequester::class.java,
           ByteBufToIOStreamAdapter::class.java,
-          PlaySerializerProvider::class.java
+          RSocketSerializerProvider::class.java
         )
       )
       return ReflectFactory(requester, ioStreamAdapter, serializerProvider, handle)
@@ -50,7 +50,7 @@ class StubRpcClient(
   private class ReflectFactory(
     private val requester: AbstractRSocketRequester,
     private val ioStreamAdapter: ByteBufToIOStreamAdapter,
-    private val serializerProvider: PlaySerializerProvider,
+    private val serializerProvider: RSocketSerializerProvider,
     private val handle: MethodHandle
   ) : () -> RpcServiceStub {
     override fun invoke(): RpcServiceStub =

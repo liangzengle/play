@@ -12,6 +12,7 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import play.codegen.*
 import play.codegen.ksp.*
+import play.rsocket.util.Murmur3
 
 @AutoService(SymbolProcessorProvider::class)
 class RpcServiceCallerGeneratorProvider : SymbolProcessorProvider {
@@ -42,14 +43,14 @@ class RpcServiceInvokerGenerator(environment: SymbolProcessorEnvironment) :
       FunSpec.constructorBuilder()
         .addParameter("underlying", rpcServiceClassName)
         .addParameter("ioStreamAdapter", ByteBufToIOStreamAdapter)
-        .addParameter("serializerProvider", PlaySerializerProvider)
+        .addParameter("serializerProvider", RSocketSerializerProvider)
         .build()
     ).addProperty(
       PropertySpec.builder("underlying", rpcServiceClassName).initializer("underlying").build()
     ).addProperty(
       PropertySpec.builder("ioStreamAdapter", ByteBufToIOStreamAdapter).initializer("ioStreamAdapter").build()
     ).addProperty(
-      PropertySpec.builder("serializerProvider", PlaySerializerProvider).initializer("serializerProvider").build()
+      PropertySpec.builder("serializerProvider", RSocketSerializerProvider).initializer("serializerProvider").build()
     )
 
     builder.addFunction(

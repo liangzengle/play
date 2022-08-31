@@ -2,13 +2,15 @@ package play.rsocket.serializer.kryo
 
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
+import com.esotericsoftware.kryo.util.DefaultClassResolver
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import play.kryo.*
 import kotlin.reflect.javaType
 import kotlin.reflect.typeOf
 
 internal class PlayKryoTest {
-  private val kryo = PlayKryo.newInstance()
+  private val kryo = PlayKryo(DefaultClassResolver(), null)
   private val serializer = KryoSerializer(kryo)
 
   init {

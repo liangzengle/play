@@ -116,7 +116,7 @@ val RequesterSupport = ClassName.bestGuess("play.rsocket.rpc.RequesterSupport")
 val ByteBufToIOStreamAdapter = ClassName.bestGuess("play.rsocket.serializer.ByteBufToIOStreamAdapter")
 
 //val PlaySerializer = ClassName.bestGuess("play.rsocket.serializer.PlaySerializer")
-val PlaySerializerProvider = ClassName.bestGuess("play.rsocket.serializer.PlaySerializerProvider")
+val RSocketSerializerProvider = ClassName.bestGuess("play.rsocket.serializer.RSocketSerializerProvider")
 
 //val RpcServiceNotFound = MemberName("play.rpc.responder.LocalServiceInvoker", "NotFound")
 

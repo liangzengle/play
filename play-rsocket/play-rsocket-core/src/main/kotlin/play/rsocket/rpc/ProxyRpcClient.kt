@@ -10,7 +10,7 @@ import net.bytebuddy.implementation.MethodDelegation
 import net.bytebuddy.matcher.ElementMatchers
 import play.rsocket.metadata.RoutingMetadata
 import play.rsocket.serializer.ByteBufToIOStreamAdapter
-import play.rsocket.serializer.PlaySerializerProvider
+import play.rsocket.serializer.RSocketSerializerProvider
 import java.util.function.Function
 
 /**
@@ -20,7 +20,7 @@ import java.util.function.Function
 class ProxyRpcClient(
   private val requester: AbstractRSocketRequester,
   private val ioStreamAdapter: ByteBufToIOStreamAdapter,
-  private val serializerProvider: PlaySerializerProvider,
+  private val serializerProvider: RSocketSerializerProvider,
 ) : NodeAwareRpcClient() {
 
   private val proxyFactoryCache = object : ClassValue<Function<RoutingMetadata, Any>>() {

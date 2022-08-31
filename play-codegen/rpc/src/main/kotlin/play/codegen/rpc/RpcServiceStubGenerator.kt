@@ -44,14 +44,14 @@ class RpcServiceStubGenerator(environment: SymbolProcessorEnvironment) :
       FunSpec.constructorBuilder()
         .addParameter("requester", RequesterSupport)
         .addParameter("ioStreamAdapter", ByteBufToIOStreamAdapter)
-        .addParameter("serializerProvider", PlaySerializerProvider)
+        .addParameter("serializerProvider", RSocketSerializerProvider)
         .build()
     ).addProperty(
       PropertySpec.builder("requester", RequesterSupport).initializer("requester").build()
     ).addProperty(
       PropertySpec.builder("ioStreamAdapter", ByteBufToIOStreamAdapter).initializer("ioStreamAdapter").build()
     ).addProperty(
-      PropertySpec.builder("serializerProvider", PlaySerializerProvider).initializer("serializerProvider").build()
+      PropertySpec.builder("serializerProvider", RSocketSerializerProvider).initializer("serializerProvider").build()
     )
 
     builder.addFunction(

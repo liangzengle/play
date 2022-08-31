@@ -1,5 +1,8 @@
 dependencies {
   api(project(":play-akka"))
+  api(Deps.Akka.Serialization.Jackson)
+  api(Deps.Akka.Serialization.Kryo)
+
   api(project(":play-res"))
   api(project(":play-net"))
   api(project(":play-httpclient-ktor"))

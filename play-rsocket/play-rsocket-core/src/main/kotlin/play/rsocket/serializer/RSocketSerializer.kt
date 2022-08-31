@@ -10,11 +10,11 @@ import kotlin.reflect.jvm.javaType
  *
  * @author LiangZengle
  */
-interface PlaySerializer {
+interface RSocketSerializer {
 
   companion object {
     @JvmStatic
-    fun write(serializer: PlaySerializer, out: OutputStream, type: Type, value: Any) {
+    fun write(serializer: RSocketSerializer, out: OutputStream, type: Type, value: Any) {
       when (value.javaClass.canonicalName) {
         "boolean", "java.lang.Boolean" -> serializer.writeBoolean(out, value as Boolean)
         "byte", "java.lang.Byte" -> serializer.writeByte(out, value as Byte)
@@ -35,7 +35,7 @@ interface PlaySerializer {
     }
 
     @JvmStatic
-    fun read(serializer: PlaySerializer, input: InputStream, type: Type): Any {
+    fun read(serializer: RSocketSerializer, input: InputStream, type: Type): Any {
       return if (type is Class<*>) {
         when (type.canonicalName) {
           "boolean", "java.lang.Boolean" -> serializer.readBoolean(input)
