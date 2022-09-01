@@ -2,7 +2,6 @@ package play.rsocket.client
 
 import io.rsocket.RSocket
 import io.rsocket.SocketAcceptor
-import io.rsocket.core.RSocketClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.ApplicationEventPublisher
@@ -11,7 +10,6 @@ import org.springframework.context.SmartLifecycle
 import play.rsocket.client.event.RSocketBrokerAddressUpdateEvent
 import play.rsocket.client.event.RSocketClientInitializedEvent
 import play.rsocket.transport.SmartTransportFactory
-import reactor.util.retry.Retry
 import java.time.Duration
 import java.util.concurrent.TimeoutException
 
@@ -22,9 +20,10 @@ import java.util.concurrent.TimeoutException
  */
 class BrokerRSocketManagerImpl(
   private val initialBrokerUris: Set<String>,
-  private val socketAcceptor: SocketAcceptor,
-  private val clientCustomizers: ObjectProvider<RSocketClientCustomizer>,
-  private val transportFactory: SmartTransportFactory,
+  private val connectTimeout: Duration?,
+  socketAcceptor: SocketAcceptor,
+  clientCustomizers: ObjectProvider<RSocketClientCustomizer>,
+  transportFactory: SmartTransportFactory,
   private val eventPublisher: ApplicationEventPublisher
 ) : BrokerRSocketManager, SmartLifecycle, ApplicationListener<RSocketBrokerAddressUpdateEvent> {
 
@@ -33,19 +32,10 @@ class BrokerRSocketManagerImpl(
     private val logger = LoggerFactory.getLogger(BrokerRSocketManagerImpl::class.java)
   }
 
-  private val rsocket = LoadbalancedBrokerRSocket(::newClient)
+  private val rsocket = LoadbalancedBrokerRSocket(socketAcceptor, transportFactory, clientCustomizers)
 
   override fun getRSocket(): RSocket {
     return rsocket
-  }
-
-  private fun newClient(uri: String): RSocketClient {
-    val builder = RSocketClientBuilder()
-      .acceptor(socketAcceptor)
-      .transport(transportFactory.buildClient(uri))
-      .connectRetry(Retry.backoff(10, Duration.ofSeconds(5)))
-    clientCustomizers.forEach { it.customize(builder) }
-    return builder.build()
   }
 
   override fun onApplicationEvent(event: RSocketBrokerAddressUpdateEvent) {
@@ -55,12 +45,12 @@ class BrokerRSocketManagerImpl(
   override fun start() {
     rsocket.init(initialBrokerUris)
     rsocket.onConnected().subscribe {
-      eventPublisher.publishEvent(RSocketClientInitializedEvent)
+      eventPublisher.publishEvent(RSocketClientInitializedEvent(it))
     }
-    if (initialBrokerUris.isNotEmpty()) {
-      rsocket.onConnected().timeout(Duration.ofSeconds(60))
+    if (initialBrokerUris.isNotEmpty() && connectTimeout != null) {
+      rsocket.onConnected().timeout(connectTimeout)
         .doOnError(TimeoutException::class.java) {
-          logger.error("Unable to connect broker in 60s")
+          logger.error("Unable to connect broker in {}s", connectTimeout.toSeconds())
         }
         .block()
     }

@@ -13,7 +13,6 @@ import io.rsocket.transport.ClientTransport
 import io.rsocket.util.ByteBufPayload
 import play.rsocket.metadata.MimeTypes
 import play.rsocket.metadata.RouteSetupMetadata
-import reactor.util.retry.Retry
 
 /**
  *
@@ -29,8 +28,8 @@ class RSocketClientBuilder {
   private var connector: RSocketConnector = RSocketConnector.create().payloadDecoder(PayloadDecoder.ZERO_COPY)
     .metadataMimeType(WellKnownMimeType.MESSAGE_RSOCKET_COMPOSITE_METADATA.toString())
   private var acceptor: SocketAcceptor? = null
+  private lateinit var uri: String
   private lateinit var transport: ClientTransport
-  private var connectRetry: Retry? = null
 
   fun id(id: Int): RSocketClientBuilder {
     this.id = id
@@ -72,13 +71,15 @@ class RSocketClientBuilder {
     return this
   }
 
-  fun transport(transport: ClientTransport): RSocketClientBuilder {
+  fun transport(address: String, transport: ClientTransport): RSocketClientBuilder {
+    this.uri = address
     this.transport = transport
     return this
   }
 
-  fun connectRetry(retry: Retry): RSocketClientBuilder {
-    this.connectRetry = retry
+  fun transport(uri: String, factory: (String) -> ClientTransport): RSocketClientBuilder {
+    this.uri = uri
+    this.transport = factory(uri)
     return this
   }
 
@@ -98,12 +99,6 @@ class RSocketClientBuilder {
 
     acceptor?.also(connector::acceptor)
 
-    val retry = connectRetry
-    val rsocketMono = if (retry != null) {
-      connector.connect(transport).retryWhen(retry)
-    } else {
-      connector.connect(transport)
-    }
-    return RSocketClient.from(rsocketMono)
+    return RSocketClient.from(connector.connect(transport))
   }
 }

@@ -12,7 +12,11 @@ import java.util.concurrent.ThreadLocalRandom
 class RandomLoadbalanceStrategy : LoadbalanceStrategy {
 
   override fun select(sockets: List<RSocket>): RSocket {
-    val index = ThreadLocalRandom.current().nextInt(sockets.size)
+    val size = sockets.size
+    if (size == 1) {
+      return sockets[0]
+    }
+    val index = ThreadLocalRandom.current().nextInt(size)
     return sockets[index]
   }
 }

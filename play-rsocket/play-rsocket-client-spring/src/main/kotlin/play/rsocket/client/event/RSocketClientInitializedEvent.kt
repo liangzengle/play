@@ -6,4 +6,4 @@ import org.springframework.context.ApplicationEvent
  *
  * @author LiangZengle
  */
-object RSocketClientInitializedEvent : ApplicationEvent(true)
+class RSocketClientInitializedEvent(uri: String) : ApplicationEvent(uri)

@@ -2,7 +2,6 @@ package play.rsocket.client
 
 import io.netty.buffer.ByteBuf
 import io.rsocket.SocketAcceptor
-import io.rsocket.core.Resume
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -21,8 +20,6 @@ import play.rsocket.transport.SmartTransportFactory
 import play.rsocket.transport.TcpTransportFactory
 import play.rsocket.transport.TransportFactory
 import reactor.core.publisher.Sinks
-import reactor.util.retry.Retry
-import java.time.Duration
 
 /**
  *
@@ -80,29 +77,12 @@ class RSocketClientAutoConfiguration {
   ): BrokerRSocketManager {
     return BrokerRSocketManagerImpl(
       properties.brokers.toSet(),
+      properties.connectTimeout,
       socketAcceptor,
       clientCustomizers,
       transportFactory,
       eventPublisher
     )
-  }
-
-  @Bean
-  fun rsocketResume(): RSocketClientCustomizer {
-    return RSocketClientCustomizer { builder ->
-      builder.customizeConnector { connector ->
-        connector.resume(Resume())
-      }
-    }
-  }
-
-  @Bean
-  fun reconnect(): RSocketClientCustomizer {
-    return RSocketClientCustomizer { builder ->
-      builder.customizeConnector { connector ->
-        connector.reconnect(Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(10)))
-      }
-    }
   }
 
   @Bean

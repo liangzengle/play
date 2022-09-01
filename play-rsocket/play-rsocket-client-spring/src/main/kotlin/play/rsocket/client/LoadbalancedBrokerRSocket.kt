@@ -2,18 +2,21 @@ package play.rsocket.client
 
 import io.rsocket.Payload
 import io.rsocket.RSocket
-import io.rsocket.core.RSocketClient
+import io.rsocket.SocketAcceptor
 import io.rsocket.exceptions.ConnectionErrorException
 import io.rsocket.exceptions.InvalidException
 import org.eclipse.collections.impl.list.mutable.FastList
 import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import play.rsocket.loadbalance.RandomLoadbalanceStrategy
+import play.rsocket.transport.SmartTransportFactory
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.publisher.Sinks
 import java.net.ConnectException
 import java.nio.channels.ClosedChannelException
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -21,7 +24,11 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * @author LiangZengle
  */
-class LoadbalancedBrokerRSocket(private val connector: (String) -> RSocketClient) : RSocket {
+class LoadbalancedBrokerRSocket(
+  private val socketAcceptor: SocketAcceptor,
+  private val transportFactory: SmartTransportFactory,
+  private val clientCustomizers: ObjectProvider<RSocketClientCustomizer>
+) : RSocket {
 
   companion object {
     @JvmStatic
@@ -38,8 +45,8 @@ class LoadbalancedBrokerRSocket(private val connector: (String) -> RSocketClient
     brokerUris.forEach(::connect)
   }
 
-  fun update(brokerUirs: Set<String>) {
-    brokerUirs.asSequence().filterNot { activeRSocketMap.containsKey(it) }.forEach(::connect)
+  fun update(brokerUris: Set<String>) {
+    brokerUris.asSequence().filterNot { activeRSocketMap.containsKey(it) }.forEach(::connect)
   }
 
   fun onConnected(): Mono<String> {
@@ -54,33 +61,59 @@ class LoadbalancedBrokerRSocket(private val connector: (String) -> RSocketClient
     return activeRSocketList.all { it.isDisposed }
   }
 
-  private fun connect(uri: String): Mono<RSocket> {
-    val source = connector(uri).source()
-    source.subscribe { socket ->
-      onRSocketConnected(uri, socket)
-    }
-    return source
+  private fun connect0(uri: String): Mono<RSocket> {
+    val builder = RSocketClientBuilder().acceptor(socketAcceptor).transport(uri, transportFactory::buildClient)
+    clientCustomizers.forEach { it.customize(builder) }
+    val client = builder.build()
+    return client.source()
+  }
+
+  private fun connect(uri: String) {
+    val resolvingRSocket = connect0(uri)
+    resolvingRSocket.subscribe(
+      { onRSocketConnected(uri, it) },
+      {
+        logger.error("Can not establish connection with {}", uri, it)
+        Mono.delay(Duration.ofSeconds(5)).subscribe { connect(uri) }
+      }
+    )
+  }
+
+  private fun reconnect(uri: String) {
+    Mono.delay(Duration.ofSeconds(5))
+      .flatMap { connect0(uri) }
+      .subscribe(
+        { onRSocketConnected(uri, it) },
+        {
+          logger.debug("Broker Reconnecting: {}", uri)
+          reconnect(uri)
+        }
+      )
   }
 
   private fun onRSocketConnected(uri: String, socket: RSocket) {
-    val prev = activeRSocketMap.putIfAbsent(uri, socket)
-    if (prev == null) {
-      activeRSocketList = FastList(activeRSocketMap.values)
-    } else {
-      socket.dispose()
-    }
-    logger.info("Connected to broker: {}", uri)
+    activeRSocketMap[uri] = socket
+    activeRSocketList = FastList(activeRSocketMap.values)
+    logger.info("Broker Connected: {}", uri)
     connected.tryEmitValue(uri)
+
+    socket.onClose().doFinally { onRSocketDisconnected(uri) }.subscribe()
+  }
+
+  private fun onRSocketDisconnected(uri: String) {
+    if (activeRSocketMap.remove(uri) != null) {
+      activeRSocketList = FastList(activeRSocketMap.values)
+      logger.info("Broker Disconnected: {}", uri)
+      reconnect(uri)
+    }
   }
 
   private fun onRSocketUnreachable(socket: RSocket) {
     val uri = activeRSocketMap.entries.find { it.value === socket }?.key ?: return
     if (activeRSocketMap.remove(uri, socket)) {
       activeRSocketList = FastList(activeRSocketMap.values)
-      if (!socket.isDisposed) {
-        socket.dispose()
-      }
-      logger.info("Disconnect broker: {}", uri)
+      logger.info("Broker Unreachable: {}", uri)
+      reconnect(uri)
     }
   }
 
