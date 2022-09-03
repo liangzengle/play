@@ -41,6 +41,9 @@ class LoadbalancedBrokerRSocket(
 
   private val connected = Sinks.one<String>()
 
+  @Volatile
+  private var disposed = false
+
   fun init(brokerUris: Set<String>) {
     brokerUris.forEach(::connect)
   }
@@ -54,7 +57,8 @@ class LoadbalancedBrokerRSocket(
   }
 
   override fun dispose() {
-    activeRSocketList.forEach { it.dispose() }
+    activeRSocketMap.values.forEach { it.dispose() }
+    disposed = true
   }
 
   override fun isDisposed(): Boolean {
@@ -69,6 +73,9 @@ class LoadbalancedBrokerRSocket(
   }
 
   private fun connect(uri: String) {
+    if (disposed) {
+      return
+    }
     val resolvingRSocket = connect0(uri)
     resolvingRSocket.subscribe(
       { onRSocketConnected(uri, it) },
@@ -80,19 +87,24 @@ class LoadbalancedBrokerRSocket(
   }
 
   private fun reconnect(uri: String) {
+    if (disposed) {
+      return
+    }
+    logger.debug("Broker Reconnecting: {}", uri)
     Mono.delay(Duration.ofSeconds(5))
       .flatMap { connect0(uri) }
       .subscribe(
         { onRSocketConnected(uri, it) },
-        {
-          logger.debug("Broker Reconnecting: {}", uri)
-          reconnect(uri)
-        }
+        { reconnect(uri) }
       )
   }
 
   private fun onRSocketConnected(uri: String, socket: RSocket) {
     activeRSocketMap[uri] = socket
+    if (disposed) {
+      socket.dispose()
+      return
+    }
     activeRSocketList = FastList(activeRSocketMap.values)
     logger.info("Broker Connected: {}", uri)
     connected.tryEmitValue(uri)
