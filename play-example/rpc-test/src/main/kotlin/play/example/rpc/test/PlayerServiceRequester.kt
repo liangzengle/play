@@ -37,6 +37,9 @@ class PlayerServiceRequester(private val rpcClient: RpcClient) : ApplicationList
   fun fireAndForget() {
     val rpcService = rpcClient.getRpcService(RpcPlayerService::class.java, 1)
     rpcService.fireAndForget(8936832658046976, "name")
+
+    val rpcService2 = rpcClient.getRpcService(RpcPlayerService::class.java, 100)
+    rpcService2.fireAndForget(8936832658046976, "name")
   }
 
   fun requestResponse() {

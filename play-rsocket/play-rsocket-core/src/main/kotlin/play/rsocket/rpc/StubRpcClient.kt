@@ -15,8 +15,8 @@ import java.lang.invoke.MethodType
 class StubRpcClient(
   private val requester: AbstractRSocketRequester,
   private val ioStreamAdapter: ByteBufToIOStreamAdapter,
-  private val serializerProvider: RSocketSerializerProvider,
-) : NodeAwareRpcClient() {
+  private val serializerProvider: RSocketSerializerProvider
+) : RpcClient {
 
   private val serviceStubFactories = object : ClassValue<() -> RpcServiceStub>() {
     override fun computeValue(type: Class<*>): () -> RpcServiceStub {
@@ -41,7 +41,7 @@ class StubRpcClient(
     }
   }
 
-  override fun <T : Any> getRpcService0(serviceInterface: Class<T>, routing: RoutingMetadata): T {
+  override fun <T : Any> getRpcService(serviceInterface: Class<T>, routing: RoutingMetadata): T {
     val service = serviceStubFactories.get(serviceInterface).invoke()
     service.routingMetadata(routing)
     return service as T

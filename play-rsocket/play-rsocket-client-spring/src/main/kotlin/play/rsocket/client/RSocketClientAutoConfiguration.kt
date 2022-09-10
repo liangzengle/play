@@ -20,6 +20,7 @@ import play.rsocket.transport.SmartTransportFactory
 import play.rsocket.transport.TcpTransportFactory
 import play.rsocket.transport.TransportFactory
 import reactor.core.publisher.Sinks
+import kotlin.streams.asSequence
 
 /**
  *
@@ -96,8 +97,10 @@ class RSocketClientAutoConfiguration {
   fun rpcClient(
     requester: AbstractRSocketRequester,
     ioStreamAdapter: ByteBufToIOStreamAdapter,
-    serializerProvider: RSocketSerializerProvider
+    serializerProvider: RSocketSerializerProvider,
+    interceptors: ObjectProvider<RpcClientInterceptor>
   ): RpcClient {
-    return ProxyRpcClient(requester, ioStreamAdapter, serializerProvider)
+    val client: RpcClient = ProxyRpcClient(requester, ioStreamAdapter, serializerProvider)
+    return interceptors.orderedStream().asSequence().fold(client) { c, interceptor -> interceptor.apply(c) }
   }
 }

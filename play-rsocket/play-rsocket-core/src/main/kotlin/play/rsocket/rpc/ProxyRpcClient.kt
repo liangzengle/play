@@ -20,8 +20,8 @@ import java.util.function.Function
 class ProxyRpcClient(
   private val requester: AbstractRSocketRequester,
   private val ioStreamAdapter: ByteBufToIOStreamAdapter,
-  private val serializerProvider: RSocketSerializerProvider,
-) : NodeAwareRpcClient() {
+  private val serializerProvider: RSocketSerializerProvider
+) : RpcClient {
 
   private val proxyFactoryCache = object : ClassValue<Function<RoutingMetadata, Any>>() {
     override fun computeValue(type: Class<*>): Function<RoutingMetadata, Any> {
@@ -70,7 +70,7 @@ class ProxyRpcClient(
   }
 
   @Suppress("UNCHECKED_CAST")
-  override fun <T : Any> getRpcService0(serviceInterface: Class<T>, routing: RoutingMetadata): T {
+  override fun <T : Any> getRpcService(serviceInterface: Class<T>, routing: RoutingMetadata): T {
     return proxyFactoryCache.get(serviceInterface).apply(routing) as T
   }
 }
