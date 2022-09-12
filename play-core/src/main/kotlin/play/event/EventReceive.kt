@@ -17,8 +17,8 @@ class EventReceiveBuilder {
     return this
   }
 
-  inline fun <reified T : Any> match(noinline f: () -> Unit): EventReceiveBuilder {
-    match(T::class.java) { _: T -> f() }
+  inline fun <reified T : Any> match(f: Runnable): EventReceiveBuilder {
+    match(T::class.java) { _: T -> f.run() }
     return this
   }
 
