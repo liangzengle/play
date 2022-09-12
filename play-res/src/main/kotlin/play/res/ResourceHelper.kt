@@ -13,6 +13,10 @@ internal object ResourceHelper {
     Comparator.comparing<AbstractResource, Comparable<Comparable<*>>> {
       it.unsafeCast<UniqueKey<*>>().key().unsafeCast()
     }
+  private val natureComparator =
+    Comparator.comparing<AbstractResource, Comparable<Comparable<*>>> {
+      it.unsafeCast()
+    }
 
   fun isSingletonResource(clazz: Class<*>): Boolean {
     return clazz.isAnnotationPresent(SingletonResource::class.java) || isConfig(clazz)
@@ -66,7 +70,14 @@ internal object ResourceHelper {
         return EmptyResourceSet.of()
       }
 
-      val comparator = if (hasUniqueKey) keyComparator else idComparator
+      val isComparable = isAssignableFrom<Comparable<*>>(resourceClass)
+      if (hasUniqueKey && isComparable) {
+        throw InvalidResourceException("Can not be both Comparable and UniqueKey: ${resourceClass.name}")
+      }
+
+      val comparator = if (hasUniqueKey) keyComparator
+      else if (isAssignableFrom<Comparable<*>>(resourceClass)) natureComparator
+      else idComparator
       val array = elems.toTypedArray()
       Arrays.sort(array, comparator)
       return ResourceSetImpl<Comparable<*>, AbstractResource, Any, ResourceExtension<AbstractResource>>(
