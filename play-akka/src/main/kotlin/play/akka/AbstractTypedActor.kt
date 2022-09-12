@@ -12,9 +12,12 @@ import org.slf4j.Logger
 import play.scala.toJava
 import play.scala.toResult
 import play.util.concurrent.PlayFuture
+import play.util.time.Time
 import scala.PartialFunction
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import java.time.Duration
+import java.time.LocalDateTime
 
 abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavior<T>(context) {
   protected inline val self: ActorRef<T> get() = context.self
@@ -22,21 +25,29 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
   protected inline val ec: ExecutionContext get() = context.executionContext
 
   protected inline fun <reified T1 : T> subscribe() {
-    context.system.eventStream().tell(EventStream.Subscribe(T1::class.java, self.unsafeUpcast()))
+    context.system.eventStream().tell(EventStream.Subscribe(T1::class.java, self.narrow<T1>()))
   }
 
   protected inline fun newBehaviorBuilder(): BehaviorBuilder<T> = BehaviorBuilder.create()
 
   @JvmName("accept")
-  protected inline fun <reified T1 : T, T> ReceiveBuilder<T>.accept(noinline f: (T1) -> Unit): ReceiveBuilder<T> {
+  protected inline fun <reified T1 : T> ReceiveBuilder<T>.accept(noinline f: (T1) -> Unit): ReceiveBuilder<T> {
     return onMessage(T1::class.java) {
       f(it)
       Behaviors.same()
     }
   }
 
+  @JvmName("accept")
+  protected inline fun <reified T1 : T> ReceiveBuilder<T>.accept(f: Runnable): ReceiveBuilder<T> {
+    return onMessage(T1::class.java) {
+      f.run()
+      Behaviors.same()
+    }
+  }
+
   @JvmName("apply")
-  protected inline fun <reified T1 : T, T> ReceiveBuilder<T>.accept(noinline f: (T1) -> Behavior<T>): ReceiveBuilder<T> {
+  protected inline fun <reified T1 : T> ReceiveBuilder<T>.accept(noinline f: (T1) -> Behavior<T>): ReceiveBuilder<T> {
     return onMessage(T1::class.java, f)
   }
 
@@ -101,6 +112,22 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
     context.pipeToSelf(this.toJava()) { v, e ->
       resultMapper(if (e != null) Result.failure(e) else Result.success(v))
     }
+  }
+
+  protected inline fun TimerScheduler<T>.scheduleAt(triggerTime: LocalDateTime, message: T) {
+    startSingleTimer(message, Duration.between(Time.currentDateTime(), triggerTime))
+  }
+
+  protected inline fun TimerScheduler<T>.scheduleAt(triggerTimeMillis: Long, message: T) {
+    startSingleTimer(message, Duration.ofMillis(triggerTimeMillis - Time.currentMillis()))
+  }
+
+  protected inline fun TimerScheduler<T>.scheduleWithFixedDelay(delay: Duration, message: T) {
+    startTimerWithFixedDelay(message, delay)
+  }
+
+  protected inline fun TimerScheduler<T>.scheduleWithFixedDelay(initialDelay: Duration, delay: Duration, message: T) {
+    startTimerWithFixedDelay(message, initialDelay, delay)
   }
 }
 
