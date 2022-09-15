@@ -15,6 +15,7 @@ import play.util.concurrent.PlayFuture
 import play.util.time.Time
 import scala.PartialFunction
 import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import java.time.Duration
 import java.time.LocalDateTime
@@ -22,7 +23,7 @@ import java.time.LocalDateTime
 abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavior<T>(context) {
   protected inline val self: ActorRef<T> get() = context.self
   protected inline val log: Logger get() = context.log
-  protected inline val ec: ExecutionContext get() = context.executionContext
+  protected inline val ec: ExecutionContextExecutor get() = context.executionContext
 
   protected inline fun <reified T1 : T> subscribe() {
     context.system.eventStream().tell(EventStream.Subscribe(T1::class.java, self.narrow<T1>()))

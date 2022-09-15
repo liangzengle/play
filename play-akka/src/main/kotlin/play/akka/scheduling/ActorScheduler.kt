@@ -8,16 +8,26 @@ import mu.KLogging
 import play.akka.AbstractTypedActor
 import play.scheduling.*
 import play.util.unsafeCast
+import java.time.Duration
+import java.time.LocalDateTime
 
 class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Scheduler) :
   AbstractTypedActor<ActorScheduler.Command>(ctx) {
-  companion object : KLogging()
+  companion object : KLogging() {
+    @JvmStatic
+    private fun triggerAction(triggerEvent: Any, receiver: ActorRef<Any>, me: ActorRef<Command>): () -> Unit = {
+      receiver.tell(triggerEvent)
+      me.tell(LogScheduleTriggered(triggerEvent, receiver))
+    }
+  }
 
   private val scheduleMap = hashMapOf<ActorRef<*>, MutableMap<Any, Cancellable>>()
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
       .accept(::schedule)
+      .accept(::scheduleAt)
+      .accept(::scheduleWithTimeout)
       .accept(::scheduleCron)
       .accept(::cancel)
       .accept(::cancelAll)
@@ -31,7 +41,13 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
   }
 
   private fun scheduleCron(cmd: ScheduleCron<Any>) {
-    val trigger = CronTrigger(CronExpression.parse(cmd.cron))
+    val cron = cmd.cron
+    val trigger = try {
+      CronTrigger(CronExpression.parse(cron))
+    } catch (e: Exception) {
+      logger.error(e) {"failed to parse cron: $cron"}
+      return
+    }
     schedule(trigger, cmd.triggerEvent, cmd.commander.unsafeCast())
   }
 
@@ -39,14 +55,31 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
     schedule(cmd.trigger, cmd.triggerEvent, cmd.commander.unsafeCast())
   }
 
+  private fun scheduleAt(cmd: ScheduleAt<Any>) {
+    scheduleAt(cmd.triggerTime, cmd.triggerEvent, cmd.commander.unsafeCast())
+  }
+
+  private fun scheduleWithTimeout(cmd: ScheduleWithTimeout<Any>) {
+    scheduleWithTimeout(cmd.timeout, cmd.triggerEvent, cmd.commander.unsafeCast())
+  }
+
   private fun schedule(trigger: Trigger, triggerEvent: Any, receiver: ActorRef<Any>) {
-    val cancellable = scheduler.schedule(trigger, context.executionContext) {
-      receiver.tell(triggerEvent)
-      self.tell(LogScheduleTriggered(triggerEvent, receiver))
-    }
+    val cancellable = scheduler.schedule(trigger, ec, triggerAction(triggerEvent, receiver, self))
+    schedule(cancellable, triggerEvent, receiver)
+  }
 
+  private fun scheduleAt(triggerTime: LocalDateTime, triggerEvent: Any, receiver: ActorRef<Any>) {
+    val cancellable = scheduler.scheduleAt(triggerTime, ec, triggerAction(triggerEvent, receiver, self))
+    schedule(cancellable, triggerEvent, receiver)
+  }
+
+  private fun scheduleWithTimeout(timeout: Duration, triggerEvent: Any, receiver: ActorRef<Any>) {
+    val cancellable = scheduler.schedule(timeout, ec, triggerAction(triggerEvent, receiver, self))
+    schedule(cancellable, triggerEvent, receiver)
+  }
+
+  private fun schedule(cancellable: Cancellable, triggerEvent: Any, receiver: ActorRef<Any>) {
     logger.info("schedule added: {} {}", receiver, triggerEvent)
-
     var map = scheduleMap[receiver]
     if (map == null) {
       map = HashMap(4)
@@ -68,22 +101,27 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
   private fun cancelAll(cmd: CancelAll<Any>) {
     val commander = cmd.commander
     val cancelEventType = cmd.triggerEventType
+    // 移除所有定时任务
     if (cancelEventType == null) {
       scheduleMap.remove(commander)?.values?.forEach { it.cancel() }
       context.unwatch(commander)
       logger.info("schedule cancel all: {}", commander)
-    } else {
-      val it = scheduleMap[commander]?.entries?.iterator()
-      if (it != null) {
-        while (it.hasNext()) {
-          val (event, cancellable) = it.next()
-          if (cancelEventType.isAssignableFrom(event.javaClass)) {
-            it.remove()
-            cancellable.cancel()
-            logger.info("schedule cancel by type: {} {}", commander, event)
-          }
-        }
+      return
+    }
+    // 移除特定类型的定时任务
+    val schedules = scheduleMap[commander] ?: return
+    val it = schedules.entries.iterator()
+    while (it.hasNext()) {
+      val (event, cancellable) = it.next()
+      if (cancelEventType.isAssignableFrom(event.javaClass)) {
+        it.remove()
+        cancellable.cancel()
+        logger.info("schedule cancel by type: {} {}", commander, event)
       }
+    }
+    if (schedules.isEmpty()) {
+      scheduleMap.remove(commander)
+      context.unwatch(commander)
     }
   }
 
@@ -109,6 +147,26 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
   /**
    * 添加定时任务
    *
+   * @property triggerTime 触发时间
+   * @property triggerEvent 触发事件
+   * @property commander 事件接收者
+   */
+  data class ScheduleAt<T>(val triggerTime: LocalDateTime, val triggerEvent: T, val commander: ActorRef<out T>) :
+    Command
+
+  /**
+   * 添加定时任务
+   *
+   * @property timeout 触发延迟
+   * @property triggerEvent 触发事件
+   * @property commander 事件接收者
+   */
+  data class ScheduleWithTimeout<T>(val timeout: Duration, val triggerEvent: T, val commander: ActorRef<out T>) :
+    Command
+
+  /**
+   * 添加定时任务
+   *
    * @param cron cron表达式
    * @param triggerEvent 触发事件
    * @param commander 事件接收者
@@ -124,12 +182,13 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
   data class Cancel<T>(val triggerEvent: T, val commander: ActorRef<out T>) : Command
 
   /**
-   * 取消定时任务
+   * 取消一类定时任务
    *
    * @param commander 事件接收者
    * @param triggerEventType 事件类型
    */
-  data class CancelAll<T>(val commander: ActorRef<out T>, val triggerEventType: Class<out T>?) : Command {
-    constructor(commander: ActorRef<out T>) : this(commander, null)
-  }
+  data class CancelAll<T> @JvmOverloads constructor(
+    val commander: ActorRef<out T>,
+    val triggerEventType: Class<out T>? = null
+  ) : Command
 }
