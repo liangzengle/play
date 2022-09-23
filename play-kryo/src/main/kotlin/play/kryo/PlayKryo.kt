@@ -125,4 +125,9 @@ class PlayKryo(classResolver: ClassResolver, referenceResolver: ReferenceResolve
     }
     return registration
   }
+
+  override fun register(type: Class<*>): Registration {
+    val classId = type.getAnnotation(ClassId::class.java)
+    return if (classId == null) super.register(type) else register(type, classId.value)
+  }
 }
