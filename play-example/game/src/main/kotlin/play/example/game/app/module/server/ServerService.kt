@@ -4,7 +4,6 @@ import org.eclipse.collections.api.set.primitive.ImmutableIntSet
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.eclipse.collections.api.set.primitive.MutableIntSet
 import org.eclipse.collections.impl.factory.primitive.IntSets
-import org.springframework.beans.factory.BeanFactory
 import org.springframework.stereotype.Component
 import play.db.QueryService
 import play.entity.cache.EntityCacheWriter
@@ -54,7 +53,7 @@ class ServerService(
     this.serverIds = serverIds.toImmutable()
   }
 
-  override fun afterSingletonsInstantiated(beanFactory: BeanFactory) {
+  override fun afterSingletonsInstantiated() {
     serverEntityCache.getOrCreate(serverId, ::ServerEntity)
   }
 

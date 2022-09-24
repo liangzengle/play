@@ -1,6 +1,5 @@
 package play.example.game.app.module.guild
 
-import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.example.common.id.UIDGenerator
@@ -17,7 +16,7 @@ class GuildCache @Autowired constructor(
 
   private lateinit var playerIdToGuildId: ConcurrentLongLongMap
 
-  override fun afterSingletonsInstantiated(beanFactory: BeanFactory) {
+  override fun afterSingletonsInstantiated() {
     playerIdToGuildId = guildEntityCache.getAll().fold(ConcurrentLongLongMap()) { r, entity ->
       for (member in entity.members) {
         r.put(member, entity.id)

@@ -3,7 +3,6 @@ package play.example.game.app.module.player.event
 import com.google.common.collect.ImmutableListMultimap
 import com.google.common.collect.ListMultimap
 import com.google.common.reflect.TypeToken
-import org.springframework.beans.factory.BeanFactory
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.PlayerManager.Self
 import play.inject.PlayInjector
@@ -46,7 +45,7 @@ class PlayerEventDispatcher(private val injector: PlayInjector) :
     return eventTypes.asSequence().flatMap { eventListeners.get(it) }.iterator()
   }
 
-  override fun afterSingletonsInstantiated(beanFactory: BeanFactory) {
+  override fun afterSingletonsInstantiated() {
     refresh(injector.getInstancesOfType(PlayerEventListener::class))
   }
 

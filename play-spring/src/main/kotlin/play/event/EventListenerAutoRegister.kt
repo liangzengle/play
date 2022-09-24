@@ -1,6 +1,6 @@
 package play.event
 
-import org.springframework.beans.factory.BeanFactory
+import org.springframework.context.ApplicationContext
 import play.spring.OrderedSmartInitializingSingleton
 
 /**
@@ -8,8 +8,9 @@ import play.spring.OrderedSmartInitializingSingleton
  *
  * @author LiangZengle
  */
-class EventListenerAutoRegister(private val eventBus: EventBus) : OrderedSmartInitializingSingleton {
-  override fun afterSingletonsInstantiated(beanFactory: BeanFactory) {
-    beanFactory.getBeanProvider(EventListener::class.java).forEach(eventBus::register)
+class EventListenerAutoRegister(private val eventBus: EventBus, private val applicationContext: ApplicationContext) :
+  OrderedSmartInitializingSingleton {
+  override fun afterSingletonsInstantiated() {
+    applicationContext.getBeanProvider(EventListener::class.java).forEach(eventBus::register)
   }
 }

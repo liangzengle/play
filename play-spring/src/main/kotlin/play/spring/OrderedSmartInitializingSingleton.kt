@@ -1,7 +1,5 @@
 package play.spring
 
-import org.springframework.beans.factory.BeanFactory
-
 /**
  * @see org.springframework.core.Ordered
  * @see org.springframework.core.annotation.Order
@@ -11,5 +9,5 @@ import org.springframework.beans.factory.BeanFactory
  */
 interface OrderedSmartInitializingSingleton {
 
-  fun afterSingletonsInstantiated(beanFactory: BeanFactory)
+  fun afterSingletonsInstantiated()
 }

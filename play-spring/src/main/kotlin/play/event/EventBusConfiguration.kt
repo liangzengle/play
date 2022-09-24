@@ -1,5 +1,6 @@
 package play.event
 
+import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -12,7 +13,7 @@ class EventBusConfiguration {
   }
 
   @Bean
-  fun eventListenerAutoRegister(eventBus: EventBus): EventListenerAutoRegister {
-    return EventListenerAutoRegister(eventBus)
+  fun eventListenerAutoRegister(eventBus: EventBus, applicationContext: ApplicationContext): EventListenerAutoRegister {
+    return EventListenerAutoRegister(eventBus, applicationContext)
   }
 }

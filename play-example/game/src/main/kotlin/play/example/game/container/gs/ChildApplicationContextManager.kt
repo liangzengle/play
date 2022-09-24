@@ -46,7 +46,7 @@ class ChildApplicationContextManager : ApplicationListener<ApplicationContextEve
 
   @Synchronized
   private fun removeContext(context: ApplicationContext) {
-    contextMap = contextMap.reject { _, ctx -> ctx.context === context }
+    contextMap = contextMap.reject { _, ctx -> ctx.spring === context }
   }
 
   override fun setApplicationContext(applicationContext: ApplicationContext) {
@@ -62,7 +62,7 @@ class ChildApplicationContextManager : ApplicationListener<ApplicationContextEve
       override fun <T : Any> getRpcService(serviceInterface: Class<T>, routing: RoutingMetadata): T {
         if (routing.routingType == RoutingType.UnicastToNode) {
           val nodeId = routing.nodeId
-          val bean = getContext(nodeId)?.getSingleton(serviceInterface)
+          val bean = getContext(nodeId)?.getBeanOrNull(serviceInterface)
           if (bean != null) {
             return bean
           }

@@ -1,6 +1,5 @@
 package play.example.game.app.module.mail
 
-import org.springframework.beans.factory.BeanFactory
 import org.springframework.stereotype.Component
 import play.Log
 import play.example.common.id.UIDGenerator
@@ -28,7 +27,7 @@ class MailService(
 ) : PlayerEventListener, OrderedSmartInitializingSingleton {
   private val mailCountMax = 100
 
-  override fun afterSingletonsInstantiated(beanFactory: BeanFactory) {
+  override fun afterSingletonsInstantiated() {
     deleteExpiredPublicMails()
   }
 
