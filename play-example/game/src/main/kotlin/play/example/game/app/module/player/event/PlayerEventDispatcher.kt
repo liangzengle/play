@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component
 import play.example.game.app.module.player.PlayerManager.Self
 import play.inject.PlayInjector
 import play.spring.OrderedSmartInitializingSingleton
+import play.util.LambdaClassValue
 import play.util.collection.toImmutableList
 import play.util.exception.NoStackTraceException
 import play.util.exception.isFatal
@@ -20,14 +21,12 @@ class PlayerEventDispatcher(private val injector: PlayInjector) :
 
   private lateinit var eventListeners: ListMultimap<Class<*>, (Self, PlayerEvent) -> Unit>
 
-  private val flattenHierarchyCache = object : ClassValue<Any>() {
-    override fun computeValue(type: Class<*>): Any {
-      val types = TypeToken.of(type).types.rawTypes().asSequence()
-        .filter { it !== Any::class.java && !isEventRoot(it) }
-        .toImmutableList()
-      assert(types.isNotEmpty())
-      return if (types.size == 1) types[0] else types
-    }
+  private val flattenHierarchyCache = LambdaClassValue { type ->
+    val types = TypeToken.of(type).types.rawTypes().asSequence()
+      .filter { it !== Any::class.java && !isEventRoot(it) }
+      .toImmutableList()
+    assert(types.isNotEmpty())
+    if (types.size == 1) types[0] else types
   }
 
   private fun isEventRoot(eventType: Class<*>): Boolean {

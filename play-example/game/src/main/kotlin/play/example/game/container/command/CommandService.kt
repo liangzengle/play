@@ -2,6 +2,7 @@ package play.example.game.container.command
 
 import mu.KLogging
 import play.inject.PlayInjector
+import play.util.LambdaClassValue
 import play.util.control.Result2
 
 class CommandService(private val beanProvider: (Class<*>) -> Any, private val commandManager: CommandManager) {
@@ -12,11 +13,7 @@ class CommandService(private val beanProvider: (Class<*>) -> Any, private val co
 
   companion object : KLogging()
 
-  private val beanCache = object : ClassValue<Any>() {
-    override fun computeValue(type: Class<*>): Any {
-      return beanProvider(type)
-    }
-  }
+  private val beanCache = LambdaClassValue(beanProvider::invoke)
 
   fun invoke(commander: Any, module: String, cmd: String, args: List<String>): CommandResult {
     val invoker = commandManager.getInvoker(module, cmd) ?: return CommandResult.err("GM指令不存在: $module $cmd")

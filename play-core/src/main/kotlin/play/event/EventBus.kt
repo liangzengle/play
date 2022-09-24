@@ -3,6 +3,7 @@ package play.event
 import com.google.common.collect.Maps
 import com.google.common.reflect.TypeToken
 import mu.KLogging
+import play.util.LambdaClassValue
 import play.util.collection.toImmutableList
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
@@ -13,12 +14,10 @@ class EventBus {
 
   private val eventListeners = Maps.newConcurrentMap<Class<*>, CopyOnWriteArrayList<(Any) -> Unit>>()
 
-  private val flattenHierarchyCache = object : ClassValue<Any>() {
-    override fun computeValue(type: Class<*>): Any {
-      val types = TypeToken.of(type).types.rawTypes().asSequence().filter { it !== Any::class.java }.toImmutableList()
-      assert(types.isNotEmpty())
-      return if (types.size == 1) types[0] else types
-    }
+  private val flattenHierarchyCache = LambdaClassValue { type ->
+    val types = TypeToken.of(type).types.rawTypes().asSequence().filter { it !== Any::class.java }.toImmutableList()
+    assert(types.isNotEmpty())
+    if (types.size == 1) types[0] else types
   }
 
   private fun getEventListeners(eventType: Class<*>): Iterator<(Any) -> Unit> {

@@ -1,5 +1,7 @@
 package play.codec
 
+import play.util.LambdaClassValue
+
 /**
  *
  *
@@ -7,11 +9,7 @@ package play.codec
  */
 abstract class CachedCodecFactory : CodecFactory {
 
-  private val codecCache = object : ClassValue<Codec<*>>() {
-    override fun computeValue(type: Class<*>): Codec<*> {
-      return newCodec0(type)
-    }
-  }
+  private val codecCache = LambdaClassValue { newCodec0(it) }
 
   @Suppress("UNCHECKED_CAST")
   final override fun <T : Any> newCodec(type: Class<T>): Codec<T> {
