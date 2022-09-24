@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap
  * Any id, Any index
  */
 class DefaultIndexedEntityCache<IDX, ID : Any, E : Entity<ID>>(
-  private val indexName: String,
   private val indexMapper: (E) -> IDX,
   private val entityCache: EntityCache<ID, E>,
   private val entityCacheLoader: EntityCacheLoader,
@@ -26,7 +25,7 @@ class DefaultIndexedEntityCache<IDX, ID : Any, E : Entity<ID>>(
 
   init {
     require(entityCache is EntityCacheInternalApi<*>) { "${entityCache.javaClass} must implement EntityCacheInternalApi" }
-    if (EntityCacheHelper.isNeverExpire(entityClass)) {
+    if (!EntityCacheHelper.isNeverExpire(entityClass)) {
       val interval = Duration.ZERO max (keepAlive.dividedBy(2) min keepAlive)
       require(interval > Duration.ZERO) { "interval must be positive" }
       scheduler.scheduleWithFixedDelay(interval, ::evict)
@@ -81,7 +80,7 @@ class DefaultIndexedEntityCache<IDX, ID : Any, E : Entity<ID>>(
       return set
     }
     return cache.computeIfAbsent(index) { k ->
-      val idSet = entityCacheLoader.loadIdsByIndex(entityClass, indexName, k)
+      val idSet = entityCacheLoader.loadIdsByCacheIndex(entityClass, k)
         .collect({ ConcurrentHashSet<ID>() }, { set, id -> set.add(id) })
         .block(Duration.ofSeconds(5))!!
       getAllCached()

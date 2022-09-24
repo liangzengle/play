@@ -1,12 +1,13 @@
 package play.example.game.app.module.hero.entity
 
 import play.entity.cache.CacheIndex
-import play.entity.cache.InitialCacheSize
-import play.example.game.app.module.player.entity.AbstractPlayerEntity
+import play.example.game.app.module.player.entity.AbstractIndexedPlayerEntity
+import play.example.game.app.module.player.entity.PlayerObjId
+
+data class PlayerHeroId(@CacheIndex override val playerId: Long, val heroId: Int) : PlayerObjId()
 
 /**
  *
  * @author LiangZengle
  */
-@InitialCacheSize("x100")
-class PlayerHeroEntity(id: Long, val heroId: Int, @CacheIndex override val playerId: Long) : AbstractPlayerEntity(id)
+class PlayerHeroEntity(id: PlayerHeroId) : AbstractIndexedPlayerEntity<PlayerHeroId>(id)

@@ -50,8 +50,10 @@ val MessageCodec = ClassName.bestGuess("play.mvc.MessageCodec")
 val DisableCodegen = ClassName.bestGuess("play.codegen.DisableCodegen")
 
 val Entity = ClassName.bestGuess("play.entity.Entity")
+val ObjId = ClassName.bestGuess("play.entity.ObjId")
 val EntityInt = ClassName.bestGuess("play.entity.IntIdEntity")
 val EntityLong = ClassName.bestGuess("play.entity.LongIdEntity")
+val EntityString = ClassName.bestGuess("play.entity.StringIdEntity")
 val CacheSpec = ClassName.bestGuess("play.entity.cache.CacheSpec")
 val NeverExpireEvaluator = ClassName.bestGuess("play.entity.cache.NeverExpireEvaluator")
 val EntityCacheManager = ClassName.bestGuess("play.entity.cache.EntityCacheManager")
@@ -65,6 +67,7 @@ val IndexedEntityCache = ClassName.bestGuess("play.entity.cache.IndexedEntityCac
 val DefaultIndexedEntityCache = ClassName.bestGuess("play.entity.cache.DefaultIndexedEntityCache")
 val LongLongIndexedEntityCache = ClassName.bestGuess("play.entity.cache.LongLongIndexedEntityCache")
 val LongIntIndexedEntityCache = ClassName.bestGuess("play.entity.cache.LongIntIndexedEntityCache")
+val ObjectLongIndexedEntityCache = ClassName.bestGuess("play.entity.cache.ObjectLongIndexedEntityCache")
 val EntityCacheLoader = ClassName.bestGuess("play.entity.cache.EntityCacheLoader")
 
 val AbstractResource = ClassName.bestGuess("play.res.AbstractResource")

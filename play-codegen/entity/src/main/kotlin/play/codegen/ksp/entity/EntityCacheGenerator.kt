@@ -43,6 +43,9 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     if (resolver.isAssignable(resolver.getClassDeclaration(EntityInt.canonicalName), entityClassDeclaration)) {
       return resolver.builtIns.intType.declaration as KSClassDeclaration
     }
+    if (resolver.isAssignable(resolver.getClassDeclaration(EntityString.canonicalName), entityClassDeclaration)) {
+      return resolver.builtIns.stringType.declaration as KSClassDeclaration
+    }
     return entityClassDeclaration.getAllProperties()
       .first { it.simpleName.getShortName() == "id" }.type.classDeclaration()
   }
@@ -89,10 +92,9 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
           .addParameter("scheduler", Scheduler)
           .callThisConstructor(
             CodeBlock.of(
-              "%T(%S, { it.%L }, entityCacheManager.%L(%T::class.java), entityCacheLoader, scheduler, %T.ofMinutes(30))",
+              "%T({ it.%L }, entityCacheManager.%L(%T::class.java), entityCacheLoader, scheduler, %T.ofMinutes(30))",
               cacheIndexSpec.cacheImplClassName,
-              cacheIndexSpec.indexName,
-              cacheIndexSpec.indexName,
+              cacheIndexSpec.indexFieldAccessor,
               cacheIndexSpec.getterFunctionName,
               entityClass,
               JavaDuration
@@ -170,10 +172,27 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     entityClassDeclaration: KSClassDeclaration
   ): CacheIndexSpec? {
     val idType = idClassDeclaration.toClassName()
-    return entityClassDeclaration.getAllProperties().firstOrNull {
+
+    val cacheIndexSpec = getCacheIndexSpec0(idType, entityClassDeclaration)
+    if (cacheIndexSpec != null) {
+      return cacheIndexSpec
+    }
+    val isObjId = idType != INT && idType != LONG && idType != STRING
+      && resolver.isAssignable(ObjId.canonicalName, idClassDeclaration)
+    if (isObjId) {
+      return getCacheIndexSpec0(idType, idClassDeclaration, listOf("id"))
+    }
+    return null
+  }
+
+  private fun getCacheIndexSpec0(
+    idType: ClassName,
+    classDeclaration: KSClassDeclaration,
+    parents: List<String> = emptyList()
+  ): CacheIndexSpec? {
+    return classDeclaration.getAllProperties().firstOrNull {
       it.isAnnotationPresent(CacheIndex)
     }?.let {
-      val indexName = it.simpleName.asString()
       val indexFieldType = it.type.resolve().toClassName()
       val cacheClassName: ClassName
       val getterFunctionName: String
@@ -183,11 +202,19 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
       } else if (idType == LONG && indexFieldType == INT) {
         cacheClassName = LongIntIndexedEntityCache
         getterFunctionName = "getEntityCacheInt"
+      } else if (indexFieldType == LONG) {
+        cacheClassName = ObjectLongIndexedEntityCache
+        getterFunctionName = "get"
       } else {
         cacheClassName = DefaultIndexedEntityCache
         getterFunctionName = "get"
       }
-      CacheIndexSpec(indexName, indexFieldType, cacheClassName, getterFunctionName)
+      val indexFieldAccessor = if (parents.isEmpty()) {
+        it.simpleName.asString()
+      } else {
+        parents.joinToString(".", "", ".") + it.simpleName.asString()
+      }
+      CacheIndexSpec(indexFieldAccessor, indexFieldType, cacheClassName, getterFunctionName)
     }
   }
 
@@ -202,7 +229,7 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
   }
 
   private class CacheIndexSpec(
-    val indexName: String,
+    val indexFieldAccessor: String,
     val indexFieldType: ClassName,
     val cacheImplClassName: ClassName,
     val getterFunctionName: String

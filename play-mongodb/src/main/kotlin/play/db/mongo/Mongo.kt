@@ -23,18 +23,23 @@ import play.db.mongo.codec.EntityCodecProvider
 import play.db.mongo.codec.MongoIntIdMixIn
 import play.db.mongo.codec.MongoLongIdMixIn
 import play.db.mongo.codec.MongoObjIdMixIn
-import play.entity.Entity
-import play.entity.IntIdEntity
-import play.entity.LongIdEntity
-import play.entity.ObjIdEntity
+import play.entity.*
 import play.entity.cache.CacheIndex
+import play.util.LambdaClassValue
+import play.util.isAssignableFrom
 import play.util.json.Json
+import play.util.mkString
+import play.util.reflect.Reflect
 import reactor.core.publisher.Flux
 import java.util.concurrent.TimeUnit
 
 object Mongo : KLogging() {
 
   const val ID = "_id"
+
+  private val cacheIndexNameCache = LambdaClassValue { type ->
+    getCacheIndexName(type) ?: throw IllegalArgumentException("CacheIndex not found in class: ${type.name}")
+  }
 
   fun newClientSettings(conf: Config): MongoClientSettings {
     return newClientSettingsBuilder(conf).build()
@@ -93,6 +98,10 @@ object Mongo : KLogging() {
     }.ignoreElements().block()
   }
 
+  fun getCacheIndexName(entityClass: Class<out Entity<*>>): String {
+    return cacheIndexNameCache.get(entityClass)
+  }
+
   private fun getIndexModels(entityClass: Class<Entity<*>>): List<IndexModel> {
     val indexSequence = entityClass.getAnnotationsByType(Index::class.java).asSequence().map(::toIndexModel)
     val cacheIndex = getCacheIndex(entityClass)
@@ -104,13 +113,36 @@ object Mongo : KLogging() {
   }
 
   private fun getCacheIndex(entityClass: Class<Entity<*>>): IndexModel? {
-    return entityClass.declaredFields.asSequence()
+    val indexModel = getCacheIndex0(entityClass)
+    if (indexModel != null) {
+      return indexModel
+    }
+    val idClass = EntityHelper.getIdClass(entityClass)
+    if (isAssignableFrom<ObjId>(idClass)) {
+      return getCacheIndex0(idClass, listOf(ID))
+    }
+    return null
+  }
+
+  private fun getCacheIndex0(clazz: Class<*>, parents: List<String> = emptyList()): IndexModel? {
+    val indexName = getCacheIndexName(clazz, parents) ?: return null
+    val fields = arrayOf(indexName)
+    val opts = IndexOptions().unique(false).sparse(true)
+    val indexBson = Index.Type.AEC.parse(fields)
+    return IndexModel(indexBson, opts)
+  }
+
+  private fun getCacheIndexName(clazz: Class<*>, parents: List<String> = emptyList()): String? {
+    return Reflect.getAllFields(clazz)
       .firstOrNull { it.isAnnotationPresent(CacheIndex::class.java) }
-      ?.let {
-        val fields = arrayOf(it.name)
-        val opts = IndexOptions().unique(false).sparse(true)
-        val indexBson = Index.Type.AEC.parse(fields)
-        IndexModel(indexBson, opts)
+      ?.let { field ->
+        val actualFieldName = field.getAnnotation(CacheIndex::class.java).fieldName
+        val indexFieldName = if (parents.isEmpty()) {
+          actualFieldName.ifEmpty { field.name }
+        } else {
+          parents.mkString('.', "", '.') + actualFieldName.ifEmpty { field.name }
+        }
+        indexFieldName
       }
   }
 

@@ -53,6 +53,42 @@ fun <T> Iterable<T>.mkString(
   return b.toString()
 }
 
+fun <T> Iterable<T>.mkString(
+  separator: Char,
+  prefix: String,
+  postfix: Char,
+  transform: ((T) -> String)? = null
+): String {
+  val b = StringBuilder()
+  b.append(prefix)
+  var first = true
+  for (e in this) {
+    if (!first) b.append(separator)
+    if (transform == null) b.append(e) else b.append(transform(e))
+    first = false
+  }
+  b.append(postfix)
+  return b.toString()
+}
+
+fun <T> Iterable<T>.mkString(
+  separator: Char,
+  prefix: Char,
+  postfix: String,
+  transform: ((T) -> String)? = null
+): String {
+  val b = StringBuilder()
+  b.append(prefix)
+  var first = true
+  for (e in this) {
+    if (!first) b.append(separator)
+    if (transform == null) b.append(e) else b.append(transform(e))
+    first = false
+  }
+  b.append(postfix)
+  return b.toString()
+}
+
 fun <E> Iterable<E>.toStream(): Stream<E> {
-  return if( this is Collection<E>) stream() else StreamSupport.stream(this.spliterator(), false)
+  return if (this is Collection<E>) stream() else StreamSupport.stream(this.spliterator(), false)
 }

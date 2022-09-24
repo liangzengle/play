@@ -44,7 +44,7 @@ sealed class Entity<ID : Any> {
   }
 }
 
-abstract class LongIdEntity(val id: Long) : Entity<Long>() {
+abstract class LongIdEntity(@JvmField val id: Long) : Entity<Long>() {
 
   @Deprecated(message = "Use id to avoid auto boxing/unboxing", replaceWith = ReplaceWith("id"))
   override fun id(): Long = id
@@ -65,7 +65,7 @@ abstract class LongIdEntity(val id: Long) : Entity<Long>() {
   }
 }
 
-abstract class IntIdEntity(val id: Int) : Entity<Int>() {
+abstract class IntIdEntity(@JvmField val id: Int) : Entity<Int>() {
   @Deprecated(message = "Use id to avoid auto boxing/unboxing", replaceWith = ReplaceWith("id"))
   override fun id(): Int = id
 
@@ -85,6 +85,8 @@ abstract class IntIdEntity(val id: Int) : Entity<Int>() {
   }
 }
 
-abstract class ObjIdEntity<ID : ObjId>(val id: ID) : Entity<ID>() {
+abstract class StringIdEntity(@JvmField val id: String) : Entity<String>()
+
+abstract class ObjIdEntity<ID : ObjId>(@JvmField val id: ID) : Entity<ID>() {
   override fun id(): ID = id
 }

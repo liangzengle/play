@@ -15,7 +15,6 @@ import java.util.function.ToIntFunction
  * Long id, Int index
  */
 class LongIntIndexedEntityCache<E : LongIdEntity>(
-  private val indexName: String,
   private val indexMapper: ToIntFunction<E>,
   private val entityCache: EntityCacheLong<E>,
   private val entityCacheLoader: EntityCacheLoader,
@@ -27,7 +26,7 @@ class LongIntIndexedEntityCache<E : LongIdEntity>(
 
   init {
     require(entityCache is EntityCacheInternalApi<*>) { "${entityCache.javaClass} must implement EntityCacheInternalApi" }
-    if (EntityCacheHelper.isNeverExpire(entityClass)) {
+    if (!EntityCacheHelper.isNeverExpire(entityClass)) {
       val interval = Duration.ZERO max (keepAlive.dividedBy(2) min keepAlive)
       require(interval > Duration.ZERO) { "interval must be positive" }
       scheduler.scheduleWithFixedDelay(interval, ::evict)
@@ -82,7 +81,7 @@ class LongIntIndexedEntityCache<E : LongIdEntity>(
       return set
     }
     return cache.computeIfAbsent(index) { k ->
-      val idSet = entityCacheLoader.loadIdsByIndex(entityClass, indexName, k)
+      val idSet = entityCacheLoader.loadIdsByCacheIndex(entityClass, k)
         .collect({ ConcurrentHashSetLong() }, { set, id -> set.add(id) })
         .block(Duration.ofSeconds(5))!!
       getAllCached()

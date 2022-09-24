@@ -21,7 +21,6 @@ object Reflect {
   }
 
   @JvmStatic
-  @Suppress("UnstableApiUsage")
   fun <T> getTypeArgs(type: Class<out T>, superType: Class<T>): Array<Type> {
     if (type.superclass == superType) {
       return type.genericSuperclass.unsafeCast<ParameterizedType>().actualTypeArguments
@@ -191,6 +190,25 @@ object Reflect {
   @JvmStatic
   fun getAllFields(clazz: Class<*>, filter: (Field) -> Boolean): Iterable<Field> {
     return Iterables.filter(getAllFields(clazz)) { filter(it!!) }
+  }
+
+  @JvmStatic
+  fun getField(clazz: Class<*>, fieldName: String): Field {
+    return findFieldOrNull(clazz, fieldName) ?: throw NoSuchFieldException(fieldName)
+  }
+
+  @JvmStatic
+  fun findFieldOrNull(clazz: Class<*>, fieldName: String): Field? {
+    var type: Class<*>? = clazz
+    while (type != null && type != Any::class.java) {
+      for (field in type.declaredFields) {
+        if (field.name == fieldName) {
+          return field
+        }
+      }
+      type = clazz.superclass
+    }
+    return null
   }
 
   @JvmStatic

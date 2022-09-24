@@ -1,6 +1,7 @@
 package play.entity.cache
 
 import com.typesafe.config.ConfigFactory
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import play.db.memory.MemoryRepository
 import play.entity.cache.chm.CHMEntityCacheFactory
@@ -37,17 +38,34 @@ internal class IndexedEntityCacheImplTest {
   private val entityCacheManager =
     EntityCacheManagerImpl(entityCacheFactory, NOOPPlayInjector, NOOPEntityCachePersistFailOver)
 
-  private val entityCache = MyEntityCache(entityCacheManager, memoryRepository, scheduler)
+  private val myEntityCache = MyEntityCache(entityCacheManager, memoryRepository, scheduler)
+
+  private val myObjIdEntityCache = MyObjIdEntityCache(entityCacheManager, memoryRepository, scheduler)
 
   @Test
-  fun getMulti() {
+  fun testMyEntity() {
     for (playerId in 1..10L) {
       for (i in 1..10L) {
-        entityCache.getOrCreate(i, playerId)
+        myEntityCache.getOrCreate(playerId * 100 + i, playerId)
       }
     }
     for (playerId in 1..10L) {
-      val partitionEntities = entityCache.getByIndex(playerId)
+      val partitionEntities = myEntityCache.getByIndex(playerId)
+      Assertions.assertEquals(10, partitionEntities.size)
+      println("$playerId: $partitionEntities")
+    }
+  }
+
+  @Test
+  fun testMyObjIdEntity() {
+    for (playerId in 1..10L) {
+      for (i in 1..10) {
+        myObjIdEntityCache.getOrCreate(MyObjId(playerId, i))
+      }
+    }
+    for (playerId in 1..10L) {
+      val partitionEntities = myObjIdEntityCache.getByIndex(playerId)
+      Assertions.assertEquals(10, partitionEntities.size)
       println("$playerId: $partitionEntities")
     }
   }

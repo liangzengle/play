@@ -17,4 +17,9 @@ interface EntityCacheLoader {
     indexName: String,
     indexValue: IDX
   ): Flux<ID>
+
+  fun <IDX, ID : Any, E : Entity<ID>> loadIdsByCacheIndex(
+    entityClass: Class<E>,
+    indexValue: IDX
+  ): Flux<ID>
 }

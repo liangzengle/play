@@ -126,6 +126,10 @@ class MongoDBRepository constructor(
       .map { r -> convertToID<ID>(r.getObject(ID), idType) }
   }
 
+  override fun <IDX, ID : Any, E : Entity<ID>> loadIdsByCacheIndex(entityClass: Class<E>, indexValue: IDX): Flux<ID> {
+    return loadIdsByIndex(entityClass, Mongo.getCacheIndexName(entityClass), indexValue)
+  }
+
   override fun <ID, E : Entity<ID>> queryAll(entityClass: Class<E>): Flux<E> {
     val publisher = getCollection(entityClass).find()
     return Flux.from(publisher)
