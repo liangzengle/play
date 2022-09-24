@@ -17,21 +17,10 @@ class SystemCommandModule {
 
   @Command(desc = "设置服务器时间，例: 2025-01-01T10:59:00、12h、3d1h5m10s")
   fun setTime(timeStr: String): CommandResult {
-    fun normalizeDuration(durationText: String): String {
-      var text = durationText.uppercase()
-      val indexOfD = text.indexOf('D')
-      return if (indexOfD != -1 && text.length > indexOfD + 1 && text[indexOfD + 1] != 'T') {
-        text = StringBuilder(text).insert(indexOfD + 1, 'T').toString()
-        "P$text"
-      } else {
-        "PT$text"
-      }
-    }
-
     val now = Time.currentDateTime()
     val result = Result.runCatching { LocalDateTime.parse(timeStr) }
       .map { Duration.between(now, LocalDateTime.parse(timeStr)) }
-      .recoverCatching { Duration.parse(normalizeDuration(timeStr)) }
+      .recoverCatching { Time.parseDuration(timeStr) }
     if (result.isFailure) {
       return CommandResult.err("设置时间失败, 参数错误: $timeStr")
     }

@@ -4,13 +4,31 @@ import play.util.primitive.toIntChecked
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import java.time.*
+import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
 import java.time.temporal.Temporal
 import java.time.temporal.WeekFields
 import java.util.*
+import java.util.regex.Pattern
 
 object Time {
+
+  /**
+   * 1970-1-1 00:00:00
+   */
+  @JvmStatic
+  val LongTimeAgo: LocalDateTime = LocalDateTime.of(1970, 1, 1, 0, 0, 0)
+
+  @JvmStatic
+  private val SimpleDurationPattern = Pattern.compile("^([+-]?\\d+)([a-zA-Z]{0,2})$")
+
+  @JvmStatic
+  private val RepeatedSimpleDurationPattern = Pattern.compile("([+-]?\\d+)([a-zA-Z]{0,2})")
+
+  @JvmStatic
+  private val StandardDurationPattern = Pattern.compile("^[+-]?P.*$")
+
   private val clock = DelegatingClock(Clock.systemDefaultZone())
 
   private val pcs = PropertyChangeSupport(this)
@@ -189,9 +207,60 @@ object Time {
     return minEndTime > maxFromTime
   }
 
-  /**
-   * 1970-1-1 00:00:00
-   */
+  @Throws(DateTimeParseException::class)
   @JvmStatic
-  val LongTimeAgo: LocalDateTime = LocalDateTime.of(1970, 1, 1, 0, 0, 0)
+  fun parseDuration(durationText: String): Duration {
+    // match: 100 or 1m
+    try {
+      var matcher = SimpleDurationPattern.matcher(durationText)
+      if (matcher.matches()) {
+        val length = matcher.group(1).toLong()
+        val unit = parseUnit(matcher.group(2), ChronoUnit.MILLIS)
+        return Duration.of(length, unit)
+      }
+      // match: P1D
+      matcher = StandardDurationPattern.matcher(durationText)
+      if (matcher.matches()) {
+        return Duration.parse(durationText)
+      }
+      // match: 1h1m
+      matcher = RepeatedSimpleDurationPattern.matcher(durationText)
+      var duration = Duration.ZERO
+      var hasNext = matcher.find()
+      while (hasNext) {
+        val length = matcher.group(1).toLong()
+        val unit = parseUnit(matcher.group(2), ChronoUnit.MILLIS)
+        duration = duration.plus(Duration.of(length, unit))
+        hasNext = matcher.find()
+        if (!hasNext) {
+          return duration
+        }
+      }
+    } catch (e: DateTimeParseException) {
+      throw e
+    } catch (e: Throwable) {
+      throw DateTimeParseException("Text cannot be parsed to a Duration: $durationText", durationText, 0).initCause(e)
+    }
+    throw DateTimeParseException("Text cannot be parsed to a Duration: $durationText", durationText, 0)
+  }
+
+  @JvmStatic
+  fun parseUnit(unit: String?, ifNullOrEmpty: ChronoUnit): ChronoUnit {
+    return if (unit.isNullOrEmpty()) ifNullOrEmpty else parseUnit(unit)
+  }
+
+  @Throws(IllegalArgumentException::class)
+  @JvmStatic
+  fun parseUnit(unit: String): ChronoUnit {
+    return when (unit.lowercase()) {
+      "ms" -> ChronoUnit.MILLIS
+      "s" -> ChronoUnit.SECONDS
+      "m" -> ChronoUnit.MINUTES
+      "h" -> ChronoUnit.HOURS
+      "d" -> ChronoUnit.DAYS
+      "ns" -> ChronoUnit.NANOS
+      "us" -> ChronoUnit.MICROS
+      else -> throw IllegalArgumentException("Unknown unit: $unit")
+    }
+  }
 }
