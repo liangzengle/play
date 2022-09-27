@@ -1,6 +1,9 @@
 package play.spring
 
+import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider
+import org.springframework.core.type.classreading.MetadataReader
+import org.springframework.core.type.classreading.MetadataReaderFactory
 import org.springframework.core.type.filter.AnnotationTypeFilter
 import org.springframework.core.type.filter.AssignableTypeFilter
 import org.springframework.core.type.filter.TypeFilter
@@ -21,18 +24,30 @@ class SpringClassScanner(private val packagesToScan: List<String>) : ClassScanne
   }
 
   override fun <T> getInstantiatableSubclasses(superType: Class<T>): Set<Class<T>> {
-    val provider = ClassPathScanningCandidateComponentProvider(true)
-    provider.addIncludeFilter(AssignableTypeFilter(superType))
-    provider.addIncludeFilter(InstantiatableFilter)
-    return packagesToScan.asSequence().flatMap(provider::findCandidateComponents)
-      .map { Reflect.loadClass<T>(it.beanClassName!!) }.toSet()
+    val scanner = Scanner()
+    scanner.addIncludeFilter(AllMatch(AssignableTypeFilter(superType), InstantiatableFilter))
+    return packagesToScan.asSequence().flatMap(scanner::findCandidateComponents)
+      .map { Reflect.loadClass<T>(it.beanClassName!!, false, SpringClassScanner::class.java.classLoader) }.toSet()
   }
 
   override fun getInstantiatableClassesAnnotatedWith(annotationType: Class<out Annotation>): Set<Class<*>> {
-    val provider = ClassPathScanningCandidateComponentProvider(true)
-    provider.addIncludeFilter(AnnotationTypeFilter(annotationType))
-    provider.addIncludeFilter(InstantiatableFilter)
-    return packagesToScan.asSequence().flatMap(provider::findCandidateComponents)
-      .map { Reflect.loadClass<Any>(it.beanClassName!!) }.toSet()
+    val scanner = Scanner()
+    scanner.addIncludeFilter(AllMatch(AnnotationTypeFilter(annotationType), InstantiatableFilter))
+    return packagesToScan.asSequence().flatMap(scanner::findCandidateComponents)
+      .map { Reflect.loadClass<Any>(it.beanClassName!!, false, SpringClassScanner::class.java.classLoader) }.toSet()
+  }
+
+  class Scanner : ClassPathScanningCandidateComponentProvider(false) {
+    override fun isCandidateComponent(beanDefinition: AnnotatedBeanDefinition): Boolean {
+      return true
+    }
+  }
+
+  class AllMatch(private val filters: List<TypeFilter>) : TypeFilter {
+    constructor(vararg typeFilters: TypeFilter) : this(typeFilters.asList())
+
+    override fun match(metadataReader: MetadataReader, metadataReaderFactory: MetadataReaderFactory): Boolean {
+      return filters.all { it.match(metadataReader, metadataReaderFactory) }
+    }
   }
 }
