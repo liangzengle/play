@@ -98,7 +98,7 @@ class MemoryRepository : Repository {
     }
   }
 
-  override fun <IDX, ID : Any, E : Entity<ID>> loadIdsByIndex(
+  override fun <IDX, ID : Any, E : Entity<ID>> queryIdsByIndex(
     entityClass: Class<E>,
     indexName: String,
     indexValue: IDX
@@ -144,7 +144,7 @@ class MemoryRepository : Repository {
     if (indexName == null) {
       throw IllegalArgumentException("CacheIndex not found in class: ${entityClass.name}")
     }
-    return loadIdsByIndex(entityClass, indexName, indexValue)
+    return queryIdsByIndex(entityClass, indexName, indexValue)
   }
 
   private fun getCacheIndexName(clazz: Class<*>, parents: List<String> = emptyList()): String? {

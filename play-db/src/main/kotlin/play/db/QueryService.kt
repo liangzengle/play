@@ -24,5 +24,11 @@ interface QueryService : EntityCacheLoader {
 
   fun <ID, E : Entity<ID>> queryIds(entityClass: Class<E>): Flux<ID>
 
+  fun <IDX, ID : Any, E : Entity<ID>> queryIdsByIndex(
+    entityClass: Class<E>,
+    indexName: String,
+    indexValue: IDX
+  ): Flux<ID>
+
   fun <ID, E : Entity<ID>> query(entityClass: Class<E>, fields: List<String>): Flux<ResultMap>
 }
