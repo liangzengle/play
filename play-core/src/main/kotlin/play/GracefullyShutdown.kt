@@ -2,6 +2,7 @@ package play
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import play.util.Sorting
 import play.util.concurrent.PlayFuture
 import play.util.unsafeCast
 import java.time.Duration
@@ -97,9 +98,9 @@ interface GracefullyShutdown {
 
   data class Phase(val name: String, val timeout: Duration, val dependsOn: Set<String>)
 
-  class Phases(private val phases: Map<String, Phase>) {
-    val sortedPhases: List<String> = topologicalSort(phases)
-    fun asMap(): Map<String, Phase> = phases
+  class Phases(phases: Map<String, Phase>) {
+    private val sortedPhases = Sorting.topologicalSort(phases.values) { phase -> phase.dependsOn.map { phases[it]!! } }
+    fun asList() = sortedPhases
   }
 }
 
@@ -110,11 +111,7 @@ class DefaultGracefullyShutdown(
   private val postShutdownAction: (() -> Unit)?
 ) : GracefullyShutdown {
 
-  private val phaseMap get() = phases.asMap()
-
-  private val knownPhases = (phaseMap.keys.asSequence() + phaseMap.values.asSequence().flatMap { it.dependsOn }).toSet()
-
-  private val orderedPhases get() = phases.sortedPhases
+  private val knownPhases = phases.asList().map { it.name }.toSet()
 
   private val phaseTasks = ConcurrentHashMap<String, List<Task<Any>>>()
 
@@ -135,16 +132,14 @@ class DefaultGracefullyShutdown(
     performed = true
     Log.info { "Application [$applicationName] shutting down..." }
     var anyFailure = false
-    for (phaseName in orderedPhases) {
-      val phase =
-        phaseMap[phaseName] ?: throw IllegalStateException("Phase $phaseName is not registered, which is unexpected")
-      val tasks = phaseTasks[phaseName] ?: continue
+    for (phase in phases.asList()) {
+      val tasks = phaseTasks[phase.name] ?: continue
       if (tasks.isEmpty()) {
         continue
       }
-      Log.debug { "Running Shutdown Phase [$phaseName]" }
+      Log.debug { "Running Shutdown Phase [${phase.name}]" }
       for (task in tasks) {
-        Log.debug { "Performing task [${task.name}] in phase [$phaseName]" }
+        Log.debug { "Performing task [${task.name}] in phase [${phase.name}]" }
         try {
           val elapsed = measureNanoTime {
             val future = task.action(task.ref).timeout(phase.timeout)
