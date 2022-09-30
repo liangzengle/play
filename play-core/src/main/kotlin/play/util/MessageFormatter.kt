@@ -22,7 +22,7 @@ object MessageFormatter {
       }
       var rightBraceIdx = -1
       var argIdx = -1
-      for (i in (leftBraceIdx + 1) until pattern.length) {
+      for (i in (leftBraceIdx + 1) ..< pattern.length) {
         val c = pattern[i]
         if (Character.isDigit(c)) {
           if (argIdx == -1) argIdx = 0

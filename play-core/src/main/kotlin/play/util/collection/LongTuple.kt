@@ -60,7 +60,7 @@ abstract class LongTuple {
 
   abstract fun toStream(): LongStream
 
-  val indies get() = 0 until size()
+  val indies get() = 0 ..< size()
 
   abstract fun get(index: Int): Long
 

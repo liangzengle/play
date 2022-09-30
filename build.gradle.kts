@@ -88,8 +88,11 @@ subprojects {
     "-Xopt-in=kotlin.ExperimentalStdlibApi",
     "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi",
     "-Xopt-in=kotlinx.serialization.InternalSerializationApi",
+    "-opt-in=kotlin.ExperimentalStdlibApi",
     "-Xjvm-default=all",
-    "-Xstring-concat=indy-with-constants"
+    "-Xstring-concat=indy-with-constants",
+    "-Xcontext-receivers",
+    "-language-version=1.8"
   )
 
   tasks.withType<KotlinCompile> {

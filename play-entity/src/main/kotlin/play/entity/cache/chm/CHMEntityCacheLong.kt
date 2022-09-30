@@ -151,7 +151,7 @@ class CHMEntityCacheLong<E : LongIdEntity>(
         expireKeys.add(entry.key)
       }
     }
-    for (i in 0 until expireKeys.size()) {
+    for (i in 0 ..< expireKeys.size()) {
       val id = expireKeys[i]
       cache.computeIfPresent(id) { _, v ->
         if (v.lastAccessTime() > accessTimeThreshold) v

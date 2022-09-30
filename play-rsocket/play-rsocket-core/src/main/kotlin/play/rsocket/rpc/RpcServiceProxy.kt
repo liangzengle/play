@@ -48,7 +48,7 @@ class RpcServiceProxy(
     if (parameterCount > 0) {
       val serializer = serializerProvider.get()
       val output = ioStreamAdapter.toOutputStream(data)
-      for (i in 0 until parameterCount) {
+      for (i in 0 ..< parameterCount) {
         val parameter = parameters[i]
         val parameterValue = allArguments[i]
         RSocketSerializer.write(serializer, output, parameter.parameterizedType, parameterValue)

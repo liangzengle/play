@@ -8,7 +8,7 @@ plugins {
   idea
 }
 
-apply(plugin = "kotlin-kapt")
+//apply(plugin = "kotlin-kapt")
 
 application {
   mainClass.set("play.example.game.AppKt")
@@ -31,7 +31,7 @@ repositories {
   maven("file://$rootDir/repository")
 }
 
-val kapt by configurations
+//val kapt by configurations
 
 dependencies {
   api(project(":play-example-common"))
@@ -58,8 +58,8 @@ dependencies {
   ksp(project(":play-codegen-rpc"))
 
 
-  compileOnly(Deps.Hibernate.ValidatorApt)
-  kapt(Deps.Hibernate.ValidatorApt)
+//  compileOnly(Deps.Hibernate.ValidatorApt)
+//  kapt(Deps.Hibernate.ValidatorApt)
 
   testImplementation(Deps.KotlinPoet.Poet)
   testImplementation(Deps.KotlinPoet.Metadata)

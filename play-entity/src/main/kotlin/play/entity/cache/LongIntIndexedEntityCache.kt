@@ -53,7 +53,7 @@ class LongIntIndexedEntityCache<E : LongIdEntity>(
         toBeEvict.add(index)
       }
     }
-    for (i in 0 until toBeEvict.size()) {
+    for (i in 0 ..< toBeEvict.size()) {
       val index = toBeEvict.get(i)
       cache.computeIfPresent(index) { k, v ->
         if (v.isEmpty() || canExpire(k)) {

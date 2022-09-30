@@ -60,7 +60,7 @@ abstract class IntTuple {
 
   abstract fun toStream(): IntStream
 
-  val indies get() = 0 until size()
+  val indies get() = 0 ..< size()
 
   abstract fun get(index: Int): Int
 
