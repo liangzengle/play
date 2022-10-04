@@ -3,10 +3,11 @@ package play.example.game.app.module.reward.res
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.node.ObjectNode
+import jakarta.validation.Valid
 import play.example.game.app.module.reward.model.Cost
 import play.util.json.Json
 
-data class RawCost(@field:JsonValue val reward: RawReward) {
+data class RawCost(@field:JsonValue @field:Valid val reward: RawReward) {
   companion object {
     @JvmStatic
     @JsonCreator

@@ -6,7 +6,7 @@ import jakarta.validation.Valid
 import play.util.json.Json
 import kotlin.math.ceil
 
-data class Cost(@field:JsonValue @field:Valid val reward: Reward) {
+data class Cost(@field:JsonValue @field:Valid @JvmField val reward: Reward) {
   companion object {
     @JvmStatic
     private fun fromJson(jsonNode: JsonNode): Cost {
@@ -27,7 +27,7 @@ data class Cost(@field:JsonValue @field:Valid val reward: Reward) {
 
   operator fun div(count: Double) = Cost(reward.copy(num = ceil(reward.num / count).toLong()))
 
-  val type: RewardType get() = reward.type
+  val id: Int get() = reward.id
 
   val num: Long get() = reward.num
 

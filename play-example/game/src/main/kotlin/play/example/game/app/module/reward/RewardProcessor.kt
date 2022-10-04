@@ -1,10 +1,18 @@
-package play.example.game.app.module.reward.processor
+package play.example.game.app.module.reward
 
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.reward.model.*
 import play.util.control.Result2
 
-abstract class RewardProcessor<T : Reward>(val rewardType: RewardType) {
+interface RewardProcessor {
+
+  /**
+   * 是否支持处理该奖励
+   *
+   * @param reward 奖励
+   * @return 是否支持
+   */
+  fun support(reward: Reward): Boolean
 
   /**
    * 奖励转换
@@ -13,7 +21,7 @@ abstract class RewardProcessor<T : Reward>(val rewardType: RewardType) {
    * @param reward
    * @return null-不需要转换, 其他-转换后的奖励
    */
-  open fun transform(self: Self, reward: T): TransformedResult {
+  fun transform(self: Self, reward: Reward): TransformedResult {
     return TransformedResult.Unchanged
   }
 
@@ -27,23 +35,18 @@ abstract class RewardProcessor<T : Reward>(val rewardType: RewardType) {
    * @param bagFullStrategy 背包满时的处理策略
    * @param checkFcm 是否计算防沉迷
    */
-  abstract fun tryReward(
+  fun tryReward(
     self: Self,
-    reward: T,
+    reward: Reward,
     logSource: Int,
     usedBagSize: Int,
     bagFullStrategy: BagFullStrategy,
     checkFcm: Boolean
   ): Result2<TryRewardResult>
 
-  abstract fun execReward(self: Self, tryRewardResult: TryRewardResult, logSource: Int): RewardResult
+  fun execReward(self: Self, tryRewardResult: TryRewardResult, logSource: Int): RewardResult
 
-  abstract fun tryCost(self: Self, cost: T, logSource: Int): Result2<TryCostResultSetLike>
+  fun tryCost(self: Self, cost: Cost, logSource: Int): Result2<TryCostResultSetLike>
 
-  @Suppress("UNCHECKED_CAST")
-  fun tryCost(self: Self, cost: Cost, logSource: Int): Result2<TryCostResultSetLike> {
-    return tryCost(self, cost.reward as T, logSource)
-  }
-
-  abstract fun execCost(self: Self, tryCostResult: TryCostResult, logSource: Int): CostResult
+  fun execCost(self: Self, tryCostResult: TryCostResult, logSource: Int): CostResult
 }

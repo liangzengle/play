@@ -13,6 +13,8 @@ object Orders {
   const val Lowest = Int.MAX_VALUE
   const val Normal = 0
 
+  val comparator = Comparator.comparingInt<Any> { getOrder(it.javaClass) }
+
   @JvmStatic
   fun getOrder(elem: AnnotatedElement): Int {
     return elem.getAnnotation(Order::class.java)?.value ?: Normal

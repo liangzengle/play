@@ -13,12 +13,12 @@
     },
     "rewards": [
       {
-        "cfgId": 1,
+        "id": 1,
         "type": 1,
         "num": 1
       },
       {
-        "type": 2,
+        "id": 1,
         "num": 2
       }
     ],

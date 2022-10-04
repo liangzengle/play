@@ -2,14 +2,13 @@ package play.example.game.app.module.reward
 
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
 import org.springframework.stereotype.Component
+import play.Orders
 import play.example.common.StatusCode
 import play.example.game.app.module.mail.MailService
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.reward.exception.RewardProcessorNotFoundException
 import play.example.game.app.module.reward.model.*
 import play.example.game.app.module.reward.model.TransformedResult.*
-import play.example.game.app.module.reward.processor.RewardProcessor
-import play.util.collection.toImmutableEnumMap
 import play.util.control.Result2
 import play.util.control.err
 import play.util.control.map
@@ -18,11 +17,22 @@ import play.util.logging.getLogger
 
 @Component
 class RewardService(
-  private val mailService: MailService, processorList: List<RewardProcessor<Reward>>
+  private val mailService: MailService,
+  processorList: List<RewardProcessor>
 ) {
   private val logger = getLogger()
 
-  private val processors = processorList.toImmutableEnumMap { it.rewardType }
+  private val sortedProcessors = processorList.sortedWith(Orders.comparator)
+
+  private fun getProcessor(reward: Reward): RewardProcessor? {
+    for (i in sortedProcessors.indices) {
+      val processor = sortedProcessors[i]
+      if (processor.support(reward)) {
+        return processor
+      }
+    }
+    return null
+  }
 
   fun tryReward(
     self: Self,
@@ -50,10 +60,10 @@ class RewardService(
       if (reward.num < 1) {
         continue
       }
-      val processor = processors[reward.type]
+      val processor = getProcessor(reward)
       if (processor == null) {
         errorCode = StatusCode.Failure.getErrorCode()
-        logger.error(RewardProcessorNotFoundException(reward.type)) { "奖励预判异常: $reward" }
+        logger.error(RewardProcessorNotFoundException(reward)) { "奖励预判异常: $reward" }
         continue
       }
       val tryResult = processor.tryReward(self, reward, logSource, usedBagSize, bagFullStrategy, checkFcm)
@@ -78,9 +88,8 @@ class RewardService(
     val logSource = tryResultSet.logSource
     val results = ArrayList<RewardResult>(tryResultSet.results.size)
     for (tryRewardResult in tryResultSet.results) {
-      val rewardType = tryRewardResult.reward.type
       try {
-        val rewardResult = processors[rewardType]!!.execReward(self, tryRewardResult, logSource)
+        val rewardResult = getProcessor(tryRewardResult.reward)!!.execReward(self, tryRewardResult, logSource)
         results.add(rewardResult)
       } catch (e: Exception) {
         logger.error(e) { "self=$self, reward=${tryRewardResult.reward}, logSource=$logSource" }
@@ -129,10 +138,10 @@ class RewardService(
       if (cost.num < 1) {
         continue
       }
-      val processor = processors[cost.type]
+      val processor = getProcessor(cost.reward)
       if (processor == null) {
         errorCode = StatusCode.Failure.getErrorCode()
-        logger.error(RewardProcessorNotFoundException(cost.type)) { "消耗预判失败: $cost" }
+        logger.error(RewardProcessorNotFoundException(cost.reward)) { "消耗预判失败: $cost" }
         break
       }
       val tryResult = processor.tryCost(self, cost, logSource)
@@ -150,9 +159,8 @@ class RewardService(
     val logSource = tryResultSet.logSource
     val results = ArrayList<CostResult>(tryResultSet.results.size)
     for (tryCostResult in tryResultSet.results) {
-      val costType = tryCostResult.cost.type
       try {
-        val costResult = processors[costType]!!.execCost(self, tryCostResult, logSource)
+        val costResult = getProcessor(tryCostResult.cost)!!.execCost(self, tryCostResult, logSource)
         results.add(costResult)
       } catch (e: Exception) {
         logger.error(e) { "self=$self, cost=${tryCostResult.cost}, logSource=$logSource" }
@@ -171,7 +179,7 @@ class RewardService(
     val indexToTransformed = IntObjectMaps.mutable.empty<TransformedResult>()
     for (i in merged.indices) {
       val reward = merged[i]
-      val processor = processors[reward.type] ?: continue
+      val processor = getProcessor(reward) ?: continue
       val transformed = processor.transform(self, reward)
       if (transformed != Unchanged) {
         indexToTransformed.put(i, transformed)

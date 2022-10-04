@@ -3,9 +3,11 @@ package play.example.game.app.module.reward.model
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.TextNode
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.google.common.collect.ImmutableList
 import jakarta.validation.Valid
+import org.eclipse.collections.api.factory.Lists
 import play.example.game.app.module.reward.RewardHelper
 import play.util.json.Json
 
@@ -17,7 +19,7 @@ class RewardList private constructor(
 
   companion object {
     @JvmStatic
-    val Empty = RewardList(ImmutableList.of())
+    val Empty = RewardList(Lists.immutable.empty<Reward>().castToList())
 
     @JvmStatic
     @JsonCreator
@@ -25,35 +27,13 @@ class RewardList private constructor(
       if (jsonNode.isEmpty) {
         return Empty
       }
-      val rewards = Json.convert(jsonNode, jacksonTypeRef<ImmutableList<Reward>>())
-      return RewardList(rewards)
-    }
-
-    @JvmStatic
-    fun merge(list1: RewardList, list2: RewardList): RewardList {
-      if (list1.isEmpty()) {
-        return list2
-      }
-      if (list2.isEmpty()) {
-        return list1
-      }
-      val base: MutableList<Reward>
-      val toBeMerged: List<Reward>
-      if (list2.size() > list1.size()) {
-        base = ArrayList(list2.rewards)
-        toBeMerged = list1.rewards
+      val rewards = if (jsonNode is TextNode) {
+        val textValue = jsonNode.textValue()
+        RewardHelper.parseRewardString(textValue)
       } else {
-        base = ArrayList(list1.rewards)
-        toBeMerged = list2.rewards
+        Json.convert(jsonNode, jacksonTypeRef())
       }
-      for (r in toBeMerged) {
-        if (r.num > 0) {
-          val i = base.indexOfFirst { it.canMerge(r, false) }
-          if (i == -1) base += r
-          else base[i] = base[i] + r.num
-        }
-      }
-      return RewardList(ImmutableList.copyOf(base))
+      return RewardList(ImmutableList.copyOf(rewards))
     }
 
     @JvmName("of")
@@ -69,7 +49,7 @@ class RewardList private constructor(
   }
 
   operator fun plus(that: RewardList): RewardList {
-    return merge(this, that)
+    return RewardHelper.merge(this, that)
   }
 
   /**

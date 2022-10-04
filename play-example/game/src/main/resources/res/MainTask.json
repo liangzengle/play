@@ -11,12 +11,11 @@
     ],
     "rewards": [
       {
-        "type": "Item",
         "num": 1,
-        "cfgId": 1
+        "id": 1
       },
       {
-        "type": "Gold",
+        "id": 1,
         "num": 100
       }
     ],

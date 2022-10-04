@@ -1,9 +1,13 @@
 package play.example.game.app.module.reward
 
+import com.google.common.base.Splitter
 import com.google.common.collect.Collections2
+import com.google.common.collect.ImmutableList
 import com.google.common.collect.Lists
+import org.eclipse.collections.impl.list.mutable.FastList
 import play.example.game.app.module.reward.model.Cost
 import play.example.game.app.module.reward.model.Reward
+import play.example.game.app.module.reward.model.RewardList
 
 /**
  *
@@ -11,32 +15,36 @@ import play.example.game.app.module.reward.model.Reward
  */
 object RewardHelper {
 
+  const val ElementSplitter = ';'
+  const val AttributeSplitter = ','
+
   @JvmStatic
   fun mergeReward(rewards: Collection<Reward>): List<Reward> {
     return merge(rewards, false)
   }
 
   @JvmStatic
-  fun mergeCost(costs: Collection<Cost>): List<Cost> {
-    return Lists.transform(merge(Collections2.transform(costs) { it!!.reward }, true), ::Cost)
+  fun mergeCost(costs: Collection<Cost>): ImmutableList<Cost> {
+    return ImmutableList.copyOf(Lists.transform(merge(Collections2.transform(costs) { it!!.reward }, true), ::Cost))
   }
 
   @JvmStatic
-  private fun merge(rewards: Collection<Reward>, isCost: Boolean): List<Reward> {
+  private fun merge(rewards: Collection<Reward>, isCost: Boolean): ImmutableList<Reward> {
     return when (val size = rewards.size) {
-      0 -> emptyList()
+      0 -> ImmutableList.of()
       1 -> {
         val reward = rewards.first()
         if (reward.num <= 0) {
-          emptyList()
+          ImmutableList.of()
         } else if (rewards is List) {
-          rewards
+          ImmutableList.copyOf(rewards)
         } else {
-          listOf(reward)
+          ImmutableList.of(reward)
         }
       }
+
       else -> {
-        val merged = ArrayList<Reward>(size)
+        val merged = FastList<Reward>(size)
         for (r in rewards) {
           if (r.num > 0) {
             val i = merged.indexOfFirst { it.canMerge(r, isCost) }
@@ -44,8 +52,52 @@ object RewardHelper {
             else merged[i] = merged[i] + r.num
           }
         }
-        merged
+        ImmutableList.copyOf(merged)
       }
+    }
+  }
+
+  @JvmStatic
+  fun merge(list1: RewardList, list2: RewardList): RewardList {
+    if (list1.isEmpty()) {
+      return list2
+    }
+    if (list2.isEmpty()) {
+      return list1
+    }
+    val base: MutableList<Reward>
+    val toBeMerged: List<Reward>
+    if (list2.size() > list1.size()) {
+      base = FastList(list2.asList())
+      toBeMerged = list1.asList()
+    } else {
+      base = FastList(list1.asList())
+      toBeMerged = list2.asList()
+    }
+    for (r in toBeMerged) {
+      if (r.num > 0) {
+        val i = base.indexOfFirst { it.canMerge(r, false) }
+        if (i == -1) base += r
+        else base[i] = base[i] + r.num
+      }
+    }
+    return RewardList(ImmutableList.copyOf(base))
+  }
+
+  @JvmStatic
+  fun parseRewardString(string: String): List<Reward> {
+    try {
+      return Splitter.on(ElementSplitter).split(string)
+        .asSequence()
+        .map { element ->
+          val iterator = Splitter.on(AttributeSplitter).split(element).iterator()
+          val cfgId = iterator.next().toInt()
+          val num = iterator.next().toLong()
+          Reward(cfgId, num)
+        }
+        .toList()
+    } catch (e: Exception) {
+      throw IllegalArgumentException("奖励格式错误: $string", e)
     }
   }
 }

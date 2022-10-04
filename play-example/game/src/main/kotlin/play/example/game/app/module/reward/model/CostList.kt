@@ -3,6 +3,7 @@ package play.example.game.app.module.reward.model
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.node.TextNode
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Lists
@@ -23,8 +24,13 @@ class CostList private constructor(
       if (jsonNode.isEmpty) {
         return Empty
       }
-      val costs = Json.convert(jsonNode, jacksonTypeRef<ImmutableList<Cost>>())
-      return CostList(costs)
+      val rewards = if (jsonNode is TextNode) {
+        val textValue = jsonNode.textValue()
+        RewardHelper.parseRewardString(textValue)
+      } else {
+        Json.convert(jsonNode, jacksonTypeRef())
+      }
+      return CostList(ImmutableList.copyOf(Lists.transform(rewards, ::Cost)))
     }
 
     @JvmStatic
@@ -51,7 +57,7 @@ class CostList private constructor(
           else base[i] = base[i] + r.num
         }
       }
-      return CostList(ImmutableList.copyOf(Lists.transform(base) { Cost(it!!) }))
+      return CostList(ImmutableList.copyOf(Lists.transform(base, ::Cost)))
     }
 
     @JvmName("of")
@@ -63,7 +69,7 @@ class CostList private constructor(
     @JvmName("of")
     @JvmStatic
     operator fun invoke(costs: List<Cost>): CostList =
-      CostList(ImmutableList.copyOf(RewardHelper.mergeCost(costs)))
+      CostList(RewardHelper.mergeCost(costs))
   }
 
   operator fun plus(that: CostList): CostList {
