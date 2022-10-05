@@ -19,7 +19,7 @@ object RewardHelper {
   const val AttributeSplitter = ','
 
   @JvmStatic
-  fun mergeReward(rewards: Collection<Reward>): List<Reward> {
+  fun mergeReward(rewards: Collection<Reward>): ImmutableList<Reward> {
     return merge(rewards, false)
   }
 
@@ -89,6 +89,7 @@ object RewardHelper {
     try {
       return Splitter.on(ElementSplitter).split(string)
         .asSequence()
+        .filter { it.isNotBlank() }
         .map { element ->
           val iterator = Splitter.on(AttributeSplitter).split(element).iterator()
           val cfgId = iterator.next().toInt()

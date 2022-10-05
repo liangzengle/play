@@ -7,6 +7,7 @@ import play.res.reader.JsonResourceReader
 import play.res.reader.Reader
 import play.res.validation.validator.ResourceValidator
 import play.util.collection.*
+import play.util.control.getCause
 import play.util.createInstance
 import play.util.io.FileMonitor
 import play.util.isAbstract
@@ -45,7 +46,8 @@ class ResourceManager(
         .getInstantiatableSubclassInfoList(AbstractResource::class.java)
         .filter { !it.isAnnotationPresent(Ignore::class.java) }
         .loadClasses(AbstractResource::class.java)
-      val validators = classScanner.getInstantiatableSubclasses(ResourceValidator::class.java).map { it.createInstance() }
+      val validators =
+        classScanner.getInstantiatableSubclasses(ResourceValidator::class.java).map { it.createInstance() }
       return ResourceManager(setting, urlResolver, resourceReader, configReader, resourceClasses, validators)
     }
   }
@@ -284,13 +286,26 @@ class ResourceManager(
   }
 
   private fun read(classes: Collection<Class<out AbstractResource>>): Map<Class<AbstractResource>, ResourceSet<AbstractResource>> {
-    return classes.parallelStream()
+    val resultList = classes.parallelStream()
       .map {
         val clazz = it as Class<AbstractResource>
-        val result = getReader(clazz).read(clazz)
-        val resourceSet = ResourceHelper.createResourceSet(clazz, result)
-        clazz to resourceSet
-      }.toImmutableMap()
+        val resultSet = getReader(clazz).read(clazz)
+          .mapCatching { list -> ResourceHelper.createResourceSet(clazz, list) }
+        clazz to resultSet
+      }.toList()
+    var e: Throwable? = null
+    val resultMap = hashMapOf<Class<AbstractResource>, ResourceSet<AbstractResource>>()
+    for ((clazz, result) in resultList) {
+      if (result.isSuccess) {
+        resultMap[clazz] = result.getOrThrow()
+      } else {
+        val cause = result.getCause()
+        if (e == null) e = IllegalStateException("配置读取失败")
+        e.addSuppressed(cause)
+      }
+    }
+    if (e != null) throw e
+    return resultMap
   }
 
   private fun updateVersion() {

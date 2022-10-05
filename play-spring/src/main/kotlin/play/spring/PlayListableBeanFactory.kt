@@ -6,8 +6,10 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import play.Orders
+import play.util.Sorting
 import play.util.time.Time
 import java.time.Duration
+import java.util.*
 import javax.annotation.Priority
 
 /**
@@ -22,19 +24,21 @@ class PlayListableBeanFactory() : DefaultListableBeanFactory() {
   @Throws(BeansException::class)
   override fun preInstantiateSingletons() {
     super.preInstantiateSingletons()
-    val initializingSingletons = arrayListOf<OrderedBean>()
+    val initializingBeanMap = LinkedHashMap<String, OrderedBean>()
     var asyncInitializing: AsyncInitializingSupport? = null
     for (beanName in beanDefinitionNames) {
       val bean = getSingleton(beanName)
       if (bean is OrderedSmartInitializingSingleton) {
-        initializingSingletons.add(OrderedBean(getOrder(bean), bean))
+        val dependencies = getDependenciesForBean(beanName)
+        initializingBeanMap[beanName] = OrderedBean(beanName, dependencies, getOrder(bean), bean)
       } else if (bean is AsyncInitializingSupport) {
         asyncInitializing = bean
       }
     }
-    getBeanProvider(OrderedSmartInitializingSingleton::class.java)
-    initializingSingletons.sort()
-    for (bean in initializingSingletons) {
+    val sorted = Sorting.topologicalSort(initializingBeanMap.values) { bean ->
+      bean.dependencies.mapNotNull(initializingBeanMap::get)
+    }
+    for (bean in sorted) {
       bean.afterSingletonsInstantiated()
     }
     if (asyncInitializing != null) {
@@ -60,10 +64,28 @@ class PlayListableBeanFactory() : DefaultListableBeanFactory() {
     return Orders.getOrder(bean.javaClass)
   }
 
-  private class OrderedBean(val order: Int, val bean: OrderedSmartInitializingSingleton) : Comparable<OrderedBean>,
-    OrderedSmartInitializingSingleton by bean {
+  private class OrderedBean(
+    val beanName: String,
+    val dependencies: Array<String>,
+    val order: Int,
+    val bean: OrderedSmartInitializingSingleton
+  ) : Comparable<OrderedBean>, OrderedSmartInitializingSingleton by bean {
     override fun compareTo(other: OrderedBean): Int {
-      return this.order.compareTo(other.order)
+      if (this.dependencies.contains(other.beanName)) {
+        return 1
+      }
+      if (other.dependencies.contains(this.beanName)) {
+        return -1
+      }
+      var r = this.order.compareTo(other.order)
+      if (r == 0) {
+        r = this.beanName.compareTo(other.beanName)
+      }
+      return r
+    }
+
+    override fun toString(): String {
+      return beanName
     }
   }
 }

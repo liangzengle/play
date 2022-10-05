@@ -30,6 +30,17 @@ interface Cancellable {
     }
 
     @JvmStatic
+    val completed = object : Cancellable {
+      override fun cancel() = false
+
+      override fun isCancelled(): Boolean = true
+
+      override fun canceller(): CancellableCanceller = CancellableCanceller
+
+      override fun taskHandle(): Any = this
+    }
+
+    @JvmStatic
     fun from(f: ScheduledFuture<*>): Cancellable {
       return if (f.isCancelled) {
         cancelled

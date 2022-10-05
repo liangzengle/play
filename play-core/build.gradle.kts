@@ -9,6 +9,7 @@ dependencies {
   api(Deps.Slf4j.Api)
   api(Deps.Jackson.Kotlin)
   api(Deps.Jackson.Jdk8)
+  api(Deps.Jackson.JavaTime)
   api(Deps.Jackson.Guava)
   api(Deps.Jackson.EclipseCollections)
   api(Deps.TsConfig)
@@ -23,4 +24,7 @@ dependencies {
   compileOnly(Deps.Kotlinx.Serialization.Protobuf)
   compileOnly(Deps.Wire.Runtime)
   api(Deps.Reactor.Core)
+  compileOnly(Deps.Netty.Buffer)
+
+  testImplementation(Deps.Netty.Buffer)
 }

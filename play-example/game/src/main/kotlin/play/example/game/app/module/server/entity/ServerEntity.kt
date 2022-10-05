@@ -16,11 +16,16 @@ import java.util.*
 class ServerEntity(id: Int) : IntIdEntity(id) {
 
   private var openTime: LocalDateTime? = null
+  private var mergeTime: LocalDateTime? = null
 
   fun getOpenDate(): Optional<LocalDate> {
     val time = openTime
     return if (time == null) Optional.empty() else Optional.of(time.toLocalDate())
   }
+
+  fun getOpenTime(): LocalDateTime? = openTime
+
+  fun getMerTime(): LocalDateTime? = mergeTime
 
   fun open(time: LocalDateTime) {
     openTime = time

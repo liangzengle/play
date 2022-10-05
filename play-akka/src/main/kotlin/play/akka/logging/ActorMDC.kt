@@ -1,4 +1,4 @@
-package play.example.game.container.gs.logging
+package play.akka.logging
 
 import akka.japi.function.Function
 import play.util.unsafeCast

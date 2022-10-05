@@ -2,9 +2,16 @@ package play.example.game.app.module.reward.model
 
 import jakarta.validation.constraints.Positive
 import jakarta.validation.constraints.PositiveOrZero
-import play.util.json.Json
+import play.example.game.app.module.item.res.ItemResource
+import play.res.validation.constraints.ReferTo
 
-data class Reward(@field:Positive @JvmField val id: Int, @JvmField @field:PositiveOrZero val num: Long) {
+@JvmRecord
+data class Reward(
+  @JvmField @field:Positive @field:ReferTo(ItemResource::class)
+  val id: Int,
+  @JvmField @field:PositiveOrZero
+  val num: Long
+) {
   init {
     require(num >= 0) { "num must be non-negative: $num" }
   }
@@ -26,9 +33,5 @@ data class Reward(@field:Positive @JvmField val id: Int, @JvmField @field:Positi
   @Suppress("UNUSED_PARAMETER")
   fun canMerge(other: Reward, isCost: Boolean = false): Boolean {
     return this.id == other.id
-  }
-
-  override fun toString(): String {
-    return Json.stringify(this)
   }
 }

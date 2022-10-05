@@ -26,7 +26,6 @@ internal object ResourceHelper {
     return isAssignableFrom<AbstractConfig>(clazz)
   }
 
-  @Suppress("UNCHECKED_CAST")
   fun createResourceSet(
     resourceClass: Class<AbstractResource>,
     elems: List<AbstractResource>

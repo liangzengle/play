@@ -31,18 +31,6 @@ infix fun Long.safeMultiply(b: Long): Long = LongMath.saturatedMultiply(this, b)
 
 fun Long.high32(): Int = (this shl 32).toInt()
 
-/**
- * 将第n位置为1
- * @param bit 第几位(从1开始)
- */
-infix fun Long.setBit(bit: Int): Long = this or (1.toLong() shl (bit - 1))
-
-/**
- * 将第n位置为0
- * @param bit 第几位(从1开始)
- */
-infix fun Long.clearBit(bit: Int): Long = this and (1.toLong() shl (bit - 1)).inv()
-
 fun Long.toByteArray(): ByteArray = Longs.toByteArray(this)
 
 inline fun Long.toIntSaturated() = Ints.saturatedCast(this)

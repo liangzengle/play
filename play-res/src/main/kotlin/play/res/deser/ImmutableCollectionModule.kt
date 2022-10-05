@@ -20,6 +20,7 @@ import java.util.*
  */
 internal class ImmutableCollectionModule : SimpleModule() {
   override fun setupModule(context: SetupContext) {
+    super.setupModule(context)
     context.addDeserializers(ImmutableCollectionDeserializers())
   }
 }

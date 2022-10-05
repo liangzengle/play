@@ -11,13 +11,14 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
  * 失败重试
  *
  * @property name 任务名称
- * @property attempts 重试次数, -1表示无限重试
+ * @property attempts 重试次数
  * @property intervalMillis 重试间隔(毫秒)
- * @property task 任务，返回true：成功，不再重试 false：失败，继续重试
+ * @property task 任务，根据future的状态判断是否成功
  */
+@Suppress("unused")
 class Retryable(
   val name: String,
-  private val attempts: Int,
+  private val attempts: Long,
   private val intervalMillis: Long,
   private val scheduler: Scheduler,
   private val executor: Executor,
@@ -26,7 +27,7 @@ class Retryable(
 
   init {
     require(intervalMillis > 0) { "illegal intervalMillis: $intervalMillis" }
-    require(attempts >= -1) { "illegal attempts: $attempts" }
+    require(attempts > 0) { "illegal attempts: $attempts" }
   }
 
   @Volatile
@@ -41,18 +42,17 @@ class Retryable(
       logger.warn(e) { "[$this] attempt failed" }
       PlayFuture.failed(e)
     }
-    future.onComplete {
-      attempted++
-      if (it.isSuccess) {
+    future
+      .onSuccess {
         logger.info { "[$this] succeeded: attempted $attempted" }
-      } else {
-        if (attempts == -1 || attempts > attempted) {
+      }
+      .onFailure { e ->
+        if (attempts > attempted) {
           schedule(intervalMillis)
         } else {
-          logger.warn { "[$this] give up: attempts $attempts, attempted $attempted" }
+          logger.warn(e) { "[$this] give up: attempts $attempts, attempted $attempted" }
         }
       }
-    }
   }
 
   /**
@@ -60,9 +60,6 @@ class Retryable(
    * @param runImmediately 是否立即执行一次
    */
   fun start(runImmediately: Boolean = false) {
-    if (attempts == 0) {
-      return
-    }
     if (!StateUpdater.compareAndSet(this, STATE_INIT, STATE_STARTED)) {
       throw IllegalStateException("[$this] started.")
     }
@@ -92,7 +89,7 @@ class Retryable(
       scheduler: Scheduler,
       executor: Executor,
       task: () -> Boolean
-    ): Retryable = Retryable(name, -1, intervalMillis, scheduler, executor) {
+    ): Retryable = Retryable(name, Long.MAX_VALUE, intervalMillis, scheduler, executor) {
       Future.successful(task())
     }
 
@@ -102,6 +99,6 @@ class Retryable(
       scheduler: Scheduler,
       executor: Executor,
       task: () -> PlayFuture<Any?>
-    ): Retryable = Retryable(name, -1, intervalMillis, scheduler, executor, task)
+    ): Retryable = Retryable(name, Long.MAX_VALUE, intervalMillis, scheduler, executor, task)
   }
 }

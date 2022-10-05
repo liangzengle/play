@@ -15,14 +15,13 @@ import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
 import play.akka.AbstractTypedActor
-import play.akka.stoppedBehavior
+import play.akka.logging.ActorMDC
 import play.db.DatabaseNameProvider
 import play.example.common.id.UIDGenerator
 import play.example.game.app.GameApp
 import play.example.game.app.module.platform.domain.Platforms
 import play.example.game.app.module.server.res.ServerConfig
 import play.example.game.container.gs.domain.GameServerId
-import play.example.game.container.gs.logging.ActorMDC
 import play.res.ResourceManager
 import play.res.ResourceReloadListener
 import play.scala.toPlay

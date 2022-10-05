@@ -4,7 +4,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
-import play.example.game.container.gs.logging.ActorMDC
+import play.akka.logging.ActorMDC
 import play.spring.getInstance
 import play.util.concurrent.PlayPromise
 import play.util.unsafeLazy

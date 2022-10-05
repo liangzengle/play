@@ -12,9 +12,9 @@ dependencies {
   compileOnly(Deps.Wire.Schema)
 }
 
-//sourceSets.main {
-//  proto.srcDir("src/main/protobuf")
-//}
+sourceSets.main {
+  kotlin.srcDir("build/generated/source/wire")
+}
 
 tasks.getByName("compileJava").enabled = false
 

@@ -16,6 +16,7 @@ import java.net.URL
 import java.util.*
 import kotlin.reflect.KType
 import kotlin.reflect.javaType
+import kotlin.reflect.typeOf
 
 /**
  * Created by LiangZengle on 2020/2/15.
@@ -165,11 +166,20 @@ object Json {
     return mapper.readValue(parse, type)
   }
 
+  @JvmStatic
   fun stringify(value: Any): String = mapper.writeValueAsString(value)
 
+  @JvmStatic
   fun toJsonByteArray(value: Any): ByteArray = mapper.writeValueAsBytes(value)
 
+  @JvmStatic
   fun toJsonString(value: Any): String = stringify(value)
+
+  inline fun <reified T> readValueAs(content: String): T {
+    return reader().readValue(content.toJsonParser(), jacksonType<T>())
+  }
+
+  inline fun <reified T> jacksonType(): JavaType = typeOf<T>().toJavaType()
 
   /**
    * 获取指定字段的值，忽略子节点，如果不存在则返回null
@@ -178,6 +188,7 @@ object Json {
    * @param fieldName 字段名
    * @return
    */
+  @JvmStatic
   fun getFieldText(jsonObject: String, fieldName: String): String? {
     return getFieldText(jsonObject, fieldName, true)
   }
@@ -190,6 +201,7 @@ object Json {
    * @param skipChildren 是否忽略子节点
    * @return
    */
+  @JvmStatic
   fun getFieldText(jsonObject: String, fieldName: String, skipChildren: Boolean): String? {
     jsonFactory().createParser(jsonObject).use {
       while (it.nextToken() != null) {
@@ -206,6 +218,7 @@ object Json {
     return null
   }
 
+  @JvmStatic
   fun getElementText(jsonArray: String, index: Int): String? {
     jsonFactory().createParser(jsonArray).use {
       var i = 0

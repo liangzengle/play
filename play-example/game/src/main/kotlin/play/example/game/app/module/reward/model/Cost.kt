@@ -6,6 +6,7 @@ import jakarta.validation.Valid
 import play.util.json.Json
 import kotlin.math.ceil
 
+@JvmRecord
 data class Cost(@field:JsonValue @field:Valid @JvmField val reward: Reward) {
   companion object {
     @JvmStatic

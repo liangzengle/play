@@ -21,8 +21,11 @@ import java.time.Clock
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.annotation.Nullable
 import javax.annotation.concurrent.GuardedBy
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * copied from spring framework
@@ -53,14 +56,15 @@ internal class ReschedulingRunnable(
 
   @Nullable
   private var scheduledExecutionTime: LocalDateTime? = null
-  private val triggerContextMonitor = Any()
+  private val lock = ReentrantReadWriteLock()
 
   @Nullable
   fun schedule(): Cancellable {
-    synchronized(triggerContextMonitor) {
+    lock.write {
       scheduledExecutionTime = trigger.nextExecutionTime(triggerContext)
       if (scheduledExecutionTime == null) {
-        return Cancellable.cancelled
+        currentFuture = Cancellable.completed
+        return Cancellable.completed
       }
       val initialDelay = scheduledExecutionTime!!.toMillis() - triggerContext.clock.millis()
       currentFuture = scheduler.schedule(Duration.ofMillis(initialDelay), this)
@@ -77,7 +81,7 @@ internal class ReschedulingRunnable(
     val actualExecutionTime = triggerContext.clock.currentDateTime()
     super.run()
     val completionTime = triggerContext.clock.currentDateTime()
-    synchronized(triggerContextMonitor) {
+    lock.write {
       val executionTime = scheduledExecutionTime
       checkNotNull(executionTime) { "No scheduled execution" }
       triggerContext.update(executionTime, actualExecutionTime, completionTime)
@@ -88,13 +92,11 @@ internal class ReschedulingRunnable(
   }
 
   override fun isCancelled(): Boolean {
-    synchronized(triggerContextMonitor) { return obtainCurrentFuture().isCancelled() }
+    return lock.read { obtainCurrentFuture().isCancelled() }
   }
 
   override fun cancel(): Boolean {
-    synchronized(triggerContextMonitor) {
-      return obtainCurrentFuture().cancel()
-    }
+    return lock.read { obtainCurrentFuture().cancel() }
   }
 
   override fun canceller(): Canceller<*> = CancellableCanceller

@@ -9,6 +9,8 @@ import play.util.collection.toImmutableMap
 import play.util.getOrNull
 import play.util.unsafeCast
 import java.util.*
+import kotlin.reflect.javaType
+import kotlin.reflect.typeOf
 
 class SingletonBeanContext(val spring: ApplicationContext) {
 
@@ -25,6 +27,10 @@ class SingletonBeanContext(val spring: ApplicationContext) {
 
   fun <T : Any> getBean(beanType: ResolvableType): T {
     return getBeanOrNull(beanType) ?: throw NoSuchBeanDefinitionException(beanType)
+  }
+
+  inline fun <reified T : Any> getBean(): T {
+    return getBean(ResolvableType.forType(typeOf<T>().javaType))
   }
 
   @Suppress("UNCHECKED_CAST")
@@ -50,12 +56,12 @@ class SingletonBeanContext(val spring: ApplicationContext) {
   }
 
   @Suppress("UNCHECKED_CAST")
-  fun <T, R : BeanWithType<T>> getImplementation(superType: Class<out R>, typeValue: T): R {
+  fun <T, R : BeanWithType<T>> getImpl(superType: Class<out R>, typeValue: T): R {
     return beanWithTypeCache.get(superType)[typeValue as Any] as R
   }
 
   @Suppress("UNCHECKED_CAST")
-  fun <T, R : BeanWithType<T>> getImplementations(superType: Class<out R>): Map<T, R> {
+  fun <T, R : BeanWithType<T>> getImpls(superType: Class<out R>): Map<T, R> {
     return beanWithTypeCache.get(superType) as Map<T, R>
   }
 

@@ -21,9 +21,6 @@ class CostList private constructor(
     @JvmStatic
     @JsonCreator
     private fun fromJson(jsonNode: JsonNode): CostList {
-      if (jsonNode.isEmpty) {
-        return Empty
-      }
       val rewards = if (jsonNode is TextNode) {
         val textValue = jsonNode.textValue()
         RewardHelper.parseRewardString(textValue)

@@ -28,6 +28,8 @@ import play.inject.SpringPlayInjector
 import play.mongodb.MongoDBRepositoryCustomizer
 import play.rsocket.client.RSocketClientAutoConfiguration
 import play.scheduling.Scheduler
+import play.spring.AsyncInitializingSupport
+import play.spring.SingletonBeanContext
 import play.util.classOf
 import play.util.concurrent.PlayFuture
 import play.util.reflect.ClassgraphClassScanner
@@ -84,6 +86,16 @@ class GameApp : GameServerScopeConfiguration() {
   @Bean
   fun playInjector(applicationContext: ApplicationContext): PlayInjector {
     return SpringPlayInjector(applicationContext)
+  }
+
+  @Bean
+  fun singletonBeanContext(applicationContext: ApplicationContext): SingletonBeanContext {
+    return SingletonBeanContext(applicationContext)
+  }
+
+  @Bean
+  fun asyncInitializingSupport(): AsyncInitializingSupport {
+    return AsyncInitializingSupport()
   }
 
   @Bean

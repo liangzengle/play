@@ -12,8 +12,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter
 import io.netty.handler.timeout.IdleState
 import io.netty.handler.timeout.IdleStateEvent
 import play.akka.AbstractTypedActor
-import play.akka.sameBehavior
-import play.akka.stoppedBehavior
 import play.mvc.Request
 import play.mvc.Response
 import play.util.logging.getLogger

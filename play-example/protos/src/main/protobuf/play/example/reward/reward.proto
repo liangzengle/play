@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+
+package play.example.reward.message;
+
+// 奖励或消耗的结果集
+message RewardResultSetProto {
+  repeated RewardResultProto list = 1;
+}
+
+// 奖励或消耗的结果
+message RewardResultProto {
+  // id
+  int32 id = 1;
+  // 变化值
+  int64 change = 2;
+  // 当前值，仅货币奖励会返回当前值
+  int64 current = 3;
+}

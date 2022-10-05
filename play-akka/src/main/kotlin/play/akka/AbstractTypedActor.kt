@@ -9,16 +9,13 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.javadsl.*
 import org.slf4j.Logger
+import play.akka.logging.ActorMDC
 import play.scala.toJava
 import play.scala.toResult
 import play.util.concurrent.PlayFuture
-import play.util.time.Time
 import scala.PartialFunction
-import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
-import java.time.Duration
-import java.time.LocalDateTime
 
 abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavior<T>(context) {
   protected inline val self: ActorRef<T> get() = context.self
@@ -35,14 +32,6 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
   protected inline fun <reified T1 : T> ReceiveBuilder<T>.accept(noinline f: (T1) -> Unit): ReceiveBuilder<T> {
     return onMessage(T1::class.java) {
       f(it)
-      Behaviors.same()
-    }
-  }
-
-  @JvmName("accept")
-  protected inline fun <reified T1 : T> ReceiveBuilder<T>.accept(f: Runnable): ReceiveBuilder<T> {
-    return onMessage(T1::class.java) {
-      f.run()
       Behaviors.same()
     }
   }
@@ -80,115 +69,119 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
     }
   }
 
-  protected inline fun <T> future(noinline f: () -> T): Future<T> = Future.apply(f, ec)
+  @JvmName("accept")
+  protected inline fun <reified T1 : T> BehaviorBuilder<T>.accept(noinline f: (T1) -> Unit): BehaviorBuilder<T> {
+    return onMessage(T1::class.java) {
+      f(it)
+      Behaviors.same()
+    }
+  }
 
-  protected inline fun <T, S> Future<T>.map(noinline f: (T) -> S): Future<S> = map(f, ec)
+  @JvmName("accept")
+  protected inline fun <reified T1 : T> BehaviorBuilder<T>.accept(f: Runnable): BehaviorBuilder<T> {
+    return onMessage(T1::class.java) {
+      f.run()
+      Behaviors.same()
+    }
+  }
 
-  protected inline fun <T, S> Future<T>.flatMap(noinline f: (T) -> Future<S>): Future<S> = flatMap(f, ec)
+  @JvmName("apply")
+  protected inline fun <reified T1 : T> BehaviorBuilder<T>.accept(noinline f: (T1) -> Behavior<T>): BehaviorBuilder<T> {
+    return onMessage(T1::class.java) {
+      f(it)
+    }
+  }
 
-  protected inline fun <T> Future<T>.foreach(noinline f: (T) -> Unit) = foreach(f, ec)
+  @JvmName("acceptSignal")
+  protected inline fun <reified S : Signal> BehaviorBuilder<T>.acceptSignal(noinline f: (S) -> Unit): BehaviorBuilder<T> {
+    return onSignal(S::class.java) {
+      f(it)
+      Behaviors.same()
+    }
+  }
 
-  protected inline fun <T> Future<T>.filter(noinline f: (T) -> Boolean): Future<T> = filter(f, ec)
+  @JvmName("acceptSignal")
+  protected inline fun <reified S : Signal> BehaviorBuilder<T>.acceptSignal(f: Runnable): BehaviorBuilder<T> {
+    return onSignal(S::class.java) {
+      f.run()
+      Behaviors.same()
+    }
+  }
 
-  protected inline fun <U, T : U> Future<T>.recover(noinline f: (Throwable) -> U): Future<U> =
+  @JvmName("applySignal")
+  protected inline fun <reified S : Signal> BehaviorBuilder<T>.acceptSignal(noinline f: (S) -> Behavior<T>): BehaviorBuilder<T> {
+    return onSignal(S::class.java) { f(it) }
+  }
+
+  @JvmName("applySignal")
+  protected inline fun <reified S : Signal> BehaviorBuilder<T>.acceptSignal(noinline f: () -> Behavior<T>): BehaviorBuilder<T> {
+    return onSignal(S::class.java) { f() }
+  }
+
+  protected inline fun sameBehavior(): Behavior<T> = Behaviors.same()
+  protected inline fun emptyBehavior(): Behavior<T> = Behaviors.empty()
+  protected inline fun stoppedBehavior(): Behavior<T> = Behaviors.stopped()
+  protected inline fun behaviorBuilder(): BehaviorBuilder<T> = BehaviorBuilder.create()
+
+  protected inline infix fun <A> ActorRef<A>.send(msg: A) = tell(msg)
+
+  protected fun withResumeSupervisor(b: Behavior<T>): Behavior<T> {
+    return Behaviors.supervise(b).onFailure(SupervisorStrategy.resume())
+  }
+
+  protected inline fun <A> future(noinline f: () -> A): Future<A> = Future.apply(f, ec)
+
+  protected inline fun <A, B> Future<A>.map(noinline f: (A) -> B): Future<B> = map(f, ec)
+
+  protected inline fun <A, B> Future<A>.flatMap(noinline f: (A) -> Future<B>): Future<B> = flatMap(f, ec)
+
+  protected inline fun <A> Future<A>.foreach(noinline f: (A) -> Unit) = foreach(f, ec)
+
+  protected inline fun <A> Future<A>.filter(noinline f: (A) -> Boolean): Future<A> = filter(f, ec)
+
+  protected inline fun <A, B : A> Future<B>.recover(noinline f: (Throwable) -> A): Future<A> =
     recover(PartialFunction.fromFunction(f), ec)
 
-  protected inline fun <U, T : U> Future<T>.recoverWith(noinline f: (Throwable) -> Future<U>): Future<U> =
+  protected inline fun <A, B : A> Future<B>.recoverWith(noinline f: (Throwable) -> Future<A>): Future<A> =
     recoverWith(PartialFunction.fromFunction(f), ec)
 
-  protected inline fun <U, T> Future<T>.andThen(noinline f: (Result<T>) -> U): Future<T> =
+  protected inline fun <A, B> Future<B>.andThen(noinline f: (Result<B>) -> A): Future<B> =
     andThen(PartialFunction.fromFunction { f(it.toResult()) }, ec)
 
-  protected inline fun <T> Future<T>.onComplete(noinline f: (Result<T>) -> Unit) {
+  protected inline fun <A> Future<A>.onComplete(noinline f: (Result<A>) -> Unit) {
     onComplete({ f(it.toResult()) }, ec)
   }
 
-  protected inline fun <U> Future<U>.pipToSelf(noinline resultMapper: (Result<U>) -> T) {
+  protected inline fun <A> Future<A>.pipToSelf(noinline resultMapper: (Result<A>) -> T) {
     context.pipeToSelf(this.toJava()) { v, e ->
       resultMapper(if (e != null) Result.failure(e) else Result.success(v))
     }
   }
 
-  protected inline fun <U> PlayFuture<U>.pipToSelf(noinline resultMapper: (Result<U>) -> T) {
+  protected inline fun <A> PlayFuture<A>.pipToSelf(noinline resultMapper: (Result<A>) -> T) {
     context.pipeToSelf(this.toJava()) { v, e ->
       resultMapper(if (e != null) Result.failure(e) else Result.success(v))
     }
   }
 
-  protected inline fun TimerScheduler<T>.scheduleAt(triggerTime: LocalDateTime, message: T) {
-    startSingleTimer(message, Duration.between(Time.currentDateTime(), triggerTime))
+  protected fun <A> spawn(
+    name: String, messageType: Class<A>, mdc: ActorMDC, behavior: Behavior<A>
+  ): ActorRef<A> {
+    return spawn(name, messageType, mdc, SupervisorStrategy.resume(), behavior)
   }
 
-  protected inline fun TimerScheduler<T>.scheduleAt(triggerTimeMillis: Long, message: T) {
-    startSingleTimer(message, Duration.ofMillis(triggerTimeMillis - Time.currentMillis()))
+  protected fun <A> spawn(
+    name: String,
+    messageType: Class<A>,
+    mdc: ActorMDC,
+    supervisorStrategy: SupervisorStrategy,
+    behavior: Behavior<A>
+  ): ActorRef<A> {
+    return context.spawn(
+      Behaviors.supervise(
+        Behaviors.withMdc(messageType, mdc.staticMdc, mdc.mdcPerMessage(), behavior)
+      ).onFailure(supervisorStrategy),
+      name
+    )
   }
-
-  protected inline fun TimerScheduler<T>.scheduleWithFixedDelay(delay: Duration, message: T) {
-    startTimerWithFixedDelay(message, delay)
-  }
-
-  protected inline fun TimerScheduler<T>.scheduleWithFixedDelay(initialDelay: Duration, delay: Duration, message: T) {
-    startTimerWithFixedDelay(message, initialDelay, delay)
-  }
-}
-
-@JvmName("accept")
-@OverloadResolutionByLambdaReturnType
-inline fun <reified T1 : T, T> BehaviorBuilder<T>.accept(noinline f: (T1) -> Unit): BehaviorBuilder<T> {
-  return onMessage(T1::class.java) {
-    f(it)
-    Behaviors.same()
-  }
-}
-
-@JvmName("apply")
-@OverloadResolutionByLambdaReturnType
-inline fun <reified T1 : T, T> BehaviorBuilder<T>.accept(noinline f: (T1) -> Behavior<T>): BehaviorBuilder<T> {
-  return onMessage(T1::class.java) {
-    f(it)
-  }
-}
-
-@JvmName("acceptSignal")
-@OverloadResolutionByLambdaReturnType
-inline fun <reified S : Signal, T> BehaviorBuilder<T>.acceptSignal(noinline f: (S) -> Unit): BehaviorBuilder<T> {
-  return onSignal(S::class.java) {
-    f(it)
-    Behaviors.same()
-  }
-}
-
-@JvmName("acceptSignal")
-@OverloadResolutionByLambdaReturnType
-inline fun <reified S : Signal, T> BehaviorBuilder<T>.acceptSignal(noinline f: () -> Unit): BehaviorBuilder<T> {
-  return onSignal(S::class.java) {
-    f()
-    Behaviors.same()
-  }
-}
-
-@JvmName("applySignal")
-@OverloadResolutionByLambdaReturnType
-inline fun <reified S : Signal, T> BehaviorBuilder<T>.acceptSignal(noinline f: (S) -> Behavior<T>): BehaviorBuilder<T> {
-  return onSignal(S::class.java) { f(it) }
-}
-
-@JvmName("applySignal")
-@OverloadResolutionByLambdaReturnType
-inline fun <reified S : Signal, T> BehaviorBuilder<T>.acceptSignal(noinline f: () -> Behavior<T>): BehaviorBuilder<T> {
-  return onSignal(S::class.java) { f() }
-}
-
-inline fun <T> AbstractTypedActor<T>.sameBehavior(): Behavior<T> = Behaviors.same()
-
-inline fun <T> AbstractTypedActor<T>.emptyBehavior(): Behavior<T> = Behaviors.empty()
-
-inline fun <T> AbstractTypedActor<T>.stoppedBehavior(): Behavior<T> = Behaviors.stopped()
-
-inline fun <T> AbstractTypedActor<T>.behaviorBuilder(): BehaviorBuilder<T> = BehaviorBuilder.create()
-
-inline infix fun <T> ActorRef<T>.send(msg: T) = tell(msg)
-
-fun <T> withResumeSupervisor(b: Behavior<T>): Behavior<T> {
-  return Behaviors.supervise(b).onFailure(SupervisorStrategy.resume())
 }

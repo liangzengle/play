@@ -49,6 +49,7 @@ object Deps {
     private const val Version = Versions.Jackson
     const val Kotlin = "com.fasterxml.jackson.module:jackson-module-kotlin:$Version"
     const val Jdk8 = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$Version"
+    const val JavaTime = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$Version"
     const val Guava = "com.fasterxml.jackson.datatype:jackson-datatype-guava:$Version"
     const val Scala = "com.fasterxml.jackson.module:jackson-module-scala_2.13:$Version"
     const val EclipseCollections = "com.fasterxml.jackson.datatype:jackson-datatype-eclipse-collections:$Version"
@@ -127,6 +128,7 @@ object Deps {
     const val Epoll = "io.netty:netty-transport-native-epoll:$Version"
     const val Handler = "io.netty:netty-handler:$Version"
     const val Buffer = "io.netty:netty-buffer:$Version"
+    const val Util = "io.netty:netty-util:$Version"
   }
 
   object Reactor {

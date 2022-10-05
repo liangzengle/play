@@ -4,8 +4,8 @@ import org.eclipse.collections.api.set.primitive.IntSet
 import org.springframework.stereotype.Component
 import play.example.game.app.module.modulecontrol.entity.PlayerModuleControlEntityCache
 import play.example.game.app.module.modulecontrol.event.PlayerModuleOpenEvent
-import play.example.game.app.module.modulecontrol.res.ModuleOpenResource
-import play.example.game.app.module.modulecontrol.res.ModuleOpenResourceSet
+import play.example.game.app.module.modulecontrol.res.ModuleControlResource
+import play.example.game.app.module.modulecontrol.res.ModuleControlResourceSet
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.condition.PlayerConditionService
 import play.example.game.app.module.player.condition.listenConditionEvents
@@ -24,7 +24,7 @@ class ModuleControlService(
 ) : PlayerEventListener {
   override fun playerEventReceive(): PlayerEventReceive {
     return PlayerEventReceiveBuilder()
-      .listenConditionEvents(ModuleOpenResourceSet.list(), ModuleOpenResource::conditions, ::checkOpen)
+      .listenConditionEvents(ModuleControlResourceSet.list(), ModuleControlResource::conditions, ::checkOpen)
       .build()
   }
 
@@ -36,7 +36,7 @@ class ModuleControlService(
 
   private fun checkOpen(self: Self, event: PlayerEvent) {
     val entity = entityCache.getOrCreate(self.id)
-    for (moduleOpenConfig in ModuleOpenResourceSet.list()) {
+    for (moduleOpenConfig in ModuleControlResourceSet.list()) {
       val moduleId = moduleOpenConfig.id
       if (entity.isOpen(moduleId)) {
         continue

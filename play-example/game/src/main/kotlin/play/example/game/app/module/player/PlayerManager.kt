@@ -6,37 +6,37 @@ import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import play.akka.AbstractTypedActor
+import play.akka.logging.ActorMDC
 import play.akka.scheduling.ActorScheduler
-import play.akka.send
-import play.akka.withResumeSupervisor
+import play.akka.scheduling.WithActorScheduler
 import play.example.common.scheduling.Cron
 import play.example.game.app.module.player.domain.PlayerErrorCode
 import play.example.game.app.module.player.event.PlayerEvent
 import play.example.game.app.module.player.event.PlayerEventDispatcher
 import play.example.game.app.module.player.event.PromisedPlayerEvent
+import play.example.game.app.module.player.exception.PlayerNotExistsException
 import play.example.game.app.module.playertask.PlayerTaskEventReceiver
-import play.example.game.container.gs.logging.ActorMDC
 import play.example.game.container.net.Session
 import play.example.module.login.message.LoginParams
 import play.mvc.Request
 import play.mvc.RequestCommander
 import play.mvc.Response
-import play.util.exception.NoStackTraceException
+import play.util.classOf
 import play.util.unsafeCast
 
 class PlayerManager(
-    context: ActorContext<Command>,
-    private val eventDispatcher: PlayerEventDispatcher,
-    private val playerIdNameCache: PlayerIdNameCache,
-    private val playerService: PlayerService,
-    private val requestHandler: PlayerRequestHandler,
-    actorScheduler: ActorRef<ActorScheduler.Command>,
-    private val taskEventReceiver: PlayerTaskEventReceiver,
-    private val actorMdc: ActorMDC
-) : AbstractTypedActor<PlayerManager.Command>(context) {
+  context: ActorContext<Command>,
+  private val eventDispatcher: PlayerEventDispatcher,
+  private val playerIdNameCache: PlayerIdNameCache,
+  private val playerService: PlayerService,
+  private val requestHandler: PlayerRequestHandler,
+  override val actorScheduler: ActorRef<ActorScheduler.Command>,
+  private val taskEventReceiver: PlayerTaskEventReceiver,
+  private val actorMdc: ActorMDC
+) : AbstractTypedActor<PlayerManager.Command>(context), WithActorScheduler<PlayerManager.Command> {
 
   init {
-    actorScheduler.tell(ActorScheduler.ScheduleCron(Cron.EveryDay, NewDayStart, self))
+    scheduleCron(Cron.EveryDay, NewDayStart)
   }
 
   override fun createReceive(): Receive<Command> {
@@ -85,7 +85,7 @@ class PlayerManager(
     if (player == null) {
       log.error("$event not delivered: Player($playerId) not exists.")
       if (event is PromisedPlayerEvent<*>) {
-        event.promise.failure(NoStackTraceException("Player($playerId) not exists."))
+        event.promise.failure(PlayerNotExistsException(playerId, false))
       }
       return
     }
@@ -102,28 +102,23 @@ class PlayerManager(
       return opt.get().unsafeCast()
     }
 
-    return context.spawn(
-      withResumeSupervisor(
-        Behaviors.withMdc(
-          PlayerActor.Command::class.java,
-          actorMdc.staticMdc,
-          actorMdc.mdcPerMessage(),
-          PlayerActor.create(Self(id), eventDispatcher, playerService, requestHandler, taskEventReceiver)
-        )
-      ),
-      actorName
+    return spawn(
+      actorName,
+      classOf(),
+      actorMdc,
+      PlayerActor.create(Self(id), eventDispatcher, playerService, requestHandler, taskEventReceiver)
     )
   }
 
   companion object {
     fun create(
-        eventDispatcher: PlayerEventDispatcher,
-        playerIdNameCache: PlayerIdNameCache,
-        playerService: PlayerService,
-        requestHandler: PlayerRequestHandler,
-        actorScheduler: ActorRef<ActorScheduler.Command>,
-        taskEventReceiver: PlayerTaskEventReceiver,
-        actorMdc: ActorMDC
+      eventDispatcher: PlayerEventDispatcher,
+      playerIdNameCache: PlayerIdNameCache,
+      playerService: PlayerService,
+      requestHandler: PlayerRequestHandler,
+      actorScheduler: ActorRef<ActorScheduler.Command>,
+      taskEventReceiver: PlayerTaskEventReceiver,
+      actorMdc: ActorMDC
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
         PlayerManager(

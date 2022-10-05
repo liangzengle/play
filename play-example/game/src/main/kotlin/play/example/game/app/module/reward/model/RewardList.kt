@@ -14,7 +14,7 @@ import play.util.json.Json
 class RewardList private constructor(
   @field:Valid
   @field:JsonValue
-  private val rewards: ImmutableList<Reward>
+  private val rewards: List<Reward>
 ) {
 
   companion object {
@@ -24,16 +24,13 @@ class RewardList private constructor(
     @JvmStatic
     @JsonCreator
     private fun fromJson(jsonNode: JsonNode): RewardList {
-      if (jsonNode.isEmpty) {
-        return Empty
-      }
       val rewards = if (jsonNode is TextNode) {
         val textValue = jsonNode.textValue()
         RewardHelper.parseRewardString(textValue)
       } else {
         Json.convert(jsonNode, jacksonTypeRef())
       }
-      return RewardList(ImmutableList.copyOf(rewards))
+      return RewardList(RewardHelper.mergeReward(rewards))
     }
 
     @JvmName("of")
@@ -60,4 +57,8 @@ class RewardList private constructor(
   fun isEmpty() = rewards.isEmpty()
 
   fun size() = rewards.size
+
+  override fun toString(): String {
+    return rewards.toString()
+  }
 }

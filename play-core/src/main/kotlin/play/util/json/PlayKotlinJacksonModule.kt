@@ -3,12 +3,13 @@ package play.util.json
 import com.fasterxml.jackson.core.Version
 import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.deser.Deserializers
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.ser.Serializers
 import com.fasterxml.jackson.datatype.eclipsecollections.PackageVersion
 import com.google.auto.service.AutoService
 
 @AutoService(Module::class)
-class PlayKotlinJacksonModule : Module() {
+class PlayKotlinJacksonModule : SimpleModule() {
   override fun version(): Version {
     return PackageVersion.VERSION
   }
@@ -17,7 +18,12 @@ class PlayKotlinJacksonModule : Module() {
     return javaClass.simpleName
   }
 
+  init {
+    setDeserializerModifier(PlayDeserializerModifier())
+  }
+
   override fun setupModule(context: SetupContext) {
+    super.setupModule(context)
     context.addSerializers(PlayKotlinJacksonSerializers())
     context.addDeserializers(PlayKotlinJacksonDeserializers())
   }

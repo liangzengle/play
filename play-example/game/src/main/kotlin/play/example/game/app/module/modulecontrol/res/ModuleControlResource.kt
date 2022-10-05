@@ -10,7 +10,7 @@ import play.res.validation.constraints.Enumerated
  * @author LiangZengle
  */
 @Enumerated<ModuleType>(ModuleType::class)
-class ModuleOpenResource : AbstractResource() {
+class ModuleControlResource : AbstractResource() {
 
   @Valid
   val conditions = emptyList<PlayerCondition>()

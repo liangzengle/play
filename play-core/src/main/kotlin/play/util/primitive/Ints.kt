@@ -30,18 +30,6 @@ infix fun Int.safeSubtract(b: Int): Int = IntMath.saturatedSubtract(this, b)
 
 infix fun Int.safeMultiply(b: Int): Int = IntMath.saturatedMultiply(this, b)
 
-/**
- * 将第n位置为1
- * @param bit 第几位(从1开始)
- */
-infix fun Int.setBit(bit: Int): Int = this or (1 shl (bit - 1))
-
-/**
- * 将第n位置为0
- * @param bit 第几位(从1开始)
- */
-infix fun Int.clearBit(bit: Int): Int = this and (1 shl (bit - 1)).inv()
-
 fun Int.toByteArray(): ByteArray = Ints.toByteArray(this)
 
 fun Int.high16(): Short = (this shr 16).toShort()
@@ -60,9 +48,11 @@ fun Int.toByteSaturated(): Byte {
     this < Byte.MIN_VALUE -> {
       Byte.MIN_VALUE
     }
+
     this > Byte.MAX_VALUE -> {
       Byte.MAX_VALUE
     }
+
     else -> this.toByte()
   }
 }

@@ -3,10 +3,12 @@ package play.res
 /**
  * 所有配置的基类
  */
-abstract class AbstractResource constructor(@JvmField val id: Int) {
+abstract class AbstractResource constructor(_id: Int) {
 
   // for deserialization framework
   constructor() : this(0)
+
+  open val id = _id
 
   /**
    * 自定义初始化
@@ -78,5 +80,4 @@ interface ExtensionKey<E : ResourceExtension<out AbstractResource>>
  *
  * @param elems 配置对象列表
  */
-@Suppress("UNUSED_PARAMETER")
 abstract class ResourceExtension<T : AbstractResource>(protected val elements: List<T>)

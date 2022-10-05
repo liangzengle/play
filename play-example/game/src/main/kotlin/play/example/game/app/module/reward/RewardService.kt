@@ -188,7 +188,7 @@ class RewardService(
     if (indexToTransformed.isEmpty) {
       return merged
     }
-    val result = ArrayList<Reward>(merged.size + indexToTransformed.size())
+    val result = ArrayList<Reward>(merged.size)
     for (i in merged.indices) {
       val transformed = indexToTransformed.get(i)
       if (transformed == null) {

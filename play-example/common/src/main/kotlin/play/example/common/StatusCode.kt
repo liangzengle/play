@@ -2,6 +2,7 @@ package play.example.common
 
 import play.util.control.Result2
 import play.util.control.err
+import play.util.control.ok
 
 /**
  * 公共错误码
@@ -14,7 +15,7 @@ abstract class StatusCode(val moduleId: Short) {
   /**
    * 操作成功
    */
-  val Success = err(0)
+  val Success = ok<Nothing>()
 
   /**
    * 操作失败

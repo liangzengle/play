@@ -7,8 +7,6 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import akka.actor.typed.javadsl.StashBuffer
 import play.akka.AbstractTypedActor
-import play.akka.accept
-import play.akka.sameBehavior
 import play.example.game.app.module.ModuleId
 import play.example.game.app.module.guild.domain.GuildErrorCode
 import play.example.game.app.module.guild.domain.GuildLogSource

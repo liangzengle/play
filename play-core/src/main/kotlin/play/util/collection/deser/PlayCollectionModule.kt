@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.deser.Deserializers
 import com.fasterxml.jackson.databind.deser.std.PrimitiveArrayDeserializers
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.eclipsecollections.PackageVersion
 import com.google.auto.service.AutoService
 import play.util.collection.*
@@ -17,7 +18,7 @@ import play.util.unsafeCast
  * @author LiangZengle
  */
 @AutoService(Module::class)
-class PlayCollectionModule : Module() {
+class PlayCollectionModule : SimpleModule() {
   override fun version(): Version {
     return PackageVersion.VERSION
   }
@@ -26,7 +27,19 @@ class PlayCollectionModule : Module() {
     return javaClass.simpleName
   }
 
+  init {
+    addDeserializer(
+      SerializableAttributeMap::class.java,
+      SerializableAttributeMap.SerializableAttributeMapDeserializer()
+    )
+    addSerializer(
+      SerializableAttributeMap::class.java,
+      SerializableAttributeMap.SerializableAttributeMapSerializer()
+    )
+  }
+
   override fun setupModule(context: SetupContext) {
+    super.setupModule(context)
     context.addDeserializers(PlayCollectionDeserializers())
   }
 }

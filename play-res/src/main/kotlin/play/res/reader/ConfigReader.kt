@@ -1,13 +1,11 @@
 package play.res.reader
 
 import com.typesafe.config.ConfigFactory
-import play.Log
+import play.res.ResourceNotFoundException
 import play.res.ResourcePath
-import play.res.SourceNotFoundException
 import play.util.TSConfigs
 import play.util.TSConfigs.toJson
 import java.net.URL
-import java.util.*
 
 class ConfigReader : Reader {
   companion object {
@@ -20,22 +18,15 @@ class ConfigReader : Reader {
       val path = clazz.getAnnotation(ResourcePath::class.java)
         ?: throw IllegalArgumentException("[${clazz.name}]缺少@${ResourcePath::class.java.simpleName}")
       javaClass.classLoader.getResource(path.value)
-        ?: throw SourceNotFoundException("找不到[${clazz.name}]对应的配置文件[${path.value}]")
+        ?: throw ResourceNotFoundException("找不到[${clazz.name}]对应的配置文件[${path.value}]")
     }
   }
 
-  override fun <T> read(clazz: Class<T>): List<T> {
-    return try {
-      val url = getURL(clazz).getOrThrow()
+  override fun <T> read(clazz: Class<T>): Result<List<T>> {
+    return getURL(clazz).mapCatching { url ->
       val config = ConfigFactory.parseURL(url).withFallback(ID).resolve()
-      val bean = Reader.readObject(config.toJson(), clazz)
+      val bean = JsonResourceReader.readObject(config.toJson(), clazz)
       listOf(bean)
-    } catch (e: SourceNotFoundException) {
-      Log.error(e) { e.message }
-      Collections.emptyList()
-    } catch (e: Exception) {
-      Log.error(e) { e.message }
-      throw e
     }
   }
 
