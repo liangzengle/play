@@ -56,7 +56,7 @@ class LoginActivityHandler(
         LoginActivityStatusCode.Rewarded
       } else {
         serviceFacade.tryAndExecReward(self, resource.rewards, LoginActivityLogSource.Reward).map {
-          data.flags = Bit.set(data.flags, day)
+          data.flags = Bit.set1(data.flags, day)
           it.toProto()
         }
       }
