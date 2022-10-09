@@ -6,7 +6,7 @@ import java.time.Duration
 
 interface EntityCacheFactory {
 
-  fun <ID : Any, E : Entity<ID>> create(
+  fun <ID, E : Entity<ID>> create(
     entityClass: Class<E>,
     initializerProvider: EntityInitializerProvider
   ): EntityCache<ID, E>

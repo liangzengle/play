@@ -114,7 +114,7 @@ class MongoDBRepository constructor(
     return Flux.from(publisher)
   }
 
-  override fun <IDX, ID : Any, E : Entity<ID>> queryIdsByIndex(
+  override fun <IDX, ID, E : Entity<ID>> queryIdsByIndex(
     entityClass: Class<E>,
     indexName: String,
     indexValue: IDX
@@ -126,7 +126,7 @@ class MongoDBRepository constructor(
       .map { r -> convertToID<ID>(r.getObject(ID), idType) }
   }
 
-  override fun <IDX, ID : Any, E : Entity<ID>> loadIdsByCacheIndex(entityClass: Class<E>, indexValue: IDX): Flux<ID> {
+  override fun <IDX, ID, E : Entity<ID>> loadIdsByCacheIndex(entityClass: Class<E>, indexValue: IDX): Flux<ID> {
     return queryIdsByIndex(entityClass, Mongo.getCacheIndexName(entityClass), indexValue)
   }
 

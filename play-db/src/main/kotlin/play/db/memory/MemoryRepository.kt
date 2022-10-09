@@ -98,7 +98,7 @@ class MemoryRepository : Repository {
     }
   }
 
-  override fun <IDX, ID : Any, E : Entity<ID>> queryIdsByIndex(
+  override fun <IDX, ID, E : Entity<ID>> queryIdsByIndex(
     entityClass: Class<E>,
     indexName: String,
     indexValue: IDX
@@ -133,7 +133,7 @@ class MemoryRepository : Repository {
     return Flux.fromIterable(result)
   }
 
-  override fun <IDX, ID : Any, E : Entity<ID>> loadIdsByCacheIndex(entityClass: Class<E>, indexValue: IDX): Flux<ID> {
+  override fun <IDX, ID, E : Entity<ID>> loadIdsByCacheIndex(entityClass: Class<E>, indexValue: IDX): Flux<ID> {
     var indexName = getCacheIndexName(entityClass)
     if (indexName == null) {
       val idClass = EntityHelper.getIdClass(entityClass)

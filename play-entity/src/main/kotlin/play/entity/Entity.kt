@@ -1,13 +1,13 @@
 package play.entity
 
-sealed class Entity<ID : Any> {
+sealed class Entity<ID> {
   companion object {
     const val DELETED = "_deleted"
   }
 
   private var _deleted: Boolean? = null
 
-  abstract fun id(): ID
+  abstract fun id(): ID & Any
 
   /**
    * 初始化
@@ -24,7 +24,7 @@ sealed class Entity<ID : Any> {
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
-    if (javaClass != other?.javaClass) return false
+    if (other == null || javaClass != other.javaClass) return false
 
     other as Entity<*>
     if (id() != other.id()) return false

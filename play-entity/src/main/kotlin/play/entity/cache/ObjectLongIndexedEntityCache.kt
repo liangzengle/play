@@ -15,7 +15,7 @@ import java.util.function.ToLongFunction
 /**
  * Any id, Long index
  */
-class ObjectLongIndexedEntityCache<ID : Any, E : Entity<ID>>(
+class ObjectLongIndexedEntityCache<ID, E : Entity<ID>>(
   private val indexMapper: ToLongFunction<E>,
   private val entityCache: EntityCache<ID, E>,
   private val entityCacheLoader: EntityCacheLoader,

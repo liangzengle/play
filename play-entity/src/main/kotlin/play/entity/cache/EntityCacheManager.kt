@@ -16,11 +16,11 @@ import kotlin.time.Duration.Companion.minutes
 abstract class EntityCacheManager {
   abstract fun getAllCaches(): Iterable<EntityCache<*, *>>
 
-  fun <ID : Any, E : Entity<ID>> get(clazz: KClass<E>): EntityCache<ID, E> {
+  fun <ID, E : Entity<ID>> get(clazz: KClass<E>): EntityCache<ID, E> {
     return get(clazz.java)
   }
 
-  abstract fun <ID : Any, E : Entity<ID>> get(clazz: Class<E>): EntityCache<ID, E>
+  abstract fun <ID, E : Entity<ID>> get(clazz: Class<E>): EntityCache<ID, E>
 
   fun <E : IntIdEntity> getEntityCacheInt(clazz: Class<E>): EntityCacheInt<E> {
     val cache = get(clazz)
@@ -77,7 +77,7 @@ class EntityCacheManagerImpl constructor(
   }
 
   @Suppress("UNCHECKED_CAST")
-  override fun <ID : Any, E : Entity<ID>> get(clazz: Class<E>): EntityCache<ID, E> {
+  override fun <ID, E : Entity<ID>> get(clazz: Class<E>): EntityCache<ID, E> {
     val cache = caches[clazz]
     if (cache != null) {
       return cache as EntityCache<ID, E>

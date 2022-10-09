@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * Any id, Any index
  */
-class DefaultIndexedEntityCache<IDX, ID : Any, E : Entity<ID>>(
+class DefaultIndexedEntityCache<IDX, ID, E : Entity<ID>>(
   private val indexMapper: (E) -> IDX,
   private val entityCache: EntityCache<ID, E>,
   private val entityCacheLoader: EntityCacheLoader,

@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 
-class CHMEntityCache<ID : Any, E : Entity<ID>>(
+class CHMEntityCache<ID, E : Entity<ID>>(
   override val entityClass: Class<E>,
   private val entityCacheWriter: EntityCacheWriter,
   private val entityCacheLoader: EntityCacheLoader,
@@ -365,7 +365,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     }
   }
 
-  private sealed class CacheObj<ID : Any, E : Entity<ID>> {
+  private sealed class CacheObj<ID, E : Entity<ID>> {
     abstract fun isEmpty(): Boolean
 
     fun isNotEmpty(): Boolean = !isEmpty()
@@ -377,7 +377,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     fun asNonEmpty(): NonEmpty<ID, E> = this.unsafeCast()
   }
 
-  private class Empty<ID : Any, E : Entity<ID>> : CacheObj<ID, E>() {
+  private class Empty<ID, E : Entity<ID>> : CacheObj<ID, E>() {
     private val createTime: Long = currentMillis()
 
     override fun isEmpty(): Boolean = true
@@ -389,7 +389,7 @@ class CHMEntityCache<ID : Any, E : Entity<ID>>(
     }
   }
 
-  private class NonEmpty<ID : Any, E : Entity<ID>>(
+  private class NonEmpty<ID, E : Entity<ID>>(
     private val entity: E,
     _lastAccessTime: Long,
     _lastPersistTime: Long

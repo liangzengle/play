@@ -4,7 +4,7 @@ import play.entity.Entity
 import play.util.concurrent.Future
 import java.util.*
 
-interface EntityCache<ID : Any, E : Entity<ID>> {
+interface EntityCache<ID, E : Entity<ID>> {
 
   operator fun invoke(id: ID): E = getOrThrow(id)
 

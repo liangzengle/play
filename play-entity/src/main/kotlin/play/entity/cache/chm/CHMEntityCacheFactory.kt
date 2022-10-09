@@ -19,7 +19,7 @@ class CHMEntityCacheFactory(
   private val settings: EntityCacheFactory.Settings
 ) : EntityCacheFactory {
 
-  override fun <ID : Any, E : Entity<ID>> create(
+  override fun <ID, E : Entity<ID>> create(
     entityClass: Class<E>,
     initializerProvider: EntityInitializerProvider
   ): EntityCache<ID, E> {
