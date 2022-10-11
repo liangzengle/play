@@ -1,0 +1,23 @@
+syntax = "proto3";
+import "i18n.proto";
+
+package play.example.module.mail.message;
+
+message MailProto{
+  // 唯一id
+  int64 id = 1;
+  // 标题
+  play.example.module.common.message.I18nTextProto title = 2;
+  // 内容
+  play.example.module.common.message.I18nTextProto content = 3;
+  // 奖励信息
+  map<int32, int64> rewards = 4;
+  // 邮件时间
+  int64 time = 5;
+  // 状态：0-未读 1-已读 2-已领奖
+  int32 status = 6;
+}
+
+message MailListProto {
+  repeated MailProto mails = 1;
+}

@@ -8,6 +8,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Lists
 import jakarta.validation.Valid
+import org.eclipse.collections.api.factory.primitive.IntLongMaps
+import org.eclipse.collectionx.toJava
 import play.example.game.app.module.reward.RewardHelper
 import play.util.json.Json
 
@@ -27,7 +29,7 @@ class CostList private constructor(
       } else {
         Json.convert(jsonNode, jacksonTypeRef())
       }
-      return CostList(ImmutableList.copyOf(Lists.transform(rewards, ::Cost)))
+      return CostList(RewardHelper.mergeCost(Lists.transform(rewards, ::Cost)))
     }
 
     @JvmStatic
@@ -65,8 +67,9 @@ class CostList private constructor(
 
     @JvmName("of")
     @JvmStatic
-    operator fun invoke(costs: List<Cost>): CostList =
-      CostList(RewardHelper.mergeCost(costs))
+    operator fun invoke(costs: List<Cost>): CostList {
+      return if (costs.isEmpty()) Empty else CostList(RewardHelper.mergeCost(costs))
+    }
   }
 
   operator fun plus(that: CostList): CostList {
@@ -76,9 +79,14 @@ class CostList private constructor(
   private fun asRewardList(): List<Reward> = Lists.transform(costs) { it!!.reward }
 
   /**
-   * @return a read-only List
+   * @return the underlying immutable map
    */
   fun asList(): List<Cost> = costs
+
+  /**
+   * @return convert to a map which key is id and value is num
+   */
+  fun toMap(): Map<Int, Long> = IntLongMaps.immutable.from(costs, { it.id }, { it.num }).toJava()
 
   fun isEmpty() = costs.isEmpty()
 

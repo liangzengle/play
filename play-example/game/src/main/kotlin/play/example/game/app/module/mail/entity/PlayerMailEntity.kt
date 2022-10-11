@@ -2,32 +2,36 @@ package play.example.game.app.module.mail.entity
 
 import play.entity.cache.CacheIndex
 import play.entity.cache.InitialCacheSize
+import play.example.game.app.module.common.model.I18nText
 import play.example.game.app.module.player.entity.AbstractPlayerEntity
-import play.example.game.app.module.reward.model.Reward
+import play.example.game.app.module.reward.model.RewardList
+import play.util.primitive.Bit
 
 @InitialCacheSize("x100")
 class PlayerMailEntity(
   id: Long,
-  @CacheIndex override val playerId: Long,
-  val title: String,
-  val content: String,
-  val rewards: List<Reward>,
+  @CacheIndex
+  override val playerId: Long,
+  val title: I18nText,
+  val content: I18nText,
+  val rewards: RewardList,
   val logSource: Int,
   var status: Int,
-  val createTime: Long
+  val createTime: Long,
+  val displayTime: Long
 ) : AbstractPlayerEntity(id) {
 
   fun setRead() {
-    status = status or 1
+    status = Bit.set1(status, 1)
   }
 
-  fun isRead() = (status and 1) != 0
+  fun isRead() = Bit.is1(status, 1)
 
   fun setRewarded() {
-    status = status or 2
+    status = Bit.set1(status, 2)
   }
 
-  fun isRewarded() = (status and 2) != 0
+  fun isRewarded() = Bit.is1(status, 2)
 
   fun hasReward() = !isRewarded() && rewards.isNotEmpty()
 

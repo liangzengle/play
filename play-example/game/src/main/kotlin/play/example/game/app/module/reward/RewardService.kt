@@ -4,8 +4,11 @@ import org.eclipse.collections.impl.factory.primitive.IntObjectMaps
 import org.springframework.stereotype.Component
 import play.Orders
 import play.example.common.StatusCode
-import play.example.game.app.module.mail.MailService
+import play.example.game.app.module.common.res.CommonSettingConf
+import play.example.game.app.module.mail.entity.Mail
+import play.example.game.app.module.mail.event.PlayerMailEvent
 import play.example.game.app.module.player.PlayerManager.Self
+import play.example.game.app.module.player.event.PlayerEventBus
 import play.example.game.app.module.reward.exception.RewardProcessorNotFoundException
 import play.example.game.app.module.reward.model.*
 import play.example.game.app.module.reward.model.TransformedResult.*
@@ -17,7 +20,7 @@ import play.util.logging.getLogger
 
 @Component
 class RewardService(
-  private val mailService: MailService,
+  private val playerEventBus: PlayerEventBus,
   processorList: List<RewardProcessor>
 ) {
   private val logger = getLogger()
@@ -98,7 +101,12 @@ class RewardService(
     if (tryResultSet.bagFullStrategy == BagFullStrategy.Mail) {
       val mailRewards = results.mapNotNull { it.mailReward }
       if (mailRewards.isNotEmpty()) {
-        mailService.sendMail(self, 1, mailRewards, logSource)
+        val mail = Mail {
+          title(CommonSettingConf.bagFullMailTitleId)
+          content(CommonSettingConf.bagFullMailContentId)
+          rewards(mailRewards, logSource)
+        }
+        playerEventBus.post(PlayerMailEvent(self.id, mail))
       }
     }
     log(self, results, logSource)

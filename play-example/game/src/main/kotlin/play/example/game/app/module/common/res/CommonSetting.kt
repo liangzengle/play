@@ -1,8 +1,8 @@
 package play.example.game.app.module.common.res
 
+import jakarta.validation.constraints.Min
 import org.eclipse.collections.api.map.primitive.LongLongMap
 import org.eclipse.collections.impl.factory.primitive.LongLongMaps
-import play.example.game.app.module.mail.res.MailResource
 import play.res.AbstractResource
 import play.res.SingletonResource
 import play.res.validation.constraints.ReferTo
@@ -14,9 +14,15 @@ import play.res.validation.constraints.ReferTo
 @SingletonResource
 class CommonSetting : AbstractResource() {
 
-  // 背包满时发邮件的id
-  @ReferTo(MailResource::class)
-  val bagFullMailId = 1
+  // 背包满时发邮件的标题id
+  @ReferTo(TemplateMessageResource::class)
+  @Min(1)
+  val bagFullMailTitleId = 1
+
+  // 背包满时发邮件的内容id
+  @ReferTo(TemplateMessageResource::class)
+  @Min(1)
+  val bagFullMailContentId = 2
 
   val array: List<Int> = emptyList()
 

@@ -1,5 +1,6 @@
 package play.example.game.app.module.modulecontrol.entity
 
+import org.eclipse.collections.api.set.primitive.IntSet
 import org.eclipse.collections.impl.factory.primitive.IntSets
 import play.example.game.app.module.player.entity.AbstractPlayerEntity
 
@@ -17,5 +18,5 @@ class PlayerModuleControlEntity(id: Long) : AbstractPlayerEntity(id) {
     open.add(id)
   }
 
-  fun getOpened() = open
+  fun getOpened(): IntSet = open
 }

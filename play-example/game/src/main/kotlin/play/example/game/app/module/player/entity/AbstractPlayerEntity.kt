@@ -39,7 +39,7 @@ abstract class AbstractPlayerEntity(id: Long) : LongIdEntity(id), PlayerEntityLi
 @CacheSpec(expireEvaluator = PlayerEntityExpireEvaluator::class)
 @Merge(Merge.Strategy.All)
 @ShouldSpecifyInitialCacheSize
-abstract class AbstractIndexedPlayerEntity<ID : PlayerObjId>(id: ID) : ObjIdEntity<ID>(id), PlayerEntityLike {
+abstract class AbstractPlayerObjIdEntity<ID : PlayerObjId>(id: ID) : ObjIdEntity<ID>(id), PlayerEntityLike {
   override val playerId: Long get() = id.playerId
 }
 

@@ -8,6 +8,7 @@ import org.eclipse.collections.impl.list.mutable.FastList
 import play.example.game.app.module.reward.model.Cost
 import play.example.game.app.module.reward.model.Reward
 import play.example.game.app.module.reward.model.RewardList
+import play.example.game.app.module.reward.res.RawReward
 
 /**
  *
@@ -86,15 +87,25 @@ object RewardHelper {
 
   @JvmStatic
   fun parseRewardString(string: String): List<Reward> {
+    return parseRewardString(string) { id, num -> Reward(id.toInt(), num.toLong()) }
+  }
+
+  @JvmStatic
+  fun parseRewardStringAsRawRewards(string: String): List<RawReward> {
+    return parseRewardString(string) { id, num -> RawReward(id.toInt(), num) }
+  }
+
+  @JvmStatic
+  private fun <T : Any> parseRewardString(string: String, mapper: (String, String) -> T): List<T> {
     try {
       return Splitter.on(ElementSplitter).split(string)
         .asSequence()
         .filter { it.isNotBlank() }
         .map { element ->
           val iterator = Splitter.on(AttributeSplitter).split(element).iterator()
-          val cfgId = iterator.next().toInt()
-          val num = iterator.next().toLong()
-          Reward(cfgId, num)
+          val cfgId = iterator.next()
+          val num = iterator.next()
+          mapper(cfgId, num)
         }
         .toList()
     } catch (e: Exception) {

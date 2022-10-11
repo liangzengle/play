@@ -3,7 +3,6 @@ package play.example.game.app.module.item.res
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.NullNode
 import jakarta.validation.Valid
-import play.example.game.app.module.common.res.CommonSetting
 import play.example.game.app.module.item.domain.ItemType
 import play.example.game.app.module.reward.res.RawReward
 import play.res.*
@@ -30,9 +29,6 @@ class ItemResource : AbstractResource(), ItemLikeResource, ExtensionKey<ItemReso
   @Valid
   val rewards = emptyList<RawReward>()
 
-  var bagFullMailId = 0
-    private set
-
   override fun key(): String {
     return id.toString()
   }
@@ -43,8 +39,6 @@ class ItemResource : AbstractResource(), ItemLikeResource, ExtensionKey<ItemReso
 
   override fun initialize(resourceSetProvider: ResourceSetProvider, errors: MutableCollection<String>) {
     println("ItemResource postInitialize: $this")
-    val commonSetting = resourceSetProvider.getSingleton(CommonSetting::class.java)
-    bagFullMailId = commonSetting.get().bagFullMailId
   }
 
   override fun toString(): String {

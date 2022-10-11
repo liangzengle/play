@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package play.example.module.common.message;
+
+message I18nTextProto{
+  oneof Content {
+    string plainText = 1;
+    TemplateTextProto tplText = 2;
+  }
+}
+
+message PlainTextProto {
+  string text = 1;
+}
+
+message TemplateTextProto {
+  int32 tplId = 1;
+  repeated ArgProto args = 2;
+}
+
+message ArgProto {
+  oneof Content {
+    NumArgProto num = 1;
+    TextArgProto text = 2;
+    IdArgProto id = 3;
+  }
+}
+
+message NumArgProto {
+  int64 value = 1;
+}
+
+message TextArgProto {
+  string value = 1;
+}
+
+message IdArgProto {
+  int32 value = 1;
+  IdArgType type = 2;
+}
+
+enum IdArgType {
+  none = 0;
+  item = 1;
+}
