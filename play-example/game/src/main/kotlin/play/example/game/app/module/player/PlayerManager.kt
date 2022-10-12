@@ -15,7 +15,6 @@ import play.example.game.app.module.player.event.PlayerEvent
 import play.example.game.app.module.player.event.PlayerEventDispatcher
 import play.example.game.app.module.player.event.PromisedPlayerEvent
 import play.example.game.app.module.player.exception.PlayerNotExistsException
-import play.example.game.app.module.playertask.PlayerTaskEventReceiver
 import play.example.game.container.net.Session
 import play.example.module.login.message.LoginParams
 import play.mvc.Request
@@ -31,12 +30,12 @@ class PlayerManager(
   private val playerService: PlayerService,
   private val requestHandler: PlayerRequestHandler,
   override val actorScheduler: ActorRef<ActorScheduler.Command>,
-  private val taskEventReceiver: PlayerTaskEventReceiver,
   private val actorMdc: ActorMDC
 ) : AbstractTypedActor<PlayerManager.Command>(context), WithActorScheduler<PlayerManager.Command> {
 
   init {
     scheduleCron(Cron.EveryDay, NewDayStart)
+    subscribeEvent<PlayerEvent>()
   }
 
   override fun createReceive(): Receive<Command> {
@@ -106,7 +105,7 @@ class PlayerManager(
       actorName,
       classOf(),
       actorMdc,
-      PlayerActor.create(Self(id), eventDispatcher, playerService, requestHandler, taskEventReceiver)
+      PlayerActor.create(Self(id), eventDispatcher, playerService, requestHandler)
     )
   }
 
@@ -117,7 +116,6 @@ class PlayerManager(
       playerService: PlayerService,
       requestHandler: PlayerRequestHandler,
       actorScheduler: ActorRef<ActorScheduler.Command>,
-      taskEventReceiver: PlayerTaskEventReceiver,
       actorMdc: ActorMDC
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
@@ -128,7 +126,6 @@ class PlayerManager(
           playerService,
           requestHandler,
           actorScheduler,
-          taskEventReceiver,
           actorMdc
         )
       }

@@ -8,8 +8,10 @@ import akka.actor.typed.javadsl.Receive
 import org.eclipse.collections.api.factory.primitive.IntObjectMaps
 import play.akka.AbstractTypedActor
 import play.akka.logging.ActorMDC
+import play.event.EventBus
 import play.example.game.app.module.activity.base.res.ActivityResource
 import play.example.game.app.module.activity.base.res.ActivityResourceSet
+import play.example.game.app.module.server.event.ServerOpenEvent
 import play.spring.SingletonBeanContext
 import play.util.classOf
 import play.util.concurrent.PlayFuture
@@ -28,6 +30,12 @@ class ActivityManager(
 ) : AbstractTypedActor<ActivityManager.Command>(ctx) {
 
   private val activityActors = IntObjectMaps.mutable.empty<ActorRef<ActivityActor.Command>>()
+
+  init {
+    beanContext.getBean<EventBus>().subscribe0(ServerOpenEvent::class.java) {
+      self send Init
+    }
+  }
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()

@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import play.akka.scheduling.ActorScheduler
 import play.example.game.app.module.player.event.PlayerEventDispatcher
-import play.example.game.app.module.playertask.PlayerTaskEventReceiver
 import play.example.game.container.gs.GameServerScopeConfiguration
 import play.util.classOf
 
@@ -18,8 +17,7 @@ class PlayerSpringConfiguration : GameServerScopeConfiguration() {
     playerIdNameCache: PlayerIdNameCache,
     playerService: PlayerService,
     requestHandler: PlayerRequestHandler,
-    actorScheduler: ActorRef<ActorScheduler.Command>,
-    taskEventReceiver: PlayerTaskEventReceiver
+    actorScheduler: ActorRef<ActorScheduler.Command>
   ): ActorRef<PlayerManager.Command> {
     return spawn("PlayerManager", classOf()) { mdc ->
       PlayerManager.create(
@@ -28,7 +26,6 @@ class PlayerSpringConfiguration : GameServerScopeConfiguration() {
         playerService,
         requestHandler,
         actorScheduler,
-        taskEventReceiver,
         mdc
       )
     }

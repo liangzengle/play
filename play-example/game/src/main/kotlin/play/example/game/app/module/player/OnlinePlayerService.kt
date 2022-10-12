@@ -3,6 +3,8 @@ package play.example.game.app.module.player
 import org.jctools.maps.NonBlockingHashMapLong
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.domain.OnlinePlayer
+import play.example.game.app.module.player.event.PlayerEvent
+import play.example.game.app.module.player.event.PlayerEventBus
 import play.example.game.container.net.Session
 import play.example.module.login.message.LoginParams
 import play.mvc.Response
@@ -11,11 +13,12 @@ import play.util.collection.keysIterator
 import play.util.time.Time.currentMillis
 import java.time.Duration
 import java.util.*
+import java.util.function.LongFunction
 import java.util.stream.LongStream
 import java.util.stream.StreamSupport
 
 @Component
-class OnlinePlayerService(private val scheduler: Scheduler) {
+class OnlinePlayerService(private val scheduler: Scheduler, private val eventBus: PlayerEventBus) {
 
   private val onlinePlayers = NonBlockingHashMapLong<OnlinePlayer>()
 
@@ -76,5 +79,12 @@ class OnlinePlayerService(private val scheduler: Scheduler) {
   private fun cleanUp() {
     val expireLoginTime = currentMillis() - expireAfterLogout.toMillis()
     offlinePlayers.values.removeIf { it.logoutTime < expireLoginTime }
+  }
+
+  fun postEventToOnlinePlayers(mapper: LongFunction<PlayerEvent>) {
+    val it = onLinePlayerIdIterator()
+    while (it.hasNext()) {
+      eventBus.publish(mapper.apply(it.nextLong()))
+    }
   }
 }

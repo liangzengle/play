@@ -4,12 +4,12 @@ import org.eclipse.collections.api.set.primitive.IntSet
 import org.springframework.stereotype.Component
 import play.example.game.app.module.modulecontrol.entity.PlayerModuleControlEntityCache
 import play.example.game.app.module.modulecontrol.event.PlayerModuleOpenEvent
-import play.example.game.app.module.modulecontrol.res.ModuleControlResource
 import play.example.game.app.module.modulecontrol.res.ModuleControlResourceSet
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.condition.PlayerConditionService
-import play.example.game.app.module.player.condition.listenConditionEvents
-import play.example.game.app.module.player.event.*
+import play.example.game.app.module.player.condition.subscribeAll
+import play.example.game.app.module.player.event.PlayerEvent
+import play.example.game.app.module.player.event.PlayerEventBus
 import play.example.game.container.net.Session
 
 /**
@@ -21,11 +21,9 @@ class ModuleControlService(
   private val playerConditionService: PlayerConditionService,
   private val entityCache: PlayerModuleControlEntityCache,
   private val eventBus: PlayerEventBus
-) : PlayerEventListener {
-  override fun playerEventReceive(): PlayerEventReceive {
-    return PlayerEventReceiveBuilder()
-      .listenConditionEvents(ModuleControlResourceSet.list(), ModuleControlResource::conditions, ::checkOpen)
-      .build()
+) {
+  init {
+    eventBus.subscribeAll(ModuleControlResourceSet.list(), { it.conditions }, ::checkOpen)
   }
 
   fun isOpen(self: Self, id: Int): Boolean = isOpen(self.id, id)
@@ -45,7 +43,7 @@ class ModuleControlService(
         continue
       }
       entity.setOpen(moduleId)
-      eventBus.post(PlayerModuleOpenEvent(self.id, moduleId))
+      eventBus.publish(PlayerModuleOpenEvent(self.id, moduleId))
       Session.write(self.id, ModuleControlModule.moduleOpenPush(moduleId))
     }
   }

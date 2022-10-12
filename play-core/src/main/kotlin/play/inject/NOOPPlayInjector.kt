@@ -1,11 +1,17 @@
 package play.inject
 
+import java.lang.reflect.Type
+
 /**
  *
  * @author LiangZengle
  */
 object NOOPPlayInjector : PlayInjector {
   override fun <T> getInstance(type: Class<T>): T {
+    throw UnsupportedOperationException()
+  }
+
+  override fun <T> getInstance(type: Type): T {
     throw UnsupportedOperationException()
   }
 

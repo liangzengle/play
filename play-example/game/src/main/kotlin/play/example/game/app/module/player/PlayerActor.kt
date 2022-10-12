@@ -6,7 +6,6 @@ import akka.actor.typed.javadsl.Behaviors
 import akka.actor.typed.javadsl.Receive
 import play.akka.AbstractTypedActor
 import play.example.game.app.module.player.event.*
-import play.example.game.app.module.playertask.PlayerTaskEventReceiver
 import play.example.game.container.net.Session
 import play.example.game.container.net.SessionActor
 import play.example.module.login.message.LoginParams
@@ -19,8 +18,7 @@ class PlayerActor(
   private val me: PlayerManager.Self,
   private val eventDispatcher: PlayerEventDispatcher,
   private val playerService: PlayerService,
-  private val requestHandler: PlayerRequestHandler,
-  private val taskEventReceiver: PlayerTaskEventReceiver
+  private val requestHandler: PlayerRequestHandler
 ) : AbstractTypedActor<PlayerActor.Command>(context) {
 
   private var session: Session? = null
@@ -72,15 +70,7 @@ class PlayerActor(
       onRequest(event.message)
       return
     }
-    if (event is PlayerTaskEvent) {
-      taskEventReceiver.receive(me, event.taskEvent)
-      return
-    }
-    if (event is PromisedPlayerEvent<*>) {
-      eventDispatcher.dispatchPromised(me, event)
-    } else {
-      eventDispatcher.dispatch(me, event)
-    }
+    eventDispatcher.dispatch(me, event)
   }
 
   companion object {
@@ -88,11 +78,10 @@ class PlayerActor(
       self: PlayerManager.Self,
       eventDispatcher: PlayerEventDispatcher,
       playerService: PlayerService,
-      requestHandler: PlayerRequestHandler,
-      taskEventReceiver: PlayerTaskEventReceiver
+      requestHandler: PlayerRequestHandler
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
-        PlayerActor(ctx, self, eventDispatcher, playerService, requestHandler, taskEventReceiver)
+        PlayerActor(ctx, self, eventDispatcher, playerService, requestHandler)
       }
     }
   }

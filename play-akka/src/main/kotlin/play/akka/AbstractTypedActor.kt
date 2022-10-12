@@ -22,8 +22,16 @@ abstract class AbstractTypedActor<T>(context: ActorContext<T>) : AbstractBehavio
   protected inline val log: Logger get() = context.log
   protected inline val ec: ExecutionContextExecutor get() = context.executionContext
 
-  protected inline fun <reified T1 : T> subscribe() {
+  protected inline fun <reified T1 : T> subscribeEvent() {
     context.system.eventStream().tell(EventStream.Subscribe(T1::class.java, self.narrow<T1>()))
+  }
+
+  protected inline fun <T1 : T> subscribeEvent(eventType: Class<T1>) {
+    context.system.eventStream().tell(EventStream.Subscribe(eventType, self.narrow<T1>()))
+  }
+
+  protected fun publishEvent(event: Any) {
+    context.system.eventStream().tell(EventStream.Publish(event))
   }
 
   protected inline fun newBehaviorBuilder(): BehaviorBuilder<T> = BehaviorBuilder.create()

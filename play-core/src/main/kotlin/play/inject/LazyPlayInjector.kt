@@ -1,11 +1,17 @@
 package play.inject
 
+import java.lang.reflect.Type
+
 /**
  *
  * @author LiangZengle
  */
 class LazyPlayInjector(private val lazyInjector: Lazy<PlayInjector>) : PlayInjector {
   override fun <T> getInstance(type: Class<T>): T {
+    return lazyInjector.value.getInstance(type)
+  }
+
+  override fun <T> getInstance(type: Type): T {
     return lazyInjector.value.getInstance(type)
   }
 

@@ -23,7 +23,7 @@ class PaymentHttpController(manager: AdminHttpActionManager, private val playerE
   @Route("/pay")
   fun pay(playerId: Long, productType: ProductType, productId: Int): HttpResult {
     val promise = PlayPromise.make<Result2<*>>()
-    playerEventBus.post(PlayerProductOrderEvent(playerId, productType, productId, promise))
+    playerEventBus.publish(PlayerProductOrderEvent(playerId, productType, productId, promise))
     return promise.future
       .map(::toHttpResult)
       .recover(PlayerNotExistsException::class.java) { ok(10001, it.message ?: "Player not exists") }

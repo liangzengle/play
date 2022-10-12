@@ -10,14 +10,10 @@ import org.springframework.stereotype.Component
 import play.db.QueryService
 import play.entity.cache.EntityCacheWriter
 import play.event.EventBus
-import play.event.EventListener
-import play.event.EventReceive
 import play.example.game.app.module.platform.domain.Platform
-import play.example.game.app.module.player.event.PlayerEventBus
 import play.example.game.app.module.server.entity.ServerEntity
 import play.example.game.app.module.server.entity.ServerEntityCache
 import play.example.game.app.module.server.event.ServerOpenEvent
-import play.example.game.app.module.server.event.ServerOpenPlayerEvent
 import play.example.game.app.module.server.res.ServerConfig
 import play.spring.OrderedSmartInitializingSingleton
 import play.util.classOf
@@ -34,10 +30,9 @@ class ServerService(
   queryService: QueryService,
   private val serverEntityCache: ServerEntityCache,
   private val conf: ServerConfig,
-  private val playerEventBus: PlayerEventBus,
   private val eventBus: EventBus,
   private val entityCacheWriter: EntityCacheWriter
-) : OrderedSmartInitializingSingleton, EventListener, ApplicationListener<ApplicationStartedEvent> {
+) : OrderedSmartInitializingSingleton, ApplicationListener<ApplicationStartedEvent> {
 
   private val serverIds: ImmutableIntSet
 
@@ -53,16 +48,12 @@ class ServerService(
       throw IllegalStateException("配置的服id在数据库中不存在: $serverId")
     }
     this.serverIds = serverIds.toImmutable()
+
+    eventBus.subscribe(ServerOpenEvent::class.java, ::onServerOpen)
   }
 
   override fun afterSingletonsInstantiated() {
     serverEntityCache.getOrCreate(serverId, ::ServerEntity)
-  }
-
-  override fun eventReceive(): EventReceive {
-    return newEventReceiveBuilder()
-      .match(::onServerOpen)
-      .build()
   }
 
   fun getServerIds(): IntSet {
@@ -92,8 +83,7 @@ class ServerService(
       }
     }
     entityCacheWriter.update(entity)
-    eventBus.post(ServerOpenEvent)
-    playerEventBus.postToOnlinePlayers { ServerOpenPlayerEvent(it) }
+    eventBus.publish(ServerOpenEvent)
   }
 
   fun isOpen() = getOpenDate() != null

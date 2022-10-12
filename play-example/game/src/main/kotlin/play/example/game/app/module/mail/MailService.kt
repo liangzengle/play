@@ -8,10 +8,13 @@ import play.example.game.app.module.common.model.I18nText
 import play.example.game.app.module.mail.entity.*
 import play.example.game.app.module.mail.event.PlayerCheckMailboxEvent
 import play.example.game.app.module.mail.event.PlayerMailEvent
+import play.example.game.app.module.player.OnlinePlayerService
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.condition.PlayerCondition
 import play.example.game.app.module.player.condition.PlayerConditionService
-import play.example.game.app.module.player.event.*
+import play.example.game.app.module.player.event.PlayerEventBus
+import play.example.game.app.module.player.event.PlayerLoginEvent
+import play.example.game.app.module.player.event.subscribe
 import play.example.game.app.module.reward.RawRewardConverter
 import play.example.game.app.module.reward.RewardService
 import play.example.game.app.module.reward.message.toProto
@@ -35,18 +38,19 @@ class MailService(
   private val rawRewardConvert: RawRewardConverter,
   private val playerConditionService: PlayerConditionService,
   private val uidGenerator: UIDGenerator,
-  private val playerEventBus: PlayerEventBus,
+  private val onlinePlayerService: OnlinePlayerService,
   private val rewardService: RewardService
-) : PlayerEventListener, OrderedSmartInitializingSingleton {
+) : OrderedSmartInitializingSingleton {
   private val mailCountMax = 100
+
+  init {
+    eventBus.subscribe<PlayerLoginEvent>(::onLogin)
+    eventBus.subscribe<PlayerMailEvent>(::sendMail)
+    eventBus.subscribe<PlayerCheckMailboxEvent>(::checkMailBox)
+  }
 
   override fun afterSingletonsInstantiated() {
     deleteExpiredPublicMails()
-  }
-
-  override fun playerEventReceive(): PlayerEventReceive {
-    return PlayerEventReceiveBuilder().match<PlayerLoginEvent>(::onLogin).match(::sendMail)
-      .match<PlayerCheckMailboxEvent>(::checkMailBox).build()
   }
 
   private fun deleteExpiredPublicMails() {
@@ -86,7 +90,7 @@ class MailService(
   private fun sendMail(self: Self, event: PlayerMailEvent) = sendMail(self, event.mail)
 
   fun sendMail(playerId: Long, mail: Mail) {
-    eventBus.post(PlayerMailEvent(playerId, mail))
+    eventBus.publish(PlayerMailEvent(playerId, mail))
   }
 
   fun sendMail(self: Self, mail: Mail) {
@@ -149,7 +153,7 @@ class MailService(
       expireTime,
       currentMillis()
     )
-    playerEventBus.postToOnlinePlayers(::PlayerCheckMailboxEvent)
+    onlinePlayerService.postEventToOnlinePlayers(::PlayerCheckMailboxEvent)
   }
 
   fun reqMailList(self: Self, num: Int): MailListProto {

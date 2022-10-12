@@ -1,11 +1,13 @@
 package play.example.game.app.module.playertask
 
+import mu.KLogging
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.PlayerManager.Self
+import play.example.game.app.module.player.event.PlayerEventBus
+import play.example.game.app.module.player.event.subscribe
 import play.example.game.app.module.playertask.event.AbstractPlayerTaskEvent
 import play.example.game.app.module.task.entity.AbstractTask
 import play.example.game.app.module.task.res.AbstractTaskResource
-import play.util.logging.getLogger
 
 /**
  * 任务事件接收器
@@ -14,12 +16,17 @@ import play.util.logging.getLogger
  */
 @Component
 class PlayerTaskEventReceiver(
-  private val taskServices: List<AbstractPlayerTaskService<AbstractTask, AbstractTaskResource>>
+  private val taskServices: List<AbstractPlayerTaskService<AbstractTask, AbstractTaskResource>>,
+  eventBus: PlayerEventBus
 ) {
 
-  private val logger = getLogger()
+  companion object : KLogging()
 
-  fun receive(self: Self, event: AbstractPlayerTaskEvent) {
+  init {
+    eventBus.subscribe(::onEvent)
+  }
+
+  private fun onEvent(self: Self, event: AbstractPlayerTaskEvent) {
     val taskService = this.taskServices
     for (i in taskService.indices) {
       val service = taskService[i]

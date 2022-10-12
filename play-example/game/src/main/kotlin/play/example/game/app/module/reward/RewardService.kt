@@ -106,7 +106,7 @@ class RewardService(
           content(CommonSettingConf.bagFullMailContentId)
           rewards(mailRewards, logSource)
         }
-        playerEventBus.post(PlayerMailEvent(self.id, mail))
+        playerEventBus.publish(PlayerMailEvent(self.id, mail))
       }
     }
     log(self, results, logSource)

@@ -30,29 +30,27 @@ class PlayerService(
   private val onlinePlayerService: OnlinePlayerService,
   private val playerIdNameCache: PlayerIdNameCache,
   private val playerScheduler: PlayerScheduler
-) : PlayerEventListener {
+) {
 
   companion object : KLogging()
 
-  override fun playerEventReceive(): PlayerEventReceive {
-    return PlayerEventReceiveBuilder()
-      .match<PlayerPreLoginEvent>(::preLogin)
-      .build()
+  init {
+    eventBus.subscribe<PlayerPreLoginEvent>(::preLogin)
   }
 
   fun onNewDayStart(self: Self) {
     val player = playerCache.getOrThrow(self.id)
     if (!isToday(player.dtime)) {
       player.dtime = currentMillis()
-      eventBus.postSync(self, PlayerNewDayStartEvent(self.id))
+      eventBus.publishSync(self, PlayerNewDayStartEvent(self.id))
     }
     if (!isCurrentWeek(player.wtime)) {
       player.wtime = currentMillis()
-      eventBus.postSync(self, PlayerNewWeekStartEvent(self.id))
+      eventBus.publishSync(self, PlayerNewWeekStartEvent(self.id))
     }
     if (!isCurrentMonth(player.mtime)) {
       player.mtime = currentMillis()
-      eventBus.postSync(self, PlayerNewMonthStartEvent(self.id))
+      eventBus.publishSync(self, PlayerNewMonthStartEvent(self.id))
     }
   }
 
@@ -127,7 +125,7 @@ class PlayerService(
   fun costAsync(playerId: Long, costs: List<Cost>, source: Int): PlayFuture<Result2<CostResultSet>> {
     val costPromise = PlayPromise.make<Result2<CostResultSet>>()
     val costRequest = PlayerExecCost(playerId, costs, source, costPromise)
-    eventBus.post(costRequest)
+    eventBus.publish(costRequest)
     return costPromise.future
   }
 }

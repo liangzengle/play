@@ -47,7 +47,7 @@ class PlayerScheduler(
     triggerTimeMillis: Long
   ) {
     val cancellable = scheduler.scheduleAt(Time.toLocalDateTime(triggerTimeMillis)) {
-      playerEventBus.post(triggerEvent)
+      playerEventBus.publish(triggerEvent)
     }
     val playerSchedules = getPlayerSchedules(self)
     playerSchedules[triggerEvent] = cancellable
@@ -109,7 +109,7 @@ class PlayerScheduler(
     interval: Duration
   ) {
     val cancellable = scheduler.scheduleWithFixedDelay(initialDelay, interval) {
-      playerEventBus.post(triggerEvent)
+      playerEventBus.publish(triggerEvent)
     }
     val playerSchedules = getPlayerSchedules(self)
     playerSchedules[triggerEvent] = cancellable

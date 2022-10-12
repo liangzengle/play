@@ -12,9 +12,9 @@ import play.example.game.app.module.activity.impl.login.domain.LoginActivityStat
 import play.example.game.app.module.activity.impl.login.res.LoginActivityResourceSet
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerServiceFacade
-import play.example.game.app.module.player.event.PlayerEventListener
-import play.example.game.app.module.player.event.PlayerEventReceive
+import play.example.game.app.module.player.event.PlayerEventBus
 import play.example.game.app.module.player.event.PlayerNewWeekStartEvent
+import play.example.game.app.module.player.event.subscribe
 import play.example.game.app.module.reward.message.toProto
 import play.example.reward.message.RewardResultSetProto
 import play.util.control.Result2
@@ -29,14 +29,14 @@ import play.util.primitive.Bit
 class LoginActivityHandler(
   private val serviceFacade: PlayerServiceFacade,
   private val playerActivityService: PlayerActivityService,
-) : ActivityHandler, PlayerEventListener {
-  override fun type(): ActivityType = ActivityType.LOGIN
+  eventBus: PlayerEventBus
+) : ActivityHandler {
 
-  override fun playerEventReceive(): PlayerEventReceive {
-    return newPlayerEventReceiveBuilder()
-      .match<PlayerNewWeekStartEvent>(::onNewDayStart)
-      .build()
+  init {
+    eventBus.subscribe<PlayerNewWeekStartEvent>(::onNewDayStart)
   }
+
+  override fun type(): ActivityType = ActivityType.LOGIN
 
   private fun onNewDayStart(self: PlayerManager.Self) {
     playerActivityService.process(self, ActivityType.LOGIN) { _, playerEntity ->

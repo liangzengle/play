@@ -6,7 +6,7 @@
       "base": "NOW",
       "offset": "10s"
     },
-    "duration": "10s",
+    "duration": "30m",
     "noticeAhead": "5s",
     "closeDelay": "10s"
   },
@@ -17,7 +17,7 @@
       "base": "NOW",
       "offset": "20s"
     },
-    "duration": "10m",
+    "duration": "30m",
     "parentId": 1000,
     "noticeAhead": "1m",
     "closeDelay": "1m",

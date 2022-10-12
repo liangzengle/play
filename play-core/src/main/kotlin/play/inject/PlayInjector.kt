@@ -1,5 +1,6 @@
 package play.inject
 
+import java.lang.reflect.Type
 import kotlin.reflect.KClass
 
 /**
@@ -8,6 +9,8 @@ import kotlin.reflect.KClass
 interface PlayInjector {
 
   fun <T> getInstance(type: Class<T>): T
+
+  fun <T> getInstance(type: Type): T
 
   fun <T> getInstance(type: Class<T>, name: String): T
 

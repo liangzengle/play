@@ -1,46 +1,49 @@
 package play.example.game.app.module.player.event
 
-import akka.actor.typed.ActorRef
-import org.springframework.beans.factory.ObjectProvider
-import org.springframework.stereotype.Component
-import play.example.game.app.module.player.OnlinePlayerService
-import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.playertask.event.AbstractPlayerTaskEvent
-import java.util.function.LongFunction
+import kotlin.reflect.KClass
 
-@Component
-class PlayerEventBus(
-  private val playerManager: ObjectProvider<ActorRef<PlayerManager.Command>>,
-  private val onlinePlayerService: OnlinePlayerService,
-  private val dispatcher: ObjectProvider<PlayerEventDispatcher>
-) {
-  private var _playerManager: ActorRef<PlayerManager.Command>? = null
-  private var _dispatcher: PlayerEventDispatcher? = null
+interface PlayerEventBus {
+  fun publish(event: PlayerEvent)
 
-  fun post(event: PlayerEvent) {
-    if (_playerManager == null) {
-      _playerManager = playerManager.getObject()
+  fun publishSync(self: Self, event: PlayerEvent)
+
+  fun publish(playerId: Long, event: AbstractPlayerTaskEvent) {
+    publish(PlayerTaskEvent(playerId, event))
+  }
+
+  fun publish(self: Self, event: AbstractPlayerTaskEvent) {
+    publish(self.id, event)
+  }
+
+  fun <T> subscribe(eventType: Class<T>, action: (Self) -> Unit) {
+    subscribe(eventType) { self, _ ->
+      action(self)
     }
-    _playerManager!!.tell(event)
   }
 
-  fun post(playerId: Long, event: AbstractPlayerTaskEvent) {
-    post(PlayerTaskEvent(playerId, event))
-  }
+  fun <T> subscribe(eventType: Class<T>, action: (Self, T) -> Unit)
 
-  fun post(self: Self, event: AbstractPlayerTaskEvent) {
-    post(self.id, event)
-  }
-
-  fun postSync(self: Self, event: PlayerEvent) {
-    if (_dispatcher == null) {
-      _dispatcher = dispatcher.getObject()
+  fun <T : Any> subscribe(eventType: KClass<T>, action: (Self) -> Unit) {
+    subscribe(eventType) { self, _ ->
+      action(self)
     }
-    _dispatcher!!.dispatch(self, event)
   }
 
-  fun postToOnlinePlayers(eventFactory: LongFunction<out PlayerEvent>) {
-    onlinePlayerService.onLinePlayerIdIterator().forEach { post(eventFactory.apply(it)) }
+  fun <T : Any> subscribe(eventType: KClass<T>, action: (Self, T) -> Unit) {
+    subscribe(eventType.java, action)
   }
+}
+
+inline fun <reified T> PlayerEventBus.subscribe(noinline action: (Self, T) -> Unit) {
+  subscribe(T::class.java, action)
+}
+
+inline fun <reified T> PlayerEventBus.subscribe(noinline action: (Self) -> Unit) {
+  subscribe(T::class.java, action)
+}
+
+inline fun <reified T> PlayerEventBus.subscribe(noinline action: () -> Unit) {
+  subscribe(T::class.java) { _ -> action() }
 }

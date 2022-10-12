@@ -1,8 +1,11 @@
 package play.inject
 
+import org.springframework.beans.factory.NoSuchBeanDefinitionException
 import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.context.ApplicationContext
+import org.springframework.core.ResolvableType
 import play.util.logging.getLogger
+import java.lang.reflect.Type
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -19,6 +22,12 @@ class SpringPlayInjector(private val ctx: ApplicationContext) : PlayInjector, Sm
   override fun <T> getInstance(type: Class<T>): T {
     if (!instantiated) throw IllegalStateException("Singletons NOT Instantiated: getInstance(${type.name})")
     return ctx.getBean(type)
+  }
+
+  override fun <T> getInstance(type: Type): T {
+    if (!instantiated) throw IllegalStateException("Singletons NOT Instantiated: getInstance(${type})")
+    val resolvableType = ResolvableType.forType(type)
+    return ctx.getBeanProvider<T>(resolvableType).ifAvailable ?: throw NoSuchBeanDefinitionException(resolvableType)
   }
 
   override fun <T> getInstance(type: Class<T>, name: String): T {
