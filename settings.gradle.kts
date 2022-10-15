@@ -44,6 +44,7 @@ include("play-eclipse-collectionx")
 include("play-spring")
 include("play-primitive-collection")
 include("play-kryo")
+include("play-dokka")
 
 includeProject("play-httpclient-api", "play-httpclient")
 includeProject("play-httpclient-async", "play-httpclient")

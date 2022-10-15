@@ -21,6 +21,13 @@ object Deps {
     const val Core = "org.assertj:assertj-core:${Versions.Assertj}"
   }
 
+  object Dokka {
+    const val Core = "org.jetbrains.dokka:dokka-core:${Versions.Dokka}"
+    const val Base = "org.jetbrains.dokka:dokka-base:${Versions.Dokka}"
+    const val TestApi = "org.jetbrains.dokka:dokka-test-api:${Versions.Dokka}"
+    const val TestUtils = "org.jetbrains.dokka:dokka-base-test-utils:${Versions.Dokka}"
+  }
+
   object Hibernate {
     private const val Version = Versions.HibernateValidator
     const val Validator = "org.hibernate.validator:hibernate-validator:$Version"
@@ -47,6 +54,7 @@ object Deps {
 
   object Jackson {
     private const val Version = Versions.Jackson
+    const val DataBind = "com.fasterxml.jackson.core:jackson-databind:$Version"
     const val Kotlin = "com.fasterxml.jackson.module:jackson-module-kotlin:$Version"
     const val Jdk8 = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:$Version"
     const val JavaTime = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$Version"

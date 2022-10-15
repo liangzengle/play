@@ -13,6 +13,7 @@ object Versions {
   const val Caffeine = "3.0.6"
   const val Checker = "3.21.4"
   const val ClassGraph = "4.8.143"
+  const val Dokka = "1.7.20"
   const val EclipseCollections = "11.1.0"
   const val FastUtil = "8.5.6"
   const val Guava = "31.1-jre"
