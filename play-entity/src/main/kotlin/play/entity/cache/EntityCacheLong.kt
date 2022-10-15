@@ -21,7 +21,7 @@ interface EntityCacheLong<E : LongIdEntity> : EntityCache<Long, E> {
 
   override fun getCached(id: Long): Optional<E>
 
-  fun getAll(ids: LongIterable): List<E>
+  fun getAll(ids: LongIterable): MutableList<E>
 
   override fun delete(id: Long)
 

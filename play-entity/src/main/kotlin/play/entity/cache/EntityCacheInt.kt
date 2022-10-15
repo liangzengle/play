@@ -21,7 +21,7 @@ interface EntityCacheInt<E : IntIdEntity> : EntityCache<Int, E> {
 
   override fun getCached(id: Int): Optional<E>
 
-  fun getAll(ids: IntIterable): List<E>
+  fun getAll(ids: IntIterable): MutableList<E>
 
   override fun delete(id: Int)
 

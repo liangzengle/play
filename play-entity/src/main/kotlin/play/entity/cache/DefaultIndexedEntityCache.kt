@@ -90,7 +90,7 @@ class DefaultIndexedEntityCache<IDX, ID, E : Entity<ID>>(
     }
   }
 
-  override fun getByIndex(index: IDX): List<E> {
+  override fun getByIndex(index: IDX): MutableList<E> {
     val idSet = getIds(index)
     return getAll(Collections.unmodifiableSet(idSet))
   }

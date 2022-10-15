@@ -1,6 +1,7 @@
 package play.entity.cache.chm
 
 import mu.KLogging
+import org.eclipse.collections.api.factory.Lists
 import org.eclipse.collections.impl.factory.primitive.LongLists
 import org.eclipse.collectionx.toJava
 import play.entity.LongIdEntity
@@ -251,12 +252,12 @@ class CHMEntityCacheLong<E : LongIdEntity>(
     return getCache().values.asSequence().filterIsInstance<NonEmpty<E>>().map { it.peekEntity() }
   }
 
-  override fun getAll(ids: Iterable<Long>): List<E> {
+  override fun getAll(ids: Iterable<Long>): MutableList<E> {
     return getAll(LongIterable.fromJava(ids))
   }
 
-  override fun getAll(ids: LongIterable): List<E> {
-    val result = LinkedList<E>()
+  override fun getAll(ids: LongIterable): MutableList<E> {
+    val result = Lists.mutable.empty<E>()
     val missing = LongLists.mutable.empty()
     for (id in ids) {
       val entity = getOrNull(id)

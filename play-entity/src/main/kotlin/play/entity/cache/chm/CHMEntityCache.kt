@@ -1,6 +1,7 @@
 package play.entity.cache.chm
 
 import mu.KLogging
+import org.eclipse.collections.api.factory.Lists
 import play.entity.Entity
 import play.entity.cache.*
 import play.inject.PlayInjector
@@ -248,9 +249,9 @@ class CHMEntityCache<ID, E : Entity<ID>>(
     return getCache().values.asSequence().filterIsInstance<NonEmpty<ID, E>>().map { it.peekEntity() }
   }
 
-  override fun getAll(ids: Iterable<ID>): List<E> {
-    val result = LinkedList<E>()
-    val missing = arrayListOf<ID>()
+  override fun getAll(ids: Iterable<ID>): MutableList<E> {
+    val result = Lists.mutable.empty<E>()
+    val missing = Lists.mutable.empty<ID>()
     for (id in ids) {
       val entity = getOrNull(id)
       if (entity != null) {
@@ -259,7 +260,7 @@ class CHMEntityCache<ID, E : Entity<ID>>(
         missing.add(id)
       }
     }
-    if (missing.isEmpty()) {
+    if (missing.isEmpty) {
       return result
     }
     val loaded = entityCacheLoader.loadAll(entityClass, missing).collectList()

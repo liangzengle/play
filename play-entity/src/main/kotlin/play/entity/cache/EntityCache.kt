@@ -42,7 +42,7 @@ interface EntityCache<ID, E : Entity<ID>> {
   /**
    * 从缓存中获取实体对，如果不存在则从数据库中加载
    */
-  fun getAll(ids: Iterable<ID>): List<E>
+  fun getAll(ids: Iterable<ID>): MutableList<E>
 
   /**
    * 创建实体，如果实体已经存在则抛异常: [EntityExistsException]

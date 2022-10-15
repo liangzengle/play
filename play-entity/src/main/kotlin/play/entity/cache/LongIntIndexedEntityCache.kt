@@ -91,7 +91,7 @@ class LongIntIndexedEntityCache<E : LongIdEntity>(
     }
   }
 
-  override fun getByIndex(index: Int): List<E> {
+  override fun getByIndex(index: Int): MutableList<E> {
     return getAll(getIds(index))
   }
 

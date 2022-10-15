@@ -10,7 +10,7 @@ import play.util.collection.IntIterable
  */
 internal class EntityCacheIntWrapper<E : IntIdEntity>(private val underlying: EntityCache<Int, E>) : EntityCacheInt<E>,
   EntityCache<Int, E> by underlying {
-  override fun getAll(ids: IntIterable): List<E> {
+  override fun getAll(ids: IntIterable): MutableList<E> {
     return getAll(ids.toJava())
   }
 }

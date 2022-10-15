@@ -92,9 +92,8 @@ class ObjectLongIndexedEntityCache<ID, E : Entity<ID>>(
     }
   }
 
-  override fun getByIndex(index: Long): List<E> {
-    val idSet = getIds(index)
-    return getAll(Collections.unmodifiableSet(idSet))
+  override fun getByIndex(index: Long): MutableList<E> {
+    return getAll(getIds(index))
   }
 
   override fun getIndexSize(index: Long): Int {
