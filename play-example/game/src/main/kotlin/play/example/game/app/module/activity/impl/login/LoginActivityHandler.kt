@@ -53,7 +53,7 @@ class LoginActivityHandler(
       if (resource.id < data.days) {
         LoginActivityStatusCode.LoginNotEnough
       } else if (Bit.is1(data.flags, day)) {
-        LoginActivityStatusCode.Rewarded
+        LoginActivityStatusCode.RewardReceived
       } else {
         serviceFacade.tryAndExecReward(self, resource.rewards, LoginActivityLogSource.Reward).map {
           data.flags = Bit.set1(data.flags, day)

@@ -1,5 +1,6 @@
 package play.util.reflect
 
+import com.fasterxml.jackson.module.kotlin.isKotlinClass
 import com.google.common.collect.Iterables
 import com.google.common.reflect.TypeToken
 import play.util.EmptyClassArray
@@ -64,18 +65,23 @@ object Reflect {
   }
 
   @JvmStatic
+  fun <T> loadClass(fqcn: String, initialize: Boolean): Class<T> {
+    return Class.forName(fqcn, initialize, Reflect.javaClass.classLoader).unsafeCast()
+  }
+
+  @JvmStatic
   fun <T> loadClass(fqcn: String, initialize: Boolean, classLoader: ClassLoader): Class<T> {
     return Class.forName(fqcn, initialize, classLoader).unsafeCast()
   }
 
   @JvmStatic
   fun <T : Any> getKotlinObjectOrNull(clazz: Class<T>): T? {
-    return clazz.kotlin.objectInstance
+    return if (!clazz.isKotlinClass()) null else clazz.kotlin.objectInstance
   }
 
   @JvmStatic
   fun <T : Any> getKotlinObjectOrThrow(clazz: Class<T>): T {
-    return clazz.kotlin.objectInstance ?: throw IllegalStateException("$clazz is not declared as `object`")
+    return getKotlinObjectOrNull(clazz) ?: throw IllegalArgumentException("$clazz is not a kotlin object")
   }
 
   @JvmStatic

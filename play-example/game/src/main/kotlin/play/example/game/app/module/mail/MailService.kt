@@ -62,6 +62,7 @@ class MailService(
   }
 
   private fun onLogin(self: Self) {
+    forceDeleteTrashMails(self)
     checkMailBox(self)
   }
 
@@ -101,35 +102,33 @@ class MailService(
     playerMailCache.create(mailEntity)
 
     Session.write(self.id, MailModule.newMailPush(1))
-
-    forceDeleteTrashMails(self)
-    // TODO
   }
 
   private fun forceDeleteTrashMails(self: Self) {
-    var deleteCount = 0
-    if (playerMailCache.getIndexSize(self.id) >= mailCountMax) {
-      val mails = playerMailCache.getByIndex(self.id)
-      for (mail in mails) {
+    val mails = playerMailCache.getByIndex(self.id)
+    mails.sortBy { it.id }
+    // 清理已读且没有奖励的邮件
+    if (mails.size >= mailCountMax) {
+      val it = mails.iterator()
+      while (it.hasNext()) {
+        val mail = it.next()
         if (mail.isRead() && (!mail.hasReward() || mail.isRewarded())) {
           playerMailCache.delete(mail)
-          deleteCount++
+          it.remove()
         }
       }
     }
 
-    if (playerMailCache.getIndexSize(self.id) >= mailCountMax) {
-      val mails = playerMailCache.getByIndex(self.id)
-      for (mail in mails) {
+    // 清理没有奖励的邮件
+    if (mails.size >= mailCountMax) {
+      val it = mails.iterator()
+      while (it.hasNext()) {
+        val mail = it.next()
         if (!mail.hasReward()) {
           playerMailCache.delete(mail)
-          deleteCount++
+          it.remove()
         }
       }
-    }
-
-    if (deleteCount > 0) {
-      Session.write(self.id, MailModule.forceDeleteTrashMailsPush(deleteCount))
     }
   }
 
@@ -156,8 +155,10 @@ class MailService(
     onlinePlayerService.postEventToOnlinePlayers(::PlayerCheckMailboxEvent)
   }
 
-  fun reqMailList(self: Self, num: Int): MailListProto {
-    return MailListProto(playerMailCache.getByIndex(self.id).map(::toProto))
+  fun reqMailList(self: Self, start: Int, count: Int): MailListProto {
+    val mails = playerMailCache.getByIndex(self.id)
+    mails.sortBy { it.id }
+    return MailListProto(mails.subList(start, start + count).map(::toProto))
   }
 
   private fun toProto(entity: PlayerMailEntity): MailProto {
@@ -174,10 +175,13 @@ class MailService(
   fun reqMailReward(self: Self, mailId: Long): Result2<RewardResultSetProto> {
     val entity = playerMailCache.get(mailId).getOrNull() ?: return StatusCode.Failure
     if (entity.playerId != self.id) {
-      return StatusCode.Failure
+      return StatusCode.ParamErr
+    }
+    if (!entity.hasReward()) {
+      return StatusCode.ParamErr
     }
     if (entity.isRewarded()) {
-      return StatusCode.Failure
+      return StatusCode.RewardReceived
     }
     return rewardService.tryAndExecReward(self, entity.rewards, entity.logSource).map {
       entity.setRewarded()

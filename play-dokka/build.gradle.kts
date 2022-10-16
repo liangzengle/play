@@ -1,7 +1,7 @@
 dependencies {
-  implementation(Deps.Dokka.Core)
-  implementation(Deps.Dokka.Base)
-  implementation(Deps.Dokka.TestApi)
-  implementation(Deps.Dokka.TestUtils)
-  implementation(Deps.Jackson.DataBind)
+  api(Deps.Dokka.Core)
+  api(Deps.Dokka.Base)
+  api(Deps.Dokka.TestApi)
+  api(Deps.Dokka.TestUtils)
+  api(Deps.Jackson.DataBind)
 }

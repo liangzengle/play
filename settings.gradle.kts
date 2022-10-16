@@ -77,5 +77,6 @@ includeProject("play-example-robot", "play-example", "robot")
 //includeProject("play-example-rpc-broker", "play-example", "rpc-broker")
 includeProject("play-example-rpc-api", "play-example", "rpc-api")
 includeProject("play-example-rpc-test", "play-example", "rpc-test")
+includeProject("play-example-doc", "play-example", "doc")
 
 //includeBuild("rsocket-broker")

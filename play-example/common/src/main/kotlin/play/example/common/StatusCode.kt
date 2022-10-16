@@ -32,6 +32,16 @@ abstract class StatusCode(val moduleId: Short) {
    */
   val ResourceNotFound = err(3)
 
+  /**
+   * 没有奖励可领取
+   */
+  val NoReward = err(4)
+
+  /**
+   * 奖励已领取
+   */
+  val RewardReceived = err(5)
+
   protected fun code(number: Int): Result2<Nothing> {
     require(number in 0..999) { "`number` out of bound(0~999): $number" }
     return err(moduleId * 1000 + number)

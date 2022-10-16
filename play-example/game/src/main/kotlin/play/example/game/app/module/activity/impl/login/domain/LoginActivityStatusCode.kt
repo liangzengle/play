@@ -11,7 +11,8 @@ import play.example.game.app.module.ModuleId
 @ModularCode
 object LoginActivityStatusCode : StatusCode(ModuleId.ActivityLogin) {
 
+  /**
+   * 登录天数不足
+   */
   val LoginNotEnough = code(1)
-
-  val Rewarded = code(2)
 }
