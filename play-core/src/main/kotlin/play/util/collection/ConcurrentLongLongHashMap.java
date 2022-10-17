@@ -437,8 +437,8 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
      * Replaces node value with v, conditional upon match of cv if
      * non-null.  If resulting value is null, delete.
      */
-    final Long replaceNode(Long key, Long value, Long cv) {
-        int hash = spread(key.hashCode());
+    final Long replaceNode(long key, Long value, Long cv) {
+        int hash = spread(Long.hashCode(key));
         for (Node[] tab = table; ; ) {
             Node f;
             int n, i, fh;
@@ -642,7 +642,7 @@ public class ConcurrentLongLongHashMap implements ConcurrentLongLongMap {
      *
      * @throws NullPointerException if any of the arguments are null
      */
-    public boolean replace(long key, Long oldValue, long newValue) {
+    public boolean replace(long key, long oldValue, long newValue) {
         return replaceNode(key, newValue, oldValue) != null;
     }
 

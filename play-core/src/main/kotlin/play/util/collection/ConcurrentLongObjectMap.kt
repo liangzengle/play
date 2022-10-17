@@ -16,6 +16,7 @@ interface ConcurrentLongObjectMap<V> : Iterable<ConcurrentLongObjectMap.Entry<V>
   fun computeIfPresent(key: Long, remappingFunction: LongObjToObjFunction<in V, out V?>): V?
   fun computeIfAbsent(key: Long, function: LongToObjFunction<out V>): V
   fun compute(key: Long, remappingFunction: LongObjToObjFunction<in V?, out V?>): V?
+  fun replace(key: Long, oldValue: V, newValue: V): Boolean
   fun containsKey(key: Long): Boolean
   fun isEmpty(): Boolean
   fun isNotEmpty(): Boolean

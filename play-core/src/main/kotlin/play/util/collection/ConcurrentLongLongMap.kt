@@ -27,6 +27,8 @@ interface ConcurrentLongLongMap : Iterable<ConcurrentLongLongMap.Entry> {
 
   fun compute(key: Long, remappingFunction: LongObjToObjFunction<Long?, Long?>): Long?
 
+  fun replace(key: Long, oldValue: Long, newValue: Long): Boolean
+
   fun containsKey(key: Long): Boolean
 
   fun isEmpty(): Boolean

@@ -794,8 +794,8 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
      *
      * @throws NullPointerException if any of the arguments are null
      */
-    public boolean replace(K key, Long oldValue, Long newValue) {
-        if (key == null || oldValue == null || newValue == null)
+    public boolean replace(K key, long oldValue, long newValue) {
+        if (key == null)
             throw new NullPointerException();
         return replaceNode(key, newValue, oldValue) != null;
     }

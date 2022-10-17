@@ -16,6 +16,7 @@ interface ConcurrentIntObjectMap<V> : Iterable<ConcurrentIntObjectMap.Entry<V>> 
   fun computeIfPresent(key: Int, remappingFunction: IntObjToObjFunction<in V, out V?>): V?
   fun computeIfAbsent(key: Int, function: IntToObjFunction<out V>): V
   fun compute(key: Int, remappingFunction: IntObjToObjFunction<in V?, out V?>): V?
+  fun replace(key: Int, oldValue: V, newValue: V): Boolean
   fun containsKey(key: Int): Boolean
   fun isEmpty(): Boolean
   fun isNotEmpty(): Boolean
