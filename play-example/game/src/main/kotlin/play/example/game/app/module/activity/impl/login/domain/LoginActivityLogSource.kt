@@ -11,5 +11,6 @@ import play.example.game.app.module.ModuleId
 @ModularCode
 object LoginActivityLogSource : LogSource(ModuleId.ActivityLogin) {
 
+  /** 登录活动奖励 */
   val Reward = 1
 }

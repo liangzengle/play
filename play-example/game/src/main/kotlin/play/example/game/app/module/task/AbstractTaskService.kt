@@ -1,20 +1,18 @@
 package play.example.game.app.module.task
 
+import mu.KLogging
 import play.example.common.StatusCode
 import play.example.game.app.module.reward.model.RewardList
-import play.example.game.app.module.task.domain.TaskErrorCode
-import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.domain.TaskTargetType
-import play.example.game.app.module.task.entity.AbstractTask
+import play.example.game.app.module.task.entity.TaskData
 import play.example.game.app.module.task.entity.TaskStatus
 import play.example.game.app.module.task.event.TaskEvent
-import play.example.game.app.module.task.handler.DomainTaskTargetHandler
+import play.example.game.app.module.task.event.handler.DomainTaskTargetHandler
 import play.example.game.app.module.task.res.AbstractTaskResource
-import play.example.game.app.module.task.res.AbstractTaskResourceExtension
+import play.example.game.app.module.task.res.TaskResourceExtension
 import play.example.game.app.module.task.target.TaskTarget
 import play.util.control.Result2
 import play.util.control.ok
-import play.util.logging.getLogger
 import play.util.max
 import java.util.*
 
@@ -24,22 +22,21 @@ import java.util.*
  * @author LiangZengle
  */
 @Suppress("MemberVisibilityCanBePrivate")
-abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : AbstractTaskResource, Event: TaskEvent> {
+abstract class AbstractTaskService<O, DATA : TaskData, CONFIG : AbstractTaskResource, EVENT : TaskEvent> {
 
-  protected val logger = getLogger()
+  companion object : KLogging()
 
   /**
    * 获取目标处理器
    *
    * @param targetType 任务目标类型
    */
-  protected abstract fun getHandlerOrNull(targetType: TaskTargetType): DomainTaskTargetHandler<T, TaskTarget, Event>?
+  protected abstract fun getHandlerOrNull(targetType: TaskTargetType): DomainTaskTargetHandler<O, TaskTarget, EVENT>?
 
-  protected abstract fun getResourceExtension(): AbstractTaskResourceExtension<TaskConfig>?
+  protected abstract fun getResourceExtension(): TaskResourceExtension<CONFIG>?
 
   private fun isInterested(targetType: TaskTargetType): Boolean {
-    val extension = getResourceExtension() ?: return true
-    return extension.containsTargetType(targetType)
+    return getResourceExtension()?.containsTargetType(targetType) ?: true
   }
 
   /**
@@ -48,17 +45,18 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param owner 任务归属者
    * @param taskEvent 任务事件
    */
-  fun onEvent(owner: T, taskEvent: Event) {
-    if (!isInterested(taskEvent.type)) {
+  fun onEvent(owner: O, taskEvent: EVENT) {
+    if (!isInterested(taskEvent.targetType)) {
       return
     }
-    val targetHandler = getHandlerOrNull(taskEvent.type)
+    val targetHandler = getHandlerOrNull(taskEvent.targetType)
     if (targetHandler == null) {
-      logger.error { "找不到任务目标处理器：${taskEvent.type}" }
+      logger.error { "找不到任务目标处理器：${taskEvent.targetType}" }
       return
     }
+
     val tasks = getTasksInProgress(owner, taskEvent)
-    val changedTasks = LinkedList<Task>()
+    val changedTasks = LinkedList<DATA>()
     for (task in tasks) {
       if (task.status != TaskStatus.Accepted) {
         continue
@@ -71,7 +69,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
       var changed = false
       for (i in taskConf.targets.indices) {
         val target = getTarget(owner, taskConf, i)
-        if (target.type != taskEvent.type) {
+        if (target.type != taskEvent.targetType) {
           continue
         }
         val progress = task.getProgress(i)
@@ -104,15 +102,15 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskId 任务id
    * @return 任务接取结果
    */
-  open fun acceptTask(owner: T, taskId: Int): Result2<Task> {
+  open fun acceptTask(owner: O, taskId: Int): Result2<DATA> {
     val taskConfig = getTaskConfig(taskId) ?: return StatusCode.ResourceNotFound
     val checkResult = checkAcceptConditions(owner, taskConfig)
-    if (checkResult != errorCode.Success) {
+    if (checkResult.isErr()) {
       return checkResult
     }
     val acceptedTask = getTask(owner, taskId)
     if (acceptedTask != null) {
-      return errorCode.Failure
+      return StatusCode.Failure
     }
     val newTask = createTask(owner, taskConfig)
     addTask(owner, newTask)
@@ -129,7 +127,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param owner 任务归属者
    * @param task 新任务
    */
-  abstract fun addTask(owner: T, task: Task)
+  abstract fun addTask(owner: O, task: DATA)
 
   /**
    * 初始化任务进度
@@ -139,7 +137,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskConf 任务配置
    * @return 进度是否有变化
    */
-  protected fun initTaskProgresses(owner: T, task: Task, taskConf: TaskConfig): Boolean {
+  protected fun initTaskProgresses(owner: O, task: DATA, taskConf: CONFIG): Boolean {
     val targets = taskConf.targets
     var changed = false
     for (i in targets.indices) {
@@ -161,7 +159,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskConf 任务配置
    * @return PlayerTask
    */
-  abstract fun createTask(owner: T, taskConf: TaskConfig): Task
+  abstract fun createTask(owner: O, taskConf: CONFIG): DATA
 
   /**
    * 获取自己的某个任务
@@ -170,7 +168,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskId 任务id
    * @return PlayerTask?
    */
-  abstract fun getTask(owner: T, taskId: Int): Task?
+  abstract fun getTask(owner: O, taskId: Int): DATA?
 
   /**
    * 检查任务是否接取
@@ -179,7 +177,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskConf 任务配置
    * @return 状态码
    */
-  abstract fun checkAcceptConditions(owner: T, taskConf: TaskConfig): Result2<Nothing>
+  abstract fun checkAcceptConditions(owner: O, taskConf: CONFIG): Result2<Nothing>
 
   /**
    * 任务进度发生变化时
@@ -187,7 +185,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param owner 任务归属者
    * @param changedTasks 发生变化的任务
    */
-  abstract fun onTaskChanged(owner: T, changedTasks: List<Task>)
+  abstract fun onTaskChanged(owner: O, changedTasks: List<DATA>)
 
   /**
    * 进度变化时，尝试将任务设置为完成状态
@@ -197,7 +195,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskConf 任务配置
    * @return 任务是否完成
    */
-  protected open fun trySetTaskFinished(owner: T, playerTask: Task, taskConf: TaskConfig): Boolean {
+  protected open fun trySetTaskFinished(owner: O, playerTask: DATA, taskConf: CONFIG): Boolean {
     if (!isProgressFinished(playerTask, taskConf)) {
       return false
     }
@@ -213,10 +211,10 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param task 任务
    * @param taskConf 任务配置
    */
-  protected open fun onTaskFinished(owner: T, task: Task, taskConf: TaskConfig) {
+  protected open fun onTaskFinished(owner: O, task: DATA, taskConf: CONFIG) {
   }
 
-  protected open fun onTaskRewarded(owner: T, task: Task, taskConf: TaskConfig) {
+  protected open fun onTaskRewarded(owner: O, task: DATA, taskConf: CONFIG) {
   }
 
   /**
@@ -226,7 +224,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskConf 任务配置
    * @return true-是
    */
-  protected fun isProgressFinished(task: Task, taskConf: TaskConfig): Boolean {
+  protected fun isProgressFinished(task: DATA, taskConf: CONFIG): Boolean {
     for (i in taskConf.targets.indices) {
       if (taskConf.targets[i].value > task.getProgress(i)) {
         return false
@@ -243,7 +241,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param target 任务目标
    * @param targetIndex 任务目标索引
    */
-  protected open fun onTaskProgressChanged(owner: T, task: Task, target: TaskTarget, targetIndex: Int) {
+  protected open fun onTaskProgressChanged(owner: O, task: DATA, target: TaskTarget, targetIndex: Int) {
 
   }
 
@@ -252,7 +250,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    *
    * @return 默认不允许
    */
-  protected open fun trimProgress(taskConf: TaskConfig) = true
+  protected open fun trimProgress(taskConf: CONFIG) = true
 
   /**
    * 获取玩家进行中的任务
@@ -261,7 +259,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param event 当前触发的任务事件
    * @return 进行中的任务
    */
-  protected abstract fun getTasksInProgress(owner: T, event: TaskEvent): Collection<Task>
+  protected abstract fun getTasksInProgress(owner: O, event: TaskEvent): Collection<DATA>
 
   /**
    * 获取任务配置
@@ -269,7 +267,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskId 任务id
    * @return 任务配置 or null
    */
-  abstract fun getTaskConfig(taskId: Int): TaskConfig?
+  abstract fun getTaskConfig(taskId: Int): CONFIG?
 
   /**
    * 获取任务目标
@@ -279,7 +277,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param targetIndex 目标索引
    * @return 任务目标
    */
-  protected open fun getTarget(owner: T, taskConf: TaskConfig, targetIndex: Int): TaskTarget {
+  protected open fun getTarget(owner: O, taskConf: CONFIG, targetIndex: Int): TaskTarget {
     return taskConf.targets[targetIndex]
   }
 
@@ -290,7 +288,7 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param taskConf 任务配置
    * @return 任务奖励
    */
-  protected open fun getRewards(owner: T, taskConf: TaskConfig): RewardList {
+  protected open fun getRewards(owner: O, taskConf: CONFIG): RewardList {
     return taskConf.rewards
   }
 
@@ -300,21 +298,11 @@ abstract class AbstractTaskService<T, Task : AbstractTask, TaskConfig : Abstract
    * @param task 玩家任务
    * @return List<Int>
    */
-  protected fun getProgressList(task: Task): List<Int> {
+  protected fun getProgressList(task: DATA): List<Int> {
     val taskConfig = getTaskConfig(task.id)!!
     if (taskConfig.targets.size <= task.progresses.size) {
       return task.progresses.asList()
     }
     return task.progresses.copyOf(taskConfig.targets.size).asList()
   }
-
-  /**
-   * 错误码
-   */
-  abstract val errorCode: TaskErrorCode
-
-  /**
-   * 日志源
-   */
-  abstract val logSource: TaskLogSource
 }

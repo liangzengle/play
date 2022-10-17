@@ -22,5 +22,10 @@ object PlayerErrorCode : StatusCode(ModuleId.Player) {
    */
   val PlayerNameNotAvailable = code(2)
 
+  /**
+   * 新名字与当前名字相同
+   */
+  val NewNameSameAsTheOldOne = code(3)
+
   val LevelNotEnough = code(3)
 }

@@ -47,6 +47,7 @@ class PlayerActor(
     val playerInfo = playerService.login(me, cmd.loginParams)
     session.tellActor(SessionActor.Subscribe(context.messageAdapter(Request::class.java) { RequestCommand(it) }))
     session.write(Response(cmd.request.header, 0, playerInfo))
+    playerService.afterLogin(me)
   }
 
   private fun onRequest(cmd: RequestCommand) {

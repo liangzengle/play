@@ -45,4 +45,7 @@ object ModuleId {
 
   /** 登录活动 */
   const val ActivityLogin: Short = 24
+
+  /** 任务活动 */
+  const val ActivityTask: Short = 24
 }

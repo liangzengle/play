@@ -6,5 +6,6 @@ package play.example.game.app.module.activity.base
  */
 enum class ActivityType {
   TEST,
-  LOGIN
+  LOGIN,
+  TASK
 }

@@ -1,27 +1,35 @@
 package play.example.game.app.module.reward.model
 
-abstract class RewardOrCostResult {
+sealed class RewardOrCostResult {
+
+  /** 奖励 or 消耗 */
   abstract val reward: Reward
-  abstract val originalCount: Long
-  abstract val actualCount: Long
+
+  /** 应变化 */
+  abstract val changeCount0: Long
+
+  /** 实际变化 */
+  abstract val changeCount: Long
+
+  /** 通过邮件发放的部分 */
   abstract val mailReward: Reward?
-  abstract val mailCount: Long
+
+  /** 变化后的数量，仅变化内容为货币时该值有效 */
+  abstract val currentValue: Long
 }
 
-class RewardResult(val tryResult: TryRewardResult, val currentValue: Long) : RewardOrCostResult() {
+class RewardResult(val tryResult: TryRewardResult, override val currentValue: Long) : RewardOrCostResult() {
   override val reward: Reward get() = tryResult.reward
-  override val originalCount get() = tryResult.reward.num
-  override val actualCount get() = tryResult.rewardCount
+  override val changeCount0 get() = tryResult.reward.num
+  override val changeCount get() = tryResult.rewardCount
   override val mailReward = tryResult.mailReward
-  override val mailCount = tryResult.mailReward?.num ?: 0
 }
 
-class CostResult(val tryResult: TryCostResult, val currentValue: Long) : RewardOrCostResult() {
+class CostResult(val tryResult: TryCostResult, override val currentValue: Long) : RewardOrCostResult() {
   override val reward: Reward get() = tryResult.cost
-  override val originalCount get() = -tryResult.cost.num
-  override val actualCount get() = -tryResult.costCount
+  override val changeCount0 get() = -tryResult.cost.num
+  override val changeCount get() = -tryResult.costCount
   override val mailReward: Reward? = null
-  override val mailCount = 0L
 }
 
 class CostResultSet(val results: List<CostResult>)

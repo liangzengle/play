@@ -69,12 +69,12 @@ class PlayerManager(
   private fun createPlayer(cmd: CreatePlayerRequest) {
     val playerId = cmd.id
     val playerName = cmd.request.body.readString()
-    if (!playerIdNameCache.isPlayerNameAvailable(playerId, playerName)) {
-      cmd.session.write(Response(cmd.request.header, PlayerErrorCode.PlayerNameNotAvailable.getErrorCode()))
+    val nameResult = playerIdNameCache.changeName(playerId, playerName).toResult2()
+    if (nameResult.isErr()) {
+      cmd.session.write(Response(cmd.request.header, nameResult.getErrorCode()))
       return
     }
     playerService.createPlayer(playerId, playerName)
-    playerIdNameCache.add(playerId, playerName)
     cmd.session.write(Response(cmd.request.header, 0, false))
   }
 

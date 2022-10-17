@@ -13,7 +13,7 @@ import play.example.game.app.module.activity.impl.login.res.LoginActivityResourc
 import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerServiceFacade
 import play.example.game.app.module.player.event.PlayerEventBus
-import play.example.game.app.module.player.event.PlayerNewWeekStartEvent
+import play.example.game.app.module.player.event.PlayerNewDayStartEvent
 import play.example.game.app.module.player.event.subscribe
 import play.example.game.app.module.reward.message.toProto
 import play.example.reward.message.RewardResultSetProto
@@ -33,7 +33,7 @@ class LoginActivityHandler(
 ) : ActivityHandler {
 
   init {
-    eventBus.subscribe<PlayerNewWeekStartEvent>(::onNewDayStart)
+    eventBus.subscribe<PlayerNewDayStartEvent>(::onNewDayStart)
   }
 
   override fun type(): ActivityType = ActivityType.LOGIN

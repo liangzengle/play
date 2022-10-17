@@ -1,10 +1,10 @@
 package play.example.game.app.module.activity.base
 
 import org.springframework.stereotype.Component
+import play.entity.cache.EntityCacheManager
 import play.example.common.StatusCode
 import play.example.game.app.module.activity.base.entity.ActivityEntity
 import play.example.game.app.module.activity.base.entity.PlayerActivityEntity
-import play.example.game.app.module.activity.base.entity.PlayerActivityEntityCache
 import play.example.game.app.module.activity.base.entity.PlayerActivityId
 import play.example.game.app.module.activity.base.res.ActivityResourceSet
 import play.example.game.app.module.activity.base.stage.ActivityStage
@@ -19,8 +19,13 @@ import play.util.unsafeCast
 @Component
 class PlayerActivityService(
   private val activityCache: ActivityCache,
-  private val playerActivityEntityCache: PlayerActivityEntityCache
+  entityCacheManager: EntityCacheManager
 ) {
+  val entityCache = entityCacheManager.get(PlayerActivityEntity::class)
+
+  fun getEntity(self: PlayerManager.Self, activityId: Int): PlayerActivityEntity {
+    return entityCache.getOrCreate(PlayerActivityId(self.id, activityId), ::PlayerActivityEntity)
+  }
 
   fun <R> process(
     self: PlayerManager.Self,
@@ -48,8 +53,7 @@ class PlayerActivityService(
     val activityEntity = activityCache.getActivity(activityId, requireStages)
       ?: return StatusCode.Failure // todo error code
     // TODO other check
-    val playerActivityEntity =
-      playerActivityEntityCache.getOrCreate(PlayerActivityId(self.id, activityId), ::PlayerActivityEntity)
+    val playerActivityEntity = getEntity(self, activityId)
     return action(activityEntity, playerActivityEntity)
   }
 
@@ -60,8 +64,7 @@ class PlayerActivityService(
     action: (ActivityEntity, PlayerActivityEntity) -> Result2<R>
   ): Result2<R> {
     return activityCache.getActivities(activityType, requireStages).fold(StatusCode.Failure) { r, activityEntity ->
-      val playerActivityEntity =
-        playerActivityEntityCache.getOrCreate(PlayerActivityId(self.id, activityEntity.id), ::PlayerActivityEntity)
+      val playerActivityEntity = getEntity(self, activityEntity.id)
       val result = action(activityEntity, playerActivityEntity)
       if (r.isOk()) r else result.unsafeCast()
     }

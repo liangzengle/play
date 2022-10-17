@@ -89,6 +89,8 @@ class ActivityManager(
         beanContext.getBean(),
         beanContext.getImpl(classOf(), resource.type),
         beanContext.getBean(),
+        beanContext.getBean(),
+        beanContext.getBean(),
         beanContext.getBean()
       )
     )

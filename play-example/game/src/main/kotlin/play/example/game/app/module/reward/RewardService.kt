@@ -138,6 +138,9 @@ class RewardService(
   }
 
   fun tryCost(self: Self, costs: CostList, logSource: Int): Result2<TryCostResultSet> {
+    if (costs.isEmpty()) {
+      return ok(TryCostResultSet(emptyList(), logSource))
+    }
     val costList = costs.asList()
     val resultList = ArrayList<TryCostResult>(costList.size)
     var errorCode = 0
@@ -164,6 +167,9 @@ class RewardService(
   }
 
   fun execCost(self: Self, tryResultSet: TryCostResultSet): CostResultSet {
+    if (tryResultSet.isEmpty()) {
+      return CostResultSet(emptyList())
+    }
     val logSource = tryResultSet.logSource
     val results = ArrayList<CostResult>(tryResultSet.results.size)
     for (tryCostResult in tryResultSet.results) {

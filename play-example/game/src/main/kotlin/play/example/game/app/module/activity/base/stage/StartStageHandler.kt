@@ -44,7 +44,7 @@ object StartStageHandler : ActivityStageHandler, ActivityStageHandler.Suspendabl
       val endTime = entity.startTime + resource.duration.toMillis() + entity.suspendedMillis
       scheduleAt(endTime, ActivityActor.ActivityEnd)
       entity.suspendedMillis = 0
-      ActivityActor.logger.info { "活动[${resource.id}]将于[${Time.toLocalDateTime(endTime)}]结束" }
+      logger.info { "活动[${resource.id}]将于[${Time.toLocalDateTime(endTime)}]结束" }
     }
 
     for ((key, trigger) in resource.eventTriggers) {

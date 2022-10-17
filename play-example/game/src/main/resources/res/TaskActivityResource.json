@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "activityId": 300001,
+    "targets": [
+      {
+        "type": "PlayerLogin",
+        "value": 1
+      }
+    ]
+  }
+]

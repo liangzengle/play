@@ -40,7 +40,7 @@ object EndStageHandler : ActivityStageHandler, ActivityStageHandler.Suspendable,
     scheduleAt(closeTime, ActivityActor.ActivityClose)
     entity.suspendedMillis = 0
 
-    ActivityActor.logger.info { "活动[${resource.id}]将于[${Time.toLocalDateTime(closeTime)}]关闭" }
+    logger.info { "活动[${resource.id}]将于[${Time.toLocalDateTime(closeTime)}]关闭" }
   }
 
   context(ActivityActor)

@@ -3,13 +3,10 @@ package play.example.game.app.module.servertask.entity
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 import play.entity.IntIdEntity
 import play.entity.cache.CacheSpec
-import play.entity.cache.NeverExpireEvaluator
-import play.example.game.app.module.task.entity.AbstractTask
+import play.example.game.app.module.task.entity.TaskData
 
 @CacheSpec(loadAllOnInit = true, neverExpire = true)
 class ServerTaskEntity(id: Int) : IntIdEntity(id) {
 
-  val tasks = IntObjectHashMap<ServerTask>()
+  val tasks = IntObjectHashMap<TaskData>()
 }
-
-class ServerTask(id: Int) : AbstractTask(id)

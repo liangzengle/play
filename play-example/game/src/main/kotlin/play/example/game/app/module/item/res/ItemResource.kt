@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.NullNode
 import jakarta.validation.Valid
 import play.example.game.app.module.item.domain.ItemType
+import play.example.game.app.module.reward.model.Cost
+import play.example.game.app.module.reward.model.CostList
+import play.example.game.app.module.reward.model.Reward
 import play.example.game.app.module.reward.res.RawReward
 import play.res.*
 
@@ -46,4 +49,19 @@ class ItemResource : AbstractResource(), ItemLikeResource, ExtensionKey<ItemReso
   }
 }
 
-class ItemResourceExtension(list: List<ItemResource>) : ResourceExtension<ItemResource>(list)
+class ItemResourceExtension(list: List<ItemResource>) : ResourceExtension<ItemResource>(list) {
+  val changeNameItemId: Int
+
+  init {
+    var changeNameItemId = 0
+    for (resource in list) {
+      if (resource.type == ItemType.ChangeName) {
+        check(changeNameItemId == 0)
+        changeNameItemId = resource.id
+      }
+    }
+    this.changeNameItemId = changeNameItemId
+  }
+
+  fun changeNameCosts() = CostList(Cost(Reward(ItemResourceSet.extension().changeNameItemId, 1)))
+}

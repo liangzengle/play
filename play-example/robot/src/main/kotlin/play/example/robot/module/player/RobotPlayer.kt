@@ -10,7 +10,7 @@ import play.example.robot.net.RobotClient
  *
  * @author LiangZengle
  */
-class RobotPlayer(val account: String, private val eventLoop: EventLoop) {
+class RobotPlayer(val account: String, val eventLoop: EventLoop) {
   companion object {
     val AttrKey: AttributeKey<RobotPlayer> = AttributeKey.valueOf("RobotPlayer")
   }

@@ -4,9 +4,7 @@ import com.google.common.collect.Collections2
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.example.game.app.module.reward.model.RewardList
-import play.example.game.app.module.servertask.domain.ServerTaskErrorCode
-import play.example.game.app.module.servertask.domain.ServerTaskLogSource
-import play.example.game.app.module.servertask.entity.ServerTask
+import play.example.game.app.module.servertask.domain.ServerTaskTargetType
 import play.example.game.app.module.servertask.entity.ServerTaskEntity
 import play.example.game.app.module.servertask.entity.ServerTaskEntityCache
 import play.example.game.app.module.servertask.event.ServerTaskEvent
@@ -14,44 +12,59 @@ import play.example.game.app.module.servertask.handler.ServerTaskTargetHandler
 import play.example.game.app.module.servertask.res.ServerTaskResource
 import play.example.game.app.module.servertask.res.ServerTaskResourceSet
 import play.example.game.app.module.task.AbstractTaskService
-import play.example.game.app.module.task.domain.TaskErrorCode
-import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.domain.TaskTargetType
+import play.example.game.app.module.task.entity.TaskData
 import play.example.game.app.module.task.event.TaskEvent
-import play.example.game.app.module.task.res.AbstractTaskResourceExtension
+import play.example.game.app.module.task.res.TaskResourceExtension
 import play.example.game.app.module.task.target.TaskTarget
 import play.example.game.container.gs.domain.GameServerId
+import play.inject.PlayInjector
+import play.spring.OrderedSmartInitializingSingleton
+import play.util.collection.toImmutableEnumMap
 import play.util.control.Result2
 import play.util.control.ok
 import play.util.exists
+import play.util.unsafeCastOrNull
 import java.util.*
 
 /**
  * 全服任务模块逻辑处理
  */
 @Component
-public class ServerTaskService @Autowired constructor(
+class ServerTaskService @Autowired constructor(
   private val serverTaskEntityCache: ServerTaskEntityCache,
-  private val serverId: GameServerId
-) : AbstractTaskService<ServerTaskEntity, ServerTask, ServerTaskResource, ServerTaskEvent>() {
+  private val serverId: GameServerId,
+  private val injector: PlayInjector
+) :
+  AbstractTaskService<ServerTaskEntity, TaskData, ServerTaskResource, ServerTaskEvent>(),
+  OrderedSmartInitializingSingleton {
 
-  override fun getHandlerOrNull(targetType: TaskTargetType): ServerTaskTargetHandler<TaskTarget, ServerTaskEvent>? {
-    return null
+  private lateinit var handlerMap: Map<ServerTaskTargetType, ServerTaskTargetHandler<*, *>>
+
+  override fun afterSingletonsInstantiated() {
+    handlerMap = injector.getInstancesOfType(ServerTaskTargetHandler::class).toImmutableEnumMap { it.targetType() }
+    serverTaskEntityCache.getOrCreate(serverId.toInt())
+    checkNewTask()
   }
 
-  override fun getResourceExtension(): AbstractTaskResourceExtension<ServerTaskResource>? {
+  override fun getHandlerOrNull(targetType: TaskTargetType): ServerTaskTargetHandler<TaskTarget, ServerTaskEvent>? {
+    if (targetType !is ServerTaskTargetType) return null
+    return handlerMap[targetType].unsafeCastOrNull()
+  }
+
+  override fun getResourceExtension(): TaskResourceExtension<ServerTaskResource>? {
     return ServerTaskResourceSet.extension()
   }
 
-  override fun addTask(owner: ServerTaskEntity, task: ServerTask) {
+  override fun addTask(owner: ServerTaskEntity, task: TaskData) {
     owner.tasks.put(task.id, task)
   }
 
-  override fun createTask(owner: ServerTaskEntity, taskConf: ServerTaskResource): ServerTask {
-    return ServerTask(taskConf.id)
+  override fun createTask(owner: ServerTaskEntity, taskConf: ServerTaskResource): TaskData {
+    return TaskData(taskConf.id)
   }
 
-  override fun getTask(owner: ServerTaskEntity, taskId: Int): ServerTask? {
+  override fun getTask(owner: ServerTaskEntity, taskId: Int): TaskData? {
     return owner.tasks[taskId]
   }
 
@@ -59,10 +72,10 @@ public class ServerTaskService @Autowired constructor(
     return ok()
   }
 
-  override fun onTaskChanged(owner: ServerTaskEntity, changedTasks: List<ServerTask>) {
+  override fun onTaskChanged(owner: ServerTaskEntity, changedTasks: List<TaskData>) {
   }
 
-  override fun getTasksInProgress(owner: ServerTaskEntity, event: TaskEvent): Collection<ServerTask> {
+  override fun getTasksInProgress(owner: ServerTaskEntity, event: TaskEvent): Collection<TaskData> {
     return Collections2.filter(owner.tasks.values()) { it.isInProgress() }
   }
 
@@ -70,20 +83,14 @@ public class ServerTaskService @Autowired constructor(
     return ServerTaskResourceSet.getOrNull(taskId)
   }
 
-  override val errorCode: TaskErrorCode = ServerTaskErrorCode
-
-  override val logSource: TaskLogSource = ServerTaskLogSource
-
   /**
    * 检测新的任务
    */
   fun checkNewTask() {
     for (entity in serverTaskEntityCache.getAll()) {
-      if (ServerTaskResourceSet.size() != entity.tasks.size()) {
-        for (serverTaskResource in ServerTaskResourceSet.list()) {
-          if (entity.tasks.containsKey(serverTaskResource.id)) {
-            acceptTask(entity, serverTaskResource.id)
-          }
+      for (serverTaskResource in ServerTaskResourceSet.list()) {
+        if (!entity.tasks.containsKey(serverTaskResource.id)) {
+          acceptTask(entity, serverTaskResource.id)
         }
       }
     }
@@ -94,7 +101,7 @@ public class ServerTaskService @Autowired constructor(
    */
   fun checkShouldFinished() {
     for (entity in serverTaskEntityCache.getAll()) {
-      val changed = LinkedList<ServerTask>()
+      val changed = LinkedList<TaskData>()
       for (serverTask in entity.tasks.values()) {
         if (!serverTask.isInProgress()) {
           continue
@@ -132,5 +139,10 @@ public class ServerTaskService @Autowired constructor(
 
   private fun getRewards(taskConf: ServerTaskResource): RewardList {
     return taskConf.rewards
+  }
+
+  override fun onTaskFinished(owner: ServerTaskEntity, task: TaskData, taskConf: ServerTaskResource) {
+    super.onTaskFinished(owner, task, taskConf)
+    logger.debug { "全服任务完成: $taskConf" }
   }
 }

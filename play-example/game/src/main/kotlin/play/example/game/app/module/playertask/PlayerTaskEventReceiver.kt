@@ -4,9 +4,9 @@ import mu.KLogging
 import org.springframework.stereotype.Component
 import play.example.game.app.module.player.PlayerManager.Self
 import play.example.game.app.module.player.event.PlayerEventBus
+import play.example.game.app.module.player.event.PlayerTaskEventLike
 import play.example.game.app.module.player.event.subscribe
-import play.example.game.app.module.playertask.event.AbstractPlayerTaskEvent
-import play.example.game.app.module.task.entity.AbstractTask
+import play.example.game.app.module.task.entity.TaskData
 import play.example.game.app.module.task.res.AbstractTaskResource
 
 /**
@@ -16,7 +16,7 @@ import play.example.game.app.module.task.res.AbstractTaskResource
  */
 @Component
 class PlayerTaskEventReceiver(
-  private val taskServices: List<AbstractPlayerTaskService<AbstractTask, AbstractTaskResource>>,
+  private val taskServices: List<AbstractPlayerTaskService<TaskData, AbstractTaskResource>>,
   eventBus: PlayerEventBus
 ) {
 
@@ -26,12 +26,12 @@ class PlayerTaskEventReceiver(
     eventBus.subscribe(::onEvent)
   }
 
-  private fun onEvent(self: Self, event: AbstractPlayerTaskEvent) {
+  private fun onEvent(self: Self, event: PlayerTaskEventLike) {
     val taskService = this.taskServices
     for (i in taskService.indices) {
       val service = taskService[i]
       try {
-        service.onEvent(self, event)
+        service.onEvent(self, event.taskEvent)
       } catch (e: Exception) {
         logger.error(e) { "任务事件处理失败: $self $event" }
       }

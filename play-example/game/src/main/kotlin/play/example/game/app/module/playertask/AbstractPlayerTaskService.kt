@@ -1,12 +1,14 @@
 package play.example.game.app.module.playertask
 
 import play.example.game.app.module.player.PlayerManager.Self
-import play.example.game.app.module.playertask.event.AbstractPlayerTaskEvent
+import play.example.game.app.module.playertask.event.IPlayerTaskEvent
 import play.example.game.app.module.reward.RewardService
 import play.example.game.app.module.reward.model.RewardResultSet
 import play.example.game.app.module.task.AbstractTaskService
+import play.example.game.app.module.task.domain.TaskErrorCode
+import play.example.game.app.module.task.domain.TaskLogSource
 import play.example.game.app.module.task.domain.TaskTargetType
-import play.example.game.app.module.task.entity.AbstractTask
+import play.example.game.app.module.task.entity.TaskData
 import play.example.game.app.module.task.res.AbstractTaskResource
 import play.util.control.Result2
 
@@ -16,10 +18,10 @@ import play.util.control.Result2
  * @author LiangZengle
  */
 @Suppress("MemberVisibilityCanBePrivate")
-abstract class AbstractPlayerTaskService<Task : AbstractTask, TaskConfig : AbstractTaskResource>(
+abstract class AbstractPlayerTaskService<DATA : TaskData, CONFIG : AbstractTaskResource>(
   protected val targetHandlerProvider: PlayerTaskTargetHandlerProvider,
   protected val rewardService: RewardService
-) : AbstractTaskService<Self, Task, TaskConfig, AbstractPlayerTaskEvent>() {
+) : AbstractTaskService<Self, DATA, CONFIG, IPlayerTaskEvent>() {
 
   /**
    * 获取目标处理器
@@ -52,4 +54,16 @@ abstract class AbstractPlayerTaskService<Task : AbstractTask, TaskConfig : Abstr
     }
     return rewardResult
   }
+
+
+  /**
+   * 错误码
+   */
+  abstract val errorCode: TaskErrorCode
+
+  /**
+   * 日志源
+   */
+  abstract val logSource: TaskLogSource
+
 }

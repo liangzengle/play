@@ -1,5 +1,6 @@
 package play.example.game.app.module.activity.base
 
+import play.util.collection.ConcurrentHashSetLong
 import play.util.collection.SerializableAttributeKey
 
 /**
@@ -16,4 +17,7 @@ object ActivityDataKey {
 
   @JvmStatic
   val Login = SerializableAttributeKey.valueOf<Int>("login")
+
+  @JvmStatic
+  val JoinedPlayers = SerializableAttributeKey.valueOf<ConcurrentHashSetLong>("JoinedPlayers")
 }

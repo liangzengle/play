@@ -15,6 +15,10 @@ import play.example.game.app.module.activity.base.res.ActivityResourceSet
 import play.example.game.app.module.activity.base.stage.ActivityStage
 import play.example.game.app.module.activity.base.stage.ActivityStageHandler
 import play.example.game.app.module.activity.base.trigger.ActivityTimeTriggerContext
+import play.example.game.app.module.player.PlayerManager
+import play.example.game.app.module.player.event.PlayerEventBus
+import play.example.game.app.module.player.event.PlayerTaskEventLike
+import play.example.game.app.module.player.event.subscribe
 import play.example.game.app.module.server.ServerConditionService
 import play.util.concurrent.PlayPromise
 import play.util.concurrent.Promise
@@ -36,6 +40,8 @@ class ActivityActor(
   val handler: ActivityHandler,
   val serverConditionService: ServerConditionService,
   private val activityCache: ActivityCache,
+  private val playerEventBus: PlayerEventBus,
+  private val playerActivityService: PlayerActivityService
 ) : AbstractTypedActor<ActivityActor.Command>(ctx),
   WithActorScheduler<ActivityActor.Command> {
 
@@ -53,9 +59,6 @@ class ActivityActor(
    * 缓存配置数据，用于保持配置状态的一致性
    */
   private var resource = ActivityResourceSet.getOrThrow(id)
-
-  // for ActivityStageHandler
-  val actor get() = self
 
   override fun createReceive(): Receive<Command> {
     return newReceiveBuilder()
@@ -104,6 +107,9 @@ class ActivityActor(
     }
     if (entity != null) {
       refreshStage()
+    }
+    if (handler is ActivityTaskEventHandler) {
+      playerEventBus.subscribe(::onTaskEvent)
     }
     manager.tell(ActivityManager.ActivityInitialized(resource.id))
     return initialized()
@@ -222,6 +228,12 @@ class ActivityActor(
     }
   }
 
+  private fun onTaskEvent(self: PlayerManager.Self, event: PlayerTaskEventLike) {
+    if (currentStage == ActivityStage.Start && handler is ActivityTaskEventHandler) {
+      handler.onTaskEvent(self, event, playerActivityService.getEntity(self, id), getEntity(), resource)
+    }
+  }
+
   private fun eventTriggered(event: ActivityTriggerEvent) {
     val entity = getEntity()
     val handler = entity.stage.handler
@@ -263,7 +275,9 @@ class ActivityActor(
       actorScheduler: ActorRef<ActorScheduler.Command>,
       handler: ActivityHandler,
       serverConditionService: ServerConditionService,
-      activityCache: ActivityCache
+      activityCache: ActivityCache,
+      playerEventBus: PlayerEventBus,
+      playerActivityService: PlayerActivityService
     ): Behavior<Command> {
       return Behaviors.setup { ctx ->
         ActivityActor(
@@ -275,7 +289,9 @@ class ActivityActor(
           actorScheduler,
           handler,
           serverConditionService,
-          activityCache
+          activityCache,
+          playerEventBus,
+          playerActivityService
         )
       }
     }

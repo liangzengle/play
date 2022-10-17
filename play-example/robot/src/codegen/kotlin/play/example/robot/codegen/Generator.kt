@@ -135,7 +135,7 @@ object Generator {
       req.addCode(reqCodeBlock.build())
 
       val returnType = getReturnType(method)
-      val respFunName = "${method.name}Resp"
+      val respFunName = "${method.name}Resp".replaceFirstChar { it.lowercaseChar() }
       val respErrorFunName = "${method.name}Error"
       val respRaw = FunSpec.builder(respFunName)
         .addParameter("ctx", Types.ChannelHandlerContext)
@@ -198,7 +198,7 @@ object Generator {
       }
       val cmd = field.getAnnotation(Cmd::class.java) ?: continue
       val returnType = getReturnType(field)
-      val respFunName = "${field.name}Resp"
+      val respFunName = "${field.name}Resp".replaceFirstChar { it.lowercaseChar() }
       val respRaw = FunSpec.builder(respFunName)
         .addParameter("ctx", Types.ChannelHandlerContext)
         .addParameter("response", Types.Response)
@@ -276,9 +276,11 @@ object Generator {
         JavaToKotlinClassMap.INSTANCE.mapJavaToKotlin(FqName(this.canonicalName))?.asSingleFqName()
           ?.asString()?.let { ClassName.bestGuess(it) } ?: this.asTypeName()
       }
+
       is ParameterizedType -> {
         this.asTypeName().javaToKotlinType()
       }
+
       else -> this.asTypeName()
     }
   }
@@ -289,10 +291,12 @@ object Generator {
         JavaToKotlinClassMap.INSTANCE.mapJavaToKotlin(FqName(this.canonicalName))?.asSingleFqName()
           ?.asString()?.let { ClassName.bestGuess(it) } ?: this
       }
+
       is ParameterizedTypeName -> {
         JavaToKotlinClassMap.INSTANCE.mapJavaToKotlin(FqName(this.rawType.canonicalName))?.asSingleFqName()
           ?.asString()?.let { ClassName.bestGuess(it) }?.parameterizedBy(this.typeArguments) ?: this
       }
+
       else -> this
     }
   }

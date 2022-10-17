@@ -8,4 +8,5 @@ enum class ItemType {
 
   Normal,
   Currency,
+  ChangeName,
 }

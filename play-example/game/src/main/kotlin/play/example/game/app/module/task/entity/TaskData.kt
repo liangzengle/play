@@ -6,7 +6,7 @@ import play.util.EmptyIntArray
  * 玩家任务基类
  * @author LiangZengle
  */
-abstract class AbstractTask(val id: Int) {
+open class TaskData(val id: Int) {
 
   /**
    * 任务状态
@@ -94,5 +94,9 @@ abstract class AbstractTask(val id: Int) {
    */
   fun getProgress(index: Int): Int {
     return if (progresses.size > index) progresses[index] else 0
+  }
+
+  override fun toString(): String {
+    return "${javaClass.simpleName}(status=$status, progresses=${progresses.contentToString()})"
   }
 }

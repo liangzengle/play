@@ -7,6 +7,7 @@ import play.example.game.app.module.player.event.PlayerEventBus
 import play.example.game.app.module.player.event.subscribe
 import play.example.game.container.command.CommandService
 import play.example.player.message.PlayerProto
+import play.example.reward.message.RewardResultSetProto
 import play.mvc.*
 import play.util.control.ok
 
@@ -42,9 +43,20 @@ class PlayerController(
     return ok("world!").toRequestResult()
   }
 
+  @Cmd(4)
+  fun changeName(self: PlayerManager.Self, newName: String): RequestResult<String> = RequestResult.async {
+    service.changeName(self, newName)
+  }
+
   /**
    * 推送消息
    */
   @Cmd(101)
   lateinit var StringMessage: Push<String>
+
+  /**
+   * 推送奖励或者消耗结果
+   */
+  @Cmd(102)
+  lateinit var RewardOrCost: Push<RewardResultSetProto>
 }

@@ -1,6 +1,6 @@
 package play.example.game.app.module.guild.res
 
-import play.example.game.app.module.reward.model.Cost
+import play.example.game.app.module.reward.model.CostList
 import play.res.AbstractResource
 import play.res.SingletonResource
 
@@ -14,5 +14,5 @@ class GuildSetting : AbstractResource() {
   /**
    * 创建帮会消耗
    */
-  val createCost = emptyList<Cost>()
+  val createCost = CostList.Empty
 }

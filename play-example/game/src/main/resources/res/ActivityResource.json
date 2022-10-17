@@ -42,5 +42,16 @@
         "cron": "0 * * * * ?"
       }
     }
+  },
+  {
+    "id": 300001,
+    "type": "TASK",
+    "startTime": {
+      "base": "NOW",
+      "offset": "0s"
+    },
+    "duration": "30m",
+    "noticeAhead": "1m",
+    "closeDelay": "1m"
   }
 ]
