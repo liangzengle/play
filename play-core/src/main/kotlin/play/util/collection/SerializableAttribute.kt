@@ -12,7 +12,7 @@ interface SerializableAttribute<T> {
 
   fun getValue(): T?
 
-  fun computeIfAbsent(supplier: Supplier<T>): T
+  fun computeIfAbsent(supplier: Supplier<T>): T & Any
 
   fun setValue(value: T?)
 }

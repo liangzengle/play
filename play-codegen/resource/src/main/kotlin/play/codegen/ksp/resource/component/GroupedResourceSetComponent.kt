@@ -3,6 +3,7 @@ package play.codegen.ksp.resource.component
 import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.Nullability
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -39,21 +40,24 @@ class GroupedResourceSetComponent(private val classDeclaration: KSClassDeclarati
       val functionName = func.simpleName.asString()
       val originalReturnType =
         func.returnType?.let { resolveTypeVariables(it.toTypeName2(), typeTable) } ?: UNIT
+      val isReturnNullable = func.returnType?.resolve()?.nullability == Nullability.NULLABLE
       val returnType = if (parameterizedUniqueKeyResourceGroup != null) {
         replaceType(originalReturnType, parameterizeResourceGroup, parameterizedUniqueKeyResourceGroup)
       } else originalReturnType
       val funcBuilder =
-        FunSpec.builder(functionName).addModifiers(KModifier.PUBLIC).addAnnotation(JvmStatic::class).returns(returnType)
+        FunSpec.builder(functionName).addModifiers(KModifier.PUBLIC).addAnnotation(JvmStatic::class)
+          .returns(returnType.copy(nullable = isReturnNullable))
       for (parameter in func.parameters) {
         val paramType = resolveTypeVariables(parameter.type.toTypeName2(), typeTable)
         funcBuilder.addParameter(parameter.name!!.asString(), paramType)
       }
       if (originalReturnType != returnType) {
         funcBuilder.addStatement(
-          "return (underlying.getDelegatee() as %T).%L(%L) as %T",
+          "return (underlying.getDelegatee() as %T).%L(%L) as%L %T",
           GroupedResourceSet.parameterizedBy(groupIdType, resourceClass),
           functionName,
           toParamString(func.parameters),
+          if (isReturnNullable) "?" else "",
           returnType
         )
       } else {
