@@ -13,7 +13,7 @@ buildscript {
 
   dependencies {
     classpath(Deps.Kotlin.Gradle)
-    classpath(Deps.Kotlin.AllOpen)
+//    classpath(Deps.Kotlin.AllOpen)
     classpath(Deps.KtlintGradle)
   }
 }
@@ -32,7 +32,7 @@ subprojects {
   apply(plugin = "java")
   apply(plugin = "kotlin")
   apply(plugin = "org.jlleitschuh.gradle.ktlint-idea")
-  apply(plugin = "kotlin-spring")
+//  apply(plugin = "kotlin-spring")
   apply(plugin = "project-report")
   apply(plugin = "com.google.devtools.ksp")
 
