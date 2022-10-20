@@ -1,3 +1,7 @@
+# 开发/运行环境要求
+
+  JDK 17
+
 # 运行Example
 
 1. 启动 ContainerApp
