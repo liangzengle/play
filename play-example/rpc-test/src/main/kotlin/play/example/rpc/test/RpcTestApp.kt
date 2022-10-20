@@ -6,6 +6,7 @@ import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import play.rsocket.client.RSocketClientAutoConfiguration
 import play.rsocket.client.RSocketClientCustomizer
@@ -19,6 +20,7 @@ import play.rsocket.rpc.RpcClientInterceptor
  * @author LiangZengle
  */
 @SpringBootApplication
+@Configuration(proxyBeanMethods = false)
 @Import(value = [RSocketClientAutoConfiguration::class])
 class RpcTestApp {
 
