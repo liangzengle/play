@@ -3,9 +3,10 @@ package play.util.ranking
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import org.eclipse.collections.api.map.primitive.IntObjectMap
+import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
 import play.util.json.Json
-import play.util.unsafeCast
 import java.util.*
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.annotation.concurrent.ThreadSafe
@@ -17,20 +18,21 @@ import kotlin.concurrent.write
  * @author LiangZengle
  */
 @ThreadSafe
-class RankingList<ID : Comparable<ID>, E : RankingElement<ID>>(
-  override val rankingType: RankingType<E>,
-  private val _elements: Collection<E>
-) : IRankingList<ID, E> {
+class RankingListLong<E : RankingElementLong>(
+  override val rankingType: RankingType<E>, _elements: Collection<E>
+) : IRankingList<Long, E> {
 
   @Transient
   @Volatile
   private var changed = false
 
+  /** 全部数据 */
   @Transient
-  private val map = hashMapOf<ID, E>()
+  private val map = LongObjectHashMap<E>()
 
+  /** 排行榜上的数据 */
   @Transient
-  private val rankingElements: NavigableSet<E> = TreeSet(RankingHelper.toComparator(rankingType.spec()))
+  private val rankingElements: NavigableSet<E> = TreeSet(RankingHelper.toComparatorLong(rankingType.spec()))
 
   @Transient
   private val wlLock = ReentrantReadWriteLock()
@@ -40,10 +42,10 @@ class RankingList<ID : Comparable<ID>, E : RankingElement<ID>>(
   constructor(rankingType: RankingType<E>) : this(rankingType, emptyList())
 
   init {
-    for (element in rankingElements) {
+    for (element in _elements) {
       update(element)
     }
-    changed = map.isNotEmpty()
+    changed = !map.isEmpty
   }
 
   override fun update(element: E) {
@@ -54,9 +56,9 @@ class RankingList<ID : Comparable<ID>, E : RankingElement<ID>>(
     update(element, false)
   }
 
-  override fun getRankById(id: ID): Int {
+  override fun getRankById(id: Long): Int {
     return read {
-      map[id]?._rank ?: 0
+      map.get(id)?._rank ?: 0
     }
   }
 
@@ -80,7 +82,7 @@ class RankingList<ID : Comparable<ID>, E : RankingElement<ID>>(
 
   private fun update(element: E, upsert: Boolean) {
     wlLock.write {
-      val prev = map[element.id()]
+      val prev = map.get(element.id)
       if (prev == null && !upsert) {
         return
       }
@@ -93,7 +95,7 @@ class RankingList<ID : Comparable<ID>, E : RankingElement<ID>>(
         theElement = element
       }
       rankingElements.add(theElement)
-      map[element.id()] = theElement
+      map.put(element.id, theElement)
 
       val maxRankingSize = spec.maxRankingSize()
       while (maxRankingSize > 0 && rankingElements.size > maxRankingSize) {
@@ -126,24 +128,22 @@ class RankingList<ID : Comparable<ID>, E : RankingElement<ID>>(
   }
 
   @JsonProperty("elements")
-  internal fun elements() = wlLock.read { map.values.toList() }
+  internal fun elements() = wlLock.read { map.values().toList() }
 
   companion object {
-    @Suppress("UNCHECKED_CAST")
     @JvmStatic
     @JsonCreator
-    private fun fromJson(node: ObjectNode): RankingList<*, RankingElement<*>> {
+    private fun fromJson(node: ObjectNode): RankingListLong<RankingElementLong> {
       val rankTypeNode = node.get("rankingType")
-      val rankingType =
-        Json.convert(rankTypeNode, RankingType::class.java) as RankingType<RankingElement<Comparable<Comparable<*>>>>
+      val rankingType = Json.convert(rankTypeNode, jacksonTypeRef<RankingType<RankingElementLong>>())
       val elementsNode = node.get("elements")
       val spec = rankingType.spec()
-      val elementList = Json.convert<List<RankingElement<Comparable<Comparable<*>>>>>(
+      val elementList = Json.convert<List<RankingElementLong>>(
         elementsNode, Json.typeFactory().constructCollectionType(List::class.java, spec.elementType())
       )
-      val elements: TreeSet<RankingElement<Comparable<Comparable<*>>>> = TreeSet(RankingHelper.toComparator(spec))
+      val elements = TreeSet(RankingHelper.toComparatorLong(spec))
       elements.addAll(elementList)
-      return RankingList(rankingType, elements).unsafeCast()
+      return RankingListLong(rankingType, elements)
     }
   }
 }

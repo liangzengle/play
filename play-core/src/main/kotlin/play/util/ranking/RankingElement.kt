@@ -4,10 +4,13 @@ package play.util.ranking
  *
  * @author LiangZengle
  */
-abstract class RankingElement<ID> {
+abstract class RankingElement<ID : Comparable<ID>> {
 
   @Transient
   internal var _rank = 0
+
+  /** 变化时间 */
+  internal var time = 0L
 
   abstract fun id(): ID
 
@@ -24,14 +27,5 @@ abstract class RankingElement<ID> {
 
   override fun toString(): String {
     return "${this.javaClass.simpleName}(${id()})"
-  }
-}
-
-abstract class SimpleRankingElementRef<ID>(
-  val id: ID,
-  override val value: Long
-) : RankingElement<ID>(), SimpleRankingElement {
-  override fun id(): ID {
-    return id
   }
 }

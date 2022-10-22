@@ -9,8 +9,8 @@ import play.util.unsafeCast
 enum class TestRankingType : RankingType<Any> {
 
   Score {
-    override fun specification(): RankingListSpecification<Any> {
-      return ScoreRankingListSpecification.unsafeCast()
+    override fun spec(): RankingListSpec<Any> {
+      return ScoreRankingListSpec.unsafeCast()
     }
   },
 }
