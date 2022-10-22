@@ -57,8 +57,8 @@ class LoadbalancedBrokerRSocket(
   }
 
   override fun dispose() {
-    activeRSocketMap.values.forEach { it.dispose() }
     disposed = true
+    activeRSocketMap.values.forEach { it.dispose() }
   }
 
   override fun isDisposed(): Boolean {
