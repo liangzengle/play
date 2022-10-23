@@ -26,16 +26,6 @@ class TaskActivityHandler(
 
   override fun type(): ActivityType = ActivityType.TASK
 
-  override fun join(
-    self: PlayerManager.Self,
-    playerActivityEntity: PlayerActivityEntity,
-    activityEntity: ActivityEntity,
-    resource: ActivityResource
-  ) {
-    super.join(self, playerActivityEntity, activityEntity, resource)
-
-  }
-
   override fun onTaskEvent(
     self: PlayerManager.Self,
     event: PlayerTaskEventLike,

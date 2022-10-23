@@ -3,7 +3,8 @@ package play.example.game.app.module.command.entity
 import play.entity.IntIdEntity
 import play.entity.cache.CacheSpec
 import play.entity.cache.InitialCacheSize
-import play.entity.cache.NeverExpireEvaluator
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 
 /**
  * gm指令使用情况统计
@@ -13,7 +14,7 @@ import play.entity.cache.NeverExpireEvaluator
 @InitialCacheSize(InitialCacheSize.ONE)
 class CommandStatisticsEntity(id: Int) : IntIdEntity(id) {
 
-  val statistics: MutableMap<CommandId, Int> = HashMap()
+  val statistics: ConcurrentMap<CommandId, Int> = ConcurrentHashMap()
 }
 
 data class CommandId(val module: String, val name: String)

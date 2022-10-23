@@ -49,6 +49,7 @@ class ActivityManager(
     .accept(::startChildren)
     .accept(::closeChildren)
     .accept(::onActivityInitialized)
+    .accept(::forward)
     .build()
 
   private fun init(cmd: Init): Behavior<Command> {
@@ -128,6 +129,15 @@ class ActivityManager(
     cmd.promise.completeWith(PlayFuture.allOf(futures).unsafeCast())
   }
 
+  private fun forward(cmd: Forward) {
+    val actor = activityActors.get(cmd.activityId)
+    if (actor == null) {
+      log.info("Can not forward message [{}] to activity[{}], actor not found.", cmd.event, cmd.activityId)
+      return
+    }
+    actor.tell(cmd.event)
+  }
+
   companion object {
     fun create(mdc: ActorMDC, beanContext: SingletonBeanContext): Behavior<Command> {
       return Behaviors.setup { ctx ->
@@ -145,6 +155,8 @@ class ActivityManager(
   private data class Terminated(val id: Int) : Command
 
   data class ActivityInitialized(val id: Int) : Command
+
+  data class Forward(val activityId: Int, val event: ActivityActor.Command) : Command
 
   class StartChildren(val parentId: Int) : Command
   class CloseChildren(val parentId: Int, val promise: Promise<Unit>) : Command

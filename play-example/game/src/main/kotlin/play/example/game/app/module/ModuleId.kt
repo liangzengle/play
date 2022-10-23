@@ -48,4 +48,7 @@ object ModuleId {
 
   /** 任务活动 */
   const val ActivityTask: Short = 24
+
+  /** 排名活动 */
+  const val ActivityRank: Short = 25
 }

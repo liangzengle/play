@@ -1,10 +1,8 @@
 package play.example.game.app.module.activity.base
 
 import play.example.game.app.module.activity.base.entity.ActivityEntity
-import play.example.game.app.module.activity.base.entity.PlayerActivityEntity
 import play.example.game.app.module.activity.base.res.ActivityResource
 import play.example.game.app.module.activity.base.stage.ActivityStage
-import play.example.game.app.module.player.PlayerManager
 import play.spring.BeanWithType
 
 /**
@@ -32,7 +30,9 @@ interface ActivityHandler : BeanWithType<ActivityType> {
     }
   }
 
-  fun onActivityEvent(name: String, entity: ActivityEntity, resource: ActivityResource) {}
+  fun onTriggerEvent(name: String, entity: ActivityEntity, resource: ActivityResource) {}
+
+  fun onCustomEvent(event: Any, entity: ActivityEntity, resource: ActivityResource) {}
 
   fun onNotice(resource: ActivityResource) {}
 
@@ -45,13 +45,5 @@ interface ActivityHandler : BeanWithType<ActivityType> {
 
   fun afterClose(entity: ActivityEntity, resource: ActivityResource) {
     entity.clearData()
-  }
-
-  fun join(
-    self: PlayerManager.Self,
-    playerActivityEntity: PlayerActivityEntity,
-    activityEntity: ActivityEntity,
-    resource: ActivityResource
-  ) {
   }
 }

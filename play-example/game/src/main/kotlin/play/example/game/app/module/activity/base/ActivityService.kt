@@ -29,4 +29,12 @@ class ActivityService(
       activityManager.tell(ActivityManager.Init)
     }
   }
+
+  fun fireCustomEvent(activityId: Int, message: Any) {
+    tellActivity(activityId, ActivityActor.CustomEvent(message))
+  }
+
+  private fun tellActivity(activityId: Int, message: ActivityActor.Command) {
+    activityManager.tell(ActivityManager.Forward(activityId, message))
+  }
 }

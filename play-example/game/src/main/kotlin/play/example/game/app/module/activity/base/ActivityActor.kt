@@ -77,6 +77,7 @@ class ActivityActor(
     .accept(::resume)
     .accept<CheckResourceReload>(::checkResourceReload)
     .accept(::forceClose)
+    .accept(::onCustomEvent)
     .build()
 
   private fun getEntity() = entityCache.getOrThrow(id)
@@ -230,7 +231,8 @@ class ActivityActor(
 
   private fun onTaskEvent(self: PlayerManager.Self, event: PlayerTaskEventLike) {
     if (currentStage == ActivityStage.Start && handler is ActivityTaskEventHandler) {
-      handler.onTaskEvent(self, event, playerActivityService.getEntity(self, id), getEntity(), resource)
+      val entity = getEntity()
+      handler.onTaskEvent(self, event, playerActivityService.getEntity(self, entity)!!, getEntity(), resource)
     }
   }
 
@@ -263,6 +265,14 @@ class ActivityActor(
       if (handler is ActivityStageHandler.Suspendable) {
         handler.resume(entity, resource)
       }
+    }
+  }
+
+  private fun onCustomEvent(event: CustomEvent) {
+    if (currentStage == ActivityStage.Start) {
+      handler.onCustomEvent(event.payload, getEntity(), resource)
+    } else {
+      logger.info { "discard custom event [${event.payload}] for activity[$id, $currentStage], since it's not at Start stage." }
     }
   }
 
@@ -317,4 +327,6 @@ class ActivityActor(
 
   class ActivitySuspend(val promise: Promise<Unit>) : Command
   class ActivityResume(val promise: Promise<Unit>) : Command
+
+  data class CustomEvent(val payload: Any) : Command
 }

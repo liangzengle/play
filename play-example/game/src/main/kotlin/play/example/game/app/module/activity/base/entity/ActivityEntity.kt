@@ -2,10 +2,10 @@ package play.example.game.app.module.activity.base.entity
 
 import play.entity.IntIdEntity
 import play.entity.cache.CacheSpec
-import play.example.game.app.module.activity.base.ActivityDataKey
 import play.example.game.app.module.activity.base.stage.ActivityStage
 import play.util.collection.ConcurrentHashSetLong
 import play.util.collection.SerializableAttributeMap
+import java.util.stream.LongStream
 
 /**
  *
@@ -49,5 +49,9 @@ class ActivityEntity(id: Int) : IntIdEntity(id) {
 
   fun join(playerId: Long): Boolean {
     return data.attr(ActivityDataKey.JoinedPlayers).computeIfAbsent { ConcurrentHashSetLong() }.add(playerId)
+  }
+
+  fun getJoinedPlayers(): LongStream {
+    return data.attr(ActivityDataKey.JoinedPlayers).getValue()?.stream() ?: LongStream.empty()
   }
 }

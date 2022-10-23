@@ -35,7 +35,7 @@ interface ActivityStageHandler {
     fun eventTriggered(eventName: String, entity: ActivityEntity, resource: ActivityResource) {
       val trigger = resource.eventTriggers[eventName] ?: return
       try {
-        handler.onActivityEvent(eventName, entity, resource)
+        handler.onTriggerEvent(eventName, entity, resource)
       } finally {
         val nextTriggerTime = trigger.nextTriggerTime(Time.currentDateTime(), triggerContext)
         if (nextTriggerTime != null) {

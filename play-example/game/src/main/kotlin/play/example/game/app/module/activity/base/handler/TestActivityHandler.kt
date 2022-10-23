@@ -12,7 +12,7 @@ import play.example.game.app.module.activity.base.res.ActivityResource
  */
 @Component
 class TestActivityHandler : ActivityHandler {
-  override fun onActivityEvent(name: String, entity: ActivityEntity, resource: ActivityResource) {
+  override fun onTriggerEvent(name: String, entity: ActivityEntity, resource: ActivityResource) {
     logger.debug { "activity(${resource.id}) trigger event: $name" }
   }
 

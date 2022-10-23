@@ -41,6 +41,10 @@ sealed class I18nText {
 
       @JvmStatic
       @JvmName("of")
+      operator fun invoke(num: Int) = NumArg(num.toLong())
+
+      @JvmStatic
+      @JvmName("of")
       operator fun invoke(id: Int, type: IdArgType) = IdArg(id, type.value)
     }
   }

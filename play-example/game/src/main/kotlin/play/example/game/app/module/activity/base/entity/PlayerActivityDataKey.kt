@@ -1,4 +1,4 @@
-package play.example.game.app.module.activity.base
+package play.example.game.app.module.activity.base.entity
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap
 import play.example.game.app.module.activity.impl.login.data.LoginActivityData

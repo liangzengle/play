@@ -4,8 +4,8 @@ import org.springframework.stereotype.Component
 import play.example.common.StatusCode
 import play.example.game.app.module.activity.base.ActivityHandler
 import play.example.game.app.module.activity.base.ActivityType
-import play.example.game.app.module.activity.base.PlayerActivityDataKey
 import play.example.game.app.module.activity.base.PlayerActivityService
+import play.example.game.app.module.activity.base.entity.PlayerActivityDataKey
 import play.example.game.app.module.activity.impl.login.data.LoginActivityData
 import play.example.game.app.module.activity.impl.login.domain.LoginActivityLogSource
 import play.example.game.app.module.activity.impl.login.domain.LoginActivityStatusCode
