@@ -1,7 +1,14 @@
-import java.io.Writer
-
 plugins {
   application
+}
+
+tasks.jar {
+  val resourceMain = "$buildDir/resources/main"
+  val metaInf = "$buildDir/resources/main/META-INF"
+  exclude { file ->
+    val path = file.file.toPath()
+    path.startsWith(resourceMain) && !path.startsWith(metaInf)
+  }
 }
 
 application {
@@ -10,12 +17,12 @@ application {
 }
 
 tasks.withType<CreateStartScripts> {
-  applicationName = "app"
+  applicationName = "RSocketBroker"
 }
 
 tasks.startScripts {
-  unixStartScriptGenerator = PlayUnixStartScriptGenerator()
-  windowsStartScriptGenerator = PlayWindowsStartScriptGenerator()
+  unixStartScriptGenerator = plugin.PlayUnixStartScriptGenerator()
+  windowsStartScriptGenerator = plugin.PlayWindowsStartScriptGenerator()
 }
 
 dependencies {
@@ -24,25 +31,4 @@ dependencies {
     exclude("org.springframework.boot", module = "spring-boot-starter-logging")
   }
   implementation(Deps.SpringBoot.StarterLog4j2)
-}
-
-
-class DelegatinJavaAppStartScriptGenerationDetails(
-  delegate: JavaAppStartScriptGenerationDetails
-) : JavaAppStartScriptGenerationDetails by delegate {
-  override fun getClasspath(): MutableList<String> {
-    return arrayListOf("lib/*", "conf")
-  }
-}
-
-class PlayUnixStartScriptGenerator : org.gradle.api.internal.plugins.UnixStartScriptGenerator() {
-  override fun generateScript(details: JavaAppStartScriptGenerationDetails, destination: Writer) {
-    super.generateScript(DelegatinJavaAppStartScriptGenerationDetails(details), destination)
-  }
-}
-
-class PlayWindowsStartScriptGenerator : org.gradle.api.internal.plugins.WindowsStartScriptGenerator() {
-  override fun generateScript(details: JavaAppStartScriptGenerationDetails, destination: Writer) {
-    super.generateScript(DelegatinJavaAppStartScriptGenerationDetails(details), destination)
-  }
 }

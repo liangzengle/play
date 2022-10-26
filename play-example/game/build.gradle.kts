@@ -10,12 +10,34 @@ plugins {
 
 //apply(plugin = "kotlin-kapt")
 
+tasks.jar {
+  val resourceMain = "$buildDir/resources/main"
+  val metaInf = "$buildDir/resources/main/META-INF"
+  exclude { file ->
+    val path = file.file.toPath()
+    path.startsWith(resourceMain) && !path.startsWith(metaInf)
+  }
+}
+
 application {
-  mainClass.set("play.example.game.AppKt")
+  mainClass.set("play.example.game.ContainerApp")
+  applicationDistribution.into("conf") {
+    from("src/main/conf")
+  }
+  applicationDefaultJvmArgs = listOf(
+    "--add-opens",
+    "java.base/java.lang=ALL-UNNAMED",
+    "-Djdk.attach.allowAttachSelf=true"
+  )
+}
+
+tasks.startScripts {
+  unixStartScriptGenerator = plugin.PlayUnixStartScriptGenerator()
+  windowsStartScriptGenerator = plugin.PlayWindowsStartScriptGenerator()
 }
 
 task("createStartScripts", CreateStartScripts::class) {
-  applicationName = "app"
+  applicationName = "game"
   val generatorUnix = UnixStartScriptGenerator()
   val generatorWin = WindowsStartScriptGenerator()
   generatorUnix.template = resources.text.fromFile("unixStartScript2.txt")
@@ -77,5 +99,11 @@ kotlin {
   }
   sourceSets.test {
     kotlin.srcDir("build/generated/ksp/test/kotlin")
+  }
+}
+
+sourceSets.main {
+  resources {
+    srcDir("src/main/conf")
   }
 }

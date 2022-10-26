@@ -11,3 +11,5 @@ logs/*
 /play-example/robot/logs/
 
 entity_back_up
+
+hotswap
