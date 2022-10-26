@@ -6,6 +6,8 @@ import play.util.collection.toImmutableMap
 import play.util.io.FileMonitor
 import java.io.File
 import java.io.FileNotFoundException
+import java.util.concurrent.Flow.Subscriber
+import java.util.concurrent.SubmissionPublisher
 
 /**
  *
@@ -20,6 +22,8 @@ class HotSwapWatcher(private val dir: File) {
     }
   }
 
+  private val publisher = SubmissionPublisher<HotSwapResult>()
+
   fun start() {
     FileMonitor.aggregatedBuilder()
       .watchFileOrDir(dir)
@@ -30,6 +34,10 @@ class HotSwapWatcher(private val dir: File) {
       .start()
   }
 
+  fun subscribe(subscriber: Subscriber<HotSwapResult>) {
+    publisher.subscribe(subscriber)
+  }
+
   private fun redefineClasses(classFiles: Iterable<File>) {
     val classMap = classFiles.asSequence()
       .filter { it.name.endsWith(".class") }
@@ -38,5 +46,6 @@ class HotSwapWatcher(private val dir: File) {
       .toImmutableMap()
     val result = HotSwapAgent.redefineClasses(classMap)
     Log.info(result.toString())
+    publisher.submit(result)
   }
 }

@@ -2,7 +2,7 @@ package play.example.game.app
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.Behaviors
-import com.typesafe.config.Config
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
@@ -23,6 +23,10 @@ import play.example.game.container.command.CommandManager
 import play.example.game.container.command.CommandService
 import play.example.game.container.gs.GameServerScopeConfiguration
 import play.example.game.container.gs.domain.GameServerId
+import play.hotswap.DefaultHotSwapResultSubscriber
+import play.hotswap.HotSwapResultSubscriber
+import play.hotswap.HotSwapWatcher
+import play.hotswap.NOOPHotSwapResultSubscriber
 import play.inject.PlayInjector
 import play.inject.SpringPlayInjector
 import play.mongodb.MongoDBRepositoryCustomizer
@@ -31,7 +35,7 @@ import play.scheduling.Scheduler
 import play.spring.AsyncInitializingSupport
 import play.spring.SingletonBeanContext
 import play.util.classOf
-import play.util.concurrent.PlayFuture
+import play.util.concurrent.Future
 import play.util.reflect.ClassgraphClassScanner
 import play.rsocket.client.RSocketClientCustomizer as RSocketClientCustomizer1
 
@@ -123,7 +127,6 @@ class GameApp : GameServerScopeConfiguration() {
    */
   @Bean(destroyMethod = "run")
   fun gracefullyShutdown(
-    config: Config,
     scheduler: Scheduler,
     entityCacheManager: EntityCacheManager,
     gameServerId: GameServerId,
@@ -132,10 +135,19 @@ class GameApp : GameServerScopeConfiguration() {
     val shutdown = DefaultGracefullyShutdown("GameApp(${gameServerId.toInt()})", phases, false, null)
     shutdown.addTask(
       GracefullyShutdown.PHASE_SHUTDOWN_SCHEDULER, GracefullyShutdown.PHASE_SHUTDOWN_SCHEDULER, scheduler
-    ) { PlayFuture { if (it is AutoCloseable) it.close() } }
+    ) { Future { if (it is AutoCloseable) it.close() } }
     shutdown.addTask(
       GracefullyShutdown.PHASE_FLUSH_ENTITY_CACHE, GracefullyShutdown.PHASE_FLUSH_ENTITY_CACHE, entityCacheManager
-    ) { PlayFuture { if (it is AutoCloseable) it.close() } }
+    ) { Future { if (it is AutoCloseable) it.close() } }
     return shutdown
+  }
+
+  @Bean
+  fun hotSwapResultSubscriber(
+    applicationContext: ApplicationContext,
+    @Autowired(required = false) hotSwapWatcher: HotSwapWatcher?
+  ): HotSwapResultSubscriber {
+    return if (hotSwapWatcher == null) NOOPHotSwapResultSubscriber
+    else DefaultHotSwapResultSubscriber(applicationContext, hotSwapWatcher)
   }
 }

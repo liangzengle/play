@@ -17,6 +17,8 @@ import java.util.jar.Manifest
  * @author LiangZengle
  */
 object HotSwapAgent {
+  const val AGENT_PATH = "hotswap-agent-path"
+
   private val defineClassMethod: Method by lazy {
     val method = ClassLoader::class.java.getDeclaredMethod(
       "defineClass",
@@ -52,7 +54,7 @@ object HotSwapAgent {
     val classLoader = Thread.currentThread().contextClassLoader
     val definitions = arrayOfNulls<ClassDefinition>(classes.size)
     val redefinedClasses = arrayListOf<String>()
-    val definedClasses = arrayListOf<String>()
+    val definedClasses = arrayListOf<Class<*>>()
     var i = 0
     for ((name, content) in classes) {
       val loadedClass = loadClassOrNull(name, classLoader)
@@ -60,7 +62,7 @@ object HotSwapAgent {
       if (loadedClass != null) {
         redefinedClasses.add(name)
       } else {
-        definedClasses.add(name)
+        definedClasses.add(clazz)
       }
       definitions[i++] = ClassDefinition(clazz, content)
     }
@@ -109,7 +111,7 @@ object HotSwapAgent {
   }
 
   private fun createJarFile(): File {
-    val jarPath = System.getProperty("hotswap-agent-jar-path")
+    val jarPath = System.getProperty(AGENT_PATH)
     if (jarPath != null) {
       val jarFile = File(jarPath)
       return if (!jarFile.exists()) createJarFile(jarFile) else jarFile

@@ -5,7 +5,7 @@ package play.hotswap
  * @author LiangZengle
  */
 @Suppress("MemberVisibilityCanBePrivate")
-class HotSwapResult(val redefinedClasses: List<String>, val definedClasses: List<String>) {
+class HotSwapResult(val redefinedClasses: List<String>, val definedClasses: List<Class<*>>) {
 
   override fun toString(): String {
     val b = StringBuilder()
@@ -13,9 +13,9 @@ class HotSwapResult(val redefinedClasses: List<String>, val definedClasses: List
       if (b.isNotEmpty()) b.appendLine()
       b.append("Redefine Class: ").append(name)
     }
-    for (name in definedClasses) {
+    for (clazz in definedClasses) {
       if (b.isNotEmpty()) b.appendLine()
-      b.append("Add Class: ").append(name).appendLine()
+      b.append("Add Class: ").append(clazz.name)
     }
     if (b.isEmpty()) {
       return "HotSwapResult<empty>"
