@@ -1,6 +1,6 @@
 package play.util.io
 
-import play.util.logging.getLogger
+import mu.KLogging
 import java.io.File
 import java.io.IOException
 import java.nio.file.*
@@ -8,30 +8,86 @@ import java.util.stream.Stream
 import kotlin.concurrent.thread
 import kotlin.math.max
 
-open class FileMonitor internal constructor(
+/**
+ * 文件变化监听器
+ *
+ * @property root 监听的目标文件(夹)
+ * @property maxDepth 监听文件层级，不限使用[Int.MAX_VALUE]
+ * @property eventKinds 监听的变化类型
+ * @property listener 变化处理器
+ * @constructor
+ */
+class FileMonitor internal constructor(
   val root: File,
   private val maxDepth: Int,
-  protected val eventKinds: Array<WatchEvent.Kind<Path>>,
-  private val createCallback: ((File) -> Unit)?,
-  private val modifyCallback: ((File) -> Unit)?,
-  private val deleteCallback: ((File) -> Unit)?
+  private val eventKinds: Array<WatchEvent.Kind<Path>>,
+  private val listener: FileChangeListener
 ) : AutoCloseable {
+
+  companion object : KLogging() {
+    /**
+     * 文件创建和修改
+     */
+    @JvmStatic
+    val CREATE_AND_MODIFY = arrayOf(StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY)
+
+    /**
+     * 启动一个文件监听器
+     *
+     * @param target 监听的目标文件(夹)
+     * @param depth 监听文件层级
+     * @param eventKinds 监听的变化类型
+     * @param listener 变化处理器
+     */
+    @JvmStatic
+    fun start(
+      target: File,
+      depth: Int = Int.MAX_VALUE,
+      eventKinds: Array<WatchEvent.Kind<Path>> = CREATE_AND_MODIFY,
+      listener: FileChangeListener
+    ) {
+      FileMonitor(target, depth, eventKinds, listener).start()
+    }
+
+    /**
+     * 启动一个文件监听器
+     *
+     * @param target 监听的目标文件(夹)
+     * @param action 变化处理器
+     */
+    @JvmStatic
+    fun start(target: File, action: (WatchEvent.Kind<Path>, File) -> Unit) {
+      start(target = target, listener = { kind, file -> action(kind, file) })
+    }
+
+    /**
+     * 启动一个文件监听器
+     *
+     * @param target 监听的目标文件(夹)
+     * @param action 批量文件变化处理器
+     */
+    @JvmStatic
+    fun start(target: File, action: (Set<File>) -> Unit) {
+      start(target = target, listener = BatchFileChangeListener(action))
+    }
+  }
 
   private val path = root.toPath()
 
-  protected var service: WatchService = path.fileSystem.newWatchService()
+  private var service: WatchService = path.fileSystem.newWatchService()
 
   @Volatile
   private var closed = false
 
-  protected open fun shouldReactTo(target: Path): Boolean = root.isDirectory || path == target
+  private fun shouldReactTo(target: Path): Boolean = root.isDirectory || path == target
 
   @Suppress("UNCHECKED_CAST")
-  protected fun process(key: WatchKey) {
+  private fun process(key: WatchKey) {
     try {
       val events = key.pollEvents() as List<WatchEvent<Path>>
       if (events.isNotEmpty()) {
         handleEvents(path, events)
+        listener.afterChange(path, events)
       }
     } catch (e: Exception) {
       logger.error(e) { "Exception occurred when processing file events at ${root.absolutePath}" }
@@ -40,7 +96,7 @@ open class FileMonitor internal constructor(
     }
   }
 
-  protected open fun handleEvents(path: Path, events: List<WatchEvent<Path>>) {
+  private fun handleEvents(path: Path, events: List<WatchEvent<Path>>) {
     for (event in events) {
       val target = path.resolve(event.context())
       if (shouldReactTo(target)) {
@@ -50,7 +106,7 @@ open class FileMonitor internal constructor(
           watch(file, max((maxDepth - depth), 0))
         }
         if (file.isFile) {
-          onEvent(event.kind(), file)
+          listener.onChange(event.kind(), file)
         }
       }
     }
@@ -60,7 +116,7 @@ open class FileMonitor internal constructor(
     val fileToWatch = if (file.isDirectory) {
       Files.walk(file.toPath(), depth).map { it.toFile() }.filter { it.isDirectory }
     } else {
-      if (file.exists()) Stream.empty() else Stream.of(file.parentFile)
+      if (!file.exists()) Stream.empty() else Stream.of(file.parentFile)
     }
 
     fileToWatch.forEach {
@@ -98,71 +154,5 @@ open class FileMonitor internal constructor(
   override fun close() {
     closed = true
     service.close()
-  }
-
-  protected open fun onEvent(kind: WatchEvent.Kind<Path>, file: File) {
-    when (kind) {
-      StandardWatchEventKinds.ENTRY_CREATE -> createCallback?.invoke(file)
-      StandardWatchEventKinds.ENTRY_MODIFY -> modifyCallback?.invoke(file)
-      StandardWatchEventKinds.ENTRY_DELETE -> deleteCallback?.invoke(file)
-      else -> logger.warn { "Unhandled event kind: $kind $file" }
-    }
-  }
-
-  companion object {
-    private val logger = getLogger()
-
-    @JvmStatic
-    fun builder() = Builder()
-
-    @JvmStatic
-    fun aggregatedBuilder() = AggregatedFileMonitor.Builder()
-  }
-
-  class Builder internal constructor() {
-    private lateinit var file: File
-    private var depth = Int.MAX_VALUE
-    private var createCallback: ((File) -> Unit)? = null
-    private var modifyCallback: ((File) -> Unit)? = null
-    private var deleteCallback: ((File) -> Unit)? = null
-
-    fun watchFileOrDir(file: File): Builder {
-      this.file = file
-      return this
-    }
-
-    fun depth(depth: Int): Builder {
-      this.depth = depth
-      return this
-    }
-
-    fun onCreate(action: (File) -> Unit): Builder {
-      this.createCallback = action
-      return this
-    }
-
-    fun onModify(action: (File) -> Unit): Builder {
-      this.modifyCallback = action
-      return this
-    }
-
-    fun onDelete(action: (File) -> Unit): Builder {
-      this.deleteCallback = action
-      return this
-    }
-
-    fun build(): FileMonitor {
-      val list = ArrayList<WatchEvent.Kind<Path>>(3)
-      if (createCallback != null) {
-        list.add(StandardWatchEventKinds.ENTRY_CREATE)
-      }
-      if (modifyCallback != null) {
-        list.add(StandardWatchEventKinds.ENTRY_MODIFY)
-      }
-      if (deleteCallback != null) {
-        list.add(StandardWatchEventKinds.ENTRY_DELETE)
-      }
-      return FileMonitor(file, depth, list.toTypedArray(), createCallback, modifyCallback, deleteCallback)
-    }
   }
 }

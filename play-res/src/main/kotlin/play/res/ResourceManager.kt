@@ -224,19 +224,9 @@ class ResourceManager(
       reload(classesToReload)
     }
 
-    fun watch(dir: File) {
-      FileMonitor.aggregatedBuilder()
-        .watchFileOrDir(dir)
-        .watchCreate()
-        .watchModify()
-        .onFileChange(::reloadChangedFiles)
-        .build()
-        .start()
-    }
-
     val resourceDirs = getTopLevelResourceDirs(resourceClasses)
     for (resourceDir in resourceDirs) {
-      watch(resourceDir)
+      FileMonitor.start(resourceDir, ::reloadChangedFiles)
       Log.info { "监听配置文件变化: ${resourceDir.absolutePath}" }
     }
   }

@@ -25,13 +25,7 @@ class HotSwapWatcher(private val dir: File) {
   private val publisher = SubmissionPublisher<HotSwapResult>()
 
   fun start() {
-    FileMonitor.aggregatedBuilder()
-      .watchFileOrDir(dir)
-      .watchCreate()
-      .watchModify()
-      .onFileChange(::redefineClasses)
-      .build()
-      .start()
+    FileMonitor.start(dir, ::redefineClasses)
   }
 
   fun subscribe(subscriber: Subscriber<HotSwapResult>) {
