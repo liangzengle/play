@@ -23,9 +23,9 @@ import play.rsocket.metadata.MetadataExtractor
 import play.rsocket.metadata.MimeTypes
 import play.rsocket.metadata.RouteSetupMetadata
 import play.rsocket.metadata.RoutingMetadata
+import play.rsocket.rpc.ImmutableLocalServiceCallerRegistry
 import play.rsocket.rpc.LocalServiceCaller
 import play.rsocket.rpc.LocalServiceCallerRegistry
-import play.rsocket.rpc.LocalServiceCallerRegistryImpl
 import play.rsocket.security.SimpleTokenSocketAcceptorInterceptor
 import play.rsocket.serializer.RSocketCodec
 import reactor.netty.tcp.TcpServer
@@ -96,7 +96,7 @@ class RSocketBrokerAutoConfiguration {
 
   @Bean
   fun localServiceCallerRegistry(callers: List<LocalServiceCaller>): LocalServiceCallerRegistry {
-    return LocalServiceCallerRegistryImpl(callers)
+    return ImmutableLocalServiceCallerRegistry(callers)
   }
 
   @Bean

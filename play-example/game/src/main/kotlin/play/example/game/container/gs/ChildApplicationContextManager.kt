@@ -14,6 +14,7 @@ import play.rsocket.metadata.RoutingType
 import play.rsocket.rpc.RpcClient
 import play.rsocket.rpc.RpcClientInterceptor
 import play.spring.SingletonBeanContext
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  *
@@ -24,8 +25,7 @@ class ChildApplicationContextManager : ApplicationListener<ApplicationContextEve
   RpcClientInterceptor {
   private lateinit var parent: ApplicationContext
 
-  @Volatile
-  private var contextMap = IntObjectMaps.immutable.empty<SingletonBeanContext>()
+  private var contextMap = AtomicReference(IntObjectMaps.immutable.empty<SingletonBeanContext>())
 
   override fun onApplicationEvent(event: ApplicationContextEvent) {
     val context = event.applicationContext
@@ -38,15 +38,18 @@ class ChildApplicationContextManager : ApplicationListener<ApplicationContextEve
     }
   }
 
-  @Synchronized
   private fun addContext(context: ApplicationContext) {
-    val gameServerId = context.getBean(GameServerId::class.java)
-    contextMap = contextMap.newWithKeyValue(gameServerId.toInt(), SingletonBeanContext(context))
+    val gameServerId = context.getBean(GameServerId::class.java).toInt()
+    contextMap.getAndUpdate {
+      it.newWithKeyValue(gameServerId, SingletonBeanContext(context))
+    }
   }
 
-  @Synchronized
   private fun removeContext(context: ApplicationContext) {
-    contextMap = contextMap.reject { _, ctx -> ctx.spring === context }
+    val gameServerId = context.getBean(GameServerId::class.java).toInt()
+    contextMap.getAndUpdate {
+      it.newWithoutKey(gameServerId)
+    }
   }
 
   override fun setApplicationContext(applicationContext: ApplicationContext) {
@@ -54,8 +57,10 @@ class ChildApplicationContextManager : ApplicationListener<ApplicationContextEve
   }
 
   fun getContext(id: Int): SingletonBeanContext? {
-    return contextMap.get(id)
+    return contextMap.get().get(id)
   }
+
+  fun getContexts(): Collection<SingletonBeanContext> = contextMap.get().values()
 
   override fun apply(rpcClient: RpcClient): RpcClient {
     return object : RpcClient {

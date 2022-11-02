@@ -17,7 +17,6 @@ import play.util.concurrent.Promise
 import play.util.control.getCause
 import play.util.exception.isFatal
 import play.util.forEach
-import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 
 @ChannelHandler.Sharable
@@ -50,12 +49,11 @@ abstract class NettyHttpServerHandler(protected val actionManager: HttpActionMan
           }
         }
       }
-      val maybeAction = findAction(request)
-      if (maybeAction.isEmpty) {
+      val action = findAction(request)
+      if (action == null) {
         writeResponse(ctx, request, HttpResult.notFount(), "Action Not Found")
         return
       }
-      val action = maybeAction.get()
       if (!action.acceptMethod(request.method())) {
         writeResponse(ctx, request, HttpResult.notFount(), "Method Not Supported")
         return
@@ -82,7 +80,7 @@ abstract class NettyHttpServerHandler(protected val actionManager: HttpActionMan
     }
   }
 
-  protected open fun findAction(request: BasicNettyHttpRequest): Optional<Action> {
+  protected open fun findAction(request: BasicNettyHttpRequest): Action? {
     return actionManager.findAction(request.path(), request.toNetty.uri())
   }
 

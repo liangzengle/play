@@ -1,5 +1,6 @@
 package play.example.game.app.admin
 
+import org.springframework.beans.factory.DisposableBean
 import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -11,9 +12,13 @@ import play.net.http.HttpActionManager
 class AdminHttpActionManager @Autowired constructor(
   private val gameServerId: GameServerId,
   private val container: ContainerAdminHttpActionManager
-) : HttpActionManager(), SmartInitializingSingleton {
+) : HttpActionManager(), SmartInitializingSingleton, DisposableBean {
 
   override fun afterSingletonsInstantiated() {
-    container.registerActionManager(gameServerId.toInt(), this)
+    container.register(gameServerId.toInt(), this)
+  }
+
+  override fun destroy() {
+    container.unregister(gameServerId.toInt())
   }
 }

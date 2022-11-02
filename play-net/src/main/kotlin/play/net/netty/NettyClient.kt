@@ -5,35 +5,49 @@ import io.netty.channel.Channel
 import io.netty.channel.ChannelPromise
 import io.netty.util.AttributeKey
 import mu.KLogging
+import play.util.concurrent.PlayFuture
+import play.util.concurrent.PlayPromise
 
 class NettyClient(
   private val name: String,
   bootstrap: Bootstrap,
   private val attributes: Map<AttributeKey<out Any>, Any> = emptyMap(),
   private val autoReconnect: Boolean = true
-) {
+) : AutoCloseable {
 
   private val b = bootstrap.clone()
 
   private var ch: Channel? = null
 
-  @Suppress("UNCHECKED_CAST")
-  fun connect() {
-    val ch = b.clone().connect().sync().channel()
-    attributes.forEach { (k, v) -> ch.attr(k as AttributeKey<Any>).set(v) }
-    this.ch = ch
+  @Volatile
+  private var closed = false
+
+  private val connectPromise = PlayPromise.make<Unit>()
+
+  override fun close() {
+    disconnect()
   }
 
-  @Synchronized
-  private fun reconnect() {
-    if (isConnected()) {
-      return
+  @Suppress("UNCHECKED_CAST")
+  fun connect(): PlayFuture<Unit> {
+    b.connect().toPlay().onSuccess { ch ->
+      attributes.forEach { (k, v) -> ch.attr(k as AttributeKey<Any>).set(v) }
+      this.ch = ch
+      connectPromise.success(Unit)
+      if (autoReconnect) {
+        ch.closeFuture().addListener {
+          if (!closed) {
+            connect()
+          }
+        }
+      }
     }
-    connect()
+    return connectPromise.future
   }
 
   fun disconnect() {
-    ch?.close()?.sync()
+    closed = true
+    ch?.close()
   }
 
   fun write(msg: Any) {
@@ -41,21 +55,15 @@ class NettyClient(
   }
 
   fun write(msg: Any, flush: Boolean, promise: ChannelPromise?) {
-    if (!isConnected()) {
-      if (!autoReconnect) {
-        return
-      }
-      reconnect()
-    }
-    if (!isConnected()) {
+    val ch = this.ch
+    if (ch == null || !ch.isActive || !ch.isWritable) {
       logger.error { "send msg failed: $msg" }
       return
     }
-    val ch = this.ch
     if (flush) {
-      ch?.writeAndFlush(msg, promise ?: ch.voidPromise())
+      ch.writeAndFlush(msg, promise ?: ch.voidPromise())
     } else {
-      ch?.write(msg, promise ?: ch.voidPromise())
+      ch.write(msg, promise ?: ch.voidPromise())
     }
   }
 

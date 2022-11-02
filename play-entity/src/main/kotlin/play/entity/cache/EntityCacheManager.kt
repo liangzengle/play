@@ -10,6 +10,7 @@ import play.util.control.getCause
 import play.util.unsafeCast
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.minutes
 
@@ -38,26 +39,26 @@ class EntityCacheManagerImpl constructor(
   injector: PlayInjector,
   private val persistFailOver: EntityCachePersistFailOver
 ) : EntityCacheManager(), AutoCloseable {
-  companion object : KLogging()
+  companion object : KLogging() {
+    private val CLOSED_UPDATER = AtomicIntegerFieldUpdater.newUpdater(EntityCacheManagerImpl::class.java, "closed")
+  }
 
   private val initializerProvider = EntityInitializerProvider(injector)
 
   private val caches = ConcurrentHashMap<Class<*>, EntityCache<*, *>>()
 
-  private var closed = false
+  @Volatile
+  private var closed = 0
 
   init {
     logger.info { "EntityCacheFactory: ${factory.javaClass.simpleName}" }
     logger.info { "EntityCachePersistFailOver: ${persistFailOver.javaClass.simpleName}" }
   }
 
-  @Synchronized
   override fun close() {
-    if (closed) {
+    if (!CLOSED_UPDATER.compareAndSet(this, 0, 1)) {
       return
     }
-    closed = true
-
     for (cache in caches.values) {
       val result = cache.persist().blockingGetResult(1.minutes)
       if (result.isFailure) {
@@ -69,7 +70,7 @@ class EntityCacheManagerImpl constructor(
         }
       }
     }
-    logger.info { "EntityCache flushed on close." }
+    logger.info { "EntityCache persisted on close." }
   }
 
   override fun getAllCaches(): Iterable<EntityCache<*, *>> {

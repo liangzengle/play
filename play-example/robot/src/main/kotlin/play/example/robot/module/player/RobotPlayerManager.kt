@@ -2,7 +2,6 @@ package play.example.robot.module.player
 
 import com.typesafe.config.ConfigFactory
 import io.netty.bootstrap.Bootstrap
-import org.springframework.beans.factory.SmartInitializingSingleton
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import play.example.game.container.net.codec.RequestEncoder
@@ -48,9 +47,10 @@ class RobotPlayerManager @Autowired constructor(private val bt: DummyBehaviorTre
       val nettyClient = NettyClient("robot-$i", b, mapOf(RobotPlayer.AttrKey to robotPlayer))
       val client = RobotClient(nettyClient)
       robotPlayer.setClient(client)
-      client.connect()
-      robotPlayer.execute {
-        bt.run(robotPlayer)
+      client.connect().onSuccess {
+        robotPlayer.execute {
+          bt.run(robotPlayer)
+        }
       }
     }
 

@@ -10,6 +10,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import kotlin.concurrent.thread
 import kotlin.system.measureNanoTime
 
@@ -115,7 +116,13 @@ class DefaultGracefullyShutdown(
 
   private val phaseTasks = ConcurrentHashMap<String, List<Task<Any>>>()
 
-  private var performed = false
+  @Volatile
+  private var performed = 0
+
+  companion object {
+    private val PERFORMED_UPDATER =
+      AtomicIntegerFieldUpdater.newUpdater(DefaultGracefullyShutdown::class.java, "performed")
+  }
 
   init {
     if (runByJvmShutdownHook) {
@@ -123,13 +130,10 @@ class DefaultGracefullyShutdown(
     }
   }
 
-  @Synchronized
   override fun run() {
-    if (performed) {
-      Log.warn { "Shutdown should not be run more than once." }
+    if (!PERFORMED_UPDATER.compareAndSet(this, 0, 1)) {
       return
     }
-    performed = true
     Log.info { "Application [$applicationName] shutting down..." }
     var anyFailure = false
     for (phase in phases.asList()) {

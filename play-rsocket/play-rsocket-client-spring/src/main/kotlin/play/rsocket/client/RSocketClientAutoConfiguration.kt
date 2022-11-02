@@ -33,7 +33,7 @@ class RSocketClientAutoConfiguration {
 
   @Bean
   fun localServiceCallerRegistry(callers: List<LocalServiceCaller>): LocalServiceCallerRegistry {
-    return LocalServiceCallerRegistryImpl(callers)
+    return ImmutableLocalServiceCallerRegistry(callers)
   }
 
   @Bean

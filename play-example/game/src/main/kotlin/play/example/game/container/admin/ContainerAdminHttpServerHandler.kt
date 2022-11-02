@@ -8,7 +8,6 @@ import play.net.netty.http.BasicNettyHttpRequest
 import play.net.netty.http.NettyHttpServerHandler
 import play.util.logging.getLogger
 import play.util.unsafeCast
-import java.util.*
 
 /**
  *
@@ -19,9 +18,9 @@ class ContainerAdminHttpServerHandler(actionManager: ContainerAdminHttpActionMan
   override val filters: List<HttpRequestFilter> = listOf(AdminWhitelistIpFilter())
   override val logger: Logger = getLogger()
 
-  override fun findAction(request: BasicNettyHttpRequest): Optional<Action> {
+  override fun findAction(request: BasicNettyHttpRequest): Action? {
     val action = actionManager.findAction(request.path())
-    if (action.isPresent) {
+    if (action != null) {
       return action
     }
     val serverId = QueryStringDecoder(request.toNetty.uri()).parameters()["serverId"]?.get(0)?.toInt() ?: 0

@@ -3,30 +3,34 @@ package play.scheduling
 import com.github.benmanes.caffeine.cache.Caffeine
 import mu.KLogging
 import play.util.Cleaners
+import play.util.classOf
 import play.util.unsafeCast
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
 import java.util.concurrent.Executor
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 
 class ManagedScheduler(private val underlying: Scheduler) : Scheduler, AutoCloseable {
   private val schedules: MutableMap<Any, Canceller<*>> =
     Caffeine.newBuilder().weakKeys().build<Any, Canceller<*>>().asMap()
 
-  private var closed = false
+  @Volatile
+  private var closed = 0
+
+  companion object {
+    private val CLOSED_UPDATER = AtomicIntegerFieldUpdater.newUpdater(classOf<ManagedScheduler>(), "closed")
+  }
 
   init {
     Cleaners.register(this, Action(schedules))
   }
 
-  @Synchronized
   override fun close() {
-    if (closed) {
-      return
+    if (CLOSED_UPDATER.compareAndSet(this, 0, 1)) {
+      Action.clean(schedules, "close")
     }
-    closed = true
-    Action.clean(schedules, "close")
   }
 
   private class Action(val schedules: Map<Any, Canceller<*>>) : Runnable {

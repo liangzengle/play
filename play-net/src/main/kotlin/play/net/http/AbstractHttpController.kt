@@ -94,7 +94,7 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
     }
 
     private fun getParameter(name: String, type: Type, httpRequest: AbstractHttpRequest, isOptional: Boolean): Any {
-      return if (type is ParameterizedType && type.rawType != Optional::class.java) {
+      return if (type is ParameterizedType && type.rawType == Optional::class.java) {
         getParameter(name, type.actualTypeArguments[0], httpRequest, true)
       } else {
         val parameters = httpRequest.parameters()
@@ -118,10 +118,13 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
           parameters.getLongOptional(name)
         } else if (type == OptionalDouble::class.java) {
           parameters.getDoubleOptional(name)
-        } else if (httpRequest.hasBody()) {
-          Json.toObject<Any>(httpRequest.getBodyAsString(), type)
         } else {
-          throw throw UnsupportedHttpParameterTypeException(method, type)
+          val stringValueOpt = parameters.getStringOptional(name)
+          if (stringValueOpt.isPresent) {
+            Json.toObject<Any>(stringValueOpt.get(), type)
+          } else {
+            throw ParameterMissionException(name)
+          }
         }
       }
     }
