@@ -5,7 +5,6 @@ import io.rsocket.Payload
 import io.rsocket.core.RSocketServer
 import io.rsocket.core.Resume
 import io.rsocket.loadbalance.LoadbalanceStrategy
-import io.rsocket.loadbalance.RoundRobinLoadbalanceStrategy
 import io.rsocket.metadata.WellKnownMimeType
 import io.rsocket.transport.netty.server.TcpServerTransport
 import org.springframework.beans.factory.ObjectProvider
@@ -89,7 +88,7 @@ class RSocketBrokerAutoConfiguration {
 
   @Bean
   fun rsocketLocator(rsocketQuery: RSocketQuery, loadbalanceStrategy: LoadbalanceStrategy): RSocketLocator {
-    val unicastRSocketLocator = UnicastRSocketLocator(rsocketQuery, RoundRobinLoadbalanceStrategy())
+    val unicastRSocketLocator = UnicastRSocketLocator(rsocketQuery, loadbalanceStrategy)
     val multicastRSocketLocator = MulticastRSocketLocator(rsocketQuery)
     return CompositeRSocketLocator(listOf(unicastRSocketLocator, multicastRSocketLocator))
   }
