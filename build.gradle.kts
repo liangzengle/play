@@ -35,6 +35,7 @@ subprojects {
 //  apply(plugin = "kotlin-spring")
   apply(plugin = "project-report")
   apply(plugin = "com.google.devtools.ksp")
+  apply(from = "$rootDir/gradle/publish.gradle")
 
   configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
     debug.set(true)
