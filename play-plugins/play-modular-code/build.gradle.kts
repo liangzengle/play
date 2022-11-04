@@ -6,11 +6,11 @@ plugins {
 group = "play"
 version = "0.1"
 
-val pluginName = "modularCode"
+val pluginName = "play-modular-code"
 gradlePlugin {
   plugins {
     register(pluginName) {
-      id = "play.modular-code"
+      id = "play-modular-code"
       implementationClass = "play.plugin.modularcode.ModularCodeGradlePlugin"
     }
   }
@@ -25,7 +25,6 @@ dependencies {
 publishing {
   publications {
     create<MavenPublication>("maven") {
-      artifactId = "modular-code"
       from(components["java"])
     }
   }

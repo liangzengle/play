@@ -2,7 +2,7 @@ import org.gradle.api.internal.plugins.UnixStartScriptGenerator
 import org.gradle.api.internal.plugins.WindowsStartScriptGenerator
 
 plugins {
-  id("play.modular-code") version "0.1"
+  id("play-modular-code") version "0.1"
   application
   java
   idea
@@ -90,7 +90,7 @@ dependencies {
 
 modularCode {
   enabled = true
-  annotation = listOf("play.example.game.app.module.ModularCode")
+  annotation = "play.example.game.app.module.ModularCode"
 }
 
 kotlin {

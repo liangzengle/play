@@ -21,15 +21,7 @@ import java.lang.reflect.Modifier
 
 @AutoService(ComponentRegistrar::class)
 class ModularCodeComponentRegistrar : ComponentRegistrar {
-  //  override fun registerProjectComponents(project: MockProject, configuration: CompilerConfiguration) {
-//    if (configuration.get(ModularCodeConfigurationKeys.KEY_ENABLED) == false) {
-//      return
-//    }
-//    ClassBuilderInterceptorExtension.registerExtension(
-//      project,
-//      ModularCodeClassGeneratorInterceptor(configuration[ModularCodeConfigurationKeys.KEY_ANNOTATION]!!)
-//    )
-//  }
+
   override fun registerProjectComponents(
     project: MockProject,
     configuration: org.jetbrains.kotlin.config.CompilerConfiguration
@@ -101,7 +93,7 @@ class ModularCodeClassBuilder(val classBuilder: ClassBuilder) :
     value: Any?
   ): FieldVisitor {
     return if (value is Int && Modifier.isFinal(access) && Modifier.isStatic(access) && Modifier.isPublic(access)) {
-      throw IllegalStateException("${origin.descriptor}不能定义为final属性")
+      throw IllegalStateException("${origin.descriptor} can not be final")
     } else {
       super.newField(origin, access, name, desc, signature, value)
     }

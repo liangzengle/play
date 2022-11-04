@@ -18,7 +18,7 @@ object ModularCodeConfigurationKeys {
 @AutoService(CommandLineProcessor::class)
 class ModularCodeCommandLingProcessor : CommandLineProcessor {
   companion object {
-    val PLUGIN_ID = "play.modular-code"
+    const val PLUGIN_ID = "play-modular-code"
     val ENABLED_OPTION = CliOption("enabled", "<true|false>", "whether plugin is enabled", false)
     val ANNOTATION_OPTION =
       CliOption("annotation", "<fqname>", "Annotation qualified names", true)

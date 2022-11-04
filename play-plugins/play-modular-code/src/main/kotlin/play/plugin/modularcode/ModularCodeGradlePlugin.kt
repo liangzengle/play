@@ -35,7 +35,7 @@ class ModularCodeGradlePlugin : KotlinCompilerPluginSupportPlugin {
   }
 
   override fun getPluginArtifact(): SubpluginArtifact {
-    return SubpluginArtifact("play", "modular-code", "0.1")
+    return SubpluginArtifact("play", "play-modular-code", "0.1")
   }
 
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean {
