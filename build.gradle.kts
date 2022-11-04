@@ -42,7 +42,7 @@ subprojects {
     verbose.set(true)
   }
 
-  group = "play"
+  group = "me.play"
   version = "1.0-SNAPSHOT"
 
   val api by configurations
