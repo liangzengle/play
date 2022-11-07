@@ -42,12 +42,12 @@ class RpcServiceStubGenerator(environment: SymbolProcessorEnvironment) :
         .addSuperinterface(rpcServiceInterfaceDeclaration.toClassName())
     builder.primaryConstructor(
       FunSpec.constructorBuilder()
-        .addParameter("requester", RequesterSupport)
+        .addParameter("requester", AbstractRSocketRequester)
         .addParameter("ioStreamAdapter", ByteBufToIOStreamAdapter)
         .addParameter("serializerProvider", RSocketSerializerProvider)
         .build()
     ).addProperty(
-      PropertySpec.builder("requester", RequesterSupport).initializer("requester").build()
+      PropertySpec.builder("requester", AbstractRSocketRequester).initializer("requester").build()
     ).addProperty(
       PropertySpec.builder("ioStreamAdapter", ByteBufToIOStreamAdapter).initializer("ioStreamAdapter").build()
     ).addProperty(

@@ -114,7 +114,7 @@ val RpcMethodMetadata = ClassName.bestGuess("play.rsocket.rpc.RpcMethodMetadata"
 val LocalServiceCaller = ClassName.bestGuess("play.rsocket.rpc.LocalServiceCaller")
 
 //val RemoteServiceStub = ClassName.bestGuess("play.rpc.requester.RemoteServiceStub")
-val RequesterSupport = ClassName.bestGuess("play.rsocket.rpc.RequesterSupport")
+val AbstractRSocketRequester = ClassName.bestGuess("play.rsocket.rpc.AbstractRSocketRequester")
 
 val ByteBufToIOStreamAdapter = ClassName.bestGuess("play.rsocket.serializer.ByteBufToIOStreamAdapter")
 
