@@ -22,7 +22,7 @@ class AkkaEventBus(private val actor: ActorRef<Any>) : EventBus {
         when (msg) {
           is Subscribe -> {
             ctx.system.eventStream().tell(EventStream.Subscribe(msg.eventType as Class<Any>, ctx.self))
-            eventBus.subscribe(msg.eventType, msg.action)
+            eventBus.subscribe(msg.eventType, msg.subscriber)
           }
 
           is Publish -> {
@@ -40,11 +40,11 @@ class AkkaEventBus(private val actor: ActorRef<Any>) : EventBus {
     actor.tell(Publish(event))
   }
 
-  override fun <T> subscribe(eventType: Class<T>, action: (T) -> Unit) {
-    actor.tell(Subscribe(eventType, action.unsafeCast()))
+  override fun <T> subscribe(eventType: Class<T>, subscriber: (T) -> Unit) {
+    actor.tell(Subscribe(eventType, subscriber.unsafeCast()))
   }
 
-  private class Subscribe(val eventType: Class<*>, val action: (Any) -> Unit)
+  private class Subscribe(val eventType: Class<*>, val subscriber: (Any) -> Unit)
 
   private class Publish(val event: Any)
 }

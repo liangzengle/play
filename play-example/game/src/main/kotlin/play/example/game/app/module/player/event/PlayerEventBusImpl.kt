@@ -10,7 +10,6 @@ import play.example.game.app.module.player.PlayerManager
 import play.example.game.app.module.player.PlayerManager.Self
 import play.spring.SingletonBeanContext
 import play.util.exception.NoStackTraceException
-import play.util.exception.isFatal
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -43,9 +42,6 @@ class PlayerEventBusImpl(private val beanContext: SingletonBeanContext) : Player
         logger.error(e) { "Exception occurred when handling event: $event" }
         if (event is PromisedPlayerEvent<*>) {
           event.promise.failure(e)
-        }
-        if (e.isFatal()) {
-          throw e
         }
       }
     }

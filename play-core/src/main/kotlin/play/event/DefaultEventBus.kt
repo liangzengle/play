@@ -2,7 +2,6 @@ package play.event
 
 import com.google.common.collect.Maps
 import mu.KLogging
-import play.util.exception.isFatal
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -22,16 +21,13 @@ class DefaultEventBus : EventBus {
         subscriber(event)
       } catch (e: Exception) {
         logger.error(e) { "Exception occurred when handling event: $event" }
-        if (e.isFatal()) {
-          throw e
-        }
       }
     }
   }
 
   @Suppress("UNCHECKED_CAST")
-  override fun <T> subscribe(eventType: Class<T>, action: (T) -> Unit) {
+  override fun <T> subscribe(eventType: Class<T>, subscriber: (T) -> Unit) {
     subscribers.computeIfAbsent(eventType) { CopyOnWriteArrayList() }
-      .add(action as (Any) -> Unit)
+      .add(subscriber as (Any) -> Unit)
   }
 }

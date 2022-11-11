@@ -7,10 +7,12 @@ import java.io.FileOutputStream
 import java.lang.instrument.ClassDefinition
 import java.lang.instrument.Instrumentation
 import java.lang.reflect.Method
+import java.util.concurrent.locks.ReentrantLock
 import java.util.jar.Attributes
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
+import kotlin.concurrent.withLock
 
 /**
  *
@@ -27,13 +29,14 @@ object HotSwapAgent {
       Int::class.java,
       Int::class.java
     )
-    if (!method.trySetAccessible()) {
-      method.isAccessible = true
-    }
+    method.isAccessible = true
     method
   }
 
-  private var instrumentation: Instrumentation? = null
+  @Volatile
+  private var inst: Instrumentation? = null
+
+  private val lock = ReentrantLock()
 
   @JvmStatic
   fun premain(agentArgs: String?, inst: Instrumentation) {
@@ -42,32 +45,32 @@ object HotSwapAgent {
 
   @JvmStatic
   fun agentmain(agentArgs: String?, inst: Instrumentation) {
-    instrumentation = inst
+    this.inst = inst
   }
 
   fun redefineClasses(classes: Map<String, ByteArray>): HotSwapResult {
     if (classes.isEmpty()) {
       return HotSwapResult(emptyList(), emptyList())
     }
-    startAgent()
-    val inst = instrumentation!!
-    val classLoader = Thread.currentThread().contextClassLoader
-    val definitions = arrayOfNulls<ClassDefinition>(classes.size)
-    val redefinedClasses = arrayListOf<String>()
-    val definedClasses = arrayListOf<Class<*>>()
-    var i = 0
-    for ((name, content) in classes) {
-      val loadedClass = loadClassOrNull(name, classLoader)
-      val clazz = loadedClass ?: defineNewClass(name, content, classLoader)
-      if (loadedClass != null) {
-        redefinedClasses.add(name)
-      } else {
-        definedClasses.add(clazz)
+    lock.withLock {
+      val inst = startAgent()
+      val classLoader = Thread.currentThread().contextClassLoader
+      val redefinedClasses = arrayListOf<String>()
+      val definedClasses = arrayListOf<Class<*>>()
+      val definitions = arrayListOf<ClassDefinition>()
+      for ((name, content) in classes) {
+        val existedClass = loadClassOrNull(name, classLoader)
+        if (existedClass != null) {
+          redefinedClasses.add(name)
+          definitions.add(ClassDefinition(existedClass, content))
+        } else {
+          val newClass = defineNewClass(name, content, classLoader)
+          definedClasses.add(newClass)
+        }
       }
-      definitions[i++] = ClassDefinition(clazz, content)
+      inst.redefineClasses(*definitions.toTypedArray())
+      return HotSwapResult(redefinedClasses, definedClasses)
     }
-    inst.redefineClasses(*definitions)
-    return HotSwapResult(redefinedClasses, definedClasses)
   }
 
   private fun loadClassOrNull(name: String, classLoader: ClassLoader): Class<*>? {
@@ -79,26 +82,27 @@ object HotSwapAgent {
   }
 
   private fun defineNewClass(name: String, content: ByteArray, classLoader: ClassLoader): Class<*> {
-    val clazz = defineClassMethod.invoke(classLoader, name, content, 0, content.size) as Class<*>
-    Class.forName(name, true, classLoader)
-    return clazz
+    defineClassMethod.invoke(classLoader, name, content, 0, content.size) as Class<*>
+    return Class.forName(name, true, classLoader)
   }
 
-  private fun startAgent() {
-    if (instrumentation != null) {
-      return
+  private fun startAgent(): Instrumentation {
+    val value = this.inst
+    if (value != null) {
+      return value
     }
 
     val agentJar = createJarFile()
     val pid = ProcessHandle.current().pid()
-    val vm: VirtualMachine = VirtualMachine.attach(pid.toString())
+    val vm = VirtualMachine.attach(pid.toString())
     vm.loadAgent(agentJar.absolutePath, null)
     vm.detach()
 
     // wait until instrumentation available
     for (i in 0..10) {
-      if (instrumentation != null) {
-        return
+      val inst = this.inst
+      if (inst != null) {
+        return inst
       }
       try {
         Thread.sleep(1000)

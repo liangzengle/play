@@ -45,8 +45,10 @@ class FileMonitor internal constructor(
       depth: Int = Int.MAX_VALUE,
       eventKinds: Array<WatchEvent.Kind<Path>> = CREATE_AND_MODIFY,
       listener: FileChangeListener
-    ) {
-      FileMonitor(target, depth, eventKinds, listener).start()
+    ): FileMonitor {
+      val monitor = FileMonitor(target, depth, eventKinds, listener)
+      monitor.start()
+      return monitor
     }
 
     /**
@@ -56,8 +58,8 @@ class FileMonitor internal constructor(
      * @param action 变化处理器
      */
     @JvmStatic
-    fun start(target: File, action: (WatchEvent.Kind<Path>, File) -> Unit) {
-      start(target = target, listener = { kind, file -> action(kind, file) })
+    fun start(target: File, action: (WatchEvent.Kind<Path>, File) -> Unit): FileMonitor {
+      return start(target = target, listener = { kind, file -> action(kind, file) })
     }
 
     /**
@@ -67,8 +69,8 @@ class FileMonitor internal constructor(
      * @param action 批量文件变化处理器
      */
     @JvmStatic
-    fun start(target: File, action: (Set<File>) -> Unit) {
-      start(target = target, listener = BatchFileChangeListener(action))
+    fun start(target: File, action: (Set<File>) -> Unit): FileMonitor {
+      return start(target = target, listener = BatchFileChangeListener(action))
     }
   }
 

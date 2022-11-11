@@ -18,8 +18,7 @@ class AkkaScheduler(
   clock: Clock
 ) : AbstractScheduler(ec, clock) {
 
-  @Suppress("NOTHING_TO_INLINE")
-  private inline fun akka.actor.Cancellable.toPlay(): Cancellable = object : Cancellable {
+  private fun akka.actor.Cancellable.toPlay(): Cancellable = object : Cancellable {
     override fun cancel(): Boolean = this@toPlay.cancel()
 
     override fun isCancelled(): Boolean = this@toPlay.isCancelled
