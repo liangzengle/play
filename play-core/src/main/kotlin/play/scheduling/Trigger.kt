@@ -1,19 +1,21 @@
 package play.scheduling
 
-import play.util.time.currentDateTime
+import play.util.time.Time.toInstant
+import play.util.time.instantNotNull
+import java.time.Instant
 import java.time.LocalDateTime
 
 interface Trigger {
-  fun nextExecutionTime(triggerContext: TriggerContext): LocalDateTime?
+  fun nextExecutionTime(triggerContext: TriggerContext): Instant?
 }
 
 class CronTrigger(
   private val sequenceGenerator: CronExpression
 ) : Trigger {
-  override fun nextExecutionTime(triggerContext: TriggerContext): LocalDateTime? {
-    var date = triggerContext.lastCompletionTime()
+  override fun nextExecutionTime(triggerContext: TriggerContext): Instant? {
+    var date = triggerContext.lastCompletion()
     if (date != null) {
-      val scheduled = triggerContext.lastScheduledExecutionTime()
+      val scheduled = triggerContext.lastScheduledExecution()
       if (scheduled != null && date.isBefore(scheduled)) {
         // Previous task apparently executed too early...
         // Let's simply use the last calculated execution time then,
@@ -21,7 +23,7 @@ class CronTrigger(
         date = scheduled
       }
     } else {
-      date = triggerContext.clock.currentDateTime()
+      date = triggerContext.clock.instantNotNull()
     }
     return this.sequenceGenerator.nextFireTime(date)
   }
@@ -43,10 +45,10 @@ class BoundedCronTrigger(
   private val startTime: LocalDateTime?,
   private val stopTime: LocalDateTime?
 ) : Trigger {
-  override fun nextExecutionTime(triggerContext: TriggerContext): LocalDateTime? {
-    var date = triggerContext.lastCompletionTime()
+  override fun nextExecutionTime(triggerContext: TriggerContext): Instant? {
+    var date = triggerContext.lastCompletion()
     if (date != null) {
-      val scheduled = triggerContext.lastScheduledExecutionTime()
+      val scheduled = triggerContext.lastScheduledExecution()
       if (scheduled != null && date.isBefore(scheduled)) {
         // Previous task apparently executed too early...
         // Let's simply use the last calculated execution time then,
@@ -54,13 +56,15 @@ class BoundedCronTrigger(
         date = scheduled
       }
     } else {
-      date = triggerContext.clock.currentDateTime()
+      date = triggerContext.clock.instantNotNull()
     }
     var nextFireTime = this.sequenceGenerator.nextFireTime(date)
-    if (startTime != null && nextFireTime.isBefore(startTime)) {
-      nextFireTime = this.sequenceGenerator.nextFireTime(startTime.minusSeconds(1))
+    val startInstant = startTime?.run { toInstant() }
+    if (startInstant != null && nextFireTime.isBefore(startInstant)) {
+      nextFireTime = this.sequenceGenerator.nextFireTime(startInstant.minusSeconds(1))
     }
-    return if (stopTime != null && nextFireTime.isAfter(stopTime)) null else nextFireTime
+    val stopInstant = stopTime?.run { toInstant() }
+    return if (stopInstant != null && nextFireTime.isAfter(stopInstant)) null else nextFireTime
   }
 
   override fun toString(): String {

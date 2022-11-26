@@ -2,7 +2,7 @@ package play.scheduling
 
 import play.Log
 import play.StaticConfigurator
-import java.time.LocalDateTime
+import java.time.Instant
 import javax.annotation.Nonnull
 import javax.annotation.Nullable
 
@@ -27,8 +27,8 @@ interface CronExpression {
   fun getExpression(): String
 
   @Nullable
-  fun prevFireTime(from: LocalDateTime): LocalDateTime?
+  fun prevFireTime(from: Instant): Instant?
 
   @Nonnull
-  fun nextFireTime(from: LocalDateTime): LocalDateTime
+  fun nextFireTime(from: Instant): Instant
 }

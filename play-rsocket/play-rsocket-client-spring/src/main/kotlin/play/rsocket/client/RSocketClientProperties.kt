@@ -1,7 +1,6 @@
 package play.rsocket.client
 
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.ConstructorBinding
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 import java.time.Duration
 
@@ -10,7 +9,6 @@ import java.time.Duration
  *
  * @author LiangZengle
  */
-@ConstructorBinding
 @ConfigurationProperties(prefix = "rsocket.client")
 class RSocketClientProperties(
   val brokers: List<String>,

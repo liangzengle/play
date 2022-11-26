@@ -1,7 +1,7 @@
 package play.scheduling
 
 import java.time.Clock
-import java.time.LocalDateTime
+import java.time.Instant
 
 interface TriggerContext {
   val clock: Clock
@@ -10,41 +10,41 @@ interface TriggerContext {
    * Return the last <i>scheduled</i> execution time of the task,
    * or `null` if not scheduled before.
    */
-  fun lastScheduledExecutionTime(): LocalDateTime?
+  fun lastScheduledExecution(): Instant?
 
   /**
    * Return the last <i>actual</i> execution time of the task,
    * or `null` if not scheduled before.
    */
-  fun lastActualExecutionTime(): LocalDateTime?
+  fun lastActualExecution(): Instant?
 
   /**
    * Return the last completion time of the task,
    * or `null` if not scheduled before.
    */
-  fun lastCompletionTime(): LocalDateTime?
+  fun lastCompletion(): Instant?
 }
 
 internal class SimpleTriggerContext(
   override val clock: Clock,
-  @Volatile private var lastScheduledExecutionTime: LocalDateTime?,
-  @Volatile private var lastActualExecutionTime: LocalDateTime?,
-  @Volatile private var lastCompletionTime: LocalDateTime?
+  @Volatile private var lastScheduledExecutionTime: Instant?,
+  @Volatile private var lastActualExecutionTime: Instant?,
+  @Volatile private var lastCompletionTime: Instant?
 ) : TriggerContext {
 
   constructor(clock: Clock) : this(clock, null, null, null)
 
   fun update(
-    lastScheduledExecutionTime: LocalDateTime?,
-    lastActualExecutionTime: LocalDateTime?,
-    lastCompletionTime: LocalDateTime?
+    lastScheduledExecutionTime: Instant?,
+    lastActualExecutionTime: Instant?,
+    lastCompletionTime: Instant?
   ) {
     this.lastScheduledExecutionTime = lastScheduledExecutionTime
     this.lastActualExecutionTime = lastActualExecutionTime
     this.lastCompletionTime = lastCompletionTime
   }
 
-  override fun lastScheduledExecutionTime(): LocalDateTime? = lastScheduledExecutionTime
-  override fun lastActualExecutionTime(): LocalDateTime? = lastActualExecutionTime
-  override fun lastCompletionTime(): LocalDateTime? = lastCompletionTime
+  override fun lastScheduledExecution(): Instant? = lastScheduledExecutionTime
+  override fun lastActualExecution(): Instant? = lastActualExecutionTime
+  override fun lastCompletion(): Instant? = lastCompletionTime
 }

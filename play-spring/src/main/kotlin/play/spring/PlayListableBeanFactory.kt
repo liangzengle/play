@@ -1,5 +1,6 @@
 package play.spring
 
+import jakarta.annotation.Priority
 import org.springframework.beans.BeansException
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.beans.factory.support.DefaultListableBeanFactory
@@ -10,7 +11,6 @@ import play.util.Sorting
 import play.util.time.Time
 import java.time.Duration
 import java.util.*
-import javax.annotation.Priority
 
 /**
  *

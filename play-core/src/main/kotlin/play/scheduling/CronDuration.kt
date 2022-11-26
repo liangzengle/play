@@ -1,6 +1,7 @@
 package play.scheduling
 
 import play.util.time.Time
+import play.util.time.Time.toInstant
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -8,9 +9,10 @@ class CronDuration(startCron: String, val duration: Duration) {
   val startCronExpr = CronExpression.parse(startCron)
 
   fun isInDuration(time: LocalDateTime): Boolean {
-    val startTime = startCronExpr.prevFireTime(time) ?: return false
+    val timeInstant = time.toInstant()
+    val startTime = startCronExpr.prevFireTime(timeInstant) ?: return false
     val endTime = startTime.plus(duration)
-    return startTime <= time && endTime > time
+    return startTime <= timeInstant && endTime > timeInstant
   }
 
   fun isInDurationNow(): Boolean {

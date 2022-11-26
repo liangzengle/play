@@ -2,12 +2,10 @@ package play.scheduling
 
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.Trigger
-import play.util.time.Time.toDate
 import play.util.time.Time.toLocalDateTime
 import java.time.Clock
 import java.time.Duration
-import java.time.LocalDateTime
-import java.util.*
+import java.time.Instant
 import java.util.concurrent.ScheduledFuture
 
 /**
@@ -22,50 +20,50 @@ class SpringTaskScheduler(private val scheduler: Scheduler) : TaskScheduler {
     return scheduler.schedule(PlayTriggerAdapter(trigger), task).toScheduledFuture()
   }
 
-  override fun schedule(task: Runnable, startTime: Date): ScheduledFuture<*> {
-    return scheduler.scheduleAt(startTime.time, task).toScheduledFuture()
+  override fun schedule(task: Runnable, startTime: Instant): ScheduledFuture<*> {
+    return scheduler.scheduleAt(startTime.toLocalDateTime(), task).toScheduledFuture()
   }
 
-  override fun scheduleAtFixedRate(task: Runnable, startTime: Date, period: Long): ScheduledFuture<*> {
-    val initialDelayMillis = startTime.time - clock.millis()
-    return scheduler.scheduleAtFixedRate(Duration.ofMillis(initialDelayMillis), Duration.ofMillis(period), task)
+  override fun scheduleAtFixedRate(task: Runnable, startTime: Instant, period: Duration): ScheduledFuture<*> {
+    val initialDelayMillis = startTime.toEpochMilli() - clock.millis()
+    return scheduler.scheduleAtFixedRate(Duration.ofMillis(initialDelayMillis), period, task)
       .toScheduledFuture()
   }
 
-  override fun scheduleAtFixedRate(task: Runnable, period: Long): ScheduledFuture<*> {
-    return scheduler.scheduleAtFixedRate(Duration.ZERO, Duration.ofMillis(period), task).toScheduledFuture()
+  override fun scheduleAtFixedRate(task: Runnable, period: Duration): ScheduledFuture<*> {
+    return scheduler.scheduleAtFixedRate(Duration.ZERO, period, task).toScheduledFuture()
   }
 
-  override fun scheduleWithFixedDelay(task: Runnable, startTime: Date, delay: Long): ScheduledFuture<*> {
-    val initialDelayMillis = startTime.time - clock.millis()
-    return scheduler.scheduleWithFixedDelay(Duration.ofMillis(initialDelayMillis), Duration.ofMillis(delay), task)
+  override fun scheduleWithFixedDelay(task: Runnable, startTime: Instant, delay: Duration): ScheduledFuture<*> {
+    val initialDelayMillis = startTime.toEpochMilli() - clock.millis()
+    return scheduler.scheduleWithFixedDelay(Duration.ofMillis(initialDelayMillis), delay, task)
       .toScheduledFuture()
   }
 
-  override fun scheduleWithFixedDelay(task: Runnable, delay: Long): ScheduledFuture<*> {
-    return scheduler.scheduleWithFixedDelay(Duration.ZERO, Duration.ofMillis(delay), task).toScheduledFuture()
+  override fun scheduleWithFixedDelay(task: Runnable, delay: Duration): ScheduledFuture<*> {
+    return scheduler.scheduleWithFixedDelay(Duration.ZERO, delay, task).toScheduledFuture()
   }
 
   private class PlayTriggerAdapter(val spring: Trigger) : play.scheduling.Trigger {
-    override fun nextExecutionTime(triggerContext: TriggerContext): LocalDateTime? {
-      return spring.nextExecutionTime(SpringTriggerContextAdapter(triggerContext))?.toLocalDateTime()
+    override fun nextExecutionTime(triggerContext: TriggerContext): Instant? {
+      return spring.nextExecution(SpringTriggerContextAdapter(triggerContext))
     }
   }
 
   private class SpringTriggerContextAdapter(
     val play: TriggerContext
   ) : org.springframework.scheduling.TriggerContext {
-    override fun lastScheduledExecutionTime(): Date? {
-      return play.lastActualExecutionTime()?.toDate()
+
+    override fun lastScheduledExecution(): Instant? {
+      return play.lastActualExecution()
     }
 
-    override fun lastActualExecutionTime(): Date? {
-      return play.lastActualExecutionTime()?.toDate()
+    override fun lastActualExecution(): Instant? {
+      return play.lastActualExecution()
     }
 
-    override fun lastCompletionTime(): Date? {
-      return play.lastCompletionTime()?.toDate()
+    override fun lastCompletion(): Instant? {
+      return play.lastCompletion()
     }
-
   }
 }

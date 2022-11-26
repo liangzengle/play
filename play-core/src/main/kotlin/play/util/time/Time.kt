@@ -83,6 +83,9 @@ object Time {
   fun nanoTime(): Long = System.nanoTime()
 
   @JvmStatic
+  fun instant(): Instant = clock.instant()
+
+  @JvmStatic
   fun toLocalDateTime(timeInMillis: Long): LocalDateTime =
     LocalDateTime.ofInstant(Instant.ofEpochMilli(timeInMillis), clock.zone)
 
@@ -91,6 +94,12 @@ object Time {
 
   @JvmStatic
   fun LocalDateTime.toDate(): Date = Date.from(this.atZone(clock.zone).toInstant())
+
+  @JvmStatic
+  fun LocalDateTime.toInstant(): Instant = atZone(clock.zone).toInstant()
+
+  @JvmStatic
+  fun Instant.toLocalDateTime(): LocalDateTime = LocalDateTime.ofInstant(this, clock.zone)
 
   @JvmStatic
   fun LocalDate.formatToInt(): Int = year * 10000 + month.value * 100 + dayOfMonth

@@ -22,12 +22,12 @@ import play.util.time.Time;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
 /**
  * copied from spring framework
- *
+ * <p>
  * Date sequence generator for a
  * <a href="http://www.manpagez.com/man/5/crontab/">Crontab pattern</a>,
  * allowing clients to specify a pattern that the sequence matches.
@@ -478,16 +478,16 @@ class CronSequenceGenerator implements CronExpression {
     }
 
     @Nullable
-    public LocalDateTime prevFireTime(@NotNull LocalDateTime from) {
-        Date prevDate = prev(Time.toDate(from));
-        return prevDate == null ? null : Time.toLocalDateTime(prevDate);
+    public Instant prevFireTime(@NotNull Instant from) {
+        Date prevDate = prev(Date.from(from));
+        return prevDate == null ? null : prevDate.toInstant();
     }
 
     @NotNull
     @Nonnull
-    public LocalDateTime nextFireTime(@NotNull LocalDateTime from) {
-        Date nextDate = next(Time.toDate(from));
-        return Time.toLocalDateTime(nextDate);
+    public Instant nextFireTime(@NotNull Instant from) {
+        Date nextDate = next(Date.from(from));
+        return nextDate.toInstant();
     }
 
     private long findMinIncrement() {

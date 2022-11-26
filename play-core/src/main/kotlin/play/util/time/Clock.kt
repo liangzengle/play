@@ -1,10 +1,7 @@
 package play.util.time
 
 import play.util.primitive.toIntChecked
-import java.time.Clock
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
+import java.time.*
 import java.util.*
 
 fun Clock.timeZone(): TimeZone = TimeZone.getTimeZone(zone)
@@ -21,3 +18,5 @@ fun Clock.currentMillis() = this.millis()
 fun Clock.currentSecondsInt(): Int = (this.millis() / 1000).toIntChecked()
 
 fun Clock.currentSeconds(): Long = this.millis() / 1000
+
+fun Clock.instantNotNull(): Instant = this.instant()

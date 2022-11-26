@@ -15,11 +15,9 @@
  */
 package play.scheduling
 
-import play.util.time.Time.toMillis
-import play.util.time.currentDateTime
 import java.time.Clock
 import java.time.Duration
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.annotation.Nullable
@@ -55,7 +53,7 @@ internal class ReschedulingRunnable(
   private var currentFuture: Cancellable? = null
 
   @Nullable
-  private var scheduledExecutionTime: LocalDateTime? = null
+  private var scheduledExecutionTime: Instant? = null
   private val lock = ReentrantReadWriteLock()
 
   @Nullable
@@ -66,7 +64,7 @@ internal class ReschedulingRunnable(
         currentFuture = Cancellable.completed
         return Cancellable.completed
       }
-      val initialDelay = scheduledExecutionTime!!.toMillis() - triggerContext.clock.millis()
+      val initialDelay = scheduledExecutionTime!!.toEpochMilli() - triggerContext.clock.millis()
       currentFuture = scheduler.schedule(Duration.ofMillis(initialDelay), this)
       return this
     }
@@ -78,9 +76,9 @@ internal class ReschedulingRunnable(
   }
 
   override fun run() {
-    val actualExecutionTime = triggerContext.clock.currentDateTime()
+    val actualExecutionTime = triggerContext.clock.instant()
     super.run()
-    val completionTime = triggerContext.clock.currentDateTime()
+    val completionTime = triggerContext.clock.instant()
     lock.write {
       val executionTime = scheduledExecutionTime
       checkNotNull(executionTime) { "No scheduled execution" }

@@ -1,6 +1,7 @@
 package play.scheduling
 
 import play.util.time.Time
+import play.util.time.Time.toInstant
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -10,7 +11,7 @@ class CronRange(startCron: String, endCron: String) {
   val duration: Duration
 
   init {
-    val startTime = startCronExpr.nextFireTime(Time.currentDateTime())
+    val startTime = startCronExpr.nextFireTime(Time.instant())
     val endTime = endCronExpr.nextFireTime(startTime)
     duration = Duration.between(startTime, endTime)
   }
@@ -20,9 +21,10 @@ class CronRange(startCron: String, endCron: String) {
   }
 
   fun isInRange(time: LocalDateTime): Boolean {
-    val endTime = endCronExpr.nextFireTime(time)
+    val timeInstant = time.toInstant()
+    val endTime = endCronExpr.nextFireTime(timeInstant)
     val startTime = startCronExpr.prevFireTime(endTime)
-    return (startTime != null && startTime <= time) && endTime > time
+    return (startTime != null && startTime <= timeInstant) && endTime > timeInstant
   }
 
   override fun toString(): String {
