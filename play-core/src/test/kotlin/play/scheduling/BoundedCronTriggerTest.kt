@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import play.util.time.Time
+import play.util.time.Time.toLocalDateTime
 import play.util.time.currentDateTime
 
 internal class BoundedCronTriggerTest {
@@ -15,7 +16,7 @@ internal class BoundedCronTriggerTest {
     val trigger = BoundedCronTrigger(CronExpression.parse("* * * * * ?"), startTime, null)
     val nextExecutionTime = trigger.nextExecutionTime(context)
 
-    assertEquals(nextExecutionTime, startTime)
+    assertEquals(nextExecutionTime?.toLocalDateTime(), startTime)
   }
 
   @Test

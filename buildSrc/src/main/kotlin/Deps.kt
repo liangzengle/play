@@ -11,12 +11,6 @@ object Deps {
     }
   }
 
-  object AlibabaRsocket {
-    val Core = "com.alibaba.rsocket:alibaba-rsocket-core:${Versions.AlibabaRsocket}"
-    val Broker = "com.alibaba.rsocket:alibaba-broker-spring-boot-starter:${Versions.AlibabaRsocket}"
-    val Client = "com.alibaba.rsocket:alibaba-rsocket-spring-boot-starter:${Versions.AlibabaRsocket}"
-  }
-
   object Assertj {
     const val Core = "org.assertj:assertj-core:${Versions.Assertj}"
   }
@@ -48,7 +42,7 @@ object Deps {
 
   object EL {
     const val Api = "jakarta.el:jakarta.el-api:${Versions.JakartaElApi}"
-    const val Impl = "org.glassfish:jakarta.el:${Versions.JakartaEl}"
+    const val Impl = "org.glassfish.expressly:expressly:${Versions.JakartaEl}"
     const val Mvel = "org.mvel:mvel2:${Versions.Mvel}"
   }
 
@@ -178,13 +172,6 @@ object Deps {
     const val StarterRSocket = "org.springframework.boot:spring-boot-starter-rsocket:${Versions.SpringBoot}"
   }
 
-  object SpringSecurity {
-    private const val Version = Versions.SpringSecurity
-    const val Core = "org.springframework.security:spring-security-core:$Version"
-    const val Config = "org.springframework.security:spring-security-config:$Version"
-    const val RSocket = "org.springframework.security:spring-security-rsocket:$Version"
-  }
-
   object Wire {
     private const val Version = Versions.Wire
     const val Runtime = "com.squareup.wire:wire-runtime-jvm:$Version"
@@ -199,8 +186,6 @@ object Deps {
 
   const val AutoServiceKsp = "dev.zacsweers.autoservice:auto-service-ksp:${Versions.AutoServiceKsp}"
 
-  const val Brave = "io.zipkin.brave:brave:${Versions.Brave}"
-
   const val ByteBuddy = "net.bytebuddy:byte-buddy:${Versions.ByteBuddy}"
 
   const val Caffeine = "com.github.ben-manes.caffeine:caffeine:${Versions.Caffeine}"
@@ -208,8 +193,6 @@ object Deps {
   const val Checker = "org.checkerframework:checker-qual:${Versions.Checker}"
 
   const val ClassGraph = "io.github.classgraph:classgraph:${Versions.ClassGraph}"
-
-  const val FastUtil = "it.unimi.dsi:fastutil-core:${Versions.FastUtil}"
 
   const val Guava = "com.google.guava:guava:${Versions.Guava}"
 

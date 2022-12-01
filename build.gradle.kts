@@ -80,20 +80,18 @@ subprojects {
   val kotlinCompilerArgs = listOf(
     "-Xallow-result-return-type",
     "-XXLanguage:+InlineClasses",
-    "-Xopt-in=kotlin.RequiresOptIn",
-    "-Xopt-in=kotlin.ExperimentalUnsignedTypes",
-    "-Xopt-in=kotlin.time.ExperimentalTime",
-    "-Xopt-in=kotlin.contracts.ExperimentalContracts",
-    "-Xopt-in=kotlin.experimental.ExperimentalTypeInference",
-    "-Xopt-in=kotlin.io.path.ExperimentalPathApi",
-    "-Xopt-in=kotlin.ExperimentalStdlibApi",
-    "-Xopt-in=kotlinx.serialization.ExperimentalSerializationApi",
-    "-Xopt-in=kotlinx.serialization.InternalSerializationApi",
+    "-opt-in=kotlin.RequiresOptIn",
+    "-opt-in=kotlin.ExperimentalUnsignedTypes",
+    "-opt-in=kotlin.time.ExperimentalTime",
+    "-opt-in=kotlin.contracts.ExperimentalContracts",
+    "-opt-in=kotlin.experimental.ExperimentalTypeInference",
+    "-opt-in=kotlin.io.path.ExperimentalPathApi",
     "-opt-in=kotlin.ExperimentalStdlibApi",
+    "-opt-in=kotlinx.serialization.InternalSerializationApi",
     "-Xjvm-default=all",
     "-Xstring-concat=indy-with-constants",
     "-Xcontext-receivers",
-    "-language-version=1.8"
+    "-language-version=1.9"
   )
 
   tasks.withType<KotlinCompile> {

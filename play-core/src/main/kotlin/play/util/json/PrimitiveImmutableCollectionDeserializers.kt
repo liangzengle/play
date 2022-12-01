@@ -11,16 +11,11 @@ import com.fasterxml.jackson.databind.type.MapType
 import com.fasterxml.jackson.datatype.eclipsecollections.deser.map.EclipseMapDeserializers
 import com.google.common.primitives.Ints
 import com.google.common.primitives.Longs
-import it.unimi.dsi.fastutil.ints.*
-import it.unimi.dsi.fastutil.longs.*
-import it.unimi.dsi.fastutil.objects.Object2IntRBTreeMap
-import it.unimi.dsi.fastutil.objects.Object2LongRBTreeMap
 import org.eclipse.collections.api.map.primitive.*
 import org.eclipse.collections.impl.factory.primitive.IntSets
 import org.eclipse.collections.impl.factory.primitive.LongSets
 import org.eclipse.collectionx.toJava
 import play.util.unsafeCast
-import java.util.*
 
 object PrimitiveImmutableCollectionDeserializers {
 
@@ -33,9 +28,6 @@ object PrimitiveImmutableCollectionDeserializers {
     if (Set::class.java == collectionType) {
       return forSet(primitiveContentType)
     }
-    if (SortedSet::class.java == collectionType) {
-      return forSortedSet(primitiveContentType)
-    }
     if (Collection::class.java == collectionType) {
       return forList(primitiveContentType)
     }
@@ -46,40 +38,6 @@ object PrimitiveImmutableCollectionDeserializers {
     val mapType = type.rawClass
     if (Map::class.java == mapType) {
       return forMap(type)
-    }
-    if (SortedMap::class.java == mapType) {
-      return forSortedMap(type)
-    }
-    return null
-  }
-
-  private fun forSortedMap(type: MapType): JsonDeserializer<*>? {
-    val primitiveKeyType = type.keyType.rawClass.kotlin.javaPrimitiveType
-    val primitiveValueType = type.contentType.rawClass.kotlin.javaPrimitiveType
-    if (primitiveKeyType == null && primitiveValueType == null) {
-      return null
-    }
-    if (primitiveKeyType == Int::class.java) {
-      return when (primitiveValueType) {
-        null -> intObjectSortMap(type.contentType)
-        Int::class.java -> IntIntSortedMap
-        Long::class.java -> IntLongSortedMap
-        else -> null
-      }
-    }
-    if (primitiveKeyType == Long::class.java) {
-      return when (primitiveValueType) {
-        null -> longObjectSortedMap(type.contentType)
-        Int::class.java -> LongIntSortedMap
-        Long::class.java -> LongLongSortedMap
-        else -> null
-      }
-    }
-    if (primitiveValueType == Int::class.java && primitiveKeyType == null) {
-      return objectIntSortedMap(type.contentType)
-    }
-    if (primitiveValueType == Long::class.java && primitiveKeyType == null) {
-      return objectLongSortedMap(type.contentType)
     }
     return null
   }
@@ -131,14 +89,6 @@ object PrimitiveImmutableCollectionDeserializers {
     }
   }
 
-  private fun forSortedSet(primitiveContentType: Class<*>): JsonDeserializer<*>? {
-    return when (primitiveContentType) {
-      Int::class.java -> IntSortedSet
-      Long::class.java -> LongSortedSet
-      else -> null
-    }
-  }
-
   private val IntArrayList = object : StdDeserializer<List<Int>>(List::class.java) {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): List<Int> {
       val array =
@@ -162,10 +112,7 @@ object PrimitiveImmutableCollectionDeserializers {
       val array =
         PrimitiveArrayDeserializers.forType(Int::class.java).unsafeCast<JsonDeserializer<IntArray>>()
           .deserialize(p, ctxt)
-      if (array.size > 8) {
-        return IntSets.immutable.with(*array).toJava()
-      }
-      return Collections.unmodifiableSet(IntArraySet(array))
+     return IntSets.immutable.with(*array).toJava()
     }
   }
 
@@ -174,36 +121,7 @@ object PrimitiveImmutableCollectionDeserializers {
       val array =
         PrimitiveArrayDeserializers.forType(Long::class.java).unsafeCast<JsonDeserializer<LongArray>>()
           .deserialize(p, ctxt)
-      if (array.size > 8) {
-        return LongSets.immutable.with(*array).toJava()
-      }
-      return Collections.unmodifiableSet(LongArraySet(array))
-    }
-  }
-
-  private val IntSortedSet = object : StdDeserializer<SortedSet<Int>>(SortedSet::class.java) {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SortedSet<Int> {
-      val array =
-        PrimitiveArrayDeserializers.forType(Int::class.java).unsafeCast<JsonDeserializer<IntArray>>()
-          .deserialize(p, ctxt)
-      val set = IntRBTreeSet()
-      for (elem in array) {
-        set.add(elem)
-      }
-      return Collections.unmodifiableSortedSet(set)
-    }
-  }
-
-  private val LongSortedSet = object : StdDeserializer<SortedSet<Long>>(SortedSet::class.java) {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SortedSet<Long> {
-      val array =
-        PrimitiveArrayDeserializers.forType(Long::class.java).unsafeCast<JsonDeserializer<LongArray>>()
-          .deserialize(p, ctxt)
-      val set = LongRBTreeSet()
-      for (elem in array) {
-        set.add(elem)
-      }
-      return Collections.unmodifiableSortedSet(set)
+      return LongSets.immutable.with(*array).toJava()
     }
   }
 
@@ -274,108 +192,6 @@ object PrimitiveImmutableCollectionDeserializers {
         .toJava()
     }
   }
-
-  private val IntIntSortedMap = object : StdDeserializer<SortedMap<Int, Int>>(SortedMap::class.java) {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SortedMap<Int, Int> {
-      val type = ctxt.typeFactory.constructType(ImmutableIntIntMap::class.java)
-      val map = EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt).unsafeCast<ImmutableIntIntMap>()
-      val sortedMap = Int2IntRBTreeMap()
-      for (pair in map.keyValuesView()) {
-        sortedMap[pair.one] = pair.two
-      }
-      return Collections.unmodifiableSortedMap(sortedMap)
-    }
-  }
-
-  private val LongLongSortedMap = object : StdDeserializer<SortedMap<Long, Long>>(SortedMap::class.java) {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SortedMap<Long, Long> {
-      val type = ctxt.typeFactory.constructType(ImmutableLongLongMap::class.java)
-      val map = EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt).unsafeCast<ImmutableLongLongMap>()
-      val sortedMap = Long2LongRBTreeMap()
-      for (pair in map.keyValuesView()) {
-        sortedMap[pair.one] = pair.two
-      }
-      return Collections.unmodifiableSortedMap(sortedMap)
-    }
-  }
-
-  private val IntLongSortedMap = object : StdDeserializer<SortedMap<Int, Long>>(SortedMap::class.java) {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SortedMap<Int, Long> {
-      val type = ctxt.typeFactory.constructType(ImmutableIntLongMap::class.java)
-      val map = EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt).unsafeCast<ImmutableIntLongMap>()
-      val sortedMap = Int2LongRBTreeMap()
-      for (pair in map.keyValuesView()) {
-        sortedMap[pair.one] = pair.two
-      }
-      return Collections.unmodifiableSortedMap(sortedMap)
-    }
-  }
-
-  private val LongIntSortedMap = object : StdDeserializer<SortedMap<Long, Int>>(SortedMap::class.java) {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SortedMap<Long, Int> {
-      val type = ctxt.typeFactory.constructType(ImmutableLongIntMap::class.java)
-      val map = EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt).unsafeCast<ImmutableLongIntMap>()
-      val sortedMap = Long2IntRBTreeMap()
-      for (pair in map.keyValuesView()) {
-        sortedMap[pair.one] = pair.two
-      }
-      return Collections.unmodifiableSortedMap(sortedMap)
-    }
-  }
-
-  private fun intObjectSortMap(objType: JavaType) = object : StdDeserializer<SortedMap<Int, Any>>(Int::class.java) {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SortedMap<Int, Any> {
-      val type = ctxt.typeFactory.constructReferenceType(ImmutableIntObjectMap::class.java, objType)
-      val map = EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt)
-        .unsafeCast<ImmutableIntObjectMap<Any>>()
-      val sortedMap = Int2ObjectRBTreeMap<Any>()
-      for (pair in map.keyValuesView()) {
-        sortedMap[pair.one] = pair.two
-      }
-      return Collections.unmodifiableSortedMap(sortedMap)
-    }
-  }
-
-  private fun longObjectSortedMap(objType: JavaType) = object : StdDeserializer<SortedMap<Long, Any>>(Map::class.java) {
-    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SortedMap<Long, Any> {
-      val type = ctxt.typeFactory.constructReferenceType(ImmutableLongObjectMap::class.java, objType)
-      val map = EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt)
-        .unsafeCast<ImmutableLongObjectMap<Any>>()
-      val sortedMap = Long2ObjectRBTreeMap<Any>()
-      for (pair in map.keyValuesView()) {
-        sortedMap[pair.one] = pair.two
-      }
-      return Collections.unmodifiableSortedMap(sortedMap)
-    }
-  }
-
-  private fun objectIntSortedMap(objType: JavaType) =
-    object : StdDeserializer<SortedMap<Any, Int>>(SortedMap::class.java) {
-      override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SortedMap<Any, Int> {
-        val type = ctxt.typeFactory.constructReferenceType(ImmutableObjectIntMap::class.java, objType)
-        val map = EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt)
-          .unsafeCast<ImmutableObjectIntMap<Any>>()
-        val sortedMap = Object2IntRBTreeMap<Any>()
-        for (pair in map.keyValuesView()) {
-          sortedMap[pair.one] = pair.two
-        }
-        return Collections.unmodifiableSortedMap(sortedMap)
-      }
-    }
-
-  private fun objectLongSortedMap(objType: JavaType) =
-    object : StdDeserializer<SortedMap<Any, Long>>(SortedMap::class.java) {
-      override fun deserialize(p: JsonParser, ctxt: DeserializationContext): SortedMap<Any, Long> {
-        val type = ctxt.typeFactory.constructReferenceType(ImmutableObjectLongMap::class.java, objType)
-        val map = EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt)
-          .unsafeCast<ImmutableObjectLongMap<Any>>()
-        val sortedMap = Object2LongRBTreeMap<Any>()
-        for (pair in map.keyValuesView()) {
-          sortedMap[pair.one] = pair.two
-        }
-        return Collections.unmodifiableSortedMap(sortedMap)
-      }
-    }
 }
 
 

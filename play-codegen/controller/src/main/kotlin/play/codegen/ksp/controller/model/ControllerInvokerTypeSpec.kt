@@ -20,8 +20,7 @@ class ControllerInvokerTypeSpec(
 
   fun build(): TypeSpec {
     val controllerClassName = controllerClass.toClassName()
-    val invokerClass =
-      ClassName.bestGuess(controllerClass.packageName.asString() + '.' + controllerClass.invokerClassName)
+    val invokerClass = controllerClass.invokerClassName
     val classBuilder =
       TypeSpec.classBuilder(invokerClass).addAnnotations(singletonAnnotations).primaryConstructor(
         FunSpec.constructorBuilder().apply { injectAnnotation?.also(::addAnnotation) }

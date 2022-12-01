@@ -1,10 +1,7 @@
 package play.plugin.modularcode
 
 import com.google.auto.service.AutoService
-import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
-import org.jetbrains.kotlin.compiler.plugin.CliOption
-import org.jetbrains.kotlin.compiler.plugin.CliOptionProcessingException
-import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
+import org.jetbrains.kotlin.compiler.plugin.*
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import play.plugin.modularcode.ModularCodeConfigurationKeys.KEY_ANNOTATION
@@ -15,6 +12,7 @@ object ModularCodeConfigurationKeys {
   val KEY_ANNOTATION = CompilerConfigurationKey.create<String>("annotation")
 }
 
+@OptIn(ExperimentalCompilerApi::class)
 @AutoService(CommandLineProcessor::class)
 class ModularCodeCommandLingProcessor : CommandLineProcessor {
   companion object {

@@ -2,7 +2,6 @@ dependencies {
   api(project(":play-httpclient-api"))
   api(project(":play-eclipse-collectionx"))
   api(Deps.Asm)
-  implementation(Deps.FastUtil)
   api(Deps.Guava)
   api(Deps.Jctools)
   api(Deps.KotlinLogging)

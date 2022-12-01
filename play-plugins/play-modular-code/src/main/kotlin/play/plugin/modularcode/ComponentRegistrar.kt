@@ -6,8 +6,9 @@ import org.jetbrains.kotlin.codegen.ClassBuilderFactory
 import org.jetbrains.kotlin.codegen.ClassBuilderMode
 import org.jetbrains.kotlin.codegen.DelegatingClassBuilder
 import org.jetbrains.kotlin.codegen.extensions.ClassBuilderInterceptorExtension
-import org.jetbrains.kotlin.com.intellij.mock.MockProject
-import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
+import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
+import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.diagnostics.DiagnosticSink
 import org.jetbrains.kotlin.name.FqName
@@ -19,18 +20,17 @@ import org.jetbrains.org.objectweb.asm.MethodVisitor
 import org.jetbrains.org.objectweb.asm.Opcodes
 import java.lang.reflect.Modifier
 
-@AutoService(ComponentRegistrar::class)
-class ModularCodeComponentRegistrar : ComponentRegistrar {
+@OptIn(ExperimentalCompilerApi::class)
+@AutoService(CompilerPluginRegistrar::class)
+class ModularCodeComponentRegistrar : CompilerPluginRegistrar() {
 
-  override fun registerProjectComponents(
-    project: MockProject,
-    configuration: org.jetbrains.kotlin.config.CompilerConfiguration
-  ) {
+  override val supportsK2: Boolean = true
+
+  override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
     if (configuration.get(ModularCodeConfigurationKeys.KEY_ENABLED) == false) {
       return
     }
     ClassBuilderInterceptorExtension.registerExtension(
-      project,
       ModularCodeClassGeneratorInterceptor(configuration[ModularCodeConfigurationKeys.KEY_ANNOTATION]!!)
     )
   }

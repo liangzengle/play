@@ -286,7 +286,7 @@ internal class NavigableLongMap<T>(
   }
 }
 
-internal class NavigableRefMap<K : Comparable<*>, T>(list: List<T>, keyMapper: (T) -> K) :
+internal class NavigableRefMap<K : Comparable<*>, T : Any>(list: List<T>, keyMapper: (T) -> K) :
   NavigableMapLike<K, T>() {
   private val sortedMap: NavigableMap<K, T> = if (list.isEmpty()) {
     Collections.emptyNavigableMap()
@@ -300,7 +300,7 @@ internal class NavigableRefMap<K : Comparable<*>, T>(list: List<T>, keyMapper: (
 
   companion object {
     private val Empty = NavigableRefMap<Int, Int>(emptyList()) { it }
-    fun <K : Comparable<*>, T> empty(): NavigableRefMap<K, T> = Empty.unsafeCast()
+    fun <K : Comparable<*>, T : Any> empty(): NavigableRefMap<K, T> = Empty.unsafeCast()
   }
 
   override fun containsKey(key: K): Boolean {
