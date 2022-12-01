@@ -49,10 +49,9 @@ class RSocketBrokerAutoConfiguration {
   }
 
   @Bean
-  fun tcpServer(properties: RSocketBrokerProperties, customizers: ObjectProvider<TcpServerCustomizer>): TcpServer {
+  fun tcpServer(properties: RSocketBrokerProperties, operators: ObjectProvider<TcpServerOperator>): TcpServer {
     val server = TcpServer.create().host(properties.host).port(properties.port)
-    customizers.forEach { it.customize(server) }
-    return server
+    return operators.fold(server) { server, op -> op.apply(server) }
   }
 
   @Bean

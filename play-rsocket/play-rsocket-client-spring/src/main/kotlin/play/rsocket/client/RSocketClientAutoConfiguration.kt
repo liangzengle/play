@@ -61,7 +61,9 @@ class RSocketClientAutoConfiguration {
   }
 
   @Bean
-  fun tcpTransportFactory() = TcpTransportFactory()
+  fun tcpTransportFactory(operators: ObjectProvider<TcpClientOperator>): TcpTransportFactory {
+    return TcpTransportFactory(clientOperators = operators)
+  }
 
   @Bean
   fun smartTransportFactory(transportFactories: List<TransportFactory>): SmartTransportFactory {

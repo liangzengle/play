@@ -30,9 +30,8 @@ class NettyServer(
   }
 
   override fun stopAsync(): PlayFuture<*> {
-    val f1 = b.config().group().shutdownGracefully().toPlay()
-    val f2 = b.config().childGroup().shutdownGracefully().toPlay()
-    val future = PlayFuture.allOf(listOf(f1, f2))
+    val c = ch ?: return PlayFuture.successful(null)
+    val future = c.close().toPlay()
     future.onComplete {
       if (it.isSuccess) {
         logger.info { "NettyServer [$name] stopped" }

@@ -2,7 +2,9 @@ package play.example.game.app
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.Behaviors
+import io.netty.channel.EventLoopGroup
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
@@ -30,14 +32,16 @@ import play.hotswap.NOOPHotSwapResultSubscriber
 import play.inject.PlayInjector
 import play.inject.SpringPlayInjector
 import play.mongodb.MongoDBRepositoryCustomizer
+import play.netty.NettyConfiguration
 import play.rsocket.client.RSocketClientAutoConfiguration
+import play.rsocket.client.RSocketClientCustomizer
+import play.rsocket.client.TcpClientOperator
 import play.scheduling.Scheduler
 import play.spring.AsyncInitializingSupport
 import play.spring.SingletonBeanContext
 import play.util.classOf
 import play.util.concurrent.Future
 import play.util.reflect.ClassgraphClassScanner
-import play.rsocket.client.RSocketClientCustomizer as RSocketClientCustomizer1
 
 /**
  *
@@ -49,11 +53,16 @@ import play.rsocket.client.RSocketClientCustomizer as RSocketClientCustomizer1
 class GameApp : GameServerScopeConfiguration() {
 
   @Bean
-  fun idAndRole(gameServerId: GameServerId): RSocketClientCustomizer1 {
+  fun idAndRole(gameServerId: GameServerId): RSocketClientCustomizer {
     val id = gameServerId.toInt()
-    return RSocketClientCustomizer1 { builder ->
+    return RSocketClientCustomizer { builder ->
       builder.id(id).role(Role.Game)
     }
+  }
+
+  @Bean
+  fun tcpClientOperator(@Qualifier(NettyConfiguration.NETTY_IO) ioWorker: EventLoopGroup): TcpClientOperator {
+    return TcpClientOperator { client -> client.runOn(ioWorker) }
   }
 
 //  @Bean

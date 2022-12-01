@@ -6,10 +6,10 @@ import org.springframework.context.annotation.Import
 import play.PlayCoreConfiguration
 import play.akka.EnableAkka
 import play.db.PlayDBConfiguration
-import play.example.common.net.NettyServerConfiguration
 import play.hotswap.InstallHotSwap
 import play.http.EnableHttpClient
 import play.mongodb.PlayMongoClientConfiguration
+import play.netty.NettyConfiguration
 
 /**
  *
@@ -25,7 +25,7 @@ import play.mongodb.PlayMongoClientConfiguration
     PlayCoreConfiguration::class,
     PlayDBConfiguration::class,
     PlayMongoClientConfiguration::class,
-    NettyServerConfiguration::class
+    NettyConfiguration::class
   ]
 )
 class ContainerApplication
