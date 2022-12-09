@@ -26,7 +26,7 @@ class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Schedule
       .accept(::schedule)
       .accept(::scheduleAt)
       .accept(::scheduleWithTimeout)
-      .accept(::scheduleWithTimeout)
+      .accept(::scheduleWithFixedDelay)
       .accept(::scheduleCron)
       .accept(::cancel)
       .accept(::cancelAll)

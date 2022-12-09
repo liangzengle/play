@@ -44,11 +44,11 @@ class BitSet internal constructor(@field:JsonValue private var elements: LongArr
   }
 
   fun toStream(): LongStream {
-    return Arrays.stream(toArray())
+    return Arrays.stream(elements)
   }
 
   fun toList(): List<Long> {
-    return Longs.asList(*toArray())
+    return Longs.asList(*elements)
   }
 
   fun toArray(): LongArray {

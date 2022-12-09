@@ -9,6 +9,7 @@ interface PlayKryoCustomizer {
   companion object {
     private val customizers = ServiceLoader.load(PlayKryoCustomizer::class.java).toList()
 
+    @JvmStatic
     fun customize(kryo: Kryo) {
       customizers.forEach { it.customize(kryo) }
     }
