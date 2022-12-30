@@ -80,7 +80,7 @@ object Deps {
   object Kotlin {
     private const val Version = Versions.Kotlin
     const val Compiler = "org.jetbrains.kotlin:kotlin-compiler-embeddable:$Version"
-    const val Jvm = "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$Version"
+    const val Jvm = "org.jetbrains.kotlin:kotlin-stdlib:$Version"
     const val Reflect = "org.jetbrains.kotlin:kotlin-reflect:$Version"
     const val Gradle = "org.jetbrains.kotlin:kotlin-gradle-plugin:$Version"
     const val GradleApi = "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$Version"
