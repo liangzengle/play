@@ -1,10 +1,12 @@
 package play.rsocket.client
 
+import com.google.common.collect.ImmutableSet
 import io.rsocket.Payload
 import io.rsocket.RSocket
 import io.rsocket.SocketAcceptor
 import io.rsocket.exceptions.ConnectionErrorException
 import io.rsocket.exceptions.InvalidException
+import io.rsocket.transport.ClientTransport
 import org.eclipse.collections.impl.list.mutable.FastList
 import org.reactivestreams.Publisher
 import org.slf4j.LoggerFactory
@@ -21,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  *
- *
  * @author LiangZengle
  */
 class LoadbalancedBrokerRSocket(
@@ -35,9 +36,11 @@ class LoadbalancedBrokerRSocket(
     private val logger = LoggerFactory.getLogger(LoadbalancedBrokerRSocket::class.java)
   }
 
+  private var brokerUris = emptySet<String>()
   private val activeRSocketMap = ConcurrentHashMap<String, RSocket>()
   private var activeRSocketList = emptyList<RSocket>()
   private val loadbalanceStrategy = RandomLoadbalanceStrategy()
+  private val transportPool = ConcurrentHashMap<String, ClientTransport>()
 
   private val connected = Sinks.one<String>()
 
@@ -45,10 +48,12 @@ class LoadbalancedBrokerRSocket(
   private var disposed = false
 
   fun init(brokerUris: Set<String>) {
+    this.brokerUris = ImmutableSet.copyOf(brokerUris)
     brokerUris.forEach(::connect)
   }
 
   fun update(brokerUris: Set<String>) {
+    this.brokerUris = ImmutableSet.copyOf(brokerUris)
     brokerUris.asSequence().filterNot { activeRSocketMap.containsKey(it) }.forEach(::connect)
   }
 
@@ -66,7 +71,8 @@ class LoadbalancedBrokerRSocket(
   }
 
   private fun connect0(uri: String): Mono<RSocket> {
-    val builder = RSocketClientBuilder().acceptor(socketAcceptor).transport(uri, transportFactory::buildClient)
+    val transport = transportPool.computeIfAbsent(uri) { transportFactory.buildClient(it) }
+    val builder = RSocketClientBuilder().acceptor(socketAcceptor).transport(uri, transport)
     clientCustomizers.forEach { it.customize(builder) }
     val client = builder.build()
     return client.source()
@@ -90,7 +96,11 @@ class LoadbalancedBrokerRSocket(
     if (disposed) {
       return
     }
-    logger.debug("Broker Reconnecting: {}", uri)
+    if (!brokerUris.contains(uri)) {
+      logger.debug("Give up reconnecting broker[{}], uri is invalid.", uri)
+      return
+    }
+    logger.debug("Reconnecting broker: {}", uri)
     Mono.delay(Duration.ofSeconds(5))
       .flatMap { connect0(uri) }
       .subscribe(
@@ -106,7 +116,7 @@ class LoadbalancedBrokerRSocket(
       return
     }
     activeRSocketList = FastList(activeRSocketMap.values)
-    logger.info("Broker Connected: {}", uri)
+    logger.info("Broker connected: {}", uri)
     connected.tryEmitValue(uri)
 
     socket.onClose().doFinally { onRSocketDisconnected(uri) }.subscribe()
@@ -115,7 +125,7 @@ class LoadbalancedBrokerRSocket(
   private fun onRSocketDisconnected(uri: String) {
     if (activeRSocketMap.remove(uri) != null) {
       activeRSocketList = FastList(activeRSocketMap.values)
-      logger.info("Broker Disconnected: {}", uri)
+      logger.info("Broker disconnected: {}", uri)
       reconnect(uri)
     }
   }
@@ -124,7 +134,7 @@ class LoadbalancedBrokerRSocket(
     val uri = activeRSocketMap.entries.find { it.value === socket }?.key ?: return
     if (activeRSocketMap.remove(uri, socket)) {
       activeRSocketList = FastList(activeRSocketMap.values)
-      logger.info("Broker Unreachable: {}", uri)
+      logger.info("Broker unreachable: {}", uri)
       reconnect(uri)
     }
   }
