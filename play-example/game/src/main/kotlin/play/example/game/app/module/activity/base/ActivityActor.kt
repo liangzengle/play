@@ -299,21 +299,21 @@ class ActivityActor(
 
   interface Command
 
-  data object Init : Command
+  object Init : Command
 
-  data object CheckResourceReload : Command
+  object CheckResourceReload : Command
 
   class ForceClose(val promise: PlayPromise<Unit>) : Command
 
-  data object Refresh : Command
+  object Refresh : Command
 
   data class ActivityTriggerEvent(val name: String) : Command
 
-  data object ActivityNotice : Command
-  data object ActivityStart : Command
-  data object ActivityEnd : Command
-  data object ActivityClose : Command
-  private data object JustClose : Command
+  object ActivityNotice : Command
+  object ActivityStart : Command
+  object ActivityEnd : Command
+  object ActivityClose : Command
+  private object JustClose : Command
 
   class ActivitySuspend(val promise: Promise<Unit>) : Command
   class ActivityResume(val promise: Promise<Unit>) : Command

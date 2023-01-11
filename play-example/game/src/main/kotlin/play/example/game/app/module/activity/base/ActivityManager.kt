@@ -138,9 +138,9 @@ class ActivityManager(
 
   interface Command
 
-  data object Init : Command
+   object Init : Command
 
-  data object ResourceReloaded : Command
+  object ResourceReloaded : Command
 
   private data class Terminated(val id: Int) : Command
 

@@ -90,8 +90,7 @@ subprojects {
     "-opt-in=kotlinx.serialization.InternalSerializationApi",
     "-Xjvm-default=all",
     "-Xstring-concat=indy-with-constants",
-    "-Xcontext-receivers",
-    "-language-version=1.9"
+    "-Xcontext-receivers"
   )
 
   tasks.withType<KotlinCompile> {

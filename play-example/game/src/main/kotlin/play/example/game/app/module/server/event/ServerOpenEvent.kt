@@ -5,7 +5,7 @@ import play.example.game.app.module.player.event.PlayerEvent
 /**
  * 开服事件
  */
-data object ServerOpenEvent
+object ServerOpenEvent
 
 /**
  * 玩家的开服事件

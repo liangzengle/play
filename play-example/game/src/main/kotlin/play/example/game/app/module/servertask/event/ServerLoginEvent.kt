@@ -7,4 +7,4 @@ import play.example.game.app.module.servertask.domain.ServerTaskTargetType
  *
  * @author LiangZengle
  */
-data object ServerLoginEvent : ServerTaskEvent(ServerTaskTargetType.ServerLogin)
+object ServerLoginEvent : ServerTaskEvent(ServerTaskTargetType.ServerLogin)
