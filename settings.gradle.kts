@@ -69,14 +69,3 @@ includeProject("play-codegen-rpc", "play-codegen", "rpc")
 
 include("play-modular-code")
 project(":play-modular-code").projectDir = file("./play-plugins/play-modular-code")
-
-includeProject("play-example-common", "play-example", "common")
-includeProject("play-example-protos", "play-example", "protos")
-includeProject("play-example-game", "play-example", "game")
-includeProject("play-example-robot", "play-example", "robot")
-//includeProject("play-example-rpc-broker", "play-example", "rpc-broker")
-includeProject("play-example-rpc-api", "play-example", "rpc-api")
-includeProject("play-example-rpc-test", "play-example", "rpc-test")
-includeProject("play-example-doc", "play-example", "doc")
-
-//includeBuild("rsocket-broker")
