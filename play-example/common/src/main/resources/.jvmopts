@@ -1,5 +1,0 @@
--Dlog4j.Clock=play.example.common.logging.Log4jClock
--Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
--Dio.netty.availableProcessors=8
--Dplay.codec.MessageCodec=play.codec.wire.WireMessageCodec
--Dplay.mvc.RequestBodyFactory=play.example.game.container.net.message.WireRequestBodyFactory
