@@ -1,6 +1,6 @@
 package play.mvc
 
-import play.StaticConfigurator
+import play.util.ServiceLoader2
 
 /**
  *
@@ -10,7 +10,7 @@ interface RequestBodyFactory {
 
   companion object {
     val Default: RequestBodyFactory =
-      StaticConfigurator.getOrDefault(RequestBodyFactory::class.java) { KProtobufRequestBodyFactory() }
+      ServiceLoader2.loadOrDefault(RequestBodyFactory::class.java) { KProtobufRequestBodyFactory() }
 
     fun empty(): RequestBody = Default.empty()
 

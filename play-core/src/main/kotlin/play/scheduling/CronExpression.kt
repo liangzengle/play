@@ -1,7 +1,7 @@
 package play.scheduling
 
 import play.Log
-import play.StaticConfigurator
+import play.util.ServiceLoader2
 import java.time.Instant
 import javax.annotation.Nonnull
 import javax.annotation.Nullable
@@ -10,7 +10,7 @@ interface CronExpression {
 
   companion object {
     private val factory: Factory =
-      StaticConfigurator.getOrDefault(Factory::class.java) { CronSequenceGeneratorFactory }
+      ServiceLoader2.loadOrDefault(Factory::class.java) { CronSequenceGeneratorFactory }
 
     init {
       Log.debug { "CronExpression.Factory: ${factory.javaClass.simpleName}" }

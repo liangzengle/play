@@ -1,7 +1,7 @@
 package play.codec
 
-import play.StaticConfigurator
 import play.codec.kprotobuf.KProtobufMessageCodec
+import play.util.ServiceLoader2
 import java.nio.ByteBuffer
 import kotlin.reflect.KClass
 
@@ -23,8 +23,7 @@ interface MessageCodec : CodecFactory {
   }
 
   companion object {
-    val Default: MessageCodec =
-      StaticConfigurator.getOrDefault(MessageCodec::class.java) { KProtobufMessageCodec() }
+    val Default: MessageCodec = ServiceLoader2.loadOrDefault(MessageCodec::class.java) { KProtobufMessageCodec() }
 
     fun encode(msg: Any?): ByteArray = Default.encode(msg)
     fun <T : Any> decode(buffer: ByteBuffer, type: Class<T>): T = Default.decode(buffer, type)
