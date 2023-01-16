@@ -85,7 +85,11 @@ object Reflect {
   }
 
   @JvmStatic
-  fun <T> newInstance(clazz: Class<out T>): T = clazz.getDeclaredConstructor().newInstance(*EmptyObjectArray)
+  fun <T> newInstance(clazz: Class<out T>): T {
+    val ctor = clazz.getDeclaredConstructor(*EmptyClassArray)
+    ctor.trySetAccessible()
+    return ctor.newInstance(*EmptyObjectArray)
+  }
 
   @JvmStatic
   fun <T> newInstanceWithArgs(clazz: Class<out T>, vararg args: Any?): T {
@@ -102,6 +106,7 @@ object Reflect {
           break@outer
         }
       }
+      ctor.trySetAccessible()
       return ctor.newInstance(*args).unsafeCast()
     }
     throw NoSuchMethodException()
