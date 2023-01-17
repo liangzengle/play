@@ -1,7 +1,7 @@
 package play.util.control
 
+import com.google.common.collect.Lists
 import play.util.unsafeCast
-import java.io.Serializable
 import java.util.*
 
 @Suppress("UNCHECKED_CAST")
@@ -26,25 +26,14 @@ value class Result2<out T>(private val value: Any) {
 
   fun <U> asErrResult(): Result2<U> = Result2(asErr())
 
-  operator fun invoke(msg: String): Result2<T> = if (isErr()) err(getErrorCode(), msg) else this
-
   override fun toString(): String {
     return if (isErr()) asErr().toString() else "Ok($value)"
   }
 
-  class Err(@JvmField val code: Int, @JvmField val msg: String?) : Serializable {
-    constructor(code: Int) : this(code, null)
+  data class Err(@JvmField val code: Int, @JvmField val args: List<String>) {
 
     override fun toString(): String {
-      return if (msg == null) "Err($code)" else "Err($code, $msg)"
-    }
-
-    override fun equals(other: Any?): Boolean {
-      return this === other || (other is Err && other.code == this.code)
-    }
-
-    override fun hashCode(): Int {
-      return code
+      return if (args.isEmpty()) "Err($code)" else "Err($code, $args)"
     }
   }
 }
@@ -56,9 +45,28 @@ fun <T : Any> ok(value: T): Result2<T> = Result2(value)
 
 inline fun <T : Any> ok(supplier: () -> T): Result2<T> = Result2(supplier())
 
-fun err(code: Int): Result2<Nothing> = Result2(Result2.Err(code))
+fun err(code: Int): Result2<Nothing> = Result2(Result2.Err(code, emptyList()))
 
-fun err(code: Int, msg: String): Result2<Nothing> = Result2(Result2.Err(code, msg))
+fun err(code: Int, arg0: String, vararg restArgs: String): Result2<Nothing> {
+  return if (restArgs.isEmpty()) Result2(Result2.Err(code, listOf(arg0)))
+  else Result2(Result2.Err(code, Lists.asList(arg0, restArgs)))
+}
+
+fun err(code: Int, arg0: Any, vararg restArgs: Any?): Result2<Nothing> {
+  return if (restArgs.isEmpty()) Result2(Result2.Err(code, listOf(arg0.toString())))
+  else {
+    val args = Lists.asList(arg0.toString(), Array(restArgs.size) { i -> restArgs[i]?.toString().orEmpty() })
+    Result2(Result2.Err(code, args))
+  }
+}
+
+fun Result2<Nothing>.withArgs(arg0: String, vararg restArgs: String): Result2<Nothing> {
+  return if (this.isOk()) this else err(getErrorCode(), arg0, restArgs)
+}
+
+fun Result2<Nothing>.withArgs(arg0: Any, vararg restArgs: Any?): Result2<Nothing> {
+  return if (this.isOk()) this else err(getErrorCode(), arg0, restArgs)
+}
 
 inline fun <R : Any, T : R> Result2<T>.recover(f: () -> R): Result2<R> {
   return if (isErr()) ok(f()) else this
