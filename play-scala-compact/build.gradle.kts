@@ -1,4 +1,5 @@
 dependencies {
   compileOnly(project(":play-core"))
-  api(project(":play-scala"))
+  api(Deps.Scala.Lang)
+  api(Deps.Scala.Java8)
 }
