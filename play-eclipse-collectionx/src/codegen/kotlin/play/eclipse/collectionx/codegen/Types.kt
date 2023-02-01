@@ -1,11 +1,10 @@
 package play.eclipse.collectionx.codegen
 
-import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.asTypeName
 import org.eclipse.collections.api.collection.primitive.*
+import org.eclipse.collections.api.factory.list.primitive.*
+import org.eclipse.collections.api.factory.map.primitive.*
 import org.eclipse.collections.api.iterator.*
 import org.eclipse.collections.api.iterator.BooleanIterator
 import org.eclipse.collections.api.iterator.ByteIterator
@@ -30,6 +29,8 @@ import kotlin.reflect.KClass
  * @author LiangZengle
  */
 object Types {
+  val newListWith = MemberName("org.eclipse.collections.impl.list.immutable.primitive", "newListWith")
+
   val primitiveTypes = listOf(
     Boolean::class,
     Byte::class,
@@ -463,6 +464,73 @@ object Types {
     (Object::class to Long::class) to ObjectLongPair::class,
     (Object::class to Float::class) to ObjectFloatPair::class,
     (Object::class to Double::class) to ObjectDoublePair::class
+  )
+
+  val immutableListFactoryTypes = listOf(
+    Boolean::class to ImmutableBooleanListFactory::class,
+    Byte::class to ImmutableByteListFactory::class,
+    Short::class to ImmutableShortListFactory::class,
+    Char::class to ImmutableCharListFactory::class,
+    Int::class to ImmutableIntListFactory::class,
+    Long::class to ImmutableLongListFactory::class,
+    Float::class to ImmutableFloatListFactory::class,
+    Double::class to ImmutableDoubleListFactory::class,
+  )
+
+  val immutableMapFactoryTypes = listOf(
+    Triple(Byte::class, Boolean::class, ImmutableByteBooleanMapFactory::class),
+    Triple(Byte::class, Byte::class, ImmutableByteByteMapFactory::class),
+    Triple(Byte::class, Short::class, ImmutableByteShortMapFactory::class),
+    Triple(Byte::class, Char::class, ImmutableByteCharMapFactory::class),
+    Triple(Byte::class, Int::class, ImmutableByteIntMapFactory::class),
+    Triple(Byte::class, Long::class, ImmutableByteLongMapFactory::class),
+    Triple(Byte::class, Float::class, ImmutableByteFloatMapFactory::class),
+    Triple(Byte::class, Double::class, ImmutableByteDoubleMapFactory::class),
+    Triple(Byte::class, Object::class, ImmutableByteObjectMapFactory::class),
+    Triple(Short::class, Boolean::class, ImmutableShortBooleanMapFactory::class),
+    Triple(Short::class, Byte::class, ImmutableShortByteMapFactory::class),
+    Triple(Short::class, Short::class, ImmutableShortShortMapFactory::class),
+    Triple(Short::class, Char::class, ImmutableShortCharMapFactory::class),
+    Triple(Short::class, Int::class, ImmutableShortIntMapFactory::class),
+    Triple(Short::class, Long::class, ImmutableShortLongMapFactory::class),
+    Triple(Short::class, Float::class, ImmutableShortFloatMapFactory::class),
+    Triple(Short::class, Double::class, ImmutableShortDoubleMapFactory::class),
+    Triple(Short::class, Object::class, ImmutableShortObjectMapFactory::class),
+    Triple(Char::class, Boolean::class, ImmutableCharBooleanMapFactory::class),
+    Triple(Char::class, Byte::class, ImmutableCharByteMapFactory::class),
+    Triple(Char::class, Short::class, ImmutableCharShortMapFactory::class),
+    Triple(Char::class, Char::class, ImmutableCharCharMapFactory::class),
+    Triple(Char::class, Int::class, ImmutableCharIntMapFactory::class),
+    Triple(Char::class, Long::class, ImmutableCharLongMapFactory::class),
+    Triple(Char::class, Float::class, ImmutableCharFloatMapFactory::class),
+    Triple(Char::class, Double::class, ImmutableCharDoubleMapFactory::class),
+    Triple(Char::class, Object::class, ImmutableCharObjectMapFactory::class),
+    Triple(Int::class, Boolean::class, ImmutableIntBooleanMapFactory::class),
+    Triple(Int::class, Byte::class, ImmutableIntByteMapFactory::class),
+    Triple(Int::class, Short::class, ImmutableIntShortMapFactory::class),
+    Triple(Int::class, Char::class, ImmutableIntCharMapFactory::class),
+    Triple(Int::class, Int::class, ImmutableIntIntMapFactory::class),
+    Triple(Int::class, Long::class, ImmutableIntLongMapFactory::class),
+    Triple(Int::class, Float::class, ImmutableIntFloatMapFactory::class),
+    Triple(Int::class, Double::class, ImmutableIntDoubleMapFactory::class),
+    Triple(Int::class, Object::class, ImmutableIntObjectMapFactory::class),
+    Triple(Long::class, Boolean::class, ImmutableLongBooleanMapFactory::class),
+    Triple(Long::class, Byte::class, ImmutableLongByteMapFactory::class),
+    Triple(Long::class, Short::class, ImmutableLongShortMapFactory::class),
+    Triple(Long::class, Char::class, ImmutableLongCharMapFactory::class),
+    Triple(Long::class, Int::class, ImmutableLongIntMapFactory::class),
+    Triple(Long::class, Long::class, ImmutableLongLongMapFactory::class),
+    Triple(Long::class, Float::class, ImmutableLongFloatMapFactory::class),
+    Triple(Long::class, Double::class, ImmutableLongDoubleMapFactory::class),
+    Triple(Long::class, Object::class, ImmutableLongObjectMapFactory::class),
+    Triple(Object::class, Boolean::class, ImmutableObjectBooleanMapFactory::class),
+    Triple(Object::class, Byte::class, ImmutableObjectByteMapFactory::class),
+    Triple(Object::class, Short::class, ImmutableObjectShortMapFactory::class),
+    Triple(Object::class, Char::class, ImmutableObjectCharMapFactory::class),
+    Triple(Object::class, Int::class, ImmutableObjectIntMapFactory::class),
+    Triple(Object::class, Long::class, ImmutableObjectLongMapFactory::class),
+    Triple(Object::class, Float::class, ImmutableObjectFloatMapFactory::class),
+    Triple(Object::class, Double::class, ImmutableObjectDoubleMapFactory::class)
   )
 
   private fun keyValueTypes(): ArrayList<Pair<KClass<*>, KClass<*>>> {

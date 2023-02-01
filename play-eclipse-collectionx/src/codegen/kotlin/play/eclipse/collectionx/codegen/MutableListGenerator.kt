@@ -1,10 +1,7 @@
 package play.eclipse.collectionx.codegen
 
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeSpec
 import kotlin.reflect.KClass
 
 /**
@@ -115,6 +112,13 @@ class MutableListGenerator {
         FunSpec.builder("unwrap")
           .returns(eclipseCollectionType)
           .addStatement("return underlying")
+          .build()
+      )
+      .addFunction(
+        FunSpec.builder("toString")
+          .addModifiers(KModifier.OVERRIDE)
+          .returns(String::class)
+          .addStatement("return underlying.toString()")
           .build()
       )
       .build()

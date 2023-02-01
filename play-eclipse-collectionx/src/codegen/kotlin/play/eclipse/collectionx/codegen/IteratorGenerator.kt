@@ -48,6 +48,13 @@ class IteratorGenerator {
           .addStatement("return underlying")
           .build()
       )
+      .addFunction(
+        FunSpec.builder("toString")
+          .addModifiers(KModifier.OVERRIDE)
+          .returns(String::class)
+          .addStatement("return underlying.toString()")
+          .build()
+      )
       .build()
   }
 }

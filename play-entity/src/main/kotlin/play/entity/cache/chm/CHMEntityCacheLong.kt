@@ -3,7 +3,7 @@ package play.entity.cache.chm
 import mu.KLogging
 import org.eclipse.collections.api.factory.Lists
 import org.eclipse.collections.impl.factory.primitive.LongLists
-import org.eclipse.collectionx.toJava
+import org.eclipse.collectionx.asJava
 import play.entity.LongIdEntity
 import play.entity.cache.*
 import play.inject.PlayInjector
@@ -270,7 +270,7 @@ class CHMEntityCacheLong<E : LongIdEntity>(
     if (missing.isEmpty) {
       return result
     }
-    val loaded = entityCacheLoader.loadAll(entityClass, missing.toJava()).collectList()
+    val loaded = entityCacheLoader.loadAll(entityClass, missing.asJava()).collectList()
       .blockOptional(Duration.ofSeconds(10)).orElse(Collections.emptyList())
     for (entity in loaded) {
       if (entity.isDeleted()) {

@@ -13,7 +13,7 @@ import org.eclipse.collections.api.map.primitive.*
 import org.eclipse.collections.impl.factory.primitive.*
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList
-import org.eclipse.collectionx.toJava
+import org.eclipse.collectionx.asJava
 import play.util.unsafeCast
 
 object PrimitiveMutableCollectionDeserializers {
@@ -93,7 +93,7 @@ object PrimitiveMutableCollectionDeserializers {
       val array =
         PrimitiveArrayDeserializers.forType(Int::class.java).unsafeCast<JsonDeserializer<IntArray>>()
           .deserialize(p, ctxt)
-      return IntArrayList(*array).toJava()
+      return IntArrayList(*array).asJava()
     }
   }
 
@@ -102,7 +102,7 @@ object PrimitiveMutableCollectionDeserializers {
       val array =
         PrimitiveArrayDeserializers.forType(Long::class.java).unsafeCast<JsonDeserializer<LongArray>>()
           .deserialize(p, ctxt)
-      return LongArrayList(*array).toJava()
+      return LongArrayList(*array).asJava()
     }
   }
 
@@ -111,7 +111,7 @@ object PrimitiveMutableCollectionDeserializers {
       val array =
         PrimitiveArrayDeserializers.forType(Int::class.java).unsafeCast<JsonDeserializer<IntArray>>()
           .deserialize(p, ctxt)
-      return IntSets.mutable.of(*array).toJava()
+      return IntSets.mutable.of(*array).asJava()
     }
   }
 
@@ -120,7 +120,7 @@ object PrimitiveMutableCollectionDeserializers {
       val array =
         PrimitiveArrayDeserializers.forType(Long::class.java).unsafeCast<JsonDeserializer<LongArray>>()
           .deserialize(p, ctxt)
-      return LongSets.mutable.of(*array).toJava()
+      return LongSets.mutable.of(*array).asJava()
     }
   }
 
@@ -132,7 +132,7 @@ object PrimitiveMutableCollectionDeserializers {
       for (pair in map.keyValuesView()) {
         result.put(pair.one, pair.two)
       }
-      return result.toJava()
+      return result.asJava()
     }
   }
 
@@ -144,7 +144,7 @@ object PrimitiveMutableCollectionDeserializers {
       for (pair in map.keyValuesView()) {
         result.put(pair.one, pair.two)
       }
-      return result.toJava()
+      return result.asJava()
     }
   }
 
@@ -156,7 +156,7 @@ object PrimitiveMutableCollectionDeserializers {
       for (pair in map.keyValuesView()) {
         result.put(pair.one, pair.two)
       }
-      return result.toJava()
+      return result.asJava()
     }
   }
 
@@ -168,7 +168,7 @@ object PrimitiveMutableCollectionDeserializers {
       for (pair in map.keyValuesView()) {
         result.put(pair.one, pair.two)
       }
-      return result.toJava()
+      return result.asJava()
     }
   }
 
@@ -181,7 +181,7 @@ object PrimitiveMutableCollectionDeserializers {
       for (pair in map.keyValuesView()) {
         result.put(pair.one, pair.two)
       }
-      return result.toJava()
+      return result.asJava()
     }
   }
 
@@ -194,7 +194,7 @@ object PrimitiveMutableCollectionDeserializers {
       for (pair in map.keyValuesView()) {
         result.put(pair.one, pair.two)
       }
-      return result.toJava()
+      return result.asJava()
     }
   }
 
@@ -207,7 +207,7 @@ object PrimitiveMutableCollectionDeserializers {
       for (pair in map.keyValuesView()) {
         result.put(pair.one, pair.two)
       }
-      return result.toJava()
+      return result.asJava()
     }
   }
 
@@ -220,7 +220,7 @@ object PrimitiveMutableCollectionDeserializers {
       for (pair in map.keyValuesView()) {
         result.put(pair.one, pair.two)
       }
-      return result.toJava()
+      return result.asJava()
     }
   }
 }

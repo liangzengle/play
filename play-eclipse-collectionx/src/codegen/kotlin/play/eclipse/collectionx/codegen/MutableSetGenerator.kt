@@ -68,12 +68,6 @@ class MutableSetGenerator {
           .build()
       )
       .addFunction(
-        FunSpec.builder("toString")
-          .addModifiers(KModifier.OVERRIDE)
-          .addStatement("return underlying.toString()")
-          .build()
-      )
-      .addFunction(
         FunSpec.builder("iterator")
           .addModifiers(KModifier.OVERRIDE)
           .returns(Types.mutableIteratorOf(elemType))
@@ -120,6 +114,13 @@ class MutableSetGenerator {
               .addStatement("return it.remove()")
               .build()
           )
+          .build()
+      )
+      .addFunction(
+        FunSpec.builder("toString")
+          .addModifiers(KModifier.OVERRIDE)
+          .returns(String::class)
+          .addStatement("return underlying.toString()")
           .build()
       )
       .build()

@@ -65,13 +65,6 @@ class ImmutableCollectionGenerator {
           .build()
       )
       .addFunction(
-        FunSpec.builder("toString")
-          .addModifiers(KModifier.OVERRIDE)
-          .returns(String::class)
-          .addStatement("return underlying.toString()")
-          .build()
-      )
-      .addFunction(
         FunSpec.builder("iterator")
           .addModifiers(KModifier.OVERRIDE)
           .returns(Iterator::class.parameterizedBy(elemType))
@@ -79,6 +72,28 @@ class ImmutableCollectionGenerator {
             "return %T(underlying.%LIterator())",
             iteratorType,
             elemType.simpleName!!.replaceFirstChar { it.lowercaseChar() })
+          .build()
+      )
+      .addFunction(
+        FunSpec.builder("toString")
+          .addModifiers(KModifier.OVERRIDE)
+          .returns(String::class)
+          .addStatement("return underlying.toString()")
+          .build()
+      )
+      .addFunction(
+        FunSpec.builder("equals")
+          .addModifiers(KModifier.OVERRIDE)
+          .addParameter("other", Any::class.asTypeName().copy(true))
+          .returns(Boolean::class)
+          .addStatement("return underlying.equals(other)")
+          .build()
+      )
+      .addFunction(
+        FunSpec.builder("hashCode")
+          .addModifiers(KModifier.OVERRIDE)
+          .returns(Int::class)
+          .addStatement("return underlying.hashCode()")
           .build()
       )
       .build()

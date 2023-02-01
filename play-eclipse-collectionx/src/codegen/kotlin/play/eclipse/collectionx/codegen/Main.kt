@@ -139,4 +139,8 @@ fun main(args: Array<String>) {
   // adaptor
   val adapterGenerator = AdapterGenerator()
   adapterGenerator.generate("org.eclipse.collectionx", "Adaptor").writeTo(File(dir))
+
+  // factory extension
+  val factoryExtensionGenerator = FactoryExtensionGenerator()
+  factoryExtensionGenerator.generate("org.eclipse.collectionx", "FactoryExtension").writeTo(File(dir))
 }

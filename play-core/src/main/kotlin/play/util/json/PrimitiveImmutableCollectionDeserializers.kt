@@ -14,7 +14,7 @@ import com.google.common.primitives.Longs
 import org.eclipse.collections.api.map.primitive.*
 import org.eclipse.collections.impl.factory.primitive.IntSets
 import org.eclipse.collections.impl.factory.primitive.LongSets
-import org.eclipse.collectionx.toJava
+import org.eclipse.collectionx.asJava
 import play.util.unsafeCast
 
 object PrimitiveImmutableCollectionDeserializers {
@@ -112,7 +112,7 @@ object PrimitiveImmutableCollectionDeserializers {
       val array =
         PrimitiveArrayDeserializers.forType(Int::class.java).unsafeCast<JsonDeserializer<IntArray>>()
           .deserialize(p, ctxt)
-     return IntSets.immutable.with(*array).toJava()
+     return IntSets.immutable.with(*array).asJava()
     }
   }
 
@@ -121,7 +121,7 @@ object PrimitiveImmutableCollectionDeserializers {
       val array =
         PrimitiveArrayDeserializers.forType(Long::class.java).unsafeCast<JsonDeserializer<LongArray>>()
           .deserialize(p, ctxt)
-      return LongSets.immutable.with(*array).toJava()
+      return LongSets.immutable.with(*array).asJava()
     }
   }
 
@@ -129,7 +129,7 @@ object PrimitiveImmutableCollectionDeserializers {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Map<Int, Int> {
       val type = ctxt.typeFactory.constructType(ImmutableIntIntMap::class.java)
       return EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt).unsafeCast<ImmutableIntIntMap>()
-        .toJava()
+        .asJava()
     }
   }
 
@@ -137,7 +137,7 @@ object PrimitiveImmutableCollectionDeserializers {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Map<Long, Long> {
       val type = ctxt.typeFactory.constructType(ImmutableLongLongMap::class.java)
       return EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt).unsafeCast<ImmutableLongLongMap>()
-        .toJava()
+        .asJava()
     }
   }
 
@@ -145,7 +145,7 @@ object PrimitiveImmutableCollectionDeserializers {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Map<Int, Long> {
       val type = ctxt.typeFactory.constructType(ImmutableIntLongMap::class.java)
       return EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt).unsafeCast<ImmutableIntLongMap>()
-        .toJava()
+        .asJava()
     }
   }
 
@@ -153,7 +153,7 @@ object PrimitiveImmutableCollectionDeserializers {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Map<Long, Int> {
       val type = ctxt.typeFactory.constructType(ImmutableLongIntMap::class.java)
       return EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt).unsafeCast<ImmutableLongIntMap>()
-        .toJava()
+        .asJava()
     }
   }
 
@@ -162,7 +162,7 @@ object PrimitiveImmutableCollectionDeserializers {
       val type = ctxt.typeFactory.constructReferenceType(ImmutableIntObjectMap::class.java, objType)
       return EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt)
         .unsafeCast<ImmutableIntObjectMap<Any>>()
-        .toJava()
+        .asJava()
     }
   }
 
@@ -171,7 +171,7 @@ object PrimitiveImmutableCollectionDeserializers {
       val type = ctxt.typeFactory.constructReferenceType(ImmutableLongObjectMap::class.java, objType)
       return EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt)
         .unsafeCast<ImmutableLongObjectMap<Any>>()
-        .toJava()
+        .asJava()
     }
   }
 
@@ -180,7 +180,7 @@ object PrimitiveImmutableCollectionDeserializers {
       val type = ctxt.typeFactory.constructReferenceType(ImmutableObjectIntMap::class.java, objType)
       return EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt)
         .unsafeCast<ImmutableObjectIntMap<Any>>()
-        .toJava()
+        .asJava()
     }
   }
 
@@ -189,7 +189,7 @@ object PrimitiveImmutableCollectionDeserializers {
       val type = ctxt.typeFactory.constructReferenceType(ImmutableObjectLongMap::class.java, objType)
       return EclipseMapDeserializers.createDeserializer(type).deserialize(p, ctxt)
         .unsafeCast<ImmutableObjectLongMap<Any>>()
-        .toJava()
+        .asJava()
     }
   }
 }
