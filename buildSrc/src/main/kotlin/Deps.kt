@@ -176,6 +176,11 @@ object Deps {
     private const val Version = Versions.Wire
     const val Runtime = "com.squareup.wire:wire-runtime-jvm:$Version"
     const val Schema = "com.squareup.wire:wire-schema-jvm:$Version"
+    const val Compiler = "com.squareup.wire:wire-compiler:$Version"
+    const val KotlinGenerator = "com.squareup.wire:wire-kotlin-generator:$Version"
+    const val GrpcClient = "com.squareup.wire:wire-grpc-client:$Version"
+    const val GrpcServerGenerator = "com.squareup.wire:wire-grpc-server-generator:$Version"
+    const val SchameTests = "com.squareup.wire:wire-schema-tests:$Version"
   }
 
   const val Asm = "org.ow2.asm:asm:${Versions.Asm}"

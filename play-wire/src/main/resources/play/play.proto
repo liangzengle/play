@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package play;
+
+import "google/protobuf/descriptor.proto";
+
+message MessageOptions {
+  repeated string implements = 1;
+}
+
+extend google.protobuf.MessageOptions {
+  optional MessageOptions play_message_option = 5000;
+}
+
+message FieldOptions {
+  bool override = 1;
+}
+
+extend google.protobuf.FieldOptions {
+  optional FieldOptions play_field_option = 5000;
+}
+
+message IntListValue {
+  repeated int32 value = 1;
+}
+
+message LongListValue {
+  repeated int64 value = 1;
+}
+
+message FloatListValue {
+  repeated float value = 1;
+}
+
+message DoubleListValue {
+  repeated double value = 1;
+}
+
+message IntIntMapValue {
+  map<int32, int32> value = 1;
+}
+
+message IntLongMapValue {
+  map<int32, int64> value = 1;
+}
+
+message LongLongMapValue {
+  map<int64, int64> value = 1;
+}
+
+message LongIntMapValue {
+  map<int64, int32> value = 1;
+}

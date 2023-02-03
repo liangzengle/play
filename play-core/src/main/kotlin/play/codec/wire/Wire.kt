@@ -39,7 +39,7 @@ object Wire {
       "java.lang.Float", "float" -> ProtoAdapter.FLOAT
       "java.lang.Double", "double" -> ProtoAdapter.DOUBLE
       "byte[]" -> ProtoAdapter.BYTES
-      "java.lang.String" -> ProtoAdapter.STRING_VALUE // use wrapper
+      "java.lang.String" -> ProtoAdapter.STRING
       "java.time.Duration" -> ProtoAdapter.DURATION
       "com.google.protobuf.BoolValue" -> ProtoAdapter.BOOL_VALUE
       "com.google.protobuf.Int32Value" -> ProtoAdapter.INT32_VALUE
@@ -48,13 +48,13 @@ object Wire {
       "com.google.protobuf.DoubleValue" -> ProtoAdapter.DOUBLE_VALUE
       "com.google.protobuf.StringValue" -> ProtoAdapter.STRING_VALUE
       "com.google.protobuf.BytesValue" -> ProtoAdapter.BYTES_VALUE
-      else -> {
-        if (List::class.java.isAssignableFrom(type)) {
-          ProtoAdapter.STRUCT_LIST
-        } else {
-          throw IllegalArgumentException("Not builtin type: ${type.name}")
-        }
-      }
+      "com.google.protobuf.UInt32Value" -> ProtoAdapter.UINT32_VALUE
+      "com.google.protobuf.UInt64Value" -> ProtoAdapter.UINT64_VALUE
+      "com.google.protobuf.Struct" -> ProtoAdapter.STRUCT_MAP
+      "com.google.protobuf.Value" -> ProtoAdapter.STRUCT_VALUE
+      "com.google.protobuf.ListValue" -> ProtoAdapter.STRUCT_LIST
+      "com.google.protobuf.NullValue" -> ProtoAdapter.STRUCT_NULL
+      else -> throw IllegalArgumentException("Maybe not builtin type: ${type.name}")
     }
     @Suppress("UNCHECKED_CAST")
     return adapter as ProtoAdapter<T>
