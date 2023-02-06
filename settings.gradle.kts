@@ -6,7 +6,6 @@ pluginManagement {
     maven("https://maven.aliyun.com/repository/public/")
     maven("https://maven.aliyun.com/repository/gradle-plugin")
     maven("https://plugins.gradle.org/m2/")
-    maven("file://$rootDir/repository")
   }
 }
 
