@@ -29,3 +29,11 @@ interface EventBus {
     subscribe(eventType) { subscriber() }
   }
 }
+
+inline fun <reified T> EventBus.subscribe(noinline subscriber: (T) -> Unit) {
+  this.subscribe(T::class.java, subscriber)
+}
+
+inline fun <reified T> EventBus.subscribe0(noinline subscriber: () -> Unit) {
+  this.subscribe0(T::class.java, subscriber)
+}
