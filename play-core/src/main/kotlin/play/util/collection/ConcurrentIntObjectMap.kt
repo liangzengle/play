@@ -2,6 +2,7 @@ package play.util.collection
 
 import play.util.function.IntObjToObjFunction
 import play.util.function.IntToObjFunction
+import java.util.function.BiFunction
 import java.util.stream.IntStream
 import java.util.stream.Stream
 
@@ -17,6 +18,7 @@ interface ConcurrentIntObjectMap<V> : Iterable<ConcurrentIntObjectMap.Entry<V>> 
   fun computeIfAbsent(key: Int, function: IntToObjFunction<out V>): V
   fun compute(key: Int, remappingFunction: IntObjToObjFunction<in V?, out V?>): V?
   fun replace(key: Int, oldValue: V, newValue: V): Boolean
+  fun merge(key: Int, value: V, remappingFunction: BiFunction<in V?, in V, out V?>): V?
   fun containsKey(key: Int): Boolean
   fun isEmpty(): Boolean
   fun isNotEmpty(): Boolean

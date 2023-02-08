@@ -2,6 +2,7 @@ package play.util.collection
 
 import play.util.function.LongObjToObjFunction
 import play.util.function.LongToObjFunction
+import java.util.function.BiFunction
 import java.util.stream.LongStream
 import java.util.stream.Stream
 
@@ -17,6 +18,7 @@ interface ConcurrentLongObjectMap<V> : Iterable<ConcurrentLongObjectMap.Entry<V>
   fun computeIfAbsent(key: Long, function: LongToObjFunction<out V>): V
   fun compute(key: Long, remappingFunction: LongObjToObjFunction<in V?, out V?>): V?
   fun replace(key: Long, oldValue: V, newValue: V): Boolean
+  fun merge(key: Long, value: V, remappingFunction: BiFunction<in V?, in V, out V?>): V?
   fun containsKey(key: Long): Boolean
   fun isEmpty(): Boolean
   fun isNotEmpty(): Boolean

@@ -4,6 +4,7 @@ import play.util.function.LongLongToObjFunction
 import play.util.function.LongObjToObjFunction
 import play.util.function.LongToLongFunction
 import play.util.function.LongToObjFunction
+import java.util.function.LongBinaryOperator
 
 interface ConcurrentLongLongMap : Iterable<ConcurrentLongLongMap.Entry> {
 
@@ -28,6 +29,8 @@ interface ConcurrentLongLongMap : Iterable<ConcurrentLongLongMap.Entry> {
   fun compute(key: Long, remappingFunction: LongObjToObjFunction<Long?, Long?>): Long?
 
   fun replace(key: Long, oldValue: Long, newValue: Long): Boolean
+
+  fun merge(key: Long, value: Long, remappingFunction: LongBinaryOperator): Long
 
   fun containsKey(key: Long): Boolean
 
