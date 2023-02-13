@@ -313,7 +313,7 @@ public class SerializableAttributeMap {
                 var v = attr.get();
                 if (v != null) {
                     gen.writeFieldName(k);
-                    gen.writeObject(attr.get());
+                    gen.writeObject(v);
                 }
             }
             gen.writeEndObject();

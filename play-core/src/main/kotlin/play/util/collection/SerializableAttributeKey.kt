@@ -45,7 +45,12 @@ class SerializableAttributeKey<T> private constructor(val id: Int, name: String)
 
     fun valueOf(name: String, type: Type): SerializableAttributeKey<Any> {
       val key = super.valueOf(name)
-      if (key.type == Void.TYPE || (type != Void.TYPE && key.type != type)) {
+      val keyType = key.type
+      if (keyType != Void.TYPE) {
+        if (type != Void.TYPE && keyType != type) {
+          throw IllegalArgumentException("Inconsistent type for key[$name]: $keyType, $type")
+        }
+      } else {
         key.type = type
       }
       return key
