@@ -12,7 +12,7 @@ import kotlin.reflect.KClass
 class AdapterGenerator {
 
   fun generate(pkg: String, fileName: String): FileSpec {
-    fun typeOfImmutableCollection(elemType: KClass<*>, collectionType: KClass<*>): TypeName {
+    fun typeOfImmutableCollection(collectionType: KClass<*>): TypeName {
       val typeName = if (collectionType.simpleName?.startsWith("Immutable") == false) {
         "org.eclipse.collectionx.collection.immutable.Immutable${collectionType.simpleName}Wrapper"
       } else {
@@ -21,7 +21,7 @@ class AdapterGenerator {
       return ClassName.bestGuess(typeName)
     }
 
-    fun typeOfImmutableList(elemType: KClass<*>, collectionType: KClass<*>): TypeName {
+    fun typeOfImmutableList(collectionType: KClass<*>): TypeName {
       val typeName = if (collectionType.simpleName?.startsWith("Immutable") == false) {
         "org.eclipse.collectionx.list.immutable.Immutable${collectionType.simpleName}Wrapper"
       } else {
@@ -30,7 +30,7 @@ class AdapterGenerator {
       return ClassName.bestGuess(typeName)
     }
 
-    fun typeOfImmutableSet(elemType: KClass<*>, collectionType: KClass<*>): TypeName {
+    fun typeOfImmutableSet(collectionType: KClass<*>): TypeName {
       val typeName = if (collectionType.simpleName?.startsWith("Immutable") == false) {
         "org.eclipse.collectionx.set.immutable.Immutable${collectionType.simpleName}Wrapper"
       } else {
@@ -39,29 +39,29 @@ class AdapterGenerator {
       return ClassName.bestGuess(typeName)
     }
 
-    fun typeOfImmutableMap(keyType: KClass<*>, valueType: KClass<*>, collectionType: KClass<*>): TypeName {
-      val typeName = if (collectionType.simpleName?.startsWith("Immutable") == false) {
-        "org.eclipse.collectionx.map.immutable.Immutable${collectionType.simpleName}Wrapper"
+    fun typeOfImmutableMap(mapType: KClass<*>): TypeName {
+      val typeName = if (mapType.simpleName?.startsWith("Immutable") == false) {
+        "org.eclipse.collectionx.map.immutable.Immutable${mapType.simpleName}Wrapper"
       } else {
-        "org.eclipse.collectionx.map.immutable.${collectionType.simpleName}Wrapper"
+        "org.eclipse.collectionx.map.immutable.${mapType.simpleName}Wrapper"
       }
       return ClassName.bestGuess(typeName)
     }
 
-    fun typeOfMutableCollection(elemType: KClass<*>, collectionType: KClass<*>): TypeName {
+    fun typeOfMutableCollection(collectionType: KClass<*>): TypeName {
       return ClassName.bestGuess("org.eclipse.collectionx.collection.mutable.${collectionType.simpleName}Wrapper")
     }
 
-    fun typeOfMutableList(elemType: KClass<*>, collectionType: KClass<*>): TypeName {
-      return ClassName.bestGuess("org.eclipse.collectionx.list.mutable.${collectionType.simpleName}Wrapper")
+    fun typeOfMutableList(listType: KClass<*>): TypeName {
+      return ClassName.bestGuess("org.eclipse.collectionx.list.mutable.${listType.simpleName}Wrapper")
     }
 
-    fun typeOfMutableSet(elemType: KClass<*>, collectionType: KClass<*>): TypeName {
-      return ClassName.bestGuess("org.eclipse.collectionx.set.mutable.${collectionType.simpleName}Wrapper")
+    fun typeOfMutableSet(setType: KClass<*>): TypeName {
+      return ClassName.bestGuess("org.eclipse.collectionx.set.mutable.${setType.simpleName}Wrapper")
     }
 
-    fun typeOfMutableMap(keyType: KClass<*>, valueType: KClass<*>, collectionType: KClass<*>): TypeName {
-      return ClassName.bestGuess("org.eclipse.collectionx.map.mutable.${collectionType.simpleName}Wrapper")
+    fun typeOfMutableMap(mapType: KClass<*>): TypeName {
+      return ClassName.bestGuess("org.eclipse.collectionx.map.mutable.${mapType.simpleName}Wrapper")
     }
 
     val K = TypeVariableName("K", Any::class.asClassName())
@@ -75,7 +75,7 @@ class AdapterGenerator {
             FunSpec.builder("asJava")
               .receiver(collectionType)
               .returns(Collection::class.parameterizedBy(elemType))
-              .addStatement("return %T(this)", typeOfImmutableCollection(elemType, collectionType))
+              .addStatement("return %T(this)", typeOfImmutableCollection(collectionType))
               .build()
           )
         }
@@ -86,7 +86,7 @@ class AdapterGenerator {
             FunSpec.builder("asJava")
               .receiver(collectionType)
               .returns(List::class.parameterizedBy(elemType))
-              .addStatement("return %T(this)", typeOfImmutableList(elemType, collectionType))
+              .addStatement("return %T(this)", typeOfImmutableList(collectionType))
               .build()
           )
         }
@@ -97,13 +97,13 @@ class AdapterGenerator {
             FunSpec.builder("asJava")
               .receiver(collectionType)
               .returns(Set::class.parameterizedBy(elemType))
-              .addStatement("return %T(this)", typeOfImmutableSet(elemType, collectionType))
+              .addStatement("return %T(this)", typeOfImmutableSet(collectionType))
               .build()
           )
         }
       }
       .apply {
-        for ((keyType, valueType, collectionType) in Types.mapTypes + Types.immutableMapTypes) {
+        for ((keyType, valueType, mapType) in Types.mapTypes + Types.immutableMapTypes) {
           addFunction(
             FunSpec.builder("asJava")
               .apply {
@@ -116,12 +116,12 @@ class AdapterGenerator {
               .receiver(
                 when {
                   Types.isObj(keyType) -> {
-                    collectionType.asTypeName().parameterizedBy(K)
+                    mapType.asTypeName().parameterizedBy(K)
                   }
                   Types.isObj(valueType) -> {
-                    collectionType.asTypeName().parameterizedBy(V)
+                    mapType.asTypeName().parameterizedBy(V)
                   }
-                  else -> collectionType.asTypeName()
+                  else -> mapType.asTypeName()
                 }
               )
               .returns(
@@ -135,7 +135,7 @@ class AdapterGenerator {
                   else -> Map::class.parameterizedBy(keyType, valueType)
                 }
               )
-              .addStatement("return %T(this)", typeOfImmutableMap(keyType, valueType, collectionType))
+              .addStatement("return %T(this)", typeOfImmutableMap(mapType))
               .build()
           )
         }
@@ -143,40 +143,40 @@ class AdapterGenerator {
 
       // mutable
       .apply {
-        for ((elemType, collectionType) in Types.mutableCollectionTypes) {
+        for ((_, collectionType) in Types.mutableCollectionTypes) {
           addFunction(
             FunSpec.builder("asJava")
               .receiver(collectionType)
 //              .returns(Collection::class.parameterizedBy(elemType))
-              .addStatement("return %T(this)", typeOfMutableCollection(elemType, collectionType))
+              .addStatement("return %T(this)", typeOfMutableCollection(collectionType))
               .build()
           )
         }
       }
       .apply {
-        for ((elemType, collectionType) in Types.mutableListTypes) {
+        for ((_, collectionType) in Types.mutableListTypes) {
           addFunction(
             FunSpec.builder("asJava")
               .receiver(collectionType)
 //              .returns(List::class.parameterizedBy(elemType))
-              .addStatement("return %T(this)", typeOfMutableList(elemType, collectionType))
+              .addStatement("return %T(this)", typeOfMutableList(collectionType))
               .build()
           )
         }
       }
       .apply {
-        for ((elemType, collectionType) in Types.mutableSetTypes) {
+        for ((_, collectionType) in Types.mutableSetTypes) {
           addFunction(
             FunSpec.builder("asJava")
               .receiver(collectionType)
 //              .returns(Set::class.parameterizedBy(elemType))
-              .addStatement("return %T(this)", typeOfMutableSet(elemType, collectionType))
+              .addStatement("return %T(this)", typeOfMutableSet(collectionType))
               .build()
           )
         }
       }
       .apply {
-        for ((keyType, valueType, collectionType) in Types.mutableMapTypes) {
+        for ((keyType, valueType, mapType) in Types.mutableMapTypes) {
           addFunction(
             FunSpec.builder("asJava")
               .apply {
@@ -189,12 +189,12 @@ class AdapterGenerator {
               .receiver(
                 when {
                   Types.isObj(keyType) -> {
-                    collectionType.asTypeName().parameterizedBy(K)
+                    mapType.asTypeName().parameterizedBy(K)
                   }
                   Types.isObj(valueType) -> {
-                    collectionType.asTypeName().parameterizedBy(V)
+                    mapType.asTypeName().parameterizedBy(V)
                   }
-                  else -> collectionType.asTypeName()
+                  else -> mapType.asTypeName()
                 }
               )
 //              .returns(
@@ -208,7 +208,7 @@ class AdapterGenerator {
 //                  else -> Map::class.parameterizedBy(keyType, valueType)
 //                }
 //              )
-              .addStatement("return %T(this)", typeOfMutableMap(keyType, valueType, collectionType))
+              .addStatement("return %T(this)", typeOfMutableMap(mapType))
               .build()
           )
         }

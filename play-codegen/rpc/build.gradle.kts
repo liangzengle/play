@@ -7,8 +7,7 @@ dependencies {
 }
 
 tasks.withType<KotlinCompile> {
-  kotlinOptions.freeCompilerArgs += "-Xopt-in=com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview"
-  kotlinOptions.freeCompilerArgs += "-Xopt-in=com.squareup.kotlinpoet.DelicateKotlinPoetApi"
-  kotlinOptions.freeCompilerArgs += "-Xopt-in=com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview"
-  kotlinOptions.freeCompilerArgs += "-Xopt-in=com.google.devtools.ksp.KspExperimental"
+  kotlinOptions.freeCompilerArgs += "-opt-in=com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview"
+  kotlinOptions.freeCompilerArgs += "-opt-in=com.squareup.kotlinpoet.DelicateKotlinPoetApi"
+  kotlinOptions.freeCompilerArgs += "-opt-in=com.google.devtools.ksp.KspExperimental"
 }

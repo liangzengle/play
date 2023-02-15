@@ -25,6 +25,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.Util;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -684,9 +685,7 @@ public class ByteBufOutput extends Output {
         int charIndex = 0;
         int charsToWrite = Math.min(charCount, capacity - position);
         while (charIndex < charCount) {
-            byte[] tmp = new byte[charCount];
-            value.getBytes(charIndex, charIndex + charsToWrite, tmp, 0);
-            buffer.writeBytes(tmp, 0, charsToWrite);
+            ByteBufUtil.writeUtf8(buffer, value, charIndex, charIndex + charsToWrite);
             charIndex += charsToWrite;
             position += charsToWrite;
             charsToWrite = Math.min(charCount - charIndex, capacity);

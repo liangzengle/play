@@ -34,6 +34,7 @@ public class ErrorOnDisconnectRSocket extends RSocketProxy {
     private static final CancellationException CANCELLATION_EXCEPTION =
             new CancellationException("Connection has closed");
     private final RSocket delegate;
+    @SuppressWarnings("deprecation")
     private final MonoProcessor<Boolean> onCancelHook = MonoProcessor.create();
 
     public ErrorOnDisconnectRSocket(RSocket source) {

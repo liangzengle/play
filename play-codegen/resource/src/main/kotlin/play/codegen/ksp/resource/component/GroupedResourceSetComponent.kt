@@ -20,10 +20,10 @@ class GroupedResourceSetComponent(private val classDeclaration: KSClassDeclarati
     val groupIdType: TypeName
     val uniqueKeyType: TypeName?
     if (resolver.isAssignable(GroupedWithUniqueKey.canonicalName, classDeclaration)) {
-      groupIdType = classDeclaration.getTypeArg(resolver, GroupedWithUniqueKey.canonicalName, 0)
-      uniqueKeyType = classDeclaration.getTypeArg(resolver, GroupedWithUniqueKey.canonicalName, 1)
+      groupIdType = classDeclaration.getTypeArg(GroupedWithUniqueKey.canonicalName, 0)
+      uniqueKeyType = classDeclaration.getTypeArg(GroupedWithUniqueKey.canonicalName, 1)
     } else {
-      groupIdType = classDeclaration.getTypeArg(resolver, Grouped.canonicalName, 0)
+      groupIdType = classDeclaration.getTypeArg(Grouped.canonicalName, 0)
       uniqueKeyType = null
     }
     val resourceClass = classDeclaration.toClassName()

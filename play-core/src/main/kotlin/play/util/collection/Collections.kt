@@ -79,7 +79,7 @@ fun <T> sequenceOf(elem: T): Sequence<T> = Sequence { iteratorOf(elem) }
 
 fun <T> streamOf(elem: T): Stream<T> = Stream.of(elem)
 
-inline fun <T, K> Array<T>.toImmutableMap(keyMapper: (T) -> K): Map<K, T> {
+inline fun <T: Any, K: Any> Array<T>.toImmutableMap(keyMapper: (T) -> K): Map<K, T> {
   val builder = ImmutableMap.builder<K, T>()
   for (e in this) {
     builder.put(keyMapper(e), e)
@@ -87,7 +87,7 @@ inline fun <T, K> Array<T>.toImmutableMap(keyMapper: (T) -> K): Map<K, T> {
   return builder.build()
 }
 
-inline fun <T, K> Iterable<T>.toImmutableMap(keyMapper: (T) -> K): Map<K, T> {
+inline fun <T: Any, K: Any> Iterable<T>.toImmutableMap(keyMapper: (T) -> K): Map<K, T> {
   val builder = ImmutableMap.builder<K, T>()
   for (e in this) {
     builder.put(keyMapper(e), e)
@@ -95,7 +95,7 @@ inline fun <T, K> Iterable<T>.toImmutableMap(keyMapper: (T) -> K): Map<K, T> {
   return builder.build()
 }
 
-inline fun <T, K, V> Iterable<T>.toImmutableMap(keyMapper: (T) -> K, valueMapper: (T) -> V): Map<K, V> {
+inline fun <T, K: Any, V: Any> Iterable<T>.toImmutableMap(keyMapper: (T) -> K, valueMapper: (T) -> V): Map<K, V> {
   val builder = ImmutableMap.builder<K, V>()
   for (e in this) {
     builder.put(keyMapper(e), valueMapper(e))

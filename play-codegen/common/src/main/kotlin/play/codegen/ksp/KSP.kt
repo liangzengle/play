@@ -177,7 +177,7 @@ fun KSName?.contentEquals(content: String): Boolean {
   return this?.asString() == content
 }
 
-fun KSClassDeclaration.getTypeArg(resolver: Resolver, superClassName: String, index: Int): TypeName {
+fun KSClassDeclaration.getTypeArg(superClassName: String, index: Int): TypeName {
   val superType =
     getAllSuperTypes()
       .firstOrNull { it.toClassName().canonicalName == superClassName }

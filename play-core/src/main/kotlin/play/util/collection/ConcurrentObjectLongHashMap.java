@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.*;
 
+@SuppressWarnings({"FinalStaticMethod", "FinalPrivateMethod"})
 public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K> {
 
     private static final int MAXIMUM_CAPACITY = 1 << 30;
@@ -3053,6 +3054,7 @@ public class ConcurrentObjectLongHashMap<K> implements ConcurrentObjectLongMap<K
      * values, in which additions are disabled. This class cannot be
      * directly instantiated. See {@link #values()}.
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     static final class ValuesView
             implements LongIterable, Serializable {
         private static final long serialVersionUID = 2249069246763182397L;

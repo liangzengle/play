@@ -42,7 +42,7 @@ class ResourceSetGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     } else {
       ResourceSetComponent(ksClassDeclaration, resolver).apply(objectBuilder)
       if (hasExtension(ksClassDeclaration)) {
-        ResourceExtensionComponent(ksClassDeclaration, resolver).apply(objectBuilder)
+        ResourceExtensionComponent(ksClassDeclaration).apply(objectBuilder)
       }
       if (hasUniqueKey(ksClassDeclaration)) {
         UniqueKeyResourceSetComponent(ksClassDeclaration, resolver).apply(objectBuilder)

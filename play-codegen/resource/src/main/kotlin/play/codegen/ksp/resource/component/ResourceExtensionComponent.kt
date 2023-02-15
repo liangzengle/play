@@ -15,7 +15,7 @@ import play.codegen.ksp.getTypeArg
  *
  * @author LiangZengle
  */
-class ResourceExtensionComponent(private val classDeclaration: KSClassDeclaration, private val resolver: Resolver) {
+class ResourceExtensionComponent(private val classDeclaration: KSClassDeclaration) {
 
   fun apply(classBuilder: TypeSpec.Builder) {
     val extensionType = getExtensionType()
@@ -32,7 +32,7 @@ class ResourceExtensionComponent(private val classDeclaration: KSClassDeclaratio
 
   private fun getExtensionType(): TypeName {
     return try {
-      classDeclaration.getTypeArg(resolver, ExtensionKey.canonicalName, 0)
+      classDeclaration.getTypeArg(ExtensionKey.canonicalName, 0)
     } catch (e: Exception) {
       throw IllegalStateException("Extension type not found for ${classDeclaration.qualifiedName?.asString()}", e)
     }

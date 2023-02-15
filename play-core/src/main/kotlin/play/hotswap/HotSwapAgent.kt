@@ -44,6 +44,7 @@ object HotSwapAgent {
   }
 
   @JvmStatic
+  @Suppress("UNUSED_PARAMETER")
   fun agentmain(agentArgs: String?, inst: Instrumentation) {
     this.inst = inst
   }
