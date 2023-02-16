@@ -28,6 +28,7 @@ fun includeProject(name: String, parentDir: String?, dir: String?) {
   project(":$name").projectDir = file(path.toString())
 }
 
+include("play-benchmark")
 include("play-core")
 include("play-res")
 include("play-entity")
@@ -39,7 +40,6 @@ include("play-akka")
 include("play-scala-compact")
 include("play-eclipse-collectionx")
 include("play-spring")
-include("play-primitive-collection")
 include("play-kryo")
 include("play-dokka")
 include("play-wire")

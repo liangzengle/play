@@ -203,6 +203,8 @@ object Deps {
 
   const val Jctools = "org.jctools:jctools-core:${Versions.Jctools}"
 
+  const val Jmh = "org.openjdk.jmh:jmh-core:${Versions.Jmh}"
+
   const val KotlinLogging = "io.github.microutils:kotlin-logging-jvm:${Versions.KotlinLogging}"
 
   const val Kryo = "com.esotericsoftware:kryo:${Versions.Kryo}"

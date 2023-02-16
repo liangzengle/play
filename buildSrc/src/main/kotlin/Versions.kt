@@ -19,6 +19,7 @@ object Versions {
   const val JakartaElApi = "5.0.1"
   const val JakartaEl = "5.0.0"
   const val Jctools = "4.0.1"
+  const val Jmh = "1.36"
   const val Junit = "5.9.1"
   const val Kotlin = "1.8.0"
   const val KotlinLogging = "3.0.4"
