@@ -261,15 +261,24 @@ object Time {
   @Throws(IllegalArgumentException::class)
   @JvmStatic
   fun parseUnit(unit: String): ChronoUnit {
-    return when (unit.lowercase()) {
-      "ms" -> ChronoUnit.MILLIS
-      "s" -> ChronoUnit.SECONDS
-      "m" -> ChronoUnit.MINUTES
-      "h" -> ChronoUnit.HOURS
-      "d" -> ChronoUnit.DAYS
-      "ns" -> ChronoUnit.NANOS
-      "us" -> ChronoUnit.MICROS
-      else -> throw IllegalArgumentException("Unknown unit: $unit")
+    val len = unit.length
+    return if (len == 1) {
+      when (unit[0].lowercaseChar()) {
+        's' -> ChronoUnit.SECONDS
+        'm' -> ChronoUnit.MINUTES
+        'h' -> ChronoUnit.HOURS
+        'd' -> ChronoUnit.DAYS
+        else -> throw IllegalArgumentException("Unknown unit: $unit")
+      }
+    } else if (len == 2 && unit[1].lowercaseChar() == 's') {
+      when (unit[0].lowercaseChar()) {
+        'm' -> ChronoUnit.MILLIS
+        'n' -> ChronoUnit.NANOS
+        'u' -> ChronoUnit.MICROS
+        else -> throw IllegalArgumentException("Unknown unit: $unit")
+      }
+    } else {
+      throw IllegalArgumentException("Unknown unit: $unit")
     }
   }
 }
