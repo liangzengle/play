@@ -85,7 +85,9 @@ abstract class IntIdEntity(@JvmField val id: Int) : Entity<Int>() {
   }
 }
 
-abstract class StringIdEntity(@JvmField val id: String) : Entity<String>()
+abstract class StringIdEntity(@JvmField val id: String) : Entity<String>() {
+  override fun id(): String = id
+}
 
 abstract class ObjIdEntity<ID : ObjId>(@JvmField val id: ID) : Entity<ID>() {
   override fun id(): ID = id
