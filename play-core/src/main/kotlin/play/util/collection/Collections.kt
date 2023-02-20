@@ -73,8 +73,6 @@ fun <T> setOf(elem: T): Set<T> = Collections.singleton(elem)
 
 fun <K, V> mapOf(key: K, value: V): Map<K, V> = Collections.singletonMap(key, value)
 
-fun <K, V> sequenceOf(key: K, value: V): Map<K, V> = Collections.singletonMap(key, value)
-
 fun <T> sequenceOf(elem: T): Sequence<T> = Sequence { iteratorOf(elem) }
 
 fun <T> streamOf(elem: T): Stream<T> = Stream.of(elem)
