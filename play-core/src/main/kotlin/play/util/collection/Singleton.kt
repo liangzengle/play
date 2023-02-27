@@ -13,7 +13,3 @@ class SingletonIterator<T>(private val value: T) : Iterator<T> {
     return value
   }
 }
-
-class SingletonIterable<T>(private val value: T) : Iterable<T> {
-  override fun iterator(): Iterator<T> = SingletonIterator(value)
-}
