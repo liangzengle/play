@@ -222,19 +222,44 @@ object Reflect {
     return null
   }
 
+  /**
+   * User declared method: not declared by [Object] AND not bridge method AND not synthetic method
+   *
+   * @param clazz Class<*>
+   * @return Iterable<Method>
+   */
   @JvmStatic
-  fun getAllMethods(clazz: Class<*>): Iterable<Method> {
+  fun getAllUserDeclaredMethods(clazz: Class<*>): Iterable<Method> {
     var iterable = clazz.declaredMethods.asIterable()
     var superType = clazz.superclass
-    while (superType != Any::class.java) {
+    while (superType !== Any::class.java) {
       iterable = Iterables.concat(superType.declaredMethods.asIterable(), iterable)
       superType = superType.superclass
     }
-    return iterable
+    return Iterables.filter(iterable) { !it.isBridge && !it.isSynthetic && it.declaringClass !== Any::class.java }
   }
 
   @JvmStatic
-  fun getAllMethods(clazz: Class<*>, filter: (Method) -> Boolean): Iterable<Method> {
-    return Iterables.filter(getAllMethods(clazz)) { filter(it!!) }
+  fun findDeclaredMethod(clazz: Class<*>, methodName: String, vararg parameterTypes: Class<*>): Method? {
+    return try {
+      clazz.getDeclaredMethod(methodName, *parameterTypes)
+    } catch (e: NoSuchMethodException) {
+      null
+    }
+  }
+
+  @JvmStatic
+  fun isObjectMethod(method: Method): Boolean {
+    if (method.declaringClass === Any::class.java) {
+      return true
+    }
+    val methodName = method.name
+    if (method.parameterCount == 0) {
+      return "toString" == methodName || "hashCode" == methodName
+    }
+    if (method.parameterCount == 1) {
+      return "equals" == methodName && method.parameterTypes[0] == Any::class.java
+    }
+    return false
   }
 }
