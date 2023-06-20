@@ -1,8 +1,8 @@
 plugins {
-  kotlin("plugin.serialization") version Versions.Kotlin
+  kotlin("plugin.serialization") version libs.versions.kotlin.asProvider().get()
 }
 
 dependencies {
   api(project(":play-core"))
-  compileOnly(Deps.Kotlinx.Serialization.Protobuf)
+  compileOnly(libs.kotlinx.serialization.protobuf)
 }

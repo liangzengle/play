@@ -1,18 +1,18 @@
 plugins {
-  id("com.squareup.wire") version Versions.Wire
+  id("com.squareup.wire") version libs.versions.wire.get()
 }
 
 dependencies {
-  api(Deps.Wire.Runtime)
-  implementation(Deps.Wire.Schema)
-  implementation(Deps.Wire.Compiler)
-  implementation(Deps.Wire.GrpcClient)
-  implementation(Deps.Wire.GrpcServerGenerator)
-  implementation(Deps.KotlinPoet.Poet)
-  api(Deps.Eclipse.Collections.Api)
+  api(libs.wire.runtime)
+  implementation(libs.wire.schema)
+  implementation(libs.wire.compiler)
+  implementation(libs.wire.grpc.client)
+  implementation(libs.wire.grpc.server)
+  implementation(libs.kotlinpoet.asProvider())
+  api(libs.eclipse.collections.api)
   api(project(":play-eclipse-collectionx"))
 
-  testImplementation(Deps.Wire.SchameTests)
+  testImplementation(libs.wire.schema.tests)
 }
 
 sourceSets.main {
@@ -23,8 +23,8 @@ tasks.getByName("compileJava").enabled = false
 
 wire {
   sourcePath {
-//    srcDir("src/main/resources/play")
-    srcDir("src/main/resources/play/none")
+    srcDir("src/main/resources/play")
+//    srcDir("src/main/resources/play/none")
   }
   kotlin {}
 }

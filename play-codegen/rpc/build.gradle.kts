@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 dependencies {
   implementation(project(":play-codegen-common"))
   implementation(project(":play-rsocket-common"))
-  ksp(Deps.AutoServiceKsp)
+  ksp(libs.auto.service.ksp)
 }
 
 tasks.withType<KotlinCompile> {

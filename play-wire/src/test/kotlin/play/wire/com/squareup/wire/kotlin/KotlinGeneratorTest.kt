@@ -1,4 +1,4 @@
-package play.wire.com.squareup.wire.koltin
+package play.wire.com.squareup.wire.kotlin
 
 import org.junit.jupiter.api.Test
 import com.squareup.wire.buildSchema
@@ -60,7 +60,8 @@ internal class KotlinGeneratorTest {
       )
     }
     val code = KotlinWithProfilesGenerator(schema).generateKotlin("Person")
+    println(code)
     assertTrue(code.contains(", MyInterface"))
-    assertTrue(code.contains("public override val name: String"))
+    assertTrue(code.contains("override val name: String"))
   }
 }

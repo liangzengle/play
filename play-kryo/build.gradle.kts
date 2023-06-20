@@ -1,5 +1,5 @@
 dependencies {
-  api(Deps.Kryo)
-  api(Deps.TsConfig)
-  api(Deps.Slf4j.Api)
+  api(libs.kryo)
+  api(libs.config)
+  api(libs.slf4j.api)
 }

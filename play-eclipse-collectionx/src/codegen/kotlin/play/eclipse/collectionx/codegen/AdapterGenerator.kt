@@ -81,7 +81,7 @@ class AdapterGenerator {
         }
       }
       .apply {
-        for ((elemType, collectionType) in Types.listTypes + Types.immutableListTypes) {
+        for ((elemType, collectionType) in Types.listTypes.entries + Types.immutableListTypes.entries) {
           addFunction(
             FunSpec.builder("asJava")
               .receiver(collectionType)
@@ -92,7 +92,7 @@ class AdapterGenerator {
         }
       }
       .apply {
-        for ((elemType, collectionType) in Types.setTypes + Types.immutableSetTypes) {
+        for ((elemType, collectionType) in Types.setTypes.entries + Types.immutableSetTypes.entries) {
           addFunction(
             FunSpec.builder("asJava")
               .receiver(collectionType)
@@ -103,7 +103,8 @@ class AdapterGenerator {
         }
       }
       .apply {
-        for ((keyType, valueType, mapType) in Types.mapTypes + Types.immutableMapTypes) {
+        for ((kv, mapType) in Types.mapTypes.entries + Types.immutableMapTypes.entries) {
+          val (keyType, valueType) = kv
           addFunction(
             FunSpec.builder("asJava")
               .apply {
@@ -118,9 +119,11 @@ class AdapterGenerator {
                   Types.isObj(keyType) -> {
                     mapType.asTypeName().parameterizedBy(K)
                   }
+
                   Types.isObj(valueType) -> {
                     mapType.asTypeName().parameterizedBy(V)
                   }
+
                   else -> mapType.asTypeName()
                 }
               )
@@ -129,9 +132,11 @@ class AdapterGenerator {
                   Types.isObj(keyType) -> {
                     Map::class.asTypeName().parameterizedBy(K, valueType.asTypeName())
                   }
+
                   Types.isObj(valueType) -> {
                     Map::class.asTypeName().parameterizedBy(keyType.asTypeName(), V)
                   }
+
                   else -> Map::class.parameterizedBy(keyType, valueType)
                 }
               )
@@ -143,40 +148,41 @@ class AdapterGenerator {
 
       // mutable
       .apply {
-        for ((_, collectionType) in Types.mutableCollectionTypes) {
+        for ((elemType, collectionType) in Types.mutableCollectionTypes) {
           addFunction(
             FunSpec.builder("asJava")
               .receiver(collectionType)
-//              .returns(Collection::class.parameterizedBy(elemType))
+              .returns(MUTABLE_COLLECTION.parameterizedBy(elemType.asTypeName()))
               .addStatement("return %T(this)", typeOfMutableCollection(collectionType))
               .build()
           )
         }
       }
       .apply {
-        for ((_, collectionType) in Types.mutableListTypes) {
+        for ((elemType, collectionType) in Types.mutableListTypes) {
           addFunction(
             FunSpec.builder("asJava")
               .receiver(collectionType)
-//              .returns(List::class.parameterizedBy(elemType))
+              .returns(MUTABLE_LIST.parameterizedBy(elemType.asTypeName()))
               .addStatement("return %T(this)", typeOfMutableList(collectionType))
               .build()
           )
         }
       }
       .apply {
-        for ((_, collectionType) in Types.mutableSetTypes) {
+        for ((elemType, collectionType) in Types.mutableSetTypes) {
           addFunction(
             FunSpec.builder("asJava")
               .receiver(collectionType)
-//              .returns(Set::class.parameterizedBy(elemType))
+              .returns(MUTABLE_SET.parameterizedBy(elemType.asTypeName()))
               .addStatement("return %T(this)", typeOfMutableSet(collectionType))
               .build()
           )
         }
       }
       .apply {
-        for ((keyType, valueType, mapType) in Types.mutableMapTypes) {
+        for ((kv, mapType) in Types.mutableMapTypes) {
+          val (keyType, valueType) = kv
           addFunction(
             FunSpec.builder("asJava")
               .apply {
@@ -191,23 +197,27 @@ class AdapterGenerator {
                   Types.isObj(keyType) -> {
                     mapType.asTypeName().parameterizedBy(K)
                   }
+
                   Types.isObj(valueType) -> {
                     mapType.asTypeName().parameterizedBy(V)
                   }
+
                   else -> mapType.asTypeName()
                 }
               )
-//              .returns(
-//                when {
-//                  Types.isObj(keyType) -> {
-//                    Map::class.asTypeName().parameterizedBy(K, valueType.asTypeName())
-//                  }
-//                  Types.isObj(valueType) -> {
-//                    Map::class.asTypeName().parameterizedBy(keyType.asTypeName(), V)
-//                  }
-//                  else -> Map::class.parameterizedBy(keyType, valueType)
-//                }
-//              )
+              .returns(
+                when {
+                  Types.isObj(keyType) -> {
+                    MUTABLE_MAP.parameterizedBy(K, valueType.asTypeName())
+                  }
+
+                  Types.isObj(valueType) -> {
+                    MUTABLE_MAP.parameterizedBy(keyType.asTypeName(), V)
+                  }
+
+                  else -> MUTABLE_MAP.parameterizedBy(keyType.asTypeName(), valueType.asTypeName())
+                }
+              )
               .addStatement("return %T(this)", typeOfMutableMap(mapType))
               .build()
           )

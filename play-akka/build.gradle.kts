@@ -1,9 +1,9 @@
 dependencies {
-  api(Deps.Akka.Actor)
-  api(Deps.Akka.Cluster)
+  api(libs.akka.actor)
+  api(libs.akka.cluster)
   api(project(":play-scala-compact"))
   compileOnly(project(":play-core"))
   compileOnly(project(":play-kryo"))
-  compileOnly(Deps.Akka.Serialization.Jackson)
-  compileOnly(Deps.Akka.Serialization.Kryo)
+  compileOnly(libs.akka.jackson)
+  compileOnly(libs.akka.kryo)
 }

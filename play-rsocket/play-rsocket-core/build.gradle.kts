@@ -1,13 +1,13 @@
 dependencies {
   api(project(":play-rsocket-common"))
   api(project(":play-kryo"))
-  api(Deps.Slf4j.Api)
-  api(Deps.RSocket.Core)
-  api(Deps.RSocket.Transport.Netty)
+  api(libs.slf4j.api)
+  api(libs.reactor)
+  api(libs.rsocket.transport.netty)
 
-  implementation(Deps.ByteBuddy)
-  implementation(kotlin("reflect"))
+  implementation(libs.bytebuddy)
+  implementation(libs.kotlin.reflect)
 
-  testImplementation(Deps.Kryo)
-  testImplementation(Deps.Assertj.Core)
+  testImplementation(libs.kryo)
+  testImplementation(libs.assertj.core)
 }

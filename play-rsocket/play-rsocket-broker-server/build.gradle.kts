@@ -27,8 +27,8 @@ tasks.startScripts {
 
 dependencies {
   implementation(project(":play-rsocket-broker-spring"))
-  implementation(Deps.SpringBoot.Starter) {
+  implementation(libs.springboot.starter.asProvider()) {
     exclude("org.springframework.boot", module = "spring-boot-starter-logging")
   }
-  implementation(Deps.SpringBoot.StarterLog4j2)
+  implementation(libs.springboot.starter.log4j2)
 }

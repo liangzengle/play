@@ -88,6 +88,7 @@ class MutableListGenerator {
       )
       .addFunction(
         FunSpec.builder("remove")
+          .returns(BOOLEAN)
           .addModifiers(KModifier.OVERRIDE)
           .addParameter("element", elemType)
           .addStatement("return underlying.remove(element)")
@@ -95,6 +96,7 @@ class MutableListGenerator {
       )
       .addFunction(
         FunSpec.builder("removeAt")
+          .returns(elemType)
           .addModifiers(KModifier.OVERRIDE)
           .addParameter("index", Int::class)
           .addStatement("return underlying.removeAtIndex(index)")
@@ -102,6 +104,7 @@ class MutableListGenerator {
       )
       .addFunction(
         FunSpec.builder("set")
+          .returns(elemType)
           .addModifiers(KModifier.OVERRIDE)
           .addParameter("index", Int::class)
           .addParameter("element", elemType)
@@ -117,7 +120,7 @@ class MutableListGenerator {
       .addFunction(
         FunSpec.builder("toString")
           .addModifiers(KModifier.OVERRIDE)
-          .returns(String::class)
+          .returns(STRING)
           .addStatement("return underlying.toString()")
           .build()
       )

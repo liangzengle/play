@@ -1,23 +1,21 @@
 package play.plugin.modularcode
 
 import com.google.auto.service.AutoService
-import org.jetbrains.kotlin.codegen.ClassBuilder
-import org.jetbrains.kotlin.codegen.ClassBuilderFactory
-import org.jetbrains.kotlin.codegen.ClassBuilderMode
-import org.jetbrains.kotlin.codegen.DelegatingClassBuilder
-import org.jetbrains.kotlin.codegen.extensions.ClassBuilderInterceptorExtension
+import org.jetbrains.kotlin.backend.jvm.codegen.AnnotationCodegen.Companion.annotationClass
+import org.jetbrains.kotlin.backend.jvm.extensions.ClassGenerator
+import org.jetbrains.kotlin.backend.jvm.extensions.ClassGeneratorExtension
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.diagnostics.DiagnosticSink
+import org.jetbrains.kotlin.ir.declarations.IrClass
+import org.jetbrains.kotlin.ir.declarations.IrField
+import org.jetbrains.kotlin.ir.declarations.IrFunction
+import org.jetbrains.kotlin.ir.util.fqNameForIrSerialization
+import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
+import org.jetbrains.kotlin.ir.util.kotlinFqName
+import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOrigin
-import org.jetbrains.org.objectweb.asm.FieldVisitor
-import org.jetbrains.org.objectweb.asm.MethodVisitor
-import org.jetbrains.org.objectweb.asm.Opcodes
+import org.jetbrains.org.objectweb.asm.*
 import java.lang.reflect.Modifier
 
 @OptIn(ExperimentalCompilerApi::class)
@@ -30,118 +28,122 @@ class ModularCodeComponentRegistrar : CompilerPluginRegistrar() {
     if (configuration.get(ModularCodeConfigurationKeys.KEY_ENABLED) == false) {
       return
     }
-    ClassBuilderInterceptorExtension.registerExtension(
+    ClassGeneratorExtension.registerExtension(
       ModularCodeClassGeneratorInterceptor(configuration[ModularCodeConfigurationKeys.KEY_ANNOTATION]!!)
     )
   }
 }
 
-class ModularCodeClassGeneratorInterceptor(annotation: String) : ClassBuilderInterceptorExtension {
+class ModularCodeClassGeneratorInterceptor(annotation: String) : ClassGeneratorExtension {
   private val annotationFqName = FqName(annotation)
 
-  override fun interceptClassBuilderFactory(
-    interceptedFactory: ClassBuilderFactory,
-    bindingContext: BindingContext,
-    diagnostics: DiagnosticSink
-  ): ClassBuilderFactory {
-    return object : ClassBuilderFactory {
-      override fun getClassBuilderMode(): ClassBuilderMode {
-        return interceptedFactory.classBuilderMode
+  override fun generateClass(generator: ClassGenerator, declaration: IrClass?): ClassGenerator {
+    if (declaration == null || declaration.annotations.none { it.annotationClass.fqNameForIrSerialization == annotationFqName }) {
+      return generator
+    }
+    return object : ClassGenerator {
+      override fun defineClass(
+        version: Int,
+        access: Int,
+        name: String,
+        signature: String?,
+        superName: String,
+        interfaces: Array<out String>
+      ) {
+        generator.defineClass(version, access, name, signature, superName, interfaces)
       }
 
-      override fun newClassBuilder(origin: JvmDeclarationOrigin): ClassBuilder {
-        return if (origin.descriptor?.annotations?.hasAnnotation(annotationFqName) == true) {
-          ModularCodeClassBuilder(interceptedFactory.newClassBuilder(origin))
+      override fun done(generateSmapCopyToAnnotation: Boolean) {
+        generator.done(generateSmapCopyToAnnotation)
+      }
+
+      override fun newField(
+        declaration: IrField?,
+        access: Int,
+        name: String,
+        desc: String,
+        signature: String?,
+        value: Any?
+      ): FieldVisitor {
+        if (declaration == null) {
+          return generator.newField(null, access, name, desc, signature, value)
+        }
+        return if (Modifier.isPublic(access) && declaration.isStatic && declaration.isFinal) {
+          throw IllegalStateException("$signature can not be public static final")
         } else {
-          interceptedFactory.newClassBuilder(origin)
+          generator.newField(declaration, access, name, desc, signature, value)
         }
       }
 
-      override fun asText(builder: ClassBuilder): String {
-        return when (builder) {
-          is ModularCodeClassBuilder -> interceptedFactory.asText(builder.classBuilder)
-          else -> interceptedFactory.asText(builder)
-        }
-      }
+      override fun newMethod(
+        declaration: IrFunction?,
+        access: Int,
+        name: String,
+        desc: String,
+        signature: String?,
+        exceptions: Array<out String>?
+      ): MethodVisitor {
+        val origin = generator.newMethod(declaration, access, name, desc, signature, exceptions)
+        return if ("<clinit>" != name) {
+          origin
+        } else {
+          checkNotNull(declaration)
+          println("declaration.parentAsClass.name: ${declaration.parentAsClass.name}")
+          println("declaration.parentAsClass.fqNameForIrSerialization: ${declaration.parentAsClass.fqNameForIrSerialization}")
+          println("declaration.parentAsClass.fqNameWhenAvailable: ${declaration.parentAsClass.fqNameWhenAvailable}")
+          println("declaration.parentAsClass.kotlinFqName: ${declaration.parentAsClass.kotlinFqName}")
+          val owner = declaration.parentAsClass.fqNameForIrSerialization.toString().replace('.', '/')
+          object : MethodVisitor(Opcodes.ASM7, origin) {
 
-      override fun asBytes(builder: ClassBuilder): ByteArray {
-        return when (builder) {
-          is ModularCodeClassBuilder -> interceptedFactory.asBytes(builder.classBuilder)
-          else -> interceptedFactory.asBytes(builder)
-        }
-      }
+            override fun visitIntInsn(opcode: Int, `var`: Int) {
+              super.visitIntInsn(opcode, `var`)
+              when (opcode) {
+                Opcodes.BIPUSH, Opcodes.SIPUSH, Opcodes.LDC -> intercept()
+              }
+            }
 
-      override fun close() {
-        return interceptedFactory.close()
-      }
-    }
-  }
-}
+            override fun visitInsn(opcode: Int) {
+              super.visitInsn(opcode)
+              when (opcode) {
+                Opcodes.ICONST_1, Opcodes.ICONST_2, Opcodes.ICONST_3, Opcodes.ICONST_4, Opcodes.ICONST_5 -> intercept()
+              }
+            }
 
-class ModularCodeClassBuilder(val classBuilder: ClassBuilder) :
-  DelegatingClassBuilder() {
-  override fun getDelegate(): ClassBuilder {
-    return classBuilder
-  }
-
-  override fun newField(
-    origin: JvmDeclarationOrigin,
-    access: Int,
-    name: String,
-    desc: String,
-    signature: String?,
-    value: Any?
-  ): FieldVisitor {
-    return if (value is Int && Modifier.isFinal(access) && Modifier.isStatic(access) && Modifier.isPublic(access)) {
-      throw IllegalStateException("${origin.descriptor} can not be final")
-    } else {
-      super.newField(origin, access, name, desc, signature, value)
-    }
-  }
-
-  override fun newMethod(
-    origin: JvmDeclarationOrigin,
-    access: Int,
-    name: String,
-    desc: String,
-    signature: String?,
-    exceptions: Array<out String>?
-  ): MethodVisitor {
-    val original = super.newMethod(origin, access, name, desc, signature, exceptions)
-    return if ("<clinit>" != name) {
-      original
-    } else {
-      val classDescriptor = origin.descriptor as ClassDescriptor
-      val owner = classDescriptor.fqNameSafe.toString().replace('.', '/')
-      object : MethodVisitor(Opcodes.ASM7, original) {
-
-        override fun visitIntInsn(opcode: Int, `var`: Int) {
-          super.visitIntInsn(opcode, `var`)
-          when (opcode) {
-            Opcodes.BIPUSH, Opcodes.SIPUSH, Opcodes.LDC -> intercept()
+            private fun intercept() {
+              super.visitVarInsn(Opcodes.ALOAD, 0)
+              super.visitMethodInsn(
+                Opcodes.INVOKEVIRTUAL,
+                owner,
+                "getModuleId",
+                "()S",
+                false
+              )
+              super.visitIntInsn(Opcodes.SIPUSH, 1000)
+              super.visitInsn(Opcodes.IMUL)
+              super.visitInsn(Opcodes.IADD)
+            }
           }
         }
+      }
 
-        override fun visitInsn(opcode: Int) {
-          super.visitInsn(opcode)
-          when (opcode) {
-            Opcodes.ICONST_1, Opcodes.ICONST_2, Opcodes.ICONST_3, Opcodes.ICONST_4, Opcodes.ICONST_5 -> intercept()
-          }
-        }
+      override fun newRecordComponent(name: String, desc: String, signature: String?): RecordComponentVisitor {
+        return generator.newRecordComponent(name, desc, signature)
+      }
 
-        private fun intercept() {
-          super.visitVarInsn(Opcodes.ALOAD, 0)
-          super.visitMethodInsn(
-            Opcodes.INVOKEVIRTUAL,
-            owner,
-            "getModuleId",
-            "()S",
-            false
-          )
-          super.visitIntInsn(Opcodes.SIPUSH, 1000)
-          super.visitInsn(Opcodes.IMUL)
-          super.visitInsn(Opcodes.IADD)
-        }
+      override fun visitAnnotation(desc: String, visible: Boolean): AnnotationVisitor {
+        return generator.visitAnnotation(desc, visible)
+      }
+
+      override fun visitEnclosingMethod(owner: String, name: String?, desc: String?) {
+        return generator.visitEnclosingMethod(owner, name, desc)
+      }
+
+      override fun visitInnerClass(name: String, outerName: String?, innerName: String?, access: Int) {
+        return generator.visitInnerClass(name, outerName, innerName, access)
+      }
+
+      override fun visitSource(name: String, debug: String?) {
+        return generator.visitSource(name, debug)
       }
     }
   }

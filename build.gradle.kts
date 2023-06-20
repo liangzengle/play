@@ -2,25 +2,11 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-buildscript {
-  repositories {
-    mavenLocal()
-    mavenCentral()
-    maven("https://maven.aliyun.com/repository/public/")
-    maven("https://maven.aliyun.com/repository/gradle-plugin")
-    maven("https://plugins.gradle.org/m2/")
-  }
-
-  dependencies {
-    classpath(Deps.Kotlin.Gradle)
-//    classpath(Deps.Kotlin.AllOpen)
-    classpath(Deps.KtlintGradle)
-  }
-}
-
 plugins {
   `java-library`
-  id("com.google.devtools.ksp") version Versions.Ksp apply false
+  id("com.google.devtools.ksp") version libs.versions.ksp.get() apply false
+  alias(libs.plugins.ktlint) apply false
+  kotlin("jvm") version libs.versions.kotlin.asProvider().get() apply false
 }
 
 subprojects {
@@ -49,13 +35,11 @@ subprojects {
   val testImplementation by configurations
 
   dependencies {
-    api(Deps.Kotlin.Jvm)
-    api(Deps.Kotlin.Reflect)
-    api(Deps.AutoService)
+    api(rootProject.libs.kotlin.jvm)
+    api(rootProject.libs.kotlin.reflect)
+    api(rootProject.libs.auto.service)
 
-    testImplementation(Deps.Junit.JupiterEngine)
-    testImplementation(Deps.Junit.JupiterApi)
-    testImplementation(Deps.Junit.Jupiter)
+    testImplementation(rootProject.libs.bundles.junit)
   }
 
   tasks {
@@ -71,7 +55,7 @@ subprojects {
     }
   }
 
-  val javaVersion = JavaVersion.VERSION_17
+  val javaVersion = JavaVersion.VERSION_19
   java {
     sourceCompatibility = javaVersion
     targetCompatibility = javaVersion

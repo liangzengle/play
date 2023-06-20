@@ -3,6 +3,7 @@ syntax = "proto3";
 package play;
 
 import "google/protobuf/descriptor.proto";
+import "wire/extensions.proto";
 
 message MessageOptions {
   repeated string implements = 1;
@@ -21,19 +22,19 @@ extend google.protobuf.FieldOptions {
 }
 
 message IntListValue {
-  repeated int32 value = 1;
+  repeated int32 value = 1 [wire.use_array = true];
 }
 
 message LongListValue {
-  repeated int64 value = 1;
+  repeated int64 value = 1 [wire.use_array = true];
 }
 
 message FloatListValue {
-  repeated float value = 1;
+  repeated float value = 1 [wire.use_array = true];
 }
 
 message DoubleListValue {
-  repeated double value = 1;
+  repeated double value = 1 [wire.use_array = true];
 }
 
 message IntIntMapValue {

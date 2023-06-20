@@ -10,13 +10,13 @@ fun <K : Any, V : Any> Sequence<Pair<K, V>>.toImmutableMap(): Map<K, V> {
   return builder.build()
 }
 
-fun <T> Sequence<T>.toImmutableSet(): Set<T> {
+fun <T: Any> Sequence<T>.toImmutableSet(): Set<T> {
   val builder = ImmutableSet.builder<T>()
   forEach { builder.add(it) }
   return builder.build()
 }
 
-fun <T> Sequence<T>.toImmutableList(): List<T> {
+fun <T: Any> Sequence<T>.toImmutableList(): List<T> {
   val builder = ImmutableList.builder<T>()
   forEach { builder.add(it) }
   return builder.build()

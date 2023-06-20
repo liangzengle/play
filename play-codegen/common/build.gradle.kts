@@ -2,11 +2,11 @@ import org.jetbrains.kotlin.gradle.tasks.*
 
 dependencies {
   api(project(":play-codegen-annotations"))
-  api(Deps.Kotlin.Reflect)
-  api(Deps.KotlinPoet.Poet)
-  api(Deps.KotlinPoet.Metadata)
-  api(Deps.KotlinPoet.Ksp)
-  api(Deps.Ksp)
+  api(libs.kotlin.reflect)
+  api(libs.kotlinpoet.asProvider())
+  api(libs.kotlinpoet.metadata)
+  api(libs.kotlinpoet.ksp)
+  api(libs.ksp)
 }
 
 tasks.withType<KotlinCompile> {

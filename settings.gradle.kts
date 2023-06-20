@@ -44,10 +44,6 @@ include("play-kryo")
 include("play-dokka")
 include("play-wire")
 
-includeProject("play-httpclient-api", "play-httpclient")
-includeProject("play-httpclient-async", "play-httpclient")
-includeProject("play-httpclient-ktor", "play-httpclient")
-
 includeProject("play-rsocket-common", "play-rsocket")
 includeProject("play-rsocket-core", "play-rsocket")
 includeProject("play-rsocket-broker", "play-rsocket")

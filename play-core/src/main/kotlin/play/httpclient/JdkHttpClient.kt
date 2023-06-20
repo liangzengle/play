@@ -1,8 +1,6 @@
-package play.util.http
+package play.httpclient
 
 import org.reactivestreams.FlowAdapters
-import play.httpclient.PlayHttpClient
-import play.httpclient.UnsuccessfulStatusCodeException
 import play.util.concurrent.Future.Companion.toPlay
 import play.util.logging.Logger
 import play.util.mkStringTo

@@ -17,9 +17,9 @@ gradlePlugin {
 }
 
 dependencies {
-  implementation(Deps.Kotlin.GradleApi)
-  implementation(Deps.Kotlin.Compiler)
-  implementation(Deps.Kotlin.Reflect)
+  implementation(libs.kotlin.gradle.api)
+  implementation(libs.kotlin.compiler)
+  implementation(libs.kotlin.reflect)
 }
 
 publishing {

@@ -4,7 +4,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.wire.WireCompiler
-import play.wire.com.squareup.wire.koltin.KotlinGenerator
+import play.wire.com.squareup.wire.kotlin.KotlinGenerator
 import com.squareup.wire.schema.*
 import okio.Path
 import java.io.IOException

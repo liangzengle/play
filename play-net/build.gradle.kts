@@ -1,7 +1,7 @@
 dependencies {
   implementation(project(":play-core"))
 
-  api(Deps.Netty.Handler)
-  api(Deps.Netty.CodecHttp)
-  api(Deps.Netty.Epoll)
+  api(libs.netty.handler)
+  api(libs.netty.http)
+  api(libs.netty.epoll)
 }

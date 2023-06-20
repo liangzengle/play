@@ -1,6 +1,5 @@
-package play.util.http
+package play.httpclient
 
-import play.httpclient.UnsuccessfulStatusCodeException
 import java.net.http.HttpResponse
 
 fun <T> HttpResponse<T>.isSuccess() = statusCode() in 200..299

@@ -1,0 +1,177 @@
+[versions]
+akka = "2.6.21"
+akka-kryo = "2.5.0"
+asm = "9.5"
+assertj = "3.24.2"
+autos-service = "1.1.1"
+autos-service-ksp = "1.0.0"
+bson4jackson = "2.13.1"
+bytebuddy = "1.14.5"
+caffeine = "3.1.6"
+checker = "3.35.0"
+classgraph = "4.8.160"
+dokka = "1.8.20"
+eclipse-collections = "11.1.0"
+guava = "32.0.1-jre"
+hibernate = "8.0.1.Final"
+jackson = "2.15.2"
+jakarta-el-api = "5.0.1"
+jakarta-el = "5.0.0"
+jctools = "4.0.1"
+jmh = "1.36"
+junit = "5.9.3"
+kotlin = "1.9.0-RC"
+kotlin-logging = "3.0.5"
+kotlinpoet = "1.14.2"
+kotlinx-serialization = "1.5.1"
+ksp = "1.9.0-RC-1.0.11"
+kryo = "5.5.0"
+ktlint = "11.4.2"
+ktor = "2.3.1"
+log4j = "2.20.0"
+logback = "1.4.8"
+micrometer = "1.11.1"
+mongodb = "4.10.1"
+mvel = "2.5.0.Final"
+netty = "4.1.94.Final"
+protobuf = "3.23.3"
+reactor = "3.5.7"
+rsocket = "1.1.4"
+rxjava = "3.1.6"
+scala = "2.13.11"
+scala-java8 = "1.0.2"
+slf4j = "2.0.7"
+springboot = "3.1.1"
+config = "1.4.2"
+unsafeaccessor = "1.7.0"
+wire = "4.7.2"
+
+[libraries]
+akka-actor = { module = "com.typesafe.akka:akka-actor-typed_2.13", version.ref = "akka" }
+akka-cluster = { module = "com.typesafe.akka:akka-cluster-typed_2.13", version.ref = "akka" }
+akka-jackson = { module = "com.typesafe.akka:akka-serialization-jackson_2.13", version.ref = "akka" }
+akka-kryo = { module = "io.altoo:akka-kryo-serialization_2.13", version.ref = "akka-kryo" }
+
+asm = { module = "org.ow2.asm:asm", version.ref = "asm" }
+
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+
+auto-service = { module = "com.google.auto.service:auto-service", version.ref = "autos-service" }
+auto-service-ksp = { module = "dev.zacsweers.autoservice:auto-service-ksp", version.ref = "autos-service-ksp" }
+
+bytebuddy = { module = "net.bytebuddy:byte-buddy", version.ref = "bytebuddy" }
+
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "caffeine" }
+
+checker = { module = "org.checkerframework:checker", version.ref = "checker" }
+
+classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
+
+config = { module = "com.typesafe:config", version.ref = "config" }
+
+dokka-core = { module = "org.jetbrains.dokka:dokka-core", version.ref = "dokka" }
+dokka-base = { module = "org.jetbrains.dokka:dokka-base", version.ref = "dokka" }
+dokka-test-api = { module = "org.jetbrains.dokka:dokka-test-api", version.ref = "dokka" }
+dokka-test-utils = { module = "org.jetbrains.dokka:dokka-base-test-utils", version.ref = "dokka" }
+
+eclipse-collections-api = { module = "org.eclipse.collections:eclipse-collections-api", version.ref = "eclipse-collections" }
+eclipse-collections = { module = "org.eclipse.collections:eclipse-collections", version.ref = "eclipse-collections" }
+
+jakarta-el-api = { module = "jakarta.el:jakarta.el-api", version.ref = "jakarta-el-api" }
+jakarta-el-impl = { module = "org.glassfish.expressly:expressly", version.ref = "jakarta-el" }
+
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
+
+hebernate-validator = { module = "org.hibernate.validator:hibernate-validator", version.ref = "hibernate" }
+hebernate-validator-ap = { module = "org.hibernate.validator:hibernate-validator-annotation-processor", version.ref = "hibernate" }
+
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
+jackson-scala = { module = "com.fasterxml.jackson.module:jackson-module-scala_2.13", version.ref = "jackson" }
+jackson-eclipsecollections = { module = "com.fasterxml.jackson.datatype:jackson-datatype-eclipse-collections", version.ref = "jackson" }
+jackson-guava = { module = "com.fasterxml.jackson.datatype:jackson-datatype-guava", version.ref = "jackson" }
+jackson-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref = "jackson" }
+jackson-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+jackson-bson = { module = "de.undercouch:bson4jackson", version.ref = "bson4jackson" }
+
+jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
+
+jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+
+kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
+kotlin-jvm = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlin-gradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-gradle-api = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
+
+kotlin-logging = { module = "io.github.microutils:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+
+kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
+kotlinpoet-metadata = { module = "com.squareup:kotlinpoet-metadata", version.ref = "kotlinpoet" }
+kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
+
+kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf-jvm", version.ref = "kotlinx-serialization" }
+
+kryo = { module = "com.esotericsoftware:kryo", version.ref = "kryo" }
+
+ksp = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
+
+ktor-client-core = { module = "io.ktor:ktor-client-core-jvm", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+
+log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4j" }
+
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+micrometer = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+
+monogo-driver-rx = { module = "org.mongodb:mongodb-driver-reactivestreams", version.ref = "mongodb" }
+
+mvel = { module = "org.mvel:mvel2", version.ref = "mvel" }
+
+netty-buffer = { module = "io.netty:netty-buffer", version.ref = "netty" }
+netty-epoll = { module = "io.netty:netty-transport-native-epoll", version.ref = "netty" }
+netty-handler = { module = "io.netty:netty-handler", version.ref = "netty" }
+netty-http = { module = "io.netty:netty-codec-http", version.ref = "netty" }
+netty-util = { module = "io.netty:netty-util", version.ref = "netty" }
+
+reactor = { module = "io.projectreactor:reactor-core", version.ref = "reactor" }
+
+rsocket-core = { module = "io.rsocket:rsocket-core", version.ref = "rsocket" }
+rsocket-transport-netty = { module = "io.rsocket:rsocket-transport-netty", version.ref = "rsocket" }
+rsocket-transport-local = { module = "io.rsocket:rsocket-transport-local", version.ref = "rsocket" }
+
+rxjava = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxjava" }
+
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+
+scala = { module = "org.scala-lang:scala-library", version.ref = "scala" }
+scala-java8 = { module = "org.scala-lang.modules:scala-java8-compat_2.13", version.ref = "scala-java8" }
+
+springboot-starter = { module = "org.springframework.boot:spring-boot-starter", version.ref = "springboot" }
+springboot-starter-log4j2 = { module = "org.springframework.boot:spring-boot-starter-log4j2", version.ref = "springboot" }
+
+wire-runtime = { module = "com.squareup.wire:wire-runtime-jvm", version.ref = "wire" }
+wire-schema = { module = "com.squareup.wire:wire-schema-jvm", version.ref = "wire" }
+wire-compiler = { module = "com.squareup.wire:wire-compiler", version.ref = "wire" }
+wire-generator-kotlin = { module = "com.squareup.wire:wire-kotlin-generator", version.ref = "wire" }
+wire-grpc-client = { module = "com.squareup.wire:wire-grpc-client", version.ref = "wire" }
+wire-grpc-server = { module = "com.squareup.wire:wire-grpc-server-generator", version.ref = "wire" }
+wire-schema-tests = { module = "com.squareup.wire:wire-schema-tests", version.ref = "wire" }
+
+unsafeaccessor = { module = "io.github.karlatemp:unsafe-accessor", version.ref = "unsafeaccessor" }
+
+[bundles]
+dokka = ["dokka-base", "dokka-core", "dokka-test-api", "dokka-test-utils"]
+el = ["mvel", "jakarta-el-api", "jakarta-el-impl"]
+jackson = ["jackson-databind", "jackson-kotlin", "jackson-scala", "jackson-eclipsecollections", "jackson-guava", "jackson-jdk8", "jackson-jsr310"]
+junit = ["junit-jupiter-engine", "junit-jupiter-api", "junit-jupiter"]
+
+[plugins]
+kotlin = { id = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint-idea", version.ref = "ktlint" }

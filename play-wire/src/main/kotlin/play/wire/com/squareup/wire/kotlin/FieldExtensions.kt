@@ -17,7 +17,7 @@
 /**
  * Extension functions/properties for the Field class
  */
-package play.wire.com.squareup.wire.koltin
+package play.wire.com.squareup.wire.kotlin
 
 import com.squareup.wire.schema.Field
 import com.squareup.wire.schema.ProtoType

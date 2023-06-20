@@ -2,7 +2,7 @@
 end_of_line = lf
 charset = utf-8
 
-[*.{kt, kts}]
+[*.{kt,kts}]
 indent_size = 2
 indent_style = space
 insert_final_newline = true

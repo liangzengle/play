@@ -55,6 +55,7 @@ class MutableSetGenerator {
       )
       .addFunction(
         FunSpec.builder("remove")
+          .returns(BOOLEAN)
           .addModifiers(KModifier.OVERRIDE)
           .addParameter("element", elemType)
           .addStatement("return underlying.remove(element)")
@@ -62,6 +63,7 @@ class MutableSetGenerator {
       )
       .addFunction(
         FunSpec.builder("contains")
+          .returns(BOOLEAN)
           .addModifiers(KModifier.OVERRIDE)
           .addParameter("element", elemType)
           .addStatement("return underlying.contains(element)")

@@ -28,7 +28,8 @@ class FactoryExtensionGenerator {
     return Types.primitiveTypes.map { type ->
       FunSpec.builder("copyToArray")
         .receiver(List::class.parameterizedBy(type))
-        .addStatement("return %LArray(size) { this[it] }", type.simpleName!!)
+        .returns(Types.primitiveArrayTypes[type]!!)
+        .addStatement("return %T(size) { this[it] }", Types.primitiveArrayTypes[type]!!)
         .build()
     }
   }
@@ -38,6 +39,7 @@ class FactoryExtensionGenerator {
       FunSpec.builder("ofList")
         .receiver(factoryType)
         .addParameter("list", List::class.parameterizedBy(elementType))
+        .returns(Types.immutableListTypes[elementType]!!)
         .addStatement("return %M(*list.copyToArray())", Types.newListWith)
         .build()
     }
@@ -46,11 +48,14 @@ class FactoryExtensionGenerator {
   private fun ofAllMapExtensions(): List<FunSpec> {
     val K = TypeVariableName("K")
     val V = TypeVariableName("V")
-    return Types.immutableMapFactoryTypes.map { (keyType, valueType, factoryType) ->
+    return Types.immutableMapFactoryTypes.map { (kv, factoryType) ->
+      val (keyType, valueType) = kv
+      val rawMapType = Types.immutableMapTypes[kv]!!
       if(Types.isObj(keyType) && Types.isObj(valueType)) {
         FunSpec.builder("ofAll")
           .addTypeVariables(listOf(K, V))
           .receiver(factoryType)
+          .returns(rawMapType.parameterizedBy(keyType, valueType))
           .addParameter("map", Map::class.asClassName().parameterizedBy(K, V))
           .addStatement("return %T.immutable.from(map.entries, { it.key }, { it.value })", getMapsType(keyType, valueType))
           .build()
@@ -58,6 +63,7 @@ class FactoryExtensionGenerator {
         FunSpec.builder("ofAll")
           .addTypeVariable(K)
           .receiver(factoryType)
+          .returns(rawMapType.parameterizedBy(keyType))
           .addParameter("map", Map::class.asClassName().parameterizedBy(K, valueType.asClassName()))
           .addStatement("return %T.immutable.from(map.entries, { it.key }, { it.value })", getMapsType(keyType, valueType))
           .build()
@@ -65,12 +71,14 @@ class FactoryExtensionGenerator {
         FunSpec.builder("ofAll")
           .addTypeVariable(V)
           .receiver(factoryType)
+          .returns(rawMapType.parameterizedBy(valueType))
           .addParameter("map", Map::class.asClassName().parameterizedBy(keyType.asClassName(), V))
           .addStatement("return %T.immutable.from(map.entries, { it.key }, { it.value })", getMapsType(keyType, valueType))
           .build()
       } else {
         FunSpec.builder("ofAll")
           .receiver(factoryType)
+          .returns(rawMapType)
           .addParameter("map", Map::class.parameterizedBy(keyType, valueType))
           .addStatement("return %T.immutable.from(map.entries, { it.key }, { it.value })", getMapsType(keyType, valueType))
           .build()

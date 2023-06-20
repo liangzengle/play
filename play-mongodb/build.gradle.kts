@@ -1,8 +1,8 @@
 dependencies {
   api(project(":play-db"))
-  api(Deps.MongoDB.Driver)
-  api(Deps.Netty.Handler)
-  api(Deps.Netty.CodecHttp)
-  api(Deps.Netty.Epoll)
-  implementation(Deps.Jackson.Bson)
+  api(libs.monogo.driver.rx)
+  api(libs.netty.handler)
+  api(libs.netty.buffer)
+  api(libs.netty.epoll)
+  implementation(libs.jackson.bson)
 }

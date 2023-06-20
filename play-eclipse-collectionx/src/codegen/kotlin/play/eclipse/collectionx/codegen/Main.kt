@@ -77,7 +77,8 @@ fun main(args: Array<String>) {
   }
   // immutable map
   val immutableMapGenerator = ImmutableMapGenerator()
-  Types.mapTypes.forEach { (keyType, valueType, collectionType) ->
+  Types.mapTypes.forEach { (kv, collectionType) ->
+    val (keyType, valueType) = kv
     val keySetTypeName = mutableKeySetTypeName(keyType)
     val valueCollectionTypeName = mutableValueCollectionTypeName(valueType)
     val unmodifiableSet = unmodifiableSet(keyType)
@@ -125,7 +126,8 @@ fun main(args: Array<String>) {
   }
   // mutable map
   val mutableMapGenerator = MutableMapGenerator()
-  Types.mutableMapTypes.forEach { (keyType, valueType, collectionType) ->
+  Types.mutableMapTypes.forEach { (kv, collectionType) ->
+    val (keyType, valueType) = kv
     val keySetTypeName = mutableKeySetTypeName(keyType)
     val valueCollectionTypeName = mutableValueCollectionTypeName(valueType)
     val typeSpec =

@@ -1,3 +1,3 @@
 dependencies {
-  api(Deps.Reactor.Core)
+  api(libs.reactor)
 }

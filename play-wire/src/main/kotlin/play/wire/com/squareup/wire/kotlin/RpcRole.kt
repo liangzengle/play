@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package play.wire.com.squareup.wire.koltin
+package play.wire.com.squareup.wire.kotlin
 
 enum class RpcRole {
   /** Generate interfaces best suited to sending outbound calls. */

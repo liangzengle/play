@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.*
 
 dependencies {
   implementation(project(":play-codegen-common"))
-  ksp(Deps.AutoServiceKsp)
+  ksp(libs.auto.service.ksp)
 }
 
 tasks.withType<KotlinCompile> {

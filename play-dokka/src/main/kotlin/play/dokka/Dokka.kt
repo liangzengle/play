@@ -3,6 +3,8 @@ package play.dokka
 import org.jetbrains.dokka.base.testApi.testRunner.BaseAbstractTest
 import org.jetbrains.dokka.model.DModule
 import org.jetbrains.dokka.plugability.DokkaPlugin
+import org.jetbrains.dokka.plugability.DokkaPluginApiPreview
+import org.jetbrains.dokka.plugability.PluginApiPreviewAcknowledgement
 import play.dokka.model.ClassDescriptorList
 import testApi.testRunner.TestDokkaConfigurationBuilder
 import java.io.File
@@ -67,13 +69,20 @@ object Dokka {
         configurationCustomizer()
       }
       val holder = arrayOfNulls<Any>(1)
-      testFromData(cfg, pluginOverrides = listOf(object : DokkaPlugin() {})) {
+      testFromData(cfg, pluginOverrides = listOf(DokkaPluginImpl)) {
         preMergeDocumentablesTransformationStage = { models ->
           holder[0] = transformer(models)
         }
       }
       @Suppress("UNCHECKED_CAST")
       return holder[0] as T
+    }
+  }
+
+  @OptIn(DokkaPluginApiPreview::class)
+  private object DokkaPluginImpl : DokkaPlugin() {
+    override fun pluginApiPreviewAcknowledgement(): PluginApiPreviewAcknowledgement {
+      return PluginApiPreviewAcknowledgement
     }
   }
 }
