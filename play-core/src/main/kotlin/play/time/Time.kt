@@ -1,4 +1,4 @@
-package play.util.time
+package play.time
 
 import play.util.primitive.toIntChecked
 import java.beans.PropertyChangeListener

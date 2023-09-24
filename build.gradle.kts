@@ -55,7 +55,7 @@ subprojects {
     }
   }
 
-  val javaVersion = JavaVersion.VERSION_19
+  val javaVersion = JavaVersion.VERSION_21
   java {
     sourceCompatibility = javaVersion
     targetCompatibility = javaVersion

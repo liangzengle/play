@@ -1,4 +1,4 @@
-package play.util.time
+package play.time
 
 import java.time.format.DateTimeFormatter
 

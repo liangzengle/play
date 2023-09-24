@@ -2,7 +2,7 @@ package play.akka.scheduling
 
 import akka.event.LoggingAdapter
 import com.typesafe.config.Config
-import play.util.time.Time
+import play.time.Time
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.TimeUnit
 

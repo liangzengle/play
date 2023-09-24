@@ -2,7 +2,7 @@ package play.spring
 
 import mu.KLogging
 import play.util.concurrent.PlayFuture
-import play.util.time.Time
+import play.time.Time
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.TimeUnit

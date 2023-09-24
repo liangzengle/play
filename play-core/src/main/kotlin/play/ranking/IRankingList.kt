@@ -1,4 +1,4 @@
-package play.util.ranking
+package play.ranking
 
 import org.eclipse.collections.api.map.primitive.IntObjectMap
 

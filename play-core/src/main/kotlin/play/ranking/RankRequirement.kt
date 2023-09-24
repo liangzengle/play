@@ -1,4 +1,4 @@
-package play.util.ranking
+package play.ranking
 
 /**
  * 排名要求，如第1名要求积分达到100

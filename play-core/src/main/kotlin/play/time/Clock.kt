@@ -1,4 +1,6 @@
-package play.util.time
+@file:JvmName("Clocks")
+
+package play.time
 
 import play.util.primitive.toIntChecked
 import java.time.*

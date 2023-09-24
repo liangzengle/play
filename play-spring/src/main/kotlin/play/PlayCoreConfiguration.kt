@@ -15,7 +15,7 @@ import play.util.concurrent.CommonPool
 import play.util.concurrent.threadFactory
 import play.util.reflect.ClassScanner
 import play.util.reflect.ClassgraphClassScanner
-import play.util.time.Time
+import play.time.Time
 import java.time.Clock
 import java.util.concurrent.*
 

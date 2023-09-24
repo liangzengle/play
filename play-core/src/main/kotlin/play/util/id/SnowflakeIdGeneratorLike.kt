@@ -1,6 +1,6 @@
 package play.util.id
 
-import play.util.time.Time
+import play.time.Time
 
 interface SnowflakeIdGeneratorLike {
 
@@ -24,7 +24,7 @@ interface SnowflakeIdGeneratorLike {
 
   object ClockS : Clock {
     override fun time(): Long {
-      return Time.currentMillis() / 1000
+      return Time.currentSeconds()
     }
   }
 }

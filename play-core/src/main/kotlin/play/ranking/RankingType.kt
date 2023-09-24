@@ -1,4 +1,4 @@
-package play.util.ranking
+package play.ranking
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 

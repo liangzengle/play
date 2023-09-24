@@ -3,9 +3,9 @@ package play.scheduling
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
-import play.util.time.Time
-import play.util.time.Time.toLocalDateTime
-import play.util.time.currentDateTime
+import play.time.Time
+import play.time.Time.toLocalDateTime
+import play.time.currentDateTime
 
 internal class BoundedCronTriggerTest {
 

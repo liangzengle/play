@@ -1,4 +1,4 @@
-package play.util.time
+package play.time
 
 import java.time.Clock
 import java.time.Instant
@@ -18,3 +18,4 @@ internal class DelegatingClock(@JvmField var underlying: Clock) : Clock() {
     return underlying.toString()
   }
 }
+

@@ -1,7 +1,7 @@
-package play.util.time
+package play.time
 
-import play.util.time.Time.betweenDays
-import play.util.time.Time.toMillis
+import play.time.Time.betweenDays
+import play.time.Time.toMillis
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.LocalTime

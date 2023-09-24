@@ -20,11 +20,11 @@ jakarta-el = "5.0.0"
 jctools = "4.0.1"
 jmh = "1.36"
 junit = "5.9.3"
-kotlin = "1.9.0-RC"
+kotlin = "1.9.20-Beta"
 kotlin-logging = "3.0.5"
 kotlinpoet = "1.14.2"
 kotlinx-serialization = "1.5.1"
-ksp = "1.9.0-RC-1.0.11"
+ksp = "1.9.20-Beta-1.0.13"
 kryo = "5.5.0"
 ktlint = "11.4.2"
 ktor = "2.3.1"
@@ -36,6 +36,7 @@ mvel = "2.5.0.Final"
 netty = "4.1.94.Final"
 protobuf = "3.23.3"
 reactor = "3.5.7"
+redisson = "3.23.5"
 rsocket = "1.1.4"
 rxjava = "3.1.6"
 scala = "2.13.11"
@@ -140,6 +141,8 @@ netty-http = { module = "io.netty:netty-codec-http", version.ref = "netty" }
 netty-util = { module = "io.netty:netty-util", version.ref = "netty" }
 
 reactor = { module = "io.projectreactor:reactor-core", version.ref = "reactor" }
+
+redisson = { module = "org.redisson:redisson", version.ref = "redisson" }
 
 rsocket-core = { module = "io.rsocket:rsocket-core", version.ref = "rsocket" }
 rsocket-transport-netty = { module = "io.rsocket:rsocket-transport-netty", version.ref = "rsocket" }

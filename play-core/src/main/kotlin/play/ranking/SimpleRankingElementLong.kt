@@ -1,4 +1,4 @@
-package play.util.ranking
+package play.ranking
 
 data class SimpleRankingElementLong(override val id: Long, val value: Long) : RankingElementLong(),
   Comparable<SimpleRankingElementLong> {

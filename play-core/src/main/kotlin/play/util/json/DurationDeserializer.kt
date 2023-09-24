@@ -2,7 +2,7 @@ package play.util.json
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
-import play.util.time.Time
+import play.time.Time
 import java.time.DateTimeException
 import java.time.Duration
 

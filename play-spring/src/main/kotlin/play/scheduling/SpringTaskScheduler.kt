@@ -2,7 +2,7 @@ package play.scheduling
 
 import org.springframework.scheduling.TaskScheduler
 import org.springframework.scheduling.Trigger
-import play.util.time.Time.toLocalDateTime
+import play.time.Time.toLocalDateTime
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant

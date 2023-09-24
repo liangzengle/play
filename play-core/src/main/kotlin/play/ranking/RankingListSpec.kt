@@ -1,4 +1,4 @@
-package play.util.ranking
+package play.ranking
 
 /**
  *  排行榜指标

@@ -3,6 +3,8 @@ package play.util.ranking
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import play.ranking.RankingListLong
+import play.ranking.SimpleRankingElementLong
 import play.util.json.Json
 import play.util.unsafeCast
 
@@ -12,7 +14,7 @@ import play.util.unsafeCast
  */
 internal class RankingListLongTest {
 
-  private val rankingList = RankingListLong<SimpleRankingElementLong>(TestRankingType.Score.unsafeCast())
+  private val rankingList = RankingListLong<SimpleRankingElementLong>(unsafeCast())
 
   @BeforeEach
   fun setup() {

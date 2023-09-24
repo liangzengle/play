@@ -1,5 +1,3 @@
-@file:Suppress("OVERRIDE_BY_INLINE", "NOTHING_TO_INLINE")
-
 package play.util.logging
 
 import mu.KLogger
@@ -13,7 +11,7 @@ typealias Slf4jLogger = org.slf4j.Logger
  */
 open class Logger(override val underlyingLogger: Slf4jLogger) : KLogger, Slf4jLogger by underlyingLogger {
 
-  private inline fun (() -> Any?).toStringSafe(): String {
+  private fun (() -> Any?).toStringSafe(): String {
     return try {
       invoke().toString()
     } catch (e: Exception) {
@@ -195,4 +193,5 @@ open class Logger(override val underlyingLogger: Slf4jLogger) : KLogger, Slf4jLo
   }
 }
 
+@Suppress("NOTHING_TO_INLINE")
 inline fun getLogger() = KotlinLogging.logger { }

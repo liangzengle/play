@@ -16,7 +16,7 @@ import play.util.control.Retryable
 import play.util.function.LongToObjFunction
 import play.util.getOrNull
 import play.util.json.Json
-import play.util.time.Time.currentMillis
+import play.time.Time.currentMillis
 import play.util.toOptional
 import play.util.unsafeCast
 import java.time.Duration

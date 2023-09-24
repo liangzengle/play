@@ -403,7 +403,7 @@ object Types {
     Double::class to MutableDoubleIterator::class,
   )
 
-  val pairs = mapOf(
+  val pairs = mapOf<Pair<KClass<*>, KClass<*>>, KClass<*>>(
     (Byte::class to Boolean::class) to ByteBooleanPair::class,
     (Byte::class to Byte::class) to ByteBytePair::class,
     (Byte::class to Short::class) to ByteShortPair::class,

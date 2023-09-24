@@ -1,7 +1,7 @@
 package play.scheduling
 
-import play.util.time.Time
-import play.util.time.Time.toInstant
+import play.time.Time
+import play.time.Time.toInstant
 import java.time.Duration
 import java.time.LocalDateTime
 

@@ -3,7 +3,7 @@ package play.akka.scheduling
 import akka.actor.typed.ActorRef
 import play.akka.AbstractTypedActor
 import play.scheduling.Trigger
-import play.util.time.Time
+import play.time.Time
 import java.time.Duration
 import java.time.LocalDateTime
 

@@ -29,7 +29,7 @@ abstract class AbstractHttpController(actionManager: HttpActionManager) {
           throw IllegalStateException("$method should be public")
         }
         if (method.returnType != HttpResult::class.java) {
-          throw IllegalStateException("${method}的返回值错误, 必须是${HttpResult::class.java.name}")
+          throw IllegalStateException("$method must return ${HttpResult::class.java.name}")
         }
         val subRoute = getSubRoute(method)
         ensureStartWithSlash(subRoute)

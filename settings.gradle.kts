@@ -1,8 +1,8 @@
 pluginManagement {
   repositories {
     mavenLocal()
-    mavenCentral()
     maven("https://maven.aliyun.com/repository/public/")
+    mavenCentral()
     maven("https://maven.aliyun.com/repository/gradle-plugin")
     maven("https://plugins.gradle.org/m2/")
   }
@@ -43,6 +43,7 @@ include("play-spring")
 include("play-kryo")
 include("play-dokka")
 include("play-wire")
+include("play-redis")
 
 includeProject("play-rsocket-common", "play-rsocket")
 includeProject("play-rsocket-core", "play-rsocket")
