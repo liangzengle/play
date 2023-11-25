@@ -1,14 +1,15 @@
 package play.entity.cache
 
-import mu.KLogging
+
 import play.entity.Entity
 import play.inject.PlayInjector
+import play.util.logging.WithLogger
 
 /**
  *
  * @author LiangZengle
  */
-object EntityCacheHelper : KLogging() {
+object EntityCacheHelper : WithLogger() {
 
   private val DefaultCacheSpec = CacheSpec()
 

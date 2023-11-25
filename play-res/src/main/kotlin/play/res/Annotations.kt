@@ -1,5 +1,9 @@
 package play.res
 
+@Retention(AnnotationRetention.RUNTIME)
+@Target(AnnotationTarget.CLASS)
+annotation class RTable(val tableId: Int, val filePath: String = "")
+
 /**
  * 用于定义配置的相对路径
  *

@@ -10,8 +10,10 @@ import io.netty.channel.socket.SocketChannel
  * @author LiangZengle
  */
 class NettyServerBuilder {
-  private var host: String = ""
+  private var host: String = "0.0.0.0"
   private var port: Int = 0
+  private var epollPreferred = true
+  private var virtualThreadPreferred = true
   private val options = hashMapOf<ChannelOption<Any>, Any>()
   private val childOptions = hashMapOf<ChannelOption<Any>, Any>()
   private var handler: ChannelHandler? = null
@@ -21,6 +23,7 @@ class NettyServerBuilder {
   private var channelFactory: ChannelFactory<out ServerChannel>? = null
 
   fun host(host: String): NettyServerBuilder {
+    require(host.isNotEmpty()) { "`host` is empty" }
     this.host = host
     return this
   }
@@ -82,7 +85,6 @@ class NettyServerBuilder {
   }
 
   fun build(name: String): NettyServer {
-    require(host.isNotEmpty()) { "`host` is empty." }
     require(port in 1..65535) { "`port` illegal: $port" }
     val b = ServerBootstrap()
     b.options(options)
@@ -92,7 +94,7 @@ class NettyServerBuilder {
     b.channelFactory(channelFactory ?: createServerChannelFactory())
     b.group(
       parentEventLoopGroup ?: createEventLoopGroup("$name-parent", 1),
-      childEventLoopGroup ?: createEventLoopGroup("$name-child")
+      childEventLoopGroup ?: createEventLoopGroup("$name-child", 0, epollPreferred, virtualThreadPreferred)
     )
     return NettyServer(name, host, port, b)
   }

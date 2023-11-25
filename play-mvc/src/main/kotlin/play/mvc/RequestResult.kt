@@ -40,7 +40,7 @@ sealed class RequestResult<out T> {
     }
 
     operator fun <T> invoke(result: Result2<T>): RequestResult<T> =
-      if (result.isErr()) err(result.getErrorCode(), result.asErr().args) else ok(result.get())
+      if (result.isErr()) err(result.getCode(), result.asErr().args) else ok(result.get())
 
     inline fun <T : Any> async(f: () -> PlayFuture<Result2<T>>): RequestResult<T> =
       Future(f().map { RequestResult(it) })

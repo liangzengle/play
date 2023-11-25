@@ -1,7 +1,7 @@
 package play.res
 
 import com.google.common.collect.Sets
-import play.Log
+import play.Application
 import play.res.reader.ConfigReader
 import play.res.reader.JsonResourceReader
 import play.res.reader.Reader
@@ -100,7 +100,7 @@ class ResourceManager(
       .map { it.unsafeCast<Class<out AbstractResource>>() }.toSet()
     val canNotReload = classesToReload.filterNot { isReloadable(it) }
     if (canNotReload.isNotEmpty()) {
-      Log.warn { "以下配置类不允许重加载: $canNotReload" }
+      Application.warn { "以下配置类不允许重加载: $canNotReload" }
     }
     val reloaded = load(finalResourcesToLoad, setting.validateOnReload)
     for ((k, v) in reloaded) {
@@ -108,7 +108,7 @@ class ResourceManager(
         val prev = DelegatingResourceSet.getOrNull<AbstractResource>(k) ?: continue
         for (elem in prev.list()) {
           if (!v.contains(elem.id)) {
-            Log.warn { "重加载时删除了配置: ${k.simpleName}(${elem.id})" }
+            Application.warn { "重加载时删除了配置: ${k.simpleName}(${elem.id})" }
           }
         }
       }
@@ -125,7 +125,7 @@ class ResourceManager(
     }
     for (cls in reloaded.keys) {
       val isCascade = !classesToReload.contains(cls)
-      Log.info { "配置重加载完成: ${cls.simpleName}(${getFileName(cls)})${if (isCascade) " (关联的更新)" else ""}" }
+      Application.info { "配置重加载完成: ${cls.simpleName}(${getFileName(cls)})${if (isCascade) " (关联的更新)" else ""}" }
     }
     updateVersion()
     notifyReloadListeners(finalResourcesToLoad)
@@ -147,7 +147,7 @@ class ResourceManager(
         try {
           listener.onResourceReloaded(reloaded)
         } catch (e: Exception) {
-          Log.error(e) { e.message }
+          Application.error(e) { e.message.orEmpty() }
         }
       }
     }
@@ -183,13 +183,13 @@ class ResourceManager(
       throw InvalidResourceException(errors)
     }
     if (validate) {
-      Log.info { "开始[配置验证]" }
+      Application.info { "开始[配置验证]" }
       val validationErrors = ConstraintsValidator(allResourceSets).validate(classes)
       errors += validationErrors
       for (validator in validators) {
         validator.validate(resourceSetProvider, errors)
       }
-      Log.info { "完成[配置验证]" }
+      Application.info { "完成[配置验证]" }
     }
     if (errors.isNotEmpty()) {
       throw InvalidResourceException(errors)
@@ -227,7 +227,7 @@ class ResourceManager(
     val resourceDirs = getTopLevelResourceDirs(resourceClasses)
     for (resourceDir in resourceDirs) {
       FileMonitor.start(resourceDir, ::reloadChangedFiles)
-      Log.info { "监听配置文件变化: ${resourceDir.absolutePath}" }
+      Application.info { "监听配置文件变化: ${resourceDir.absolutePath}" }
     }
   }
 
@@ -301,17 +301,17 @@ class ResourceManager(
   private fun updateVersion() {
     val versionFile = setting.versionFile
     if (versionFile.isEmpty()) {
-      Log.debug { "无配置版本号" }
+      Application.debug { "无配置版本号" }
       return
     }
     resolver.resolve(versionFile)
       .mapCatching { it.readText() }
       .onSuccess {
         version = it
-        Log.info { "配置版本号: $version" }
+        Application.info { "配置版本号: $version" }
       }
       .onFailure { e ->
-        Log.warn { "读取配置版本号文件失败: ${e.javaClass.name}: ${e.message}" }
+        Application.warn { "读取配置版本号文件失败: ${e.javaClass.name}: ${e.message}" }
       }
   }
 }

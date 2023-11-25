@@ -4,9 +4,9 @@ import io.netty.bootstrap.Bootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelPromise
 import io.netty.util.AttributeKey
-import mu.KLogging
 import play.util.concurrent.PlayFuture
 import play.util.concurrent.PlayPromise
+import play.util.logging.WithLogger
 
 class NettyClient(
   private val name: String,
@@ -14,6 +14,8 @@ class NettyClient(
   private val attributes: Map<AttributeKey<out Any>, Any> = emptyMap(),
   private val autoReconnect: Boolean = true
 ) : AutoCloseable {
+
+  companion object : WithLogger()
 
   private val b = bootstrap.clone()
 
@@ -75,5 +77,4 @@ class NettyClient(
     return "NettyClient(name='$name', bootstrap=$b, attributes=$attributes, autoReconnect=$autoReconnect)"
   }
 
-  companion object : KLogging()
 }

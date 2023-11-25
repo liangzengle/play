@@ -1,8 +1,8 @@
 package play.spring
 
-import mu.KLogging
+
 import play.util.concurrent.PlayFuture
-import play.time.Time
+import play.util.time.Time
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeoutException
  */
 class AsyncInitializingSupport {
 
-  companion object : KLogging() {
+  companion object : WithLogger() {
     const val Timeout = "spring.asyncInitializing.timeout"
   }
 

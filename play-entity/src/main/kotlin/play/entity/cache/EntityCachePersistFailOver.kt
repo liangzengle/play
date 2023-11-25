@@ -1,6 +1,6 @@
 package play.entity.cache
 
-import mu.KLogging
+
 import java.io.File
 
 interface EntityCachePersistFailOver {
@@ -14,7 +14,7 @@ object NOOPEntityCachePersistFailOver : EntityCachePersistFailOver {
 
 class DefaultEntityCachePersistFailOver(dumpPath: String) : EntityCachePersistFailOver {
 
-  companion object : KLogging()
+  companion object : WithLogger()
 
   private val dumpDir = File(dumpPath)
 

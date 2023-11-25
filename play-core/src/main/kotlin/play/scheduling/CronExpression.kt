@@ -1,6 +1,6 @@
 package play.scheduling
 
-import play.Log
+import play.Application
 import play.util.ServiceLoader2
 import java.time.Instant
 import javax.annotation.Nonnull
@@ -13,7 +13,7 @@ interface CronExpression {
       ServiceLoader2.loadOrDefault(Factory::class.java) { CronSequenceGeneratorFactory }
 
     init {
-      Log.debug { "CronExpression.Factory: ${factory.javaClass.simpleName}" }
+      Application.debug { "CronExpression.Factory: ${factory.javaClass.simpleName}" }
     }
 
     @JvmStatic

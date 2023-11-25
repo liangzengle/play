@@ -1,41 +1,18 @@
 package play.httpclient
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import java.util.concurrent.CompletableFuture
+import java.time.Duration
 
 interface PlayHttpClient : AutoCloseable {
 
   companion object {
     @JvmStatic
-    val LOGGER = LoggerFactory.getLogger(PlayHttpClient::class.java)
+    val DEFAULT_CONNECT_TIMEOUT: Duration = Duration.ofSeconds(2)
+
+    @JvmStatic
+    val DEFAULT_READ_TIMEOUT: Duration = Duration.ofSeconds(5)
   }
 
-  val logger: Logger get() = LOGGER
+  fun get(): Get
 
-  fun get(url: String): CompletableFuture<String> {
-    return get(url, mapOf())
-  }
-
-  fun get(url: String, params: Map<String, Any>): CompletableFuture<String> {
-    return get(url, mapOf(), mapOf())
-  }
-
-  fun get(url: String, params: Map<String, Any>, headers: Map<String, String>): CompletableFuture<String>
-
-  fun post(url: String): CompletableFuture<String> {
-    return post(url, mapOf())
-  }
-
-  fun post(url: String, form: Map<String, Any>): CompletableFuture<String> {
-    return post(url, mapOf(), mapOf())
-  }
-
-  fun post(url: String, form: Map<String, Any>, headers: Map<String, String>): CompletableFuture<String>
-
-  fun post(url: String, data: String): CompletableFuture<String> {
-    return post(url, data, mapOf())
-  }
-
-  fun post(url: String, data: String, headers: Map<String, String>): CompletableFuture<String>
+  fun post(): Post
 }

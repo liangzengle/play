@@ -45,7 +45,7 @@ abstract class AbstractSymbolProcessor(
     write(fileSpec)
   }
 
-  protected fun write(type: TypeSpecWithPackage) {
+  protected fun write(type: QualifiedTypeSpec) {
     val pkg = type.getPackage()
     val typeSpec = type.getTypeSpec()
     val fileSpec = FileSpec.builder(pkg, typeSpec.name!!).addType(typeSpec).build()

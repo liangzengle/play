@@ -8,7 +8,7 @@ import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import play.Orders
 import play.util.Sorting
-import play.time.Time
+import play.util.time.Time
 import java.time.Duration
 import java.util.*
 

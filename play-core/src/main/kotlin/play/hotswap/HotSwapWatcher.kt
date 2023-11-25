@@ -1,6 +1,6 @@
 package play.hotswap
 
-import play.Log
+import play.Application
 import play.util.ClassFileUtil
 import play.util.collection.toImmutableMap
 import play.util.io.FileMonitor
@@ -39,7 +39,7 @@ class HotSwapWatcher(private val dir: File) {
       .map { classFile -> ClassFileUtil.getClassName(classFile) to classFile }
       .toImmutableMap()
     val result = HotSwapAgent.redefineClasses(classMap)
-    Log.info(result.toString())
+    Application.info { "Class hotswap completed: $result" }
     publisher.submit(result)
   }
 }

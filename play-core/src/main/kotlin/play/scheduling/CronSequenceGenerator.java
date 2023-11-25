@@ -18,7 +18,7 @@
 package play.scheduling;
 
 import org.jetbrains.annotations.NotNull;
-import play.time.Time;
+import play.util.time.Time;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

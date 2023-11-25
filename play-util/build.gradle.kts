@@ -1,0 +1,20 @@
+dependencies {
+  api(project(":play-eclipse-collectionx"))
+  api(libs.asm)
+  api(libs.guava)
+  api(libs.jctools)
+  api(libs.slf4j.api)
+  api(libs.bundles.jackson)
+  api(libs.config)
+  api(libs.bundles.el)
+  api(libs.classgraph)
+  api(libs.caffeine)
+  api(libs.unsafeaccessor)
+  ksp(libs.auto.service.ksp)
+  compileOnly(libs.kotlinx.serialization.protobuf)
+  compileOnly(libs.wire.runtime)
+  api(libs.reactor)
+  compileOnly(libs.netty.buffer)
+
+  testImplementation(libs.netty.buffer)
+}

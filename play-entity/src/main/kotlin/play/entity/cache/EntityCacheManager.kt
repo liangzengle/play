@@ -1,6 +1,6 @@
 package play.entity.cache
 
-import mu.KLogging
+
 import play.entity.Entity
 import play.entity.IntIdEntity
 import play.entity.LongIdEntity
@@ -39,7 +39,7 @@ class EntityCacheManagerImpl constructor(
   injector: PlayInjector,
   private val persistFailOver: EntityCachePersistFailOver
 ) : EntityCacheManager(), AutoCloseable {
-  companion object : KLogging() {
+  companion object : WithLogger() {
     private val CLOSED_UPDATER = AtomicIntegerFieldUpdater.newUpdater(EntityCacheManagerImpl::class.java, "closed")
   }
 

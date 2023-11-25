@@ -16,7 +16,7 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     private const val DELEGATEE = "delegatee"
   }
 
-  private val entityCacheTypeSpecSet = hashSetOf<TypeSpecWithPackage>()
+  private val entityCacheTypeSpecSet = hashSetOf<QualifiedTypeSpec>()
 
   override fun process(): List<KSAnnotated> {
     val subclasses = resolver.getAllSubclasses(Entity.canonicalName).toSet()
@@ -52,7 +52,7 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
 
   private fun generate(
     entityClassDeclaration: KSClassDeclaration, idClassDeclaration: KSClassDeclaration
-  ): TypeSpecWithPackage {
+  ): QualifiedTypeSpec {
     val entityClass = entityClassDeclaration.toClassName()
     val idClass = idClassDeclaration.toClassName()
 
@@ -131,7 +131,7 @@ class EntityCacheGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     }
     val typeSpec = classBuilder.build()
 
-    return TypeSpecWithPackage(typeSpec, entityClass.packageName)
+    return QualifiedTypeSpec(typeSpec, entityClass.packageName)
   }
 
   private fun getOrCreate(entityClassDeclaration: KSClassDeclaration): FunSpec? {

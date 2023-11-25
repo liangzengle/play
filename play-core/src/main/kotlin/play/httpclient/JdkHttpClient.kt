@@ -1,181 +1,103 @@
 package play.httpclient
 
-import org.reactivestreams.FlowAdapters
+import com.google.common.net.HttpHeaders
+import com.google.common.net.MediaType
+import io.micrometer.core.instrument.Metrics
 import play.util.concurrent.Future.Companion.toPlay
-import play.util.logging.Logger
-import play.util.mkStringTo
-import reactor.core.publisher.Flux
+import play.util.concurrent.PlayFuture
+import play.util.logging.PlayLoggerFactory
 import java.net.URI
 import java.net.URLEncoder
-import java.net.http.HttpConnectTimeoutException
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.net.http.HttpTimeoutException
+import java.net.http.*
+import java.nio.ByteBuffer
 import java.time.Duration
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
-import java.util.concurrent.atomic.AtomicLong
-
-typealias JHttpClient = java.net.http.HttpClient
+import java.util.concurrent.Executors
+import java.util.concurrent.Flow
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLongFieldUpdater
 
 /**
  * Created by LiangZengle on 2020/2/20.
  */
-class JdkHttpClient constructor(
-  private val client: JHttpClient,
-  private val readTimeout: Duration = Duration.ofSeconds(5)
+class JdkHttpClient(
+  private val name: String,
+  private val client: HttpClient,
 ) : PlayHttpClient {
 
-  companion object {
-    private val log = Logger(PlayHttpClient.LOGGER)
+  companion object{
+    private val requestNoUpdater = AtomicLongFieldUpdater.newUpdater(JdkHttpClient::class.java, "requestNo")
   }
 
-  init {
-    require(readTimeout > Duration.ZERO) { "illegal readTimeout: $readTimeout" }
-  }
 
-  private val counter = AtomicLong()
+  private val timer = Metrics.timer("httpclient", "name", name)
 
-  fun toJava(): JHttpClient = client
+  private val logger = PlayLoggerFactory.getLogger(this.javaClass.name + '.' + name)
 
-  override fun close() {
-    // nothing to do
-  }
+  @Volatile
+  private var requestNo = 0L
+
+  private fun nextRequestNo() = requestNoUpdater.incrementAndGet(this)
+
+  fun toJava(): HttpClient = client
 
   override fun toString(): String {
-    return "JdkHttpClient"
+    return "JdkHttpClient($name)"
   }
 
-  fun copy(readTimeout: Duration): JdkHttpClient {
-    return JdkHttpClient(client, readTimeout)
+  override fun close() {
+    client.close()
   }
 
-  override fun get(
-    url: String,
-    params: Map<String, Any>,
-    headers: Map<String, String>
-  ): CompletableFuture<String> {
-    val request = makeGetRequest(url, params, headers)
-    return sendAsync(request)
-  }
-
-  override fun post(
-    url: String,
-    form: Map<String, Any>,
-    headers: Map<String, String>
-  ): CompletableFuture<String> {
-    val b = HttpRequest.newBuilder()
-    b.uri(URI.create(url))
-      .timeout(readTimeout)
-      .POST(HttpRequest.BodyPublishers.ofString(makeQueryString(form)))
-    b.header("Content-Type", "application/x-www-form-urlencoded")
-    headers.forEach { (k, v) -> b.header(k, v) }
-    return sendAsync(b.build())
-  }
-
-  override fun post(
-    url: String,
-    data: String,
-    headers: Map<String, String>
-  ): CompletableFuture<String> {
-    val b = HttpRequest.newBuilder()
-    b.uri(URI.create(url))
-      .timeout(readTimeout)
-      .POST(HttpRequest.BodyPublishers.ofString(data))
-    b.header("Content-Type", "application/json")
-    headers.forEach { (k, v) -> b.header(k, v) }
-    return sendAsync(b.build())
-  }
-
-  fun makeGetRequest(
-    uri: String,
-    params: Map<String, Any>,
-    headers: Map<String, String>
-  ): HttpRequest {
-    val uriVal = if (params.isEmpty()) {
-      URI.create(uri)
-    } else {
-      val uriBuilder = StringBuilder(32)
-      uriBuilder.append(uri)
-      if (uri.lastIndexOf('?') == -1) {
-        uriBuilder.append('?')
-      } else if (uri.last() != '?') {
-        uriBuilder.append('&')
-      }
-      makeQueryStringTo(uriBuilder, params)
-      URI.create(uriBuilder.toString())
-    }
-    val b = HttpRequest.newBuilder()
-    b.uri(uriVal)
-    b.timeout(readTimeout).GET()
-    headers.forEach { (t, u) ->
-      b.header(t, u)
-    }
-    return b.build()
-  }
-
-  fun makeQueryString(params: Map<String, Any>): String {
-    val builder = StringBuilder()
-    makeQueryStringTo(builder, params)
-    return builder.toString()
-  }
-
-  fun makeQueryStringTo(builder: StringBuilder, params: Map<String, Any>) {
-    if (params.isEmpty()) {
-      return
-    }
-    params.entries.mkStringTo(
-      builder,
-      '&',
-      transform = { (k, v) ->
-        URLEncoder.encode(k, Charsets.UTF_8) +
-          '=' +
-          URLEncoder.encode(v.toString(), Charsets.UTF_8)
-      }
-    )
-  }
-
-  fun sendAsync(request: HttpRequest): CompletableFuture<String> {
-    val requestNo = counter.incrementAndGet()
-    logRequest(requestNo, request)
-    return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-      .toPlay()
-      .andThen { v, e -> logResponse(requestNo, request, v, e) }
-      .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.uri().toString(), it.statusCode()) })
-      .map { it.body() ?: "" }
-      .toJava()
+  fun sendAsync(request: HttpRequest): PlayFuture<String> {
+    return sendAsync(request, HttpResponse.BodyHandlers.ofString()).map { it.body() ?: "" }
   }
 
   fun <Body> sendAsync(
     request: HttpRequest,
     bodyHandler: HttpResponse.BodyHandler<Body>
-  ): CompletableFuture<HttpResponse<Body>> {
-    val requestNo = counter.incrementAndGet()
+  ): PlayFuture<HttpResponse<Body>> {
+    val requestNo = nextRequestNo()
     logRequest(requestNo, request)
+    val startTime = System.nanoTime()
     return client.sendAsync(request, bodyHandler)
       .toPlay()
-      .andThen { v, e -> logResponse(requestNo, request, v, e) }
+      .andThen { v, e ->
+        timer.record(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
+        logResponse(requestNo, request, v, e)
+      }
       .rejectIf({ !it.isSuccess() }, { UnsuccessfulStatusCodeException(it.uri().toString(), it.statusCode()) })
-      .toJava()
   }
 
   private fun logRequest(requestNo: Long, request: HttpRequest) {
     request.bodyPublisher().ifPresentOrElse(
       { publisher ->
-        Flux.from(FlowAdapters.toPublisher(publisher))
-          .doOnNext {
-            val content = it?.asReadOnlyBuffer()?.let { buffer ->
-              val byteArray = ByteArray(buffer.remaining())
-              buffer.get(byteArray)
-              String(byteArray, Charsets.UTF_8)
-            } ?: ""
-            log.info { "[$requestNo] sending http request: $request $content" }
+        publisher.subscribe(object : Flow.Subscriber<ByteBuffer?> {
+          override fun onSubscribe(subscription: Flow.Subscription) {
+            subscription.request(1)
           }
-          .doOnError {
-            log.error(it) { "[$requestNo] observing http request error: $request" }
+
+          override fun onNext(item: ByteBuffer?) {
+            if (logger.isInfoEnabled()) {
+              val content = item?.asReadOnlyBuffer()?.let { buffer ->
+                val byteArray = ByteArray(buffer.remaining())
+                buffer.get(byteArray)
+                String(byteArray, Charsets.UTF_8)
+              } ?: ""
+              logger.info { "[$requestNo] sending http request: $request $content" }
+            }
           }
+
+          override fun onError(throwable: Throwable) {
+            logger.error(throwable) { "[$requestNo] observing http request error: $request" }
+          }
+
+          override fun onComplete() {
+          }
+        })
+
       },
-      { log.info { "[$requestNo] sending http request: $request" } }
+      { logger.info { "[$requestNo] sending http request: $request" } }
     )
   }
 
@@ -186,20 +108,102 @@ class JdkHttpClient constructor(
     exception: Throwable?
   ) {
     if (response == null && exception == null) {
-      log.error { "[$requestNo][$request] returns nothing." }
+      logger.error { "[$requestNo][$request] returns nothing." }
     } else if (exception != null) {
       var cause: Throwable = exception
       if (cause is CompletionException) {
         cause = cause.cause ?: cause
       }
       when (cause) {
-        is HttpConnectTimeoutException -> log.error { "[$requestNo] http request connect timeout" }
-        is HttpTimeoutException -> log.error { "[$requestNo] http request timeout" }
-        else -> log.error(cause) { "[$requestNo] http request failure: ${cause.javaClass.simpleName}" }
+        is HttpConnectTimeoutException -> logger.error { "[$requestNo] http request connect timeout" }
+        is HttpTimeoutException -> logger.error { "[$requestNo] http request timeout" }
+        else -> logger.error(cause) { "[$requestNo] http request failure: ${cause.javaClass.simpleName}" }
       }
     } else {
       checkNotNull(response)
-      log.info { "[$requestNo] http response: ${response.statusCode()} ${response.body()}" }
+      logger.info { "[$requestNo] http response: ${response.statusCode()} ${response.body()}" }
+    }
+  }
+
+  override fun get(): Get {
+    return GetImpl(this)
+  }
+
+  override fun post(): Post {
+    return PostImpl(this)
+  }
+
+  class Builder(private val name: String) {
+    private var clientBuilder = HttpClient.newBuilder()
+      .connectTimeout(PlayHttpClient.DEFAULT_CONNECT_TIMEOUT)
+      .executor(Executors.newVirtualThreadPerTaskExecutor())
+
+    fun connectTimeout(timeout: Duration): Builder {
+      clientBuilder.connectTimeout(timeout)
+      return this
+    }
+
+    fun customize(clientCustomizer: HttpClient.Builder.() -> Unit): Builder {
+      clientCustomizer(clientBuilder)
+      return this;
+    }
+
+    fun build(): JdkHttpClient {
+      return JdkHttpClient(name, clientBuilder.build())
+    }
+  }
+
+  private class GetImpl(private val client: JdkHttpClient) : Get() {
+    override fun sendAsync(): PlayFuture<String> {
+      val uri = if (params.isEmpty()) {
+        URI.create(this.uri)
+      } else {
+        val b = StringBuilder(64)
+        b.append(this.uri).append('?')
+        var first = true
+        for (param in params) {
+          if (!first) {
+            b.append('&')
+          } else {
+            first = false
+          }
+          b.append(URLEncoder.encode(param.name, Charsets.UTF_8))
+            .append('=')
+            .append(URLEncoder.encode(param.value, Charsets.UTF_8))
+        }
+        URI.create(b.toString())
+      }
+      val request = HttpRequest.newBuilder().GET()
+        .uri(uri)
+        .timeout(timeout)
+        .apply { headers.forEach { header(it.name, it.value) } }
+        .build()
+      return client.sendAsync(request)
+    }
+  }
+
+  private class PostImpl(private val client: JdkHttpClient) : Post() {
+    override fun sendAsync(): PlayFuture<String> {
+      val requestBuilder = HttpRequest.newBuilder().uri(URI.create(this.uri)).timeout(timeout)
+      if (form.isNotEmpty()) {
+        val b = StringBuilder(64)
+        for (param in form) {
+          if (b.isNotEmpty()) {
+            b.append('&')
+          }
+          b.append(URLEncoder.encode(param.name, Charsets.UTF_8))
+            .append('=')
+            .append(URLEncoder.encode(param.value, Charsets.UTF_8))
+        }
+        requestBuilder.POST(HttpRequest.BodyPublishers.ofString(b.toString()))
+        requestBuilder.header(HttpHeaders.CONTENT_TYPE, MediaType.FORM_DATA.toString())
+      }
+      if (body != null) {
+        requestBuilder.POST(HttpRequest.BodyPublishers.ofString(body))
+        requestBuilder.header(HttpHeaders.CONTENT_TYPE, MediaType.JSON_UTF_8.toString())
+      }
+      headers.forEach { requestBuilder.header(it.name, it.value) }
+      return client.sendAsync(requestBuilder.build())
     }
   }
 }

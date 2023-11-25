@@ -1,4 +1,4 @@
-val generateSourceDir = "${buildDir}/generated-sources"
+val generateSourceDir = "${layout.buildDirectory}/generated-sources"
 
 sourceSets {
     create("codegen") {
@@ -13,7 +13,7 @@ fun DependencyHandler.codegenImplementation(dependencyNotation: Any): Dependency
     add("codegenImplementation", dependencyNotation)
 
 dependencies {
-    implementation(libs.eclipse.collections.asProvider())
+    api(libs.eclipse.collections.asProvider())
 
     codegenImplementation(libs.kotlinpoet.asProvider())
     codegenImplementation(libs.eclipse.collections.asProvider())
@@ -23,7 +23,7 @@ tasks.register("generateCode", JavaExec::class) {
     description = "Generate code using KotlinPoet"
     mainClass.set("play.eclipse.collectionx.codegen.MainKt")
     classpath = sourceSets["codegen"].runtimeClasspath
-    args("${buildDir}/generated-sources")
+    args("${layout.buildDirectory}/generated-sources")
 
     outputs.upToDateWhen {
         !tasks["compileCodegenKotlin"].didWork || !tasks["compileCodegenJava"].didWork

@@ -1,6 +1,6 @@
 package play.entity.cache.chm
 
-import mu.KLogging
+
 import org.eclipse.collections.api.factory.Lists
 import play.entity.Entity
 import play.entity.cache.*
@@ -11,7 +11,7 @@ import play.util.concurrent.PlayFuture
 import play.util.control.Retryable
 import play.util.getOrNull
 import play.util.json.Json
-import play.time.Time.currentMillis
+import play.util.time.Time.currentMillis
 import play.util.toOptional
 import play.util.unsafeCast
 import java.time.Duration
@@ -31,7 +31,7 @@ class CHMEntityCache<ID, E : Entity<ID>>(
   private val settings: EntityCacheFactory.Settings,
   private val initializerProvider: EntityInitializerProvider
 ) : EntityCache<ID, E>, UnsafeEntityCacheOps<ID>, EntityCacheInternalApi<E> {
-  companion object : KLogging()
+  companion object : WithLogger()
 
   private var initialized = false
 

@@ -4,6 +4,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import play.util.Sorting
 import play.util.concurrent.PlayFuture
+import play.util.logging.PlayLoggerFactory
 import play.util.unsafeCast
 import java.time.Duration
 import java.util.*
@@ -134,35 +135,35 @@ class DefaultGracefullyShutdown(
     if (!PERFORMED_UPDATER.compareAndSet(this, 0, 1)) {
       return
     }
-    Log.info { "Application [$applicationName] shutting down..." }
+    Application.info { "Application [$applicationName] shutting down..." }
     var anyFailure = false
     for (phase in phases.asList()) {
       val tasks = phaseTasks[phase.name] ?: continue
       if (tasks.isEmpty()) {
         continue
       }
-      Log.debug { "Running Shutdown Phase [${phase.name}]" }
+      Application.debug { "Running Shutdown Phase [${phase.name}]" }
       for (task in tasks) {
-        Log.debug { "Performing task [${task.name}] in phase [${phase.name}]" }
+        Application.debug { "Performing task [${task.name}] in phase [${phase.name}]" }
         try {
           val elapsed = measureNanoTime {
             val future = task.action(task.ref).timeout(phase.timeout)
             future.await()
           }
-          Log.info { "Task [${task.name}] completed in ${TimeUnit.NANOSECONDS.toMillis(elapsed)}ms" }
+          Application.info { "Task [${task.name}] completed in ${TimeUnit.NANOSECONDS.toMillis(elapsed)}ms" }
         } catch (e: Exception) {
           anyFailure = true
           when (e) {
-            is TimeoutException -> Log.error(e) { "Task [${task.name}] timeout" }
-            else -> Log.error(e) { "Task [${task.name}] failed" }
+            is TimeoutException -> Application.error(e) { "Task [${task.name}] timeout" }
+            else -> Application.error(e) { "Task [${task.name}] failed" }
           }
         }
       }
     }
     if (!anyFailure) {
-      Log.info { "Application [$applicationName] shutdown successfully!" }
+      Application.info { "Application [$applicationName] shutdown successfully!" }
     } else {
-      Log.error { "Application [$applicationName] shutdown EXCEPTIONALLY!!!" }
+      Application.error { "Application [$applicationName] shutdown EXCEPTIONALLY!!!" }
     }
     postShutdownAction?.invoke()
   }

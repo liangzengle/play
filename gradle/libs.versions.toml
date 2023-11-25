@@ -20,17 +20,17 @@ jakarta-el = "5.0.0"
 jctools = "4.0.1"
 jmh = "1.36"
 junit = "5.9.3"
-kotlin = "1.9.20-Beta"
+kotlin = "1.9.20"
 kotlin-logging = "3.0.5"
 kotlinpoet = "1.14.2"
 kotlinx-serialization = "1.5.1"
-ksp = "1.9.20-Beta-1.0.13"
+ksp = "1.9.20-1.0.13"
 kryo = "5.5.0"
 ktlint = "11.4.2"
 ktor = "2.3.1"
 log4j = "2.20.0"
 logback = "1.4.8"
-micrometer = "1.11.1"
+micrometer = "1.11.4"
 mongodb = "4.10.1"
 mvel = "2.5.0.Final"
 netty = "4.1.94.Final"
@@ -41,7 +41,7 @@ rsocket = "1.1.4"
 rxjava = "3.1.6"
 scala = "2.13.11"
 scala-java8 = "1.0.2"
-slf4j = "2.0.7"
+slf4j = "2.0.9"
 springboot = "3.1.1"
 config = "1.4.2"
 unsafeaccessor = "1.7.0"
@@ -128,7 +128,8 @@ log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4
 
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
-micrometer = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+micrometer-core = { module = "io.micrometer:micrometer-core", version.ref = "micrometer" }
+micrometer-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
 
 monogo-driver-rx = { module = "org.mongodb:mongodb-driver-reactivestreams", version.ref = "mongodb" }
 
@@ -151,6 +152,7 @@ rsocket-transport-local = { module = "io.rsocket:rsocket-transport-local", versi
 rxjava = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxjava" }
 
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-jcl = { module = "org.slf4j:jcl-over-slf4j", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 scala = { module = "org.scala-lang:scala-library", version.ref = "scala" }
@@ -174,7 +176,8 @@ dokka = ["dokka-base", "dokka-core", "dokka-test-api", "dokka-test-utils"]
 el = ["mvel", "jakarta-el-api", "jakarta-el-impl"]
 jackson = ["jackson-databind", "jackson-kotlin", "jackson-scala", "jackson-eclipsecollections", "jackson-guava", "jackson-jdk8", "jackson-jsr310"]
 junit = ["junit-jupiter-engine", "junit-jupiter-api", "junit-jupiter"]
+micrometer = ["micrometer-core", "micrometer-prometheus"]
 
 [plugins]
-kotlin = { id = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+#kotlin = { id = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint-idea", version.ref = "ktlint" }

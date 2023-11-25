@@ -1,6 +1,6 @@
 package play.entity.cache.chm
 
-import mu.KLogging
+
 import org.eclipse.collections.api.factory.Lists
 import org.eclipse.collections.impl.factory.primitive.LongLists
 import org.eclipse.collectionx.asJava
@@ -16,7 +16,8 @@ import play.util.control.Retryable
 import play.util.function.LongToObjFunction
 import play.util.getOrNull
 import play.util.json.Json
-import play.time.Time.currentMillis
+import play.util.logging.WithLogger
+import play.util.time.Time.currentMillis
 import play.util.toOptional
 import play.util.unsafeCast
 import java.time.Duration
@@ -34,7 +35,7 @@ class CHMEntityCacheLong<E : LongIdEntity>(
   private val settings: EntityCacheFactory.Settings,
   private val initializerProvider: EntityInitializerProvider
 ) : EntityCacheLong<E>, UnsafeEntityCacheOps<Long>, EntityCacheInternalApi<E> {
-  companion object : KLogging()
+  companion object : WithLogger()
 
   private var initialized = false
 
@@ -310,11 +311,9 @@ class CHMEntityCacheLong<E : LongIdEntity>(
     // 防止Empty对象缓存过期:
     // 1. 重置间隔要小于过期时间
     // 2. 失败后需要刷新缓存
-    Retryable.foreverAsync(
+    Retryable.untilSuccess(
       "delete ${entityClass.simpleName}($id)",
       settings.expireAfterAccess.dividedBy(2).toMillis(),
-      scheduler,
-      executor
     ) {
       entityCacheWriter.deleteById(id, entityClass).unsafeCast<PlayFuture<Any?>>()
         .recoverWith { ex ->

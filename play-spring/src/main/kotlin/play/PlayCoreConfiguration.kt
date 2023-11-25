@@ -15,7 +15,7 @@ import play.util.concurrent.CommonPool
 import play.util.concurrent.threadFactory
 import play.util.reflect.ClassScanner
 import play.util.reflect.ClassgraphClassScanner
-import play.time.Time
+import play.util.time.Time
 import java.time.Clock
 import java.util.concurrent.*
 
@@ -85,7 +85,7 @@ class PlayCoreConfiguration {
           }
         }
         if (ex != null) {
-          Log.error(ex) { ex.message }
+          Application.error(ex) { ex.message }
         }
       }
     }

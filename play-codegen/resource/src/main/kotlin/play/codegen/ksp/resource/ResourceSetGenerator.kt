@@ -11,7 +11,7 @@ import play.codegen.ksp.resource.component.*
 
 class ResourceSetGenerator(environment: SymbolProcessorEnvironment) : AbstractSymbolProcessor(environment) {
 
-  private val typeSpecSet = hashSetOf<TypeSpecWithPackage>()
+  private val typeSpecSet = hashSetOf<QualifiedTypeSpec>()
 
   override fun process(): List<KSAnnotated> {
     val subclasses = resolver.getAllSubclasses(AbstractResource.canonicalName).toSet()
@@ -30,7 +30,7 @@ class ResourceSetGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
     }
   }
 
-  private fun generate(ksClassDeclaration: KSClassDeclaration): TypeSpecWithPackage {
+  private fun generate(ksClassDeclaration: KSClassDeclaration): QualifiedTypeSpec {
     val simpleName = ksClassDeclaration.simpleName.asString()
     val isSingleton = isSingleton(ksClassDeclaration)
     val postfix = if (isSingleton) "Conf" else "Set"
@@ -51,7 +51,7 @@ class ResourceSetGenerator(environment: SymbolProcessorEnvironment) : AbstractSy
         GroupedResourceSetComponent(ksClassDeclaration, resolver).apply(objectBuilder)
       }
     }
-    return TypeSpecWithPackage(objectBuilder.build(), ksClassDeclaration.packageName.asString())
+    return QualifiedTypeSpec(objectBuilder.build(), ksClassDeclaration.packageName.asString())
   }
 
   private fun isGrouped(ksClassDeclaration: KSClassDeclaration): Boolean {

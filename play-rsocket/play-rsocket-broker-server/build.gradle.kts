@@ -3,8 +3,8 @@ plugins {
 }
 
 tasks.jar {
-  val resourceMain = "$buildDir/resources/main"
-  val metaInf = "$buildDir/resources/main/META-INF"
+  val resourceMain = "${layout.buildDirectory}/resources/main"
+  val metaInf = "${layout.buildDirectory}/resources/main/META-INF"
   exclude { file ->
     val path = file.file.toPath()
     path.startsWith(resourceMain) && !path.startsWith(metaInf)

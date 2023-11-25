@@ -2,7 +2,7 @@ package play.util.time
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import play.time.OffsetDay
+import play.util.time.OffsetDay
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime

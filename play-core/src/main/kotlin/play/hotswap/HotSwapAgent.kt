@@ -29,7 +29,10 @@ object HotSwapAgent {
       Int::class.java,
       Int::class.java
     )
-    method.isAccessible = true
+    if (!method.trySetAccessible()) {
+      // throws exception then
+      method.isAccessible = true
+    }
     method
   }
 
@@ -139,7 +142,7 @@ object HotSwapAgent {
     JarOutputStream(FileOutputStream(jar), manifest).use { jos ->
       val e = JarEntry(className.replace('.', '/') + ".class")
       jos.putNextEntry(e)
-      val content = ClassFileUtil.getClassFile(HotSwapAgent::class.java)
+      val content = ClassFileUtil.readClassFile(HotSwapAgent::class.java)
       jos.write(content)
       jos.closeEntry()
     }

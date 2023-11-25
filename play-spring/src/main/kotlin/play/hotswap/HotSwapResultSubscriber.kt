@@ -1,6 +1,6 @@
 package play.hotswap
 
-import mu.KLogging
+
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory
 import org.springframework.context.ApplicationContext
 import org.springframework.context.SmartLifecycle
@@ -26,7 +26,7 @@ open class DefaultHotSwapResultSubscriber(
   private val applicationContext: ApplicationContext,
   private val hotSwapWatcher: HotSwapWatcher
 ) : HotSwapResultSubscriber, SmartLifecycle {
-  companion object : KLogging() {
+  companion object : WithLogger() {
     private const val STATE_STARTED = 1
     private const val STATE_COMPLETED = 2
     private const val STATE_CANCELED = 3

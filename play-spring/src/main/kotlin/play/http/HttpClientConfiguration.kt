@@ -22,12 +22,12 @@ class HttpClientConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  fun jdkHttpClient(): PlayHttpClient {
+  fun jdkHttpClient(): JdkHttpClient {
     val client = JHttpClient.newBuilder()
       .version(HttpClient.Version.HTTP_1_1)
       .followRedirects(HttpClient.Redirect.NORMAL)
       .connectTimeout(Duration.ofSeconds(2))
       .build()
-    return LoggingOnErrorHttpClient(JdkHttpClient(client))
+    return JdkHttpClient(client)
   }
 }

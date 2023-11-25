@@ -17,7 +17,7 @@ import io.netty.channel.EventLoopGroup
 import io.netty.channel.epoll.EpollEventLoopGroup
 import io.netty.channel.epoll.EpollSocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
-import mu.KLogging
+
 import org.bson.codecs.configuration.CodecRegistries
 import play.db.mongo.codec.EntityCodecProvider
 import play.db.mongo.codec.MongoIntIdMixIn
@@ -33,7 +33,7 @@ import play.util.reflect.Reflect
 import reactor.core.publisher.Flux
 import java.util.concurrent.TimeUnit
 
-object Mongo : KLogging() {
+object Mongo : WithLogger() {
 
   const val ID = "_id"
 

@@ -4,8 +4,8 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.javadsl.Behaviors
-import play.event.DefaultEventBus
-import play.event.EventBus
+import play.eventbus.DefaultEventBus
+import play.eventbus.EventBus
 import play.util.unsafeCast
 
 /**

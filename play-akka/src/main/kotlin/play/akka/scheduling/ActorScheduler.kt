@@ -4,7 +4,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Terminated
 import akka.actor.typed.javadsl.ActorContext
 import akka.actor.typed.javadsl.Receive
-import mu.KLogging
+
 import play.akka.AbstractTypedActor
 import play.scheduling.*
 import play.util.unsafeCast
@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 
 class ActorScheduler(ctx: ActorContext<Command>, private val scheduler: Scheduler) :
   AbstractTypedActor<ActorScheduler.Command>(ctx) {
-  companion object : KLogging() {
+  companion object : WithLogger() {
     private const val ONCE: Byte = 1
     private const val REPEATED: Byte = 2
     private const val TRIGGER: Byte = 3

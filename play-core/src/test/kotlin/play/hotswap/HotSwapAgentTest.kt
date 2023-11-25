@@ -1,7 +1,7 @@
 package play.hotswap
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import play.SystemProps
+import play.util.SystemProps
 import play.util.ClassFileUtil
 import java.io.File
 

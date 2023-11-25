@@ -1,12 +1,12 @@
 package play.mvc
 
-import mu.KLogging
+
 import play.codec.MessageCodec
 import play.util.EmptyByteArray
 import play.util.json.Json
 
 class Push<T>(val msgId: MsgId) {
-  companion object : KLogging()
+  companion object : WithLogger()
 
   constructor(moduleId: Short, cmd: Byte) : this(MsgId(moduleId, cmd))
 

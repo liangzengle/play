@@ -3,7 +3,7 @@ package play.util.time
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrowsExactly
 import org.junit.jupiter.api.Test
-import play.time.Time
+import play.util.time.Time
 import java.time.Duration
 import java.time.format.DateTimeParseException
 

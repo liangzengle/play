@@ -96,4 +96,10 @@ subprojects {
   }
 
   tasks.withType<Jar> { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+
+  java {
+    toolchain {
+      languageVersion = JavaLanguageVersion.of(21)
+    }
+  }
 }

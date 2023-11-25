@@ -1,6 +1,6 @@
 package play.res
 
-import play.Log
+import play.Application
 import play.util.unsafeCastOrNull
 
 open class DelegatingResourceSet<T : AbstractResource> internal constructor(private var delegatee: ResourceSet<T>) :
@@ -24,7 +24,7 @@ open class DelegatingResourceSet<T : AbstractResource> internal constructor(priv
         if (delegated != null) {
           delegated.updateDelegatee(v)
         } else {
-          Log.error { "DelegatingResourceSet not exists, update failed: ${k.simpleName}" }
+          Application.error { "DelegatingResourceSet not exists, update failed: ${k.simpleName}" }
         }
       }
     }

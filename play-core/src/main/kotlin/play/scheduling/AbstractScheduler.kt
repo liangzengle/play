@@ -1,8 +1,8 @@
 package play.scheduling
 
 import play.util.getOrNull
-import play.time.Time.currentDateTime
-import play.time.Time.currentMillis
+import play.util.time.Time.currentDateTime
+import play.util.time.Time.currentMillis
 import java.time.Clock
 import java.time.Duration
 import java.time.LocalDateTime

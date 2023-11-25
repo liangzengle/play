@@ -9,7 +9,7 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry
 import org.springframework.beans.factory.support.RootBeanDefinition
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.core.ResolvableType
-import play.Log
+import play.Application
 import play.util.unsafeCast
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -82,12 +82,11 @@ fun ConfigurableApplicationContext.closeAndWait() {
     }
   } catch (ex: InterruptedException) {
     Thread.currentThread().interrupt()
-    Log.warn("Interrupted waiting for application context $this to become inactive")
+    Application.warn { "Interrupted waiting for application context $this to become inactive" }
   } catch (ex: TimeoutException) {
-    Log.warn(
-      "Timed out waiting for application context $this to become inactive",
-      ex
-    )
+    Application.warn(ex) {
+      "Timed out waiting for application context $this to become inactive"
+    }
   }
 }
 

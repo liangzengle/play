@@ -7,33 +7,33 @@ import com.fasterxml.jackson.annotation.JsonValue
  *
  * @author LiangZengle
  */
-enum class CompareOperator(val value: String) {
-  EQ("=") {
+enum class CompareOperator {
+  EQ {
     override fun checkResult(compareResult: Int): Boolean {
       return compareResult == 0
     }
   },
-  NE("!=") {
+  NE {
     override fun checkResult(compareResult: Int): Boolean {
       return compareResult != 0
     }
   },
-  GT(">") {
+  GT {
     override fun checkResult(compareResult: Int): Boolean {
       return compareResult > 0
     }
   },
-  LT("<") {
+  LT {
     override fun checkResult(compareResult: Int): Boolean {
       return compareResult < 0
     }
   },
-  GE(">=") {
+  GE {
     override fun checkResult(compareResult: Int): Boolean {
       return compareResult >= 0
     }
   },
-  LE("<=") {
+  LE {
     override fun checkResult(compareResult: Int): Boolean {
       return compareResult <= 0
     }
@@ -87,7 +87,14 @@ enum class CompareOperator(val value: String) {
 
   @JsonValue
   override fun toString(): String {
-    return value
+    return when (this) {
+      EQ -> "="
+      NE -> "!="
+      GT -> ">"
+      LT -> "<"
+      GE -> ">="
+      LE -> "<="
+    }
   }
 
   companion object {

@@ -81,8 +81,14 @@ fun Bootstrap.channelInitializer(f: (SocketChannel) -> Unit): Bootstrap {
   return this
 }
 
-fun createEventLoopGroup(name: String, nThread: Int = 0, epollPreferred: Boolean = true): EventLoopGroup {
-  val threadFactory = DefaultThreadFactory(name)
+fun createEventLoopGroup(
+  name: String,
+  nThread: Int = 0,
+  epollPreferred: Boolean = true,
+  virtualThreadPreferred: Boolean = true
+): EventLoopGroup {
+  val threadFactory =
+    if (virtualThreadPreferred) Thread.ofVirtual().name(name, 1).factory() else DefaultThreadFactory(name)
   return if (epollPreferred && Epoll.isAvailable()) {
     EpollEventLoopGroup(nThread, threadFactory)
   } else {

@@ -1,9 +1,10 @@
 package play.scheduling
 
 import com.github.benmanes.caffeine.cache.Caffeine
-import mu.KLogging
+
 import play.util.Cleaners
 import play.util.classOf
+import play.util.logging.WithLogger
 import play.util.unsafeCast
 import java.time.Clock
 import java.time.Duration
@@ -34,7 +35,7 @@ class ManagedScheduler(private val underlying: Scheduler) : Scheduler, AutoClose
   }
 
   private class Action(val schedules: Map<Any, Canceller<*>>) : Runnable {
-    companion object : KLogging() {
+    companion object : WithLogger() {
       fun clean(schedules: Map<Any, Canceller<*>>, commander: String) {
         var n = 0
         for ((schedule, canceller) in schedules) {

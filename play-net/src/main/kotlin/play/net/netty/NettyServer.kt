@@ -2,15 +2,15 @@ package play.net.netty
 
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
-import mu.KLogging
 import play.net.NetServer
 import play.util.concurrent.PlayFuture
 import play.util.control.getCause
+import play.util.logging.WithLogger
 
 class NettyServer(
   val name: String, val host: String, val port: Int, bootstrap: ServerBootstrap
 ) : NetServer {
-  companion object : KLogging()
+  companion object : WithLogger()
 
   private val b = bootstrap.clone()
 
