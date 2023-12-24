@@ -1,4 +1,4 @@
-package play.res.reader.csv
+package play.res.csv
 
 import play.res.DataType
 

@@ -1,13 +1,13 @@
-package play.res.reader.csv
+package play.res.csv
 
 import play.util.getRawClass
 import java.lang.reflect.ParameterizedType
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.javaType
 
-class CsvRow(private val table: CsvTable, private val data: Array<Any?>) {
+class CsvRow(private val header: CsvHeader, private val data: Array<Any>) {
 
-  fun indexOf(columnName: String) = table.header.getColumnIndex(columnName)
+  fun indexOf(columnName: String) = header.getColumnIndex(columnName)
 
   fun getBoolean(columnName: String): Boolean {
     val columnIndex = indexOf(columnName)
@@ -62,8 +62,8 @@ class CsvRow(private val table: CsvTable, private val data: Array<Any?>) {
       throw IllegalArgumentException("`$valueColumnName` not found")
     }
 
-    val rawKey = data[keyIndex]!!
-    val rawValue = data[valueIndex]!!
+    val rawKey = data[keyIndex]
+    val rawValue = data[valueIndex]
 
     val keys = if (!List::class.java.isAssignableFrom(rawKey.javaClass)) {
       listOf(rawKey)
@@ -88,7 +88,7 @@ class CsvRow(private val table: CsvTable, private val data: Array<Any?>) {
     val entries = arrayOfNulls<Map.Entry<K, V>>(keys.size)
     for (i in keys.indices) {
       val key = keys[i]
-      val value = if (values.size <= i) table.header.fieldTypes[valueIndex].defaultValue() else values[i]
+      val value = if (values.size <= i) header.fieldTypes[valueIndex].defaultValue() else values[i]
       val k: K = keyType.cast(key)
       val v: V = valueType.cast(value)
       entries[i] = java.util.Map.entry(k, v)

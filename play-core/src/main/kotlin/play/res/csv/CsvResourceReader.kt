@@ -1,24 +1,34 @@
-package play.res.reader.csv
+package play.res.csv
 
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVRecord
 import play.res.AbstractResource
 import play.res.DataType
+import play.res.ResourceTable
+import play.util.AnnotationUtil
 import java.io.InputStream
 import java.util.*
 
-class CsvResourceReader {
+class CsvResourceReader(private val unmarshallerFactory: CSVUnmarshallerFactory) {
 
   fun <T : AbstractResource> read(clazz: Class<T>, inputStream: InputStream) {
+    val unmarshaller =
+      unmarshallerFactory.create<T>(AnnotationUtil.getRequired(clazz, ResourceTable::class.java).tableId)
     inputStream.bufferedReader().use { reader ->
       val recordIterator = CSVFormat.DEFAULT.parse(reader).iterator()
       val header = readHeader(recordIterator)
+      val list = ArrayList<T>()
       var currentRow: Array<Any>? = null
       while (recordIterator.hasNext()) {
         val row = recordIterator.next().values()
         if (isFollowerRow(row, header)) {
           appendRow(header.fieldTypes, checkNotNull(currentRow) { "" }, row)
         } else {
+          val completeRow = currentRow
+          if (completeRow != null) {
+            val resource = unmarshaller.unmarshal(CsvRow(header, completeRow))
+            list.add(resource)
+          }
           currentRow = readRow(header.fieldTypes, row)
         }
       }

@@ -7,9 +7,8 @@ import java.lang.reflect.Parameter
 object AnnotationUtil {
 
   fun <A : Annotation> getRequired(element: AnnotatedElement, annotationType: Class<A>): A {
-    val annotation = element.getAnnotation(annotationType)
+    return element.getAnnotation(annotationType)
       ?: throw NoSuchElementException("Required annotation `${annotationType.name}` not found on `${getName(element)}`")
-    return annotation
   }
 
   private fun getName(element: AnnotatedElement): String {
