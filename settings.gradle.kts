@@ -1,3 +1,6 @@
+import dev.aga.gradle.versioncatalogs.Generator.generate
+import dev.aga.gradle.versioncatalogs.GeneratorConfig
+
 pluginManagement {
   repositories {
     mavenLocal()
@@ -9,6 +12,22 @@ pluginManagement {
 }
 
 rootProject.name = "play"
+
+plugins {
+  id("dev.aga.gradle.version-catalog-generator") version("1.0.0")
+}
+
+dependencyResolutionManagement {
+  repositories {
+    mavenCentral() // must include repositories here for dependency resolution to work from settings
+  }
+  versionCatalogs {
+    generate("log4jLibs") { // the name of the generated catalog
+      from(toml("log4j-bom")) // name of the bom library in the version catalog
+      aliasPrefixGenerator = GeneratorConfig.NO_PREFIX
+    }
+  }
+}
 
 fun includeProject(name: String, parentDir: String) {
   includeProject(name, parentDir, name)
